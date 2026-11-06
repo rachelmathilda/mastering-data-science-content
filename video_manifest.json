@@ -1,0 +1,108 @@
+{
+  "note": "kind: ai_slides dibuat dari brief oleh generator video AI, screen_record direkam dari layar, shoot direkam langsung",
+  "items": [
+    {
+      "course_id": "D11",
+      "module_no": 1,
+      "module_title": "Mengapa strategi ML penting",
+      "kind": "ai_slides",
+      "reason": "Visual learning curve dan perbandingan model lebih mudah dipahami dengan animasi grafik.",
+      "brief": [
+        "Slide 1: skenario detektor kucing dan daftar ide perbaikan",
+        "Slide 2: skor prioritas p kali g dibagi c dengan contoh angka",
+        "Slide 3: diagnosis bias dan variance dari error train dan dev",
+        "Slide 4: notasi m, n, X, y dan tiga set data",
+        "Slide 5: learning curve regresi logistik plateau versus jaringan saraf besar",
+        "Slide 6: ringkasan dan kapan menambah data atau kapasitas model"
+      ],
+      "status": "todo"
+    },
+    {
+      "course_id": "D11",
+      "module_no": 2,
+      "module_title": "Dev set, test set, dan metrik tunggal",
+      "kind": "ai_slides",
+      "reason": "Diagram aliran data web ke ponsel dan ilustrasi derau pengukuran lebih jelas secara visual.",
+      "brief": [
+        "Slide 1: cerita kucing, training dari web dan pengguna dari ponsel",
+        "Slide 2: tiga set data dan perannya",
+        "Slide 3: empat wilayah dan mengapa dev dan test harus dicampur",
+        "Slide 4: standard error dan ukuran dev set",
+        "Slide 5: F1, rata-rata berbobot, dan metrik tunggal",
+        "Slide 6: optimizing versus satisficing dengan contoh wakeword",
+        "Slide 7: tiga penyebab mengganti dev set atau metrik"
+      ],
+      "status": "todo"
+    },
+    {
+      "course_id": "D11",
+      "module_no": 4,
+      "module_title": "Label salah, Eyeball dan Blackbox dev set",
+      "kind": "ai_slides",
+      "reason": "Pembagian dev set menjadi eyeball dan blackbox serta efek seleksi paling mudah dipahami dengan diagram bertahap.",
+      "brief": [
+        "Slide 1: dev set 5000 contoh dibelah acak menjadi eyeball 500 dan blackbox 4500",
+        "Slide 2: siklus kerja: lihat kesalahan di eyeball, perbaiki model, ukur di blackbox",
+        "Slide 3: grafik error eyeball turun sementara blackbox mendatar sebagai tanda overfit",
+        "Slide 4: tabel ukuran eyeball untuk error 20, 10, 5, dan 2 persen dengan target 100 kesalahan"
+      ],
+      "status": "todo"
+    },
+    {
+      "course_id": "D11",
+      "module_no": 5,
+      "module_title": "Bias dan variance",
+      "kind": "ai_slides",
+      "reason": "Konsep bias dan variance sangat terbantu animasi kurva polinomial dan diagram dekomposisi error.",
+      "brief": [
+        "Slide 1: bar bertumpuk error dev: optimal, avoidable bias, variance",
+        "Slide 2: tiga plot polinomial derajat 1, 3, 12 pada titik data yang sama",
+        "Slide 3: grafik error training dan dev terhadap alpha berbentuk U",
+        "Slide 4: tabel dua kolom tindakan untuk bias dan untuk variance"
+      ],
+      "status": "todo"
+    },
+    {
+      "course_id": "D11",
+      "module_no": 6,
+      "module_title": "Learning curve dan performa manusia",
+      "kind": "ai_slides",
+      "reason": "Bentuk learning curve dan perbandingan dengan acuan manusia paling jelas lewat grafik animasi.",
+      "brief": [
+        "Slide 1: dua grafik learning curve, kiri high bias dengan kurva mendatar tinggi, kanan high variance dengan celah yang menutup",
+        "Slide 2: garis error yang diinginkan dan error optimal pada grafik yang sama",
+        "Slide 3: tabel acuan dokter umum, radiolog, tim ahli dengan error 3, 1, 0,5 persen",
+        "Slide 4: bagan alur memilih tindakan dari bias dominan atau variance dominan"
+      ],
+      "status": "todo"
+    },
+    {
+      "course_id": "D11",
+      "module_no": 7,
+      "module_title": "Distribusi data yang berbeda",
+      "kind": "ai_slides",
+      "reason": "Lima angka error dan alur training-dev set lebih mudah dipahami lewat diagram bertahap.",
+      "brief": [
+        "Slide 1: tiga himpunan training, training-dev, dev dengan panah sumber distribusi",
+        "Slide 2: tangga lima angka error dan label empat selisih",
+        "Slide 3: grafik error terhadap ukuran kolam derau sintetis",
+        "Slide 4: diagram alur memilih langkah mengatasi data mismatch"
+      ],
+      "status": "todo"
+    },
+    {
+      "course_id": "D11",
+      "module_no": 8,
+      "module_title": "Pipeline, end-to-end, dan atribusi error",
+      "kind": "ai_slides",
+      "reason": "Substitusi keluaran berurutan dan tabel atribusi lebih jelas lewat diagram aliran bertahap.",
+      "brief": [
+        "Slide 1: diagram pipeline A ke B ke C dengan label keluaran perantara",
+        "Slide 2: animasi substitusi keluaran benar pada A lalu A dan B",
+        "Slide 3: tabel atribusi 45, 35, 20 persen dan tabel celah terhadap manusia",
+        "Slide 4: contoh pipeline cacat dengan informasi hilang di tahap akhir"
+      ],
+      "status": "todo"
+    }
+  ]
+}

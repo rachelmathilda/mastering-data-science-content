@@ -1,0 +1,88 @@
+{
+  "id": "B1",
+  "title": "Penguasaan NumPy",
+  "title_short": "NumPy",
+  "icon": "cube",
+  "track": "B",
+  "track_label": "Data",
+  "track_name": "Data Wrangling dan Visualisasi",
+  "level": "Pemula",
+  "module_count": 6,
+  "total_minutes": 630,
+  "exercise_count": 72,
+  "prerequisites": [
+    "A1"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "B1",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Penguasaan NumPy",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-B1"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "ndarray, dtype, dan shape",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Indexing, slicing, dan masking",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Broadcasting",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Operasi vectorized dan ufunc",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Aljabar linear dengan NumPy",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Random, reproducibility, dan performa",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

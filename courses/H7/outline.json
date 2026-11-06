@@ -1,0 +1,105 @@
+{
+  "id": "H7",
+  "title": "Kegagalan, Monitoring, dan MLOps",
+  "title_short": "Monitoring & MLOps",
+  "icon": "gear",
+  "track": "H",
+  "track_label": "MLOps",
+  "track_name": "ML Systems dan MLOps",
+  "level": "Lanjutan",
+  "module_count": 7,
+  "total_minutes": 735,
+  "exercise_count": 84,
+  "prerequisites": [
+    "H6"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "H7",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Kegagalan, Monitoring, dan MLOps",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-H7"
+  },
+  "sources": [
+    {
+      "code": "DMLS",
+      "title": "Designing Machine Learning Systems",
+      "author": "Chip Huyen",
+      "chapters": "bab 7"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Kegagalan umum sistem ML",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Pergeseran distribusi data",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Deteksi drift",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Monitoring",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Alert dan respons",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Retraining",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Studi kasus kegagalan",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

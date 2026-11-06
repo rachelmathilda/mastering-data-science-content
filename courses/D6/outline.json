@@ -1,0 +1,118 @@
+{
+  "id": "D6",
+  "title": "Peramalan Deret Waktu",
+  "title_short": "Deret Waktu",
+  "icon": "clock",
+  "track": "D",
+  "track_label": "Machine Learning",
+  "track_name": "Machine Learning",
+  "level": "Lanjutan",
+  "module_count": 9,
+  "total_minutes": 945,
+  "exercise_count": 108,
+  "prerequisites": [
+    "D5"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "D6",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Peramalan Deret Waktu",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-D6"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Komponen time series",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Stasioneritas",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Smoothing",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Exponential smoothing",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Model AR dan MA",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "ARIMA",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Musiman",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 8,
+      "title": "Backtesting",
+      "file": "m08.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 9,
+      "title": "Studi kasus forecasting",
+      "file": "m09.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

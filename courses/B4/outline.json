@@ -1,0 +1,108 @@
+{
+  "id": "B4",
+  "title": "Visualisasi Data dengan Matplotlib dan Seaborn",
+  "title_short": "Visualisasi Data",
+  "icon": "chart_bar",
+  "track": "B",
+  "track_label": "Data",
+  "track_name": "Data Wrangling dan Visualisasi",
+  "level": "Pemula",
+  "module_count": 8,
+  "total_minutes": 840,
+  "exercise_count": 96,
+  "prerequisites": [
+    "B3"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "B4",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Visualisasi Data dengan Matplotlib dan Seaborn",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-B4"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Anatomi sebuah plot",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Line plot dan bar plot",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Histogram dan distribusi",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Scatter plot dan hubungan antarvariabel",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Boxplot dan violin plot",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Seaborn dan tema",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Subplot dan layout",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 8,
+      "title": "Memilih grafik yang tepat",
+      "file": "m08.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

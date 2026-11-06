@@ -1,0 +1,68 @@
+{
+  "id": "G1",
+  "title": "Capstone: Analitik Bisnis",
+  "title_short": "Capstone Analitik",
+  "icon": "rocket",
+  "track": "G",
+  "track_label": "Capstone",
+  "track_name": "Capstone",
+  "level": "Menengah",
+  "module_count": 4,
+  "total_minutes": 420,
+  "exercise_count": 48,
+  "prerequisites": [
+    "B5"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "G1",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Capstone: Analitik Bisnis",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-G1"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Merumuskan masalah bisnis",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Data dan EDA",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Analisis dan insight",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Rekomendasi dan laporan",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

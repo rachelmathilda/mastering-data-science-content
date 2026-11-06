@@ -1,0 +1,95 @@
+{
+  "id": "E7",
+  "title": "Node Embedding dan Knowledge Graph",
+  "title_short": "Node Embedding",
+  "icon": "network",
+  "track": "E",
+  "track_label": "Deep Learning",
+  "track_name": "Deep Learning, Graph, dan Framework",
+  "level": "Lanjutan",
+  "module_count": 6,
+  "total_minutes": 630,
+  "exercise_count": 72,
+  "prerequisites": [
+    "E6"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "E7",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Node Embedding dan Knowledge Graph",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-E7"
+  },
+  "sources": [
+    {
+      "code": "GRL",
+      "title": "Graph Representation Learning",
+      "author": "William L. Hamilton",
+      "chapters": "bab 3 sampai 4"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Perspektif encoder dan decoder",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Pendekatan faktorisasi",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Random walk embedding",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Batas shallow embedding",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Knowledge graph",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Decoder multi-relasional",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

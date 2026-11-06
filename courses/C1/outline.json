@@ -1,0 +1,108 @@
+{
+  "id": "C1",
+  "title": "Inferensi Statistik",
+  "title_short": "Inferensi Statistik",
+  "icon": "sigma",
+  "track": "C",
+  "track_label": "Statistik",
+  "track_name": "Statistik dan Inferensi",
+  "level": "Menengah",
+  "module_count": 8,
+  "total_minutes": 840,
+  "exercise_count": 96,
+  "prerequisites": [
+    "A5"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "C1",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Inferensi Statistik",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-C1"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Populasi, sampel, dan bias sampling",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Distribusi sampling",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Estimasi titik",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Confidence interval",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Bootstrap",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Ukuran efek",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Salah tafsir yang umum",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 8,
+      "title": "Studi kasus inferensi",
+      "file": "m08.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

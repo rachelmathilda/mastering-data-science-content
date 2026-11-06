@@ -1,0 +1,115 @@
+{
+  "id": "C8",
+  "title": "Statistik Bayesian II: MCMC, GLM, dan Multilevel",
+  "title_short": "Bayesian II",
+  "icon": "sigma",
+  "track": "C",
+  "track_label": "Statistik",
+  "track_name": "Statistik dan Inferensi",
+  "level": "Lanjutan",
+  "module_count": 8,
+  "total_minutes": 840,
+  "exercise_count": 96,
+  "prerequisites": [
+    "C7"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "C8",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Statistik Bayesian II: MCMC, GLM, dan Multilevel",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-C8"
+  },
+  "sources": [
+    {
+      "code": "SR",
+      "title": "Statistical Rethinking",
+      "author": "Richard McElreath",
+      "chapters": "bab 8 sampai 14"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Metropolis dan MCMC",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Hamiltonian Monte Carlo dari nol",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Diagnostik chain",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Entropi maksimum dan GLM",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Regresi binomial dan Poisson Bayesian",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Ordered, zero-inflated, dan over-dispersed",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Model multilevel",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 8,
+      "title": "Varying slopes, missing data, dan measurement error",
+      "file": "m08.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

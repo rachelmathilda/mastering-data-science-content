@@ -1,0 +1,88 @@
+{
+  "id": "D7",
+  "title": "Sistem Rekomendasi",
+  "title_short": "Sistem Rekomendasi",
+  "icon": "star",
+  "track": "D",
+  "track_label": "Machine Learning",
+  "track_name": "Machine Learning",
+  "level": "Lanjutan",
+  "module_count": 6,
+  "total_minutes": 630,
+  "exercise_count": 72,
+  "prerequisites": [
+    "D6"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "D7",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Sistem Rekomendasi",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-D7"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Jenis sistem rekomendasi",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Content-based",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Collaborative filtering",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Matrix factorization",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Evaluasi rekomendasi",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Cold start",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

@@ -1,0 +1,1516 @@
+{
+  "schema_version": 2,
+  "course_id": "D11",
+  "module_no": 7,
+  "title": "Distribusi data yang berbeda",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menyusun pembagian data ketika training berbeda dari target",
+    "Mendiagnosis data mismatch dengan training-dev set",
+    "Menyintesis data dengan keberagaman cukup dan mengukurnya pada data nyata"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "D11-07-1",
+    "exercise_id": "D11-07-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def bandingkan_bobot(Xw, yw, Xm, ym, Xd, yd, bobot_list):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "D11-07-1",
+      "title": "Melatih dan menguji pada distribusi berbeda",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menyusun pembagian data ketika sumber training berbeda dari sumber target",
+        "Memutuskan kapan data dari sumber lain layak ikut dipakai",
+        "Mengenali data yang pemetaannya tidak konsisten antar sumber",
+        "Memakai bobot contoh untuk menyeimbangkan sumber yang jumlahnya timpang"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Masalah: data banyak, tetapi bukan dari tempat yang kamu tuju",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Masalah: data banyak, tetapi bukan dari tempat yang kamu tuju\n\nAplikasi pengenal kucing akan dipakai pengguna dengan foto dari ponsel. Foto ponsel agak buram, kurang tajam, dan komposisinya khas. Kamu punya 200.000 gambar dari web yang bersih dan terlabel, serta hanya 10.000 foto dari aplikasi. Data web berlimpah, tetapi bukan distribusi yang akan dihadapi sistem.\n\nAda godaan besar untuk menggabung semuanya lalu membagi acak menjadi training, dev, dan test. Hasilnya, dev dan test kebanyakan berisi gambar web. Kamu lalu mengoptimalkan sesuatu yang bukan target. Seperti dibahas di modul 1, dev dan test harus mencerminkan data yang ingin kamu tangani di masa depan, bukan data yang kebetulan paling banyak.\n\nAturan dasar: dev dan test berasal dari distribusi target (foto ponsel). Training boleh mengandung campuran, dan mungkin sebagian besar berasal dari sumber lain. Dengan begitu, error dev tetap mengukur hal yang penting, dan kamu bebas memanfaatkan data berlimpah untuk melatih."
+            }
+          ],
+          "quick_check": {
+            "question": "Aplikasi untuk foto ponsel, data web 200.000, ponsel 10.000. Dev set sebaiknya?",
+            "options": [
+              "Hanya foto ponsel",
+              "Campuran acak web dan ponsel"
+            ],
+            "answer_index": 0,
+            "explanation": "Dev dan test harus mencerminkan data target, yaitu foto ponsel.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Contoh pembagian",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Contoh pembagian\n\nDari 10.000 foto ponsel, sisihkan sebagian untuk dev dan test, misalnya masing-masing 2.500. Sisanya 5.000 foto ponsel dimasukkan ke training bersama 200.000 gambar web. Ukuran: training 205.000, dev 2.500, test 2.500. Dev dan test sama-sama dari ponsel dan berasal dari distribusi yang sama.\n\nKonsekuensinya, distribusi training dan dev berbeda. Kamu harus siap menafsirkan error dev yang tinggi: bisa karena variance, bisa karena model belum belajar kekhasan ponsel. Lesson berikutnya memperkenalkan satu subset tambahan untuk membedakan keduanya.\n\nAlternatif yang sering lebih buruk: membagi data acak dari gabungan. Dengan 210.000 contoh, hanya sekitar 5 persen dev berisi foto ponsel. Sebagian besar kapasitas optimisasi tim lalu terbuang untuk gambar yang tidak penting bagi pengguna."
+            },
+            {
+              "type": "text",
+              "markdown": "## Apakah semua data layak dipakai\n\nData dari sumber lain tidak selalu membantu. Pertanyaannya bergantung pada kapasitas model. Jika model cukup besar, ia mampu mempelajari dua sumber sekaligus tanpa saling mengganggu, dan data tambahan umumnya membantu atau minimal tidak merugikan. Jika model kecil, ia harus berkompromi untuk menyesuaikan diri dengan kedua distribusi dan performa pada target bisa turun dibanding hanya memakai data target.\n\nData tambahan paling berguna jika ada kemiripan fitur mendasar. Gambar kucing dari web membantu karena bentuk kucing mirip di mana pun. Data yang sangat berbeda mengajari hal tidak relevan dan memakai kapasitas.\n\nCara memutuskan paling jujur adalah eksperimen: latih dengan dan tanpa data tambahan, bandingkan error dev pada target. Jika sumber lain tidak menurunkan error dev, jangan paksa. Jika menurunkan, pertahankan dan pertimbangkan bobot."
+            }
+          ],
+          "quick_check": {
+            "question": "Kapan data dari sumber berbeda cenderung tidak merugikan?",
+            "options": [
+              "Model sangat kecil",
+              "Model cukup besar dan fitur dasar mirip"
+            ],
+            "answer_index": 1,
+            "explanation": "Model besar bisa mempelajari dua sumber sekaligus tanpa saling mengganggu.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Data dengan pemetaan tidak konsisten",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Data dengan pemetaan tidak konsisten\n\nBahaya lain muncul ketika input yang sama punya jawaban benar berbeda di dua sumber. Contoh: harga rumah. Rumah 100 meter persegi di kota A berharga satu kisaran, sedangkan rumah 100 meter persegi di kota B jauh lebih mahal. Jika kamu menggabungkan data kedua kota tanpa memberi tahu model kota mana, model harus menebak harga rata-rata yang salah untuk keduanya.\n\nSolusinya memberi model informasi yang membedakan sumber, misalnya fitur kota, atau fitur interaksi ukuran dikali kota. Model besar bisa menemukannya sendiri bila sinyalnya ada. Model sederhana perlu dibantu fitur eksplisit.\n\nTanda peringatan: error training tinggi pada gabungan data walau model seharusnya cukup kuat. Itu sering berarti sumber saling bertentangan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memberi bobot pada data\n\nKetika satu sumber jauh lebih banyak, kamu dapat memberi bobot lebih besar pada contoh dari sumber target. Jika ada 200.000 contoh web dan 5.000 contoh ponsel, memberi bobot 20 pada tiap contoh ponsel membuat 5.000 contoh itu setara 100.000 contoh dalam fungsi loss. Pengaruh efektif ponsel naik dari sekitar 2,4 persen menjadi sekitar 33 persen.\n\nPembobotan dilakukan lewat parameter `sample_weight` pada banyak model scikit-learn. Bobot adalah hyperparameter: cobalah beberapa nilai, ukur error dev pada target, lalu pilih. Bobot yang terlalu besar membuat model menghafal contoh target yang sedikit.\n\nDibanding membuang data web, pembobotan mempertahankan manfaat variasi sambil memusatkan perhatian ke target. Sering ini kompromi yang baik ketika kamu punya sedikit data target tetapi cukup untuk dev dan test."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Perhatian",
+              "markdown": "Jangan pernah memindahkan contoh dev atau test ke training demi menambah data target. Ambil dari cadangan data target yang memang belum dipakai untuk evaluasi."
+            },
+            {
+              "type": "code_example",
+              "filename": "bagi_data.py",
+              "runnable": true,
+              "code": "def bagi_data(n_web, n_mobile, mobile_di_train):\n    sisa = n_mobile - mobile_di_train\n    dev = sisa // 2\n    test = sisa - dev\n    return {\"train\": n_web + mobile_di_train, \"dev\": dev, \"test\": test}\n\nprint(bagi_data(200000, 10000, 5000))",
+              "expected_output_note": "{'train': 205000, 'dev': 2500, 'test': 2500}",
+              "explanation": "Dev dan test hanya berisi foto ponsel. Training berisi seluruh gambar web ditambah sebagian foto ponsel. Dua himpunan evaluasi berasal dari distribusi target yang sama."
+            },
+            {
+              "type": "code_example",
+              "filename": "web.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef web(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6))\n    y = (X[:, 0] + 0.7 * X[:, 1] - 0.4 * X[:, 2] + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\ndef mobile(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6)) * 1.5 + np.array([1, 0, 0, 0, 0, 0])\n    y = (0.4 * X[:, 0] + 0.9 * X[:, 1] - 0.4 * X[:, 2] - 0.4 + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\nXw, yw = web(20000, 0)\nXm, ym = mobile(1000, 1)\nXd, yd = mobile(3000, 2)\n\ndef err(X, y, sw=None):\n    return 1 - LogisticRegression().fit(X, y, sample_weight=sw).score(Xd, yd)\n\nprint(\"hanya web      :\", round(err(Xw, yw), 3))\nprint(\"hanya ponsel   :\", round(err(Xm, ym), 3))\nprint(\"gabungan tanpa bobot:\", round(err(np.vstack([Xw, Xm]), np.r_[yw, ym]), 3))",
+              "expected_output_note": "hanya web sekitar 0.24\nhanya ponsel sekitar 0.058\ngabungan tanpa bobot sekitar 0.22",
+              "explanation": "Model sederhana yang dilatih pada web gagal di target. Data ponsel kecil tetapi sangat berharga. Menggabung tanpa bobot nyaris tidak membantu karena web mendominasi 20 banding 1."
+            },
+            {
+              "type": "code_example",
+              "filename": "web.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef web(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6))\n    y = (X[:, 0] + 0.7 * X[:, 1] - 0.4 * X[:, 2] + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\ndef mobile(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6)) * 1.5 + np.array([1, 0, 0, 0, 0, 0])\n    y = (0.4 * X[:, 0] + 0.9 * X[:, 1] - 0.4 * X[:, 2] - 0.4 + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\nXw, yw = web(20000, 0)\nXm, ym = mobile(1000, 1)\nXd, yd = mobile(3000, 2)\nX = np.vstack([Xw, Xm])\ny = np.r_[yw, ym]\nprint(\"bobot  mobile_efektif  err_dev\")\nfor w in [1, 5, 20, 50]:\n    sw = np.r_[np.ones(len(yw)), np.full(len(ym), w)]\n    e = 1 - LogisticRegression().fit(X, y, sample_weight=sw).score(Xd, yd)\n    ef = len(ym) * w / (len(yw) + len(ym) * w)\n    print(f\"{w:5d}  {ef:14.2f}  {e:7.3f}\")",
+              "expected_output_note": "error dev turun dari sekitar 0.22 pada bobot 1 ke sekitar 0.067 pada bobot 50",
+              "explanation": "Bobot lebih besar pada contoh ponsel menurunkan error dev secara tajam. Bobot 50 mendekati hasil model yang hanya memakai data ponsel, tetapi tetap memanfaatkan data web sebagai tambahan."
+            },
+            {
+              "type": "code_example",
+              "filename": "rumah.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\n\ndef rumah(n, kota, seed):\n    r = np.random.default_rng(seed)\n    s = r.uniform(30, 150, n)\n    p = (10 if kota == 0 else 25) * s + r.normal(0, 30, n)\n    return s, p\n\nsa, pa = rumah(500, 0, 1)\nsb, pb = rumah(500, 1, 2)\nS = np.r_[sa, sb]\nP = np.r_[pa, pb]\nC = np.r_[np.zeros(500), np.ones(500)]\nm1 = LinearRegression().fit(S[:, None], P)\nF = np.c_[S, C, S * C]\nm2 = LinearRegression().fit(F, P)\nprint(\"RMSE tanpa fitur kota:\", round(float(np.sqrt(np.mean((m1.predict(S[:, None]) - P) ** 2))), 1))\nprint(\"RMSE dengan kota dan interaksi:\", round(float(np.sqrt(np.mean((m2.predict(F) - P) ** 2))), 1))",
+              "expected_output_note": "RMSE tanpa fitur kota sekitar 718\nRMSE dengan kota dan interaksi sekitar 31",
+              "explanation": "Dua kota punya harga per meter persegi berbeda. Tanpa fitur kota model tidak bisa membedakan dan galatnya besar. Dengan indikator kota dan interaksi dengan ukuran, galat turun ke tingkat derau."
+            }
+          ],
+          "quick_check": {
+            "question": "Rumah 100 meter persegi di dua kota berharga berbeda dan model tidak tahu kota. Masalahnya?",
+            "options": [
+              "Pemetaan tidak konsisten antar sumber",
+              "Variance"
+            ],
+            "answer_index": 0,
+            "explanation": "Input sama dengan jawaban benar berbeda membuat model terpaksa merata-ratakan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-07-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bagi_data(n_web, n_mobile, mobile_di_train)` yang mengembalikan dictionary `{\"train\": ..., \"dev\": ..., \"test\": ...}`.",
+          "note": "`train = n_web + mobile_di_train`. Sisa ponsel `n_mobile - mobile_di_train` dibagi dua: `dev = sisa // 2`, `test = sisa - dev`.",
+          "filename": "solution.py",
+          "starter_code": "def bagi_data(n_web, n_mobile, mobile_di_train):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bagi_data(200000, 10000, 5000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_data(200000, 10000, 5000) == {\"train\": 205000, \"dev\": 2500, \"test\": 2500}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bagi_data(100, 11, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_data(100, 11, 0) == {\"train\": 100, \"dev\": 5, \"test\": 6}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bagi_data(0, 10, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_data(0, 10, 10) == {\"train\": 10, \"dev\": 0, \"test\": 0}"
+              }
+            ]
+          },
+          "hint": "Hitung sisa lebih dulu, lalu gunakan floor division untuk dev.",
+          "solution": "def bagi_data(n_web, n_mobile, mobile_di_train):\n    sisa = n_mobile - mobile_di_train\n    dev = sisa // 2\n    return {\"train\": n_web + mobile_di_train, \"dev\": dev, \"test\": sisa - dev}",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-07-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bobot_efektif(n_web, n_mobile, w)` yang mengembalikan bagian bobot total yang berasal dari ponsel: `n_mobile * w / (n_web + n_mobile * w)`, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def bobot_efektif(n_web, n_mobile, w):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bobot_efektif(200000, 5000, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bobot_efektif(200000, 5000, 1) == 0.0244"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bobot_efektif(200000, 5000, 20)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bobot_efektif(200000, 5000, 20) == 0.3333"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bobot_efektif(100, 100, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bobot_efektif(100, 100, 1) == 0.5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bobot_efektif(0, 10, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bobot_efektif(0, 10, 3) == 1.0"
+              }
+            ]
+          },
+          "hint": "Terapkan rumus langsung lalu round(..., 4).",
+          "solution": "def bobot_efektif(n_web, n_mobile, w):\n    return round(n_mobile * w / (n_web + n_mobile * w), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-07-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bobot_sampel(sumber, w_mobile)` yang menerima list atau array string `\"web\"` atau `\"mobile\"` dan mengembalikan array NumPy float: `w_mobile` untuk `\"mobile\"` dan `1.0` untuk selainnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef bobot_sampel(sumber, w_mobile):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isinstance(b, np.ndarray)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "b = bobot_sampel([\"web\", \"mobile\", \"web\", \"mobile\"], 20)\nassert isinstance(b, np.ndarray)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "list(b)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert list(b) == [1.0, 20.0, 1.0, 20.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert b.dtype == float"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(bobot_sampel([], 5))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(bobot_sampel([], 5)) == 0"
+              }
+            ]
+          },
+          "hint": "Gunakan np.where pada array sumber.",
+          "solution": "import numpy as np\n\ndef bobot_sampel(sumber, w_mobile):\n    s = np.asarray(sumber, dtype=object)\n    return np.where(s == \"mobile\", float(w_mobile), 1.0).astype(float)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-07-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `bandingkan_bobot(Xw, yw, Xm, ym, Xd, yd, bobot_list)` yang melatih `LogisticRegression(max_iter=1000)` pada gabungan `vstack([Xw, Xm])` dan `r_[yw, ym]` dengan `sample_weight` bernilai 1 untuk contoh web dan `w` untuk contoh ponsel, untuk tiap `w` dalam `bobot_list`.",
+          "note": "Kembalikan list error dev (1 dikurangi akurasi) dibulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef bandingkan_bobot(Xw, yw, Xm, ym, Xd, yd, bobot_list):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def web(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6))\n    y = (X[:, 0] + 0.7 * X[:, 1] - 0.4 * X[:, 2] + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\ndef mobile(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6)) * 1.5 + np.array([1, 0, 0, 0, 0, 0])\n    y = (0.4 * X[:, 0] + 0.9 * X[:, 1] - 0.4 * X[:, 2] - 0.4 + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\nXw, yw = web(8000, 0)\nXm, ym = mobile(400, 1)\nXd, yd = mobile(2000, 2)\nr = bandingkan_bobot(Xw, yw, Xm, ym, Xd, yd, [1, 50])\nassert len(r) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[1] < r[0] - 0.05"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "all(0 <= v <= 1 for v in r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert all(0 <= v <= 1 for v in r)"
+              }
+            ]
+          },
+          "hint": "Bangun vektor bobot dengan np.r_[np.ones(len(yw)), np.full(len(ym), w)] pada tiap putaran.",
+          "solution": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef bandingkan_bobot(Xw, yw, Xm, ym, Xd, yd, bobot_list):\n    X = np.vstack([Xw, Xm])\n    y = np.r_[yw, ym]\n    hasil = []\n    for w in bobot_list:\n        sw = np.r_[np.ones(len(yw)), np.full(len(ym), float(w))]\n        model = LogisticRegression(max_iter=1000).fit(X, y, sample_weight=sw)\n        hasil.append(round(1 - model.score(Xd, yd), 4))\n    return hasil",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Aplikasi untuk foto ponsel, data web 200.000, ponsel 10.000. Dev set sebaiknya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Campuran acak web dan ponsel",
+              "description": ""
+            },
+            {
+              "label": "Hanya foto ponsel",
+              "description": ""
+            },
+            {
+              "label": "Hanya web",
+              "description": ""
+            },
+            {
+              "label": "Tidak perlu dev",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Dev dan test harus mencerminkan data target, yaitu foto ponsel."
+        },
+        {
+          "q": "Kapan data dari sumber berbeda cenderung tidak merugikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Model sangat kecil",
+              "description": ""
+            },
+            {
+              "label": "Model cukup besar dan fitur dasar mirip",
+              "description": ""
+            },
+            {
+              "label": "Tanpa dev set",
+              "description": ""
+            },
+            {
+              "label": "Data identik",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Model besar bisa mempelajari dua sumber sekaligus tanpa saling mengganggu."
+        },
+        {
+          "q": "Rumah 100 meter persegi di dua kota berharga berbeda dan model tidak tahu kota. Masalahnya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Variance",
+              "description": ""
+            },
+            {
+              "label": "Pemetaan tidak konsisten antar sumber",
+              "description": ""
+            },
+            {
+              "label": "Label bocor",
+              "description": ""
+            },
+            {
+              "label": "Metrik salah",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Input sama dengan jawaban benar berbeda membuat model terpaksa merata-ratakan."
+        },
+        {
+          "q": "200.000 web dan 5.000 ponsel dengan bobot 20 pada ponsel. Bagian bobot efektif ponsel?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sekitar 2 persen",
+              "description": ""
+            },
+            {
+              "label": "Sekitar 33 persen",
+              "description": ""
+            },
+            {
+              "label": "Sekitar 50 persen",
+              "description": ""
+            },
+            {
+              "label": "100 persen",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "5.000 kali 20 sama dengan 100.000 dibagi total 300.000, yaitu sekitar 33 persen."
+        },
+        {
+          "q": "Bobot contoh target dianggap apa?",
+          "code": null,
+          "options": [
+            {
+              "label": "Konstanta tetap",
+              "description": ""
+            },
+            {
+              "label": "Hyperparameter yang disetel pada dev",
+              "description": ""
+            },
+            {
+              "label": "Fitur",
+              "description": ""
+            },
+            {
+              "label": "Label",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Nilai bobot dicoba beberapa kali dan dipilih berdasarkan error dev pada target."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengacak gabungan semua sumber lalu membagi menjadi training, dev, dan test. Lebih baik: Dev dan test hanya dari distribusi target. Training boleh campuran.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengacak gabungan semua sumber lalu membagi menjadi training, dev, dan test.",
+          "fix": "Dev dan test hanya dari distribusi target. Training boleh campuran."
+        },
+        {
+          "mistake": "Selalu memakai semua data karena lebih banyak pasti lebih baik.",
+          "fix": "Uji dengan dan tanpa data tambahan dan lihat error dev pada target."
+        },
+        {
+          "mistake": "Menggabung dua sumber yang pemetaannya bertentangan tanpa penanda sumber.",
+          "fix": "Tambahkan fitur sumber atau interaksi, atau pisahkan model."
+        }
+      ],
+      "summary": [
+        "Dev dan test harus dari distribusi target sedangkan training boleh campuran.",
+        "Data dari sumber lain berguna bila model cukup besar dan fitur dasarnya mirip.",
+        "Pemetaan yang bertentangan antar sumber perlu penanda sumber.",
+        "Bobot contoh menyeimbangkan sumber dan disetel sebagai hyperparameter."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 36 sampai 39 (Andrew Ng): melatih dan menguji pada distribusi berbeda"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Melatih dan menguji pada distribusi berbeda"
+          },
+          {
+            "type": "text",
+            "source": "Dev dan test hanya berisi foto ponsel. Training berisi seluruh gambar web ditambah sebagian foto ponsel. Dua himpunan evaluasi berasal dari distribusi target yang sama."
+          },
+          {
+            "type": "code",
+            "source": "def bagi_data(n_web, n_mobile, mobile_di_train):\n    sisa = n_mobile - mobile_di_train\n    dev = sisa // 2\n    test = sisa - dev\n    return {\"train\": n_web + mobile_di_train, \"dev\": dev, \"test\": test}\n\nprint(bagi_data(200000, 10000, 5000))"
+          },
+          {
+            "type": "text",
+            "source": "Model sederhana yang dilatih pada web gagal di target. Data ponsel kecil tetapi sangat berharga. Menggabung tanpa bobot nyaris tidak membantu karena web mendominasi 20 banding 1."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef web(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6))\n    y = (X[:, 0] + 0.7 * X[:, 1] - 0.4 * X[:, 2] + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\ndef mobile(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6)) * 1.5 + np.array([1, 0, 0, 0, 0, 0])\n    y = (0.4 * X[:, 0] + 0.9 * X[:, 1] - 0.4 * X[:, 2] - 0.4 + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\nXw, yw = web(20000, 0)\nXm, ym = mobile(1000, 1)\nXd, yd = mobile(3000, 2)\n\ndef err(X, y, sw=None):\n    return 1 - LogisticRegression().fit(X, y, sample_weight=sw).score(Xd, yd)\n\nprint(\"hanya web      :\", round(err(Xw, yw), 3))\nprint(\"hanya ponsel   :\", round(err(Xm, ym), 3))\nprint(\"gabungan tanpa bobot:\", round(err(np.vstack([Xw, Xm]), np.r_[yw, ym]), 3))"
+          },
+          {
+            "type": "text",
+            "source": "Bobot lebih besar pada contoh ponsel menurunkan error dev secara tajam. Bobot 50 mendekati hasil model yang hanya memakai data ponsel, tetapi tetap memanfaatkan data web sebagai tambahan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef web(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6))\n    y = (X[:, 0] + 0.7 * X[:, 1] - 0.4 * X[:, 2] + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\ndef mobile(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6)) * 1.5 + np.array([1, 0, 0, 0, 0, 0])\n    y = (0.4 * X[:, 0] + 0.9 * X[:, 1] - 0.4 * X[:, 2] - 0.4 + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\nXw, yw = web(20000, 0)\nXm, ym = mobile(1000, 1)\nXd, yd = mobile(3000, 2)\nX = np.vstack([Xw, Xm])\ny = np.r_[yw, ym]\nprint(\"bobot  mobile_efektif  err_dev\")\nfor w in [1, 5, 20, 50]:\n    sw = np.r_[np.ones(len(yw)), np.full(len(ym), w)]\n    e = 1 - LogisticRegression().fit(X, y, sample_weight=sw).score(Xd, yd)\n    ef = len(ym) * w / (len(yw) + len(ym) * w)\n    print(f\"{w:5d}  {ef:14.2f}  {e:7.3f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Dua kota punya harga per meter persegi berbeda. Tanpa fitur kota model tidak bisa membedakan dan galatnya besar. Dengan indikator kota dan interaksi dengan ukuran, galat turun ke tingkat derau."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\n\ndef rumah(n, kota, seed):\n    r = np.random.default_rng(seed)\n    s = r.uniform(30, 150, n)\n    p = (10 if kota == 0 else 25) * s + r.normal(0, 30, n)\n    return s, p\n\nsa, pa = rumah(500, 0, 1)\nsb, pb = rumah(500, 1, 2)\nS = np.r_[sa, sb]\nP = np.r_[pa, pb]\nC = np.r_[np.zeros(500), np.ones(500)]\nm1 = LinearRegression().fit(S[:, None], P)\nF = np.c_[S, C, S * C]\nm2 = LinearRegression().fit(F, P)\nprint(\"RMSE tanpa fitur kota:\", round(float(np.sqrt(np.mean((m1.predict(S[:, None]) - P) ** 2))), 1))\nprint(\"RMSE dengan kota dan interaksi:\", round(float(np.sqrt(np.mean((m2.predict(F) - P) ** 2))), 1))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "D11-07-2",
+      "title": "Training-dev set dan data mismatch",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan fungsi training-dev set",
+        "Menguraikan error menjadi bias, variance, data mismatch, dan overfitting dev",
+        "Mendeteksi mismatch dengan classifier domain",
+        "Memilih langkah mengatasi data mismatch"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dilema membaca error dev",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dilema membaca error dev\n\nDalam konfigurasi dari lesson sebelumnya, training berisi gambar web dan dev berisi foto ponsel. Misalkan error training 1 persen dan error dev 10 persen. Di mana masalahnya? Bisa variance: model menghafal gambar web tanpa menggeneralisasi. Bisa juga karena distribusi dev berbeda sehingga model yang bagus untuk web memang tidak bagus untuk ponsel. Dua penyebab itu butuh tindakan berbeda, tetapi dari dua angka kamu tidak bisa membedakannya.\n\nSolusinya menambah satu subset: **training-dev set**. Ambil sebagian kecil data training secara acak, jangan dipakai melatih, dan gunakan hanya untuk evaluasi. Training-dev berasal dari distribusi yang sama dengan training, tetapi tidak dilihat model saat belajar. Jadi ia mengukur kemampuan menggeneralisasi dalam distribusi yang sama.\n\nSekarang ada tiga angka dari tiga himpunan: training, training-dev, dan dev. Selisih antar-pasangan menjelaskan sumber error."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa fungsi training-dev set?",
+            "options": [
+              "Mengukur generalisasi dalam distribusi training yang sama",
+              "Menggantikan test set"
+            ],
+            "answer_index": 0,
+            "explanation": "Berasal dari distribusi training tetapi tidak dipakai melatih.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Lima angka, empat selisih",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Lima angka, empat selisih\n\nDengan error manusia (acuan optimal), training, training-dev, dev, dan test, kamu mendapat lima angka yang berurutan. Empat selisih di antaranya masing-masing punya nama.\n\nTraining dikurangi manusia: **avoidable bias**. Training-dev dikurangi training: **variance**, karena distribusinya sama tetapi data tidak dilihat. Dev dikurangi training-dev: **data mismatch**, karena inilah efek perbedaan distribusi. Test dikurangi dev: **overfitting ke dev set**, karena keduanya satu distribusi.\n\nContoh: manusia 1, training 2, training-dev 2,5, dev 10, test 10,3 (persen). Avoidable bias 1, variance 0,5, data mismatch 7,5, overfitting dev 0,3. Data mismatch jelas dominan sehingga memperbesar model atau menambah data web tidak banyak menolong. Arahnya adalah membuat training lebih mirip target."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengatasi data mismatch\n\nTidak ada obat tunggal, tetapi ada langkah umum. Pertama, pahami perbedaannya dengan error analysis pada contoh dev yang salah. Bandingkan dengan contoh training yang benar dan cari pola: dev lebih buram, lebih gelap, berisi objek lain di latar? Kedua, jadikan data training lebih mirip dev. Caranya mengumpulkan data target tambahan, menambah bobot, atau mensintesis data yang meniru kekhasan target. Sintesis dibahas di lesson berikutnya dan perlu hati-hati.\n\nJika perbedaan sulit dipahami manusia, kamu dapat mengukur kedekatan dua distribusi dengan classifier domain: latih model untuk membedakan contoh training dari contoh dev. Akurasi sekitar 50 persen berarti distribusinya mirip. Akurasi mendekati 100 persen berarti mereka mudah dibedakan, dan fitur mana yang paling membedakan memberi petunjuk tentang perbedaannya."
+            }
+          ],
+          "quick_check": {
+            "question": "Training 2, training-dev 2,5, dev 10 (persen). Data mismatch?",
+            "options": [
+              "0,5",
+              "7,5"
+            ],
+            "answer_index": 1,
+            "explanation": "Dev dikurangi training-dev sama dengan 7,5.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Tiga catatan praktis",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tiga catatan praktis\n\nPertama, training-dev tidak perlu besar. Cukup agar estimasi error cukup stabil, misalnya sebesar dev. Kedua, jika tidak ada mismatch (dev dan training satu distribusi), training-dev tidak diperlukan karena dev sudah memenuhi fungsinya. Ketiga, jika mismatch besar dan pengumpulan data target tidak mungkin, pertimbangkan apakah target realistis dan perbarui ekspektasi pemangku kepentingan. Tidak semua masalah mismatch bisa diselesaikan oleh teknik; kadang yang diperlukan adalah data nyata."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh alur kerja lengkap\n\nMisalkan tim membangun pengenal kucing dengan 200.000 gambar web dan 5.000 foto ponsel di training, dev 2.500 foto ponsel, dan training-dev 2.500 gambar web yang disisihkan acak. Hasil: manusia 1 persen, training 2 persen, training-dev 2,5 persen, dev 10 persen. Data mismatch 7,5 poin adalah masalah utama, jadi tim memeriksa 100 foto ponsel yang salah dan menemukan sebagian besar buram dan gelap.\n\nTim lalu menambah foto ponsel yang diberi bobot, dan menyintesis versi buram dari gambar web dengan filter kabur yang meniru kamera ponsel. Setelah dua iterasi, dev turun ke 5 persen sementara training-dev tetap 2,5 persen. Mismatch menyusut dari 7,5 ke 2,5 poin tanpa menyentuh arsitektur sama sekali. Contoh ini menunjukkan nilai diagnosis: kamu menghabiskan usaha di tempat error benar-benar berada."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tips",
+              "markdown": "Ambil training-dev dari training sebelum latihan dimulai dan simpan indeksnya. Jika kamu mengambilnya setelah latihan, sebagian contohnya sudah terlihat model."
+            },
+            {
+              "type": "code_example",
+              "filename": "uraikan.py",
+              "runnable": true,
+              "code": "def uraikan(manusia, train, train_dev, dev, test):\n    return {\n        \"avoidable_bias\": round(train - manusia, 4),\n        \"variance\": round(train_dev - train, 4),\n        \"data_mismatch\": round(dev - train_dev, 4),\n        \"overfit_dev\": round(test - dev, 4),\n    }\n\nprint(uraikan(0.01, 0.02, 0.025, 0.10, 0.103))",
+              "expected_output_note": "{'avoidable_bias': 0.01, 'variance': 0.005, 'data_mismatch': 0.075, 'overfit_dev': 0.003}",
+              "explanation": "Lima angka diuraikan menjadi empat komponen. Di sini data mismatch jauh dominan sehingga prioritas adalah mendekatkan data training ke target."
+            },
+            {
+              "type": "code_example",
+              "filename": "web.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef web(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6))\n    y = (X[:, 0] + 0.7 * X[:, 1] - 0.4 * X[:, 2] + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\ndef mobile(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6)) * 1.5 + np.array([1, 0, 0, 0, 0, 0])\n    y = (0.4 * X[:, 0] + 0.9 * X[:, 1] - 0.4 * X[:, 2] - 0.4 + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\nXw, yw = web(20000, 0)\nXd, yd = mobile(3000, 2)\nXtr, ytr = Xw[:15000], yw[:15000]\nXtd, ytd = Xw[15000:], yw[15000:]\nm = LogisticRegression().fit(Xtr, ytr)\nfor nama, X, y in [(\"training\", Xtr, ytr), (\"training-dev\", Xtd, ytd), (\"dev (ponsel)\", Xd, yd)]:\n    print(f\"{nama:13s}: {1 - m.score(X, y):.3f}\")",
+              "expected_output_note": "training sekitar 0.070\ntraining-dev sekitar 0.074\ndev sekitar 0.240",
+              "explanation": "Training dan training-dev hampir sama sehingga variance kecil. Lonjakan di dev adalah data mismatch murni sekitar 17 poin. Tanpa training-dev kamu tidak bisa mengatakan ini."
+            },
+            {
+              "type": "code_example",
+              "filename": "web.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef web(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6))\n    y = (X[:, 0] + 0.7 * X[:, 1] - 0.4 * X[:, 2] + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\ndef mobile(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6)) * 1.5 + np.array([1, 0, 0, 0, 0, 0])\n    y = (0.4 * X[:, 0] + 0.9 * X[:, 1] - 0.4 * X[:, 2] - 0.4 + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\nfrom sklearn.model_selection import train_test_split\n\ndef skor_domain(Xa, Xb, seed):\n    X = np.vstack([Xa, Xb])\n    d = np.r_[np.zeros(len(Xa)), np.ones(len(Xb))]\n    Xt, Xv, dt, dv = train_test_split(X, d, test_size=0.3, random_state=seed, stratify=d)\n    return LogisticRegression(max_iter=1000).fit(Xt, dt).score(Xv, dv)\n\nXw1, _ = web(2000, 0)\nXw2, _ = web(2000, 1)\nXm, _ = mobile(2000, 2)\nprint(\"web vs web      :\", round(skor_domain(Xw1, Xw2, 0), 3))\nprint(\"web vs ponsel   :\", round(skor_domain(Xw1, Xm, 0), 3))",
+              "expected_output_note": "web vs web sekitar 0.5\nweb vs ponsel sekitar 0.65",
+              "explanation": "Classifier domain pada dua sampel dari distribusi yang sama hanya menebak, jadi akurasi sekitar 50 persen. Pada web melawan ponsel akurasinya naik jelas di atas tebakan, sekitar 65 persen, tanda mismatch nyata walau fiturnya mirip."
+            }
+          ],
+          "quick_check": {
+            "question": "Test dikurangi dev mengukur?",
+            "options": [
+              "Overfitting ke dev set",
+              "Bias"
+            ],
+            "answer_index": 0,
+            "explanation": "Keduanya satu distribusi sehingga selisihnya menunjukkan penyetelan berlebih pada dev.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-07-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `uraikan(manusia, train, train_dev, dev, test)` yang mengembalikan dictionary dengan kunci `avoidable_bias` (`train - manusia`), `variance` (`train_dev - train`), `data_mismatch` (`dev - train_dev`), dan `overfit_dev` (`test - dev`).",
+          "note": "Semua dibulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def uraikan(manusia, train, train_dev, dev, test):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = uraikan(0.01, 0.02, 0.025, 0.10, 0.103)\nassert r == {\"avoidable_bias\": 0.01, \"variance\": 0.005, \"data_mismatch\": 0.075, \"overfit_dev\": 0.003}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "all(v == 0.0 for v in r2.values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r2 = uraikan(0.0, 0.0, 0.0, 0.0, 0.0)\nassert all(v == 0.0 for v in r2.values())"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "set(r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert set(r) == {\"avoidable_bias\", \"variance\", \"data_mismatch\", \"overfit_dev\"}"
+              }
+            ]
+          },
+          "hint": "Empat pengurangan antar angka berurutan lalu round(..., 4).",
+          "solution": "def uraikan(manusia, train, train_dev, dev, test):\n    return {\n        \"avoidable_bias\": round(train - manusia, 4),\n        \"variance\": round(train_dev - train, 4),\n        \"data_mismatch\": round(dev - train_dev, 4),\n        \"overfit_dev\": round(test - dev, 4),\n    }",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-07-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `komponen_dominan(manusia, train, train_dev, dev, test)` yang menguraikan error seperti latihan sebelumnya (dibulatkan 4 desimal) dan mengembalikan nama komponen dengan nilai terbesar.",
+          "note": "Jika seri pilih yang lebih awal menurut urutan `avoidable_bias`, `variance`, `data_mismatch`, `overfit_dev`.",
+          "filename": "solution.py",
+          "starter_code": "def komponen_dominan(manusia, train, train_dev, dev, test):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "komponen_dominan(0.01, 0.02, 0.025, 0.10, 0.103)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_dominan(0.01, 0.02, 0.025, 0.10, 0.103) == \"data_mismatch\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "komponen_dominan(0.0, 0.1, 0.12, 0.13, 0.13)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_dominan(0.0, 0.1, 0.12, 0.13, 0.13) == \"avoidable_bias\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "komponen_dominan(0.0, 0.01, 0.1, 0.11, 0.11)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_dominan(0.0, 0.01, 0.1, 0.11, 0.11) == \"variance\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "komponen_dominan(0.0, 0.05, 0.05, 0.05, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_dominan(0.0, 0.05, 0.05, 0.05, 0.05) == \"avoidable_bias\""
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "komponen_dominan(0.0, 0.0, 0.0, 0.0, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_dominan(0.0, 0.0, 0.0, 0.0, 0.05) == \"overfit_dev\""
+              }
+            ]
+          },
+          "hint": "Simpan nilai dalam list berurutan lalu pilih indeks maksimum pertama.",
+          "solution": "def komponen_dominan(manusia, train, train_dev, dev, test):\n    nama = [\"avoidable_bias\", \"variance\", \"data_mismatch\", \"overfit_dev\"]\n    nilai = [\n        round(train - manusia, 4),\n        round(train_dev - train, 4),\n        round(dev - train_dev, 4),\n        round(test - dev, 4),\n    ]\n    return nama[nilai.index(max(nilai))]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-07-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bagi_train_dev(n, n_td, seed)` yang mengembalikan tuple `(train_idx, td_idx)`.",
+          "note": "Buat `rng = np.random.default_rng(seed)`, `perm = rng.permutation(n)`, `td_idx = np.sort(perm[:n_td])`, `train_idx = np.sort(perm[n_td:])`.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef bagi_train_dev(n, n_td, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(a)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a, b = bagi_train_dev(100, 20, 0)\nassert len(a) == 80 and len(b) == 20"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "set(a).isdisjoint(set(b))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert set(a).isdisjoint(set(b))"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sorted(set(a) | set(b))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sorted(set(a) | set(b)) == list(range(100))"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "list(b)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a2, b2 = bagi_train_dev(100, 20, 0)\nassert list(b) == list(b2)"
+              }
+            ]
+          },
+          "hint": "Permutasi lalu potong. Training-dev diambil dari awal permutasi.",
+          "solution": "import numpy as np\n\ndef bagi_train_dev(n, n_td, seed):\n    rng = np.random.default_rng(seed)\n    perm = rng.permutation(n)\n    return np.sort(perm[n_td:]), np.sort(perm[:n_td])",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-07-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `skor_domain(Xa, Xb, seed)`.",
+          "note": "Gabungkan `X = vstack([Xa, Xb])` dan label domain `d = r_[zeros(len(Xa)), ones(len(Xb))]`. Pisahkan dengan `train_test_split(X, d, test_size=0.3, random_state=seed, stratify=d)`. Latih `LogisticRegression(max_iter=1000)` pada bagian training dan kembalikan akurasi pada bagian validasi sebagai float dibulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import train_test_split\n\ndef skor_domain(Xa, Xb, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "rng = np.random.default_rng(0)\nA = rng.normal(size=(600, 4))\nB = rng.normal(size=(600, 4))\nC = rng.normal(size=(600, 4)) + np.array([2, 0, 0, 0])\ns_sama = skor_domain(A, B, 0)\ns_beda = skor_domain(A, C, 0)\nassert 0.4 < s_sama < 0.62"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert s_beda > 0.8"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "skor_domain(A, C, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert skor_domain(A, C, 0) == s_beda"
+              }
+            ]
+          },
+          "hint": "Gunakan stratify=d agar proporsi domain seimbang di kedua bagian.",
+          "solution": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import train_test_split\n\ndef skor_domain(Xa, Xb, seed):\n    X = np.vstack([Xa, Xb])\n    d = np.r_[np.zeros(len(Xa)), np.ones(len(Xb))]\n    Xt, Xv, dt, dv = train_test_split(X, d, test_size=0.3, random_state=seed, stratify=d)\n    model = LogisticRegression(max_iter=1000).fit(Xt, dt)\n    return round(float(model.score(Xv, dv)), 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa fungsi training-dev set?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menggantikan test set",
+              "description": ""
+            },
+            {
+              "label": "Mengukur generalisasi dalam distribusi training yang sama",
+              "description": ""
+            },
+            {
+              "label": "Mengukur distribusi dev",
+              "description": ""
+            },
+            {
+              "label": "Memberi label",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Berasal dari distribusi training tetapi tidak dipakai melatih."
+        },
+        {
+          "q": "Training 2, training-dev 2,5, dev 10 (persen). Data mismatch?",
+          "code": null,
+          "options": [
+            {
+              "label": "0,5",
+              "description": ""
+            },
+            {
+              "label": "7,5",
+              "description": ""
+            },
+            {
+              "label": "8",
+              "description": ""
+            },
+            {
+              "label": "12,5",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Dev dikurangi training-dev sama dengan 7,5."
+        },
+        {
+          "q": "Test dikurangi dev mengukur?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bias",
+              "description": ""
+            },
+            {
+              "label": "Variance",
+              "description": ""
+            },
+            {
+              "label": "Overfitting ke dev set",
+              "description": ""
+            },
+            {
+              "label": "Mismatch",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": null,
+          "explanation": "Keduanya satu distribusi sehingga selisihnya menunjukkan penyetelan berlebih pada dev."
+        },
+        {
+          "q": "Classifier domain memberi akurasi 50 persen. Artinya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Distribusi sangat berbeda",
+              "description": ""
+            },
+            {
+              "label": "Distribusi sulit dibedakan, mirip",
+              "description": ""
+            },
+            {
+              "label": "Model rusak",
+              "description": ""
+            },
+            {
+              "label": "Label salah",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Akurasi sekitar tebakan menunjukkan dua himpunan mirip."
+        },
+        {
+          "q": "Tindakan awal terhadap data mismatch?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menambah layer",
+              "description": ""
+            },
+            {
+              "label": "Error analysis untuk memahami perbedaan lalu mendekatkan training ke target",
+              "description": ""
+            },
+            {
+              "label": "Ganti metrik",
+              "description": ""
+            },
+            {
+              "label": "Hapus dev",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Pahami dulu perbedaan, lalu buat training lebih mirip target."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membaca selisih training ke dev sebagai variance padahal distribusinya berbeda. Lebih baik: Tambah training-dev set untuk memisahkan variance dari data mismatch.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membaca selisih training ke dev sebagai variance padahal distribusinya berbeda.",
+          "fix": "Tambah training-dev set untuk memisahkan variance dari data mismatch."
+        },
+        {
+          "mistake": "Mengambil training-dev setelah training sehingga sebagian sudah dilihat model.",
+          "fix": "Sisihkan training-dev sebelum pelatihan dimulai."
+        },
+        {
+          "mistake": "Menambah data web untuk mengatasi data mismatch.",
+          "fix": "Mismatch dibantu dengan data yang lebih mirip target atau sintesis yang realistis."
+        }
+      ],
+      "summary": [
+        "Training-dev set memisahkan variance dari data mismatch.",
+        "Uraikan error menjadi avoidable bias, variance, data mismatch, dan overfitting dev.",
+        "Classifier domain mengukur kedekatan dua distribusi.",
+        "Atasi mismatch dengan memahami perbedaan lalu mendekatkan data training ke target."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 40 sampai 42 (Andrew Ng): generalisasi, training-dev, dan data mismatch"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Training-dev set dan data mismatch"
+          },
+          {
+            "type": "text",
+            "source": "Lima angka diuraikan menjadi empat komponen. Di sini data mismatch jauh dominan sehingga prioritas adalah mendekatkan data training ke target."
+          },
+          {
+            "type": "code",
+            "source": "def uraikan(manusia, train, train_dev, dev, test):\n    return {\n        \"avoidable_bias\": round(train - manusia, 4),\n        \"variance\": round(train_dev - train, 4),\n        \"data_mismatch\": round(dev - train_dev, 4),\n        \"overfit_dev\": round(test - dev, 4),\n    }\n\nprint(uraikan(0.01, 0.02, 0.025, 0.10, 0.103))"
+          },
+          {
+            "type": "text",
+            "source": "Training dan training-dev hampir sama sehingga variance kecil. Lonjakan di dev adalah data mismatch murni sekitar 17 poin. Tanpa training-dev kamu tidak bisa mengatakan ini."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef web(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6))\n    y = (X[:, 0] + 0.7 * X[:, 1] - 0.4 * X[:, 2] + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\ndef mobile(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6)) * 1.5 + np.array([1, 0, 0, 0, 0, 0])\n    y = (0.4 * X[:, 0] + 0.9 * X[:, 1] - 0.4 * X[:, 2] - 0.4 + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\nXw, yw = web(20000, 0)\nXd, yd = mobile(3000, 2)\nXtr, ytr = Xw[:15000], yw[:15000]\nXtd, ytd = Xw[15000:], yw[15000:]\nm = LogisticRegression().fit(Xtr, ytr)\nfor nama, X, y in [(\"training\", Xtr, ytr), (\"training-dev\", Xtd, ytd), (\"dev (ponsel)\", Xd, yd)]:\n    print(f\"{nama:13s}: {1 - m.score(X, y):.3f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Classifier domain pada dua sampel dari distribusi yang sama hanya menebak, jadi akurasi sekitar 50 persen. Pada web melawan ponsel akurasinya naik jelas di atas tebakan, sekitar 65 persen, tanda mismatch nyata walau fiturnya mirip."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef web(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6))\n    y = (X[:, 0] + 0.7 * X[:, 1] - 0.4 * X[:, 2] + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\ndef mobile(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 6)) * 1.5 + np.array([1, 0, 0, 0, 0, 0])\n    y = (0.4 * X[:, 0] + 0.9 * X[:, 1] - 0.4 * X[:, 2] - 0.4 + 0.3 * r.normal(size=n) > 0).astype(int)\n    return X, y\n\nfrom sklearn.model_selection import train_test_split\n\ndef skor_domain(Xa, Xb, seed):\n    X = np.vstack([Xa, Xb])\n    d = np.r_[np.zeros(len(Xa)), np.ones(len(Xb))]\n    Xt, Xv, dt, dv = train_test_split(X, d, test_size=0.3, random_state=seed, stratify=d)\n    return LogisticRegression(max_iter=1000).fit(Xt, dt).score(Xv, dv)\n\nXw1, _ = web(2000, 0)\nXw2, _ = web(2000, 1)\nXm, _ = mobile(2000, 2)\nprint(\"web vs web      :\", round(skor_domain(Xw1, Xw2, 0), 3))\nprint(\"web vs ponsel   :\", round(skor_domain(Xw1, Xm, 0), 3))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "D11-07-3",
+      "title": "Sintesis data buatan",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan manfaat dan risiko data sintesis",
+        "Membuat sinyal bising sintetis dengan rasio sinyal terhadap derau tertentu",
+        "Menunjukkan efek memakai kumpulan derau yang terlalu kecil",
+        "Memutuskan seberapa banyak sumber derau dan variasi yang dibutuhkan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Membuat data yang tidak kamu punya",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Membuat data yang tidak kamu punya\n\nMisalkan kamu membangun sistem pengenalan suara untuk di dalam mobil. Kamu punya banyak rekaman bersih yang diucapkan di ruang tenang, tetapi sangat sedikit rekaman di mobil yang melaju. Salah satu jalan adalah sintesis data: ambil rekaman bersih dan tambahkan rekaman derau mobil. Hasilnya terdengar seperti ucapan di mobil dan bisa dibuat dalam jumlah besar dengan biaya sangat rendah.\n\nIde ini ampuh bila berhasil. Ia mengubah data bersih yang melimpah menjadi data yang menyerupai target. Banyak sistem produksi memakai sintesis, dari suara hingga teks dan citra.\n\nNamun sintesis membawa jebakan yang perlu dikenali. Data sintetis hanyalah perkiraan dari data nyata. Jika perkiraannya mengabaikan sesuatu, model belajar dari dunia yang sedikit berbeda dari dunia sebenarnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa satu jam derau yang diulang pada 10.000 jam ucapan berisiko?",
+            "options": [
+              "Karena model bisa menghafal pola derau itu",
+              "Karena terlalu sedikit ucapan"
+            ],
+            "answer_index": 0,
+            "explanation": "Pola derau yang sama berulang ribuan kali bisa dihafal sehingga gagal pada derau baru.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Jebakan kumpulan derau kecil",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Jebakan kumpulan derau kecil\n\nPerhatikan skenario ini. Kamu punya 10.000 jam ucapan bersih tetapi hanya satu jam derau mobil. Kamu menempelkan satu jam derau itu berulang-ulang pada 10.000 jam ucapan. Manusia yang mendengar hasilnya merasa realistis, karena semua derau mobil terdengar mirip bagi telinga.\n\nTetapi model bisa menghafal potongan derau yang sama itu yang berulang ribuan kali. Ia belajar bahwa pola khusus derau tersebut tidak relevan dan, lebih buruk lagi, bisa menyesuaikan diri terhadap pola itu. Pada data nyata yang berderau dengan variasi lain, performanya turun. Ini overfitting terhadap sumber derau.\n\nPerbaikannya mudah diucapkan: butuh lebih banyak variasi derau. Jika kamu punya 1.000 jam derau berbeda, masalah ini jauh mereda. Ukuran yang penting bukan jumlah data sintetis total, melainkan keberagaman sumber komponen yang disintesis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh lain dan aturan praktis\n\nContoh lain: deteksi mobil pada citra dengan mensintesis mobil dari gim video. Kalau gim hanya memiliki dua puluh model mobil, sistem akan belajar mengenali dua puluh model itu. Manusia melihat gambar sintetis dan menganggap beragam, padahal dari sudut pandang model hanya ada dua puluh pola.\n\nBeberapa aturan praktis. Pertama, pastikan sumber yang kamu campurkan (derau, latar, objek) memiliki keragaman sebanding dengan dunia nyata. Kedua, jangan percaya telinga atau mata sebagai bukti kualitas sintesis; ukur lewat error dev pada data nyata. Ketiga, bandingkan beberapa komposisi: data sintetis penuh, campuran, dan tanpa sintetis. Keempat, jika akhirnya kamu bisa mengumpulkan data nyata, pakai sebagai dev dan test, sebab sintesis tidak boleh menjadi alat ukur.\n\nSatu hal terakhir: tentukan rasio sinyal terhadap derau yang realistis. Derau terlalu keras atau terlalu pelan menghasilkan distribusi yang tidak sesuai target."
+            }
+          ],
+          "quick_check": {
+            "question": "Yang paling menentukan kualitas sintesis menurut pembahasan?",
+            "options": [
+              "Jumlah total contoh",
+              "Keberagaman sumber komponen yang disintesis"
+            ],
+            "answer_index": 1,
+            "explanation": "Variasi derau atau objek lebih penting daripada jumlah contoh total.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mengukur dan mengontrol SNR",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengukur dan mengontrol SNR\n\nRasio sinyal terhadap derau (SNR) dalam desibel dihitung `10 * log10(daya_sinyal / daya_derau)`. Daya adalah rata-rata kuadrat. Untuk menyintesis dengan SNR tertentu, skalakan derau agar dayanya sama dengan daya sinyal dibagi `10 ** (snr / 10)`. Dengan begitu kamu bisa menghasilkan contoh pada berbagai tingkat kesulitan, dari SNR tinggi (mudah) sampai SNR rendah (sulit), sesuai kondisi sebenarnya.\n\nStrategi yang efektif adalah memvariasikan SNR dalam rentang realistis agar model tidak hanya melihat satu tingkat kesulitan. Perlakukan SNR seperti hyperparameter data: cobalah beberapa rentang, lalu ukur pada dev set nyata."
+            },
+            {
+              "type": "text",
+              "markdown": "## Daftar periksa sebelum memakai data sintetis\n\nSebelum mengandalkan sintesis, jawab empat pertanyaan. Apakah ada bukti dari dev nyata bahwa target punya kekhasan yang ingin ditiru, misalnya derau atau keburaman? Berapa sumber komponen berbeda yang tersedia, dan apakah jumlahnya sebanding dengan variasi dunia nyata? Apakah rentang parameter sintesis, seperti SNR atau tingkat kabur, mencakup kondisi nyata? Dan apakah kamu punya dev nyata untuk memastikan perbaikannya terukur?\n\nJika jawaban salah satunya tidak, tunda sintesis dan kumpulkan dulu sedikit data nyata dari target. Sepuluh contoh nyata yang dianalisis sering lebih informatif daripada sejuta contoh sintetis yang dibuat dengan asumsi keliru."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Perhatian",
+              "markdown": "Data sintetis boleh dipakai untuk training, tetapi jangan pernah untuk dev atau test. Jika dev ikut sintetis, kamu mengukur seberapa baik model menirukan generatormu, bukan dunia nyata."
+            },
+            {
+              "type": "code_example",
+              "filename": "bangun.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\nT = 64\nFREQ = [4, 9, 14]\n\ndef bangun(n, pool, seed, segar=False):\n    r = np.random.default_rng(seed)\n    kolam = r.normal(size=(pool, T)) * 0.5\n    X, y = [], []\n    for _ in range(n):\n        k = r.integers(0, 3)\n        t = np.arange(T)\n        s = np.sin(2 * np.pi * FREQ[k] * t / T + r.uniform(0, 6.28)) * r.uniform(0.3, 0.6)\n        bising = r.normal(size=T) * 0.5 if segar else kolam[r.integers(0, pool)]\n        X.append(np.abs(np.fft.rfft(s + bising)))\n        y.append(k)\n    return np.array(X), np.array(y)\n\nXd, yd = bangun(1000, 1, 99, segar=True)\nprint(\"pool derau  err_dev (derau segar)\")\nfor pool in [1, 5, 500]:\n    X, y = bangun(800, pool, 0)\n    m = RandomForestClassifier(60, random_state=0).fit(X, y)\n    print(f\"{pool:10d}  {1 - m.score(Xd, yd):.3f}\")",
+              "expected_output_note": "pool 1: sekitar 0.13\npool 5: sekitar 0.04\npool 500: sekitar 0.02",
+              "explanation": "Jumlah contoh sintetis tetap 800, hanya keberagaman derau yang berubah. Dengan satu potongan derau, model gagal pada derau baru. Dengan beberapa ratus potongan, galat turun besar."
+            },
+            {
+              "type": "code_example",
+              "filename": "tambah_derau.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef tambah_derau(sinyal, derau, snr_db):\n    p_s = np.mean(sinyal ** 2)\n    p_n = np.mean(derau ** 2)\n    skala = np.sqrt(p_s / (p_n * 10 ** (snr_db / 10)))\n    return sinyal + derau * skala\n\nrng = np.random.default_rng(0)\ns = np.sin(np.linspace(0, 20, 1000))\nn = rng.normal(size=1000)\nfor snr in [20, 10, 0]:\n    campur = tambah_derau(s, n, snr)\n    derau_nyata = campur - s\n    ukur = 10 * np.log10(np.mean(s ** 2) / np.mean(derau_nyata ** 2))\n    print(f\"target {snr:3d} dB, terukur {ukur:5.2f} dB\")",
+              "expected_output_note": "target 20 dB, terukur 20.00 dB\ntarget 10 dB, terukur 10.00 dB\ntarget 0 dB, terukur 0.00 dB",
+              "explanation": "Penskalaan derau mengatur SNR dengan tepat. Dengan memvariasikan SNR kamu mensimulasikan berbagai kondisi dari mudah ke sulit."
+            },
+            {
+              "type": "code_example",
+              "filename": "rasio_pakai_ulang.py",
+              "runnable": true,
+              "code": "def rasio_pakai_ulang(n_sampel, n_potongan_derau):\n    return round(n_sampel / n_potongan_derau, 2)\n\nprint(rasio_pakai_ulang(10000, 1))\nprint(rasio_pakai_ulang(10000, 1000))",
+              "expected_output_note": "10000.0\n10.0",
+              "explanation": "Rasio pemakaian ulang menunjukkan berapa kali rata-rata satu potongan derau muncul. Satu potongan dipakai 10.000 kali berisiko dihafal. Rasio 10 jauh lebih aman."
+            }
+          ],
+          "quick_check": {
+            "question": "SNR 10 dB berarti rasio daya sinyal dan derau?",
+            "options": [
+              "10",
+              "1"
+            ],
+            "answer_index": 0,
+            "explanation": "10 dB sama dengan rasio daya 10 kali.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-07-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `rasio_pakai_ulang(n_sampel, n_potongan)` yang mengembalikan `n_sampel / n_potongan` dibulatkan 2 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def rasio_pakai_ulang(n_sampel, n_potongan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rasio_pakai_ulang(10000, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rasio_pakai_ulang(10000, 1) == 10000.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rasio_pakai_ulang(10000, 1000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rasio_pakai_ulang(10000, 1000) == 10.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rasio_pakai_ulang(7, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rasio_pakai_ulang(7, 3) == 2.33"
+              }
+            ]
+          },
+          "hint": "Bagi lalu round(..., 2).",
+          "solution": "def rasio_pakai_ulang(n_sampel, n_potongan):\n    return round(n_sampel / n_potongan, 2)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-07-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tambah_derau(sinyal, derau, snr_db)` yang mengembalikan `sinyal + derau * skala` dengan `skala = sqrt(p_s / (p_n * 10 ** (snr_db / 10)))`, `p_s = mean(sinyal ** 2)`, `p_n = mean(derau ** 2)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef tambah_derau(sinyal, derau, snr_db):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tambah_derau(s, n, snr)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "rng = np.random.default_rng(0)\ns = np.sin(np.linspace(0, 20, 1000))\nn = rng.normal(size=1000)\nfor snr in [20, 10, 0, -5]:\n    hasil = tambah_derau(s, n, snr)\n    d = hasil - s\n    ukur = 10 * np.log10(np.mean(s ** 2) / np.mean(d ** 2))\n    assert abs(ukur - snr) < 0.01"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tambah_derau(s, n, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_derau(s, n, 10).shape == s.shape"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "np.allclose(tambah_derau(s, n, 0) - s, n * np...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(tambah_derau(s, n, 0) - s, n * np.sqrt(np.mean(s ** 2) / np.mean(n ** 2)))"
+              }
+            ]
+          },
+          "hint": "Hitung daya sinyal dan derau lebih dulu, lalu skalakan derau.",
+          "solution": "import numpy as np\n\ndef tambah_derau(sinyal, derau, snr_db):\n    p_s = np.mean(sinyal ** 2)\n    p_n = np.mean(derau ** 2)\n    skala = np.sqrt(p_s / (p_n * 10 ** (snr_db / 10)))\n    return sinyal + derau * skala",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-07-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `buat_sintetis(n, pool, seed)` yang mengembalikan `(X, y)`.",
+          "note": "Pakai `r = np.random.default_rng(seed)`. Bangun `kolam = r.normal(size=(pool, 64)) * 0.5`. Untuk tiap contoh: `k = r.integers(0, 3)`, `s = np.sin(2*np.pi*FREQ[k]*t/64 + r.uniform(0, 6.28)) * r.uniform(0.3, 0.6)` dengan `t = np.arange(64)` dan `FREQ = [4, 9, 14]`, lalu `bising = kolam[r.integers(0, pool)]`, fitur `np.abs(np.fft.rfft(s + bising))`. `X` array bentuk (n, 33) dan `y` array label.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\nFREQ = [4, 9, 14]\n\ndef buat_sintetis(n, pool, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "X, y = buat_sintetis(50, 3, 0)\nassert X.shape == (50, 33) and y.shape == (50,)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "set(y)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert set(y) <= {0, 1, 2}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "(X >= 0).all()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert (X >= 0).all()"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "np.allclose(X, X2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "X2, y2 = buat_sintetis(50, 3, 0)\nassert np.allclose(X, X2) and list(y) == list(y2)"
+              }
+            ]
+          },
+          "hint": "Urutan tarikan acak dalam loop: k, fase, amplitudo, lalu indeks derau.",
+          "solution": "import numpy as np\n\nFREQ = [4, 9, 14]\n\ndef buat_sintetis(n, pool, seed):\n    r = np.random.default_rng(seed)\n    kolam = r.normal(size=(pool, 64)) * 0.5\n    t = np.arange(64)\n    X, y = [], []\n    for _ in range(n):\n        k = r.integers(0, 3)\n        s = np.sin(2 * np.pi * FREQ[k] * t / 64 + r.uniform(0, 6.28)) * r.uniform(0.3, 0.6)\n        bising = kolam[r.integers(0, pool)]\n        X.append(np.abs(np.fft.rfft(s + bising)))\n        y.append(k)\n    return np.array(X), np.array(y)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-07-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `error_vs_pool(pools, n, seed)` yang untuk tiap `pool` membuat data latih lewat `buat_sintetis(n, pool, seed)` (sudah disediakan), melatih `RandomForestClassifier(60, random_state=0)`, dan mengukur error pada dev segar `dev` yang juga disediakan.",
+          "note": "Kembalikan list error dibulatkan 3 desimal.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\nFREQ = [4, 9, 14]\n\ndef _bangun(n, pool, seed, segar=False):\n    r = np.random.default_rng(seed)\n    kolam = r.normal(size=(pool, 64)) * 0.5\n    t = np.arange(64)\n    X, y = [], []\n    for _ in range(n):\n        k = r.integers(0, 3)\n        s = np.sin(2 * np.pi * FREQ[k] * t / 64 + r.uniform(0, 6.28)) * r.uniform(0.3, 0.6)\n        bising = r.normal(size=64) * 0.5 if segar else kolam[r.integers(0, pool)]\n        X.append(np.abs(np.fft.rfft(s + bising)))\n        y.append(k)\n    return np.array(X), np.array(y)\n\ndef buat_sintetis(n, pool, seed):\n    return _bangun(n, pool, seed)\n\ndef dev():\n    return _bangun(1000, 1, 99, segar=True)\n\ndef error_vs_pool(pools, n, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = error_vs_pool([1, 500], 800, 0)\nassert len(r) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[0] > r[1] + 0.04"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "all(0 <= v < 1 for v in r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert all(0 <= v < 1 for v in r)"
+              }
+            ]
+          },
+          "hint": "Panggil dev() sekali di awal. Latih satu forest per pool.",
+          "solution": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\nFREQ = [4, 9, 14]\n\ndef _bangun(n, pool, seed, segar=False):\n    r = np.random.default_rng(seed)\n    kolam = r.normal(size=(pool, 64)) * 0.5\n    t = np.arange(64)\n    X, y = [], []\n    for _ in range(n):\n        k = r.integers(0, 3)\n        s = np.sin(2 * np.pi * FREQ[k] * t / 64 + r.uniform(0, 6.28)) * r.uniform(0.3, 0.6)\n        bising = r.normal(size=64) * 0.5 if segar else kolam[r.integers(0, pool)]\n        X.append(np.abs(np.fft.rfft(s + bising)))\n        y.append(k)\n    return np.array(X), np.array(y)\n\ndef buat_sintetis(n, pool, seed):\n    return _bangun(n, pool, seed)\n\ndef dev():\n    return _bangun(1000, 1, 99, segar=True)\n\ndef error_vs_pool(pools, n, seed):\n    Xd, yd = dev()\n    hasil = []\n    for pool in pools:\n        X, y = buat_sintetis(n, pool, seed)\n        m = RandomForestClassifier(60, random_state=0).fit(X, y)\n        hasil.append(round(1 - m.score(Xd, yd), 3))\n    return hasil",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Mengapa satu jam derau yang diulang pada 10.000 jam ucapan berisiko?",
+          "code": null,
+          "options": [
+            {
+              "label": "Karena terlalu sedikit ucapan",
+              "description": ""
+            },
+            {
+              "label": "Karena model bisa menghafal pola derau itu",
+              "description": ""
+            },
+            {
+              "label": "Karena SNR berubah",
+              "description": ""
+            },
+            {
+              "label": "Karena dev bocor",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Pola derau yang sama berulang ribuan kali bisa dihafal sehingga gagal pada derau baru."
+        },
+        {
+          "q": "Yang paling menentukan kualitas sintesis menurut pembahasan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Jumlah total contoh",
+              "description": ""
+            },
+            {
+              "label": "Keberagaman sumber komponen yang disintesis",
+              "description": ""
+            },
+            {
+              "label": "Panjang rekaman",
+              "description": ""
+            },
+            {
+              "label": "Ukuran model",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Variasi derau atau objek lebih penting daripada jumlah contoh total."
+        },
+        {
+          "q": "SNR 10 dB berarti rasio daya sinyal dan derau?",
+          "code": null,
+          "options": [
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "10",
+              "description": ""
+            },
+            {
+              "label": "100",
+              "description": ""
+            },
+            {
+              "label": "0,1",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "10 dB sama dengan rasio daya 10 kali."
+        },
+        {
+          "q": "Mengapa tidak boleh memakai data sintetis untuk dev?",
+          "code": null,
+          "options": [
+            {
+              "label": "Terlalu mahal",
+              "description": ""
+            },
+            {
+              "label": "Kamu akan mengukur kemampuan menirukan generator, bukan dunia nyata",
+              "description": ""
+            },
+            {
+              "label": "Menaikkan bias",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada alasan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Evaluasi harus mencerminkan target nyata."
+        },
+        {
+          "q": "Cara menilai apakah sintesis membantu?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mendengarkan hasilnya",
+              "description": ""
+            },
+            {
+              "label": "Membandingkan error dev nyata dengan dan tanpa sintesis",
+              "description": ""
+            },
+            {
+              "label": "Melihat jumlah data",
+              "description": ""
+            },
+            {
+              "label": "Bertanya ke rekan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Eksperimen terkontrol pada dev nyata adalah ukuran yang sah."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menganggap data sintetis berkualitas karena terdengar atau terlihat realistis. Lebih baik: Ukur kualitas lewat error dev pada data nyata.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menganggap data sintetis berkualitas karena terdengar atau terlihat realistis.",
+          "fix": "Ukur kualitas lewat error dev pada data nyata."
+        },
+        {
+          "mistake": "Memakai satu sumber derau atau objek berulang untuk seluruh data sintetis.",
+          "fix": "Perbanyak keberagaman sumber agar model tidak menghafal."
+        },
+        {
+          "mistake": "Memakai data sintetis sebagai dev atau test.",
+          "fix": "Dev dan test harus dari data nyata target."
+        }
+      ],
+      "summary": [
+        "Sintesis membuat data target dari data yang melimpah, dengan risiko menghafal sumber yang terbatas.",
+        "Keberagaman sumber komponen lebih penting daripada jumlah total.",
+        "SNR dikontrol dengan menskalakan derau dan sebaiknya divariasikan.",
+        "Dev dan test tetap data nyata, dan efek sintesis diukur pada keduanya."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 43 (Andrew Ng): sintesis data buatan"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Sintesis data buatan"
+          },
+          {
+            "type": "text",
+            "source": "Jumlah contoh sintetis tetap 800, hanya keberagaman derau yang berubah. Dengan satu potongan derau, model gagal pada derau baru. Dengan beberapa ratus potongan, galat turun besar."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\nT = 64\nFREQ = [4, 9, 14]\n\ndef bangun(n, pool, seed, segar=False):\n    r = np.random.default_rng(seed)\n    kolam = r.normal(size=(pool, T)) * 0.5\n    X, y = [], []\n    for _ in range(n):\n        k = r.integers(0, 3)\n        t = np.arange(T)\n        s = np.sin(2 * np.pi * FREQ[k] * t / T + r.uniform(0, 6.28)) * r.uniform(0.3, 0.6)\n        bising = r.normal(size=T) * 0.5 if segar else kolam[r.integers(0, pool)]\n        X.append(np.abs(np.fft.rfft(s + bising)))\n        y.append(k)\n    return np.array(X), np.array(y)\n\nXd, yd = bangun(1000, 1, 99, segar=True)\nprint(\"pool derau  err_dev (derau segar)\")\nfor pool in [1, 5, 500]:\n    X, y = bangun(800, pool, 0)\n    m = RandomForestClassifier(60, random_state=0).fit(X, y)\n    print(f\"{pool:10d}  {1 - m.score(Xd, yd):.3f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Penskalaan derau mengatur SNR dengan tepat. Dengan memvariasikan SNR kamu mensimulasikan berbagai kondisi dari mudah ke sulit."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef tambah_derau(sinyal, derau, snr_db):\n    p_s = np.mean(sinyal ** 2)\n    p_n = np.mean(derau ** 2)\n    skala = np.sqrt(p_s / (p_n * 10 ** (snr_db / 10)))\n    return sinyal + derau * skala\n\nrng = np.random.default_rng(0)\ns = np.sin(np.linspace(0, 20, 1000))\nn = rng.normal(size=1000)\nfor snr in [20, 10, 0]:\n    campur = tambah_derau(s, n, snr)\n    derau_nyata = campur - s\n    ukur = 10 * np.log10(np.mean(s ** 2) / np.mean(derau_nyata ** 2))\n    print(f\"target {snr:3d} dB, terukur {ukur:5.2f} dB\")"
+          },
+          {
+            "type": "text",
+            "source": "Rasio pemakaian ulang menunjukkan berapa kali rata-rata satu potongan derau muncul. Satu potongan dipakai 10.000 kali berisiko dihafal. Rasio 10 jauh lebih aman."
+          },
+          {
+            "type": "code",
+            "source": "def rasio_pakai_ulang(n_sampel, n_potongan_derau):\n    return round(n_sampel / n_potongan_derau, 2)\n\nprint(rasio_pakai_ulang(10000, 1))\nprint(rasio_pakai_ulang(10000, 1000))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": true,
+    "kind": "ai_slides",
+    "reason": "Lima angka error dan alur training-dev set lebih mudah dipahami lewat diagram bertahap.",
+    "brief": [
+      "Slide 1: tiga himpunan training, training-dev, dev dengan panah sumber distribusi",
+      "Slide 2: tangga lima angka error dan label empat selisih",
+      "Slide 3: grafik error terhadap ukuran kolam derau sintetis",
+      "Slide 4: diagram alur memilih langkah mengatasi data mismatch"
+    ]
+  },
+  "references": [
+    {
+      "book": "Machine Learning Yearning (Andrew Ng)",
+      "chapters": "bab 36 sampai 43"
+    }
+  ]
+}

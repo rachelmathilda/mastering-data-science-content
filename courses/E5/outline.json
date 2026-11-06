@@ -1,0 +1,105 @@
+{
+  "id": "E5",
+  "title": "Dasar Reinforcement Learning",
+  "title_short": "RL Dasar",
+  "icon": "target",
+  "track": "E",
+  "track_label": "Deep Learning",
+  "track_name": "Deep Learning, Graph, dan Framework",
+  "level": "Lanjutan",
+  "module_count": 7,
+  "total_minutes": 735,
+  "exercise_count": 84,
+  "prerequisites": [
+    "E4"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "E5",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Dasar Reinforcement Learning",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-E5"
+  },
+  "sources": [
+    {
+      "code": "AGI",
+      "title": "Theoretical Foundations of Artificial General Intelligence",
+      "author": "Pei Wang dan Ben Goertzel (editor)",
+      "chapters": "bab 6"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Agen dan lingkungan",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Multi-armed bandit",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Markov decision process",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Value function",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Q-learning",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Eksplorasi dan eksploitasi",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Dari tabular ke deep RL",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "id": "D11",
+  "title": "Strategi ML dan Analisis Error",
+  "title_short": "Strategi ML",
+  "icon": "compass",
+  "track": "D",
+  "track_label": "Machine Learning",
+  "track_name": "Machine Learning",
+  "level": "Menengah",
+  "module_count": 8,
+  "total_minutes": 845,
+  "exercise_count": 96,
+  "prerequisites": [
+    "D10"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "D11",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Strategi ML dan Analisis Error",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-D11"
+  },
+  "sources": [
+    {
+      "code": "MLY",
+      "title": "Machine Learning Yearning",
+      "author": "Andrew Ng",
+      "chapters": "bab 1 sampai 58"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Mengapa strategi ML penting",
+      "file": "m01.json",
+      "status": "ready",
+      "estimated_minutes": 95,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": {
+        "lesson_id": "D11-01-1",
+        "exercise_id": "D11-01-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def hari_sampai(urutan):\n    ..."
+      }
+    },
+    {
+      "module_no": 2,
+      "title": "Dev set, test set, dan metrik tunggal",
+      "file": "m02.json",
+      "status": "ready",
+      "estimated_minutes": 120,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": {
+        "lesson_id": "D11-02-1",
+        "exercise_id": "D11-02-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def diagnosis_celah(acc_dev, acc_test, sama_distribusi, batas=0.03):\n    ..."
+      }
+    },
+    {
+      "module_no": 3,
+      "title": "Sistem pertama dan error analysis dasar",
+      "file": "m03.json",
+      "status": "ready",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": {
+        "lesson_id": "D11-03-1",
+        "exercise_id": "D11-03-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def ablasi(X_tr, y_tr, X_dev, y_dev, grup):\n    n = X_tr.shape[1]\n    penuh = LogisticRegression(max_iter=1000).fit(X_tr, y_tr).score(X_dev, y_dev)"
+      }
+    },
+    {
+      "module_no": 4,
+      "title": "Label salah, Eyeball dan Blackbox dev set",
+      "file": "m04.json",
+      "status": "ready",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": {
+        "lesson_id": "D11-04-1",
+        "exercise_id": "D11-04-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def koreksi_hanya_salah(n, e, eta, seed):\n    ..."
+      }
+    },
+    {
+      "module_no": 5,
+      "title": "Bias dan variance",
+      "file": "m05.json",
+      "status": "ready",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": {
+        "lesson_id": "D11-05-1",
+        "exercise_id": "D11-05-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def _data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)"
+      }
+    },
+    {
+      "module_no": 6,
+      "title": "Learning curve dan performa manusia",
+      "file": "m06.json",
+      "status": "ready",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": {
+        "lesson_id": "D11-06-1",
+        "exercise_id": "D11-06-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def ukuran_perkiraan(ukuran, err, target):\n    ..."
+      }
+    },
+    {
+      "module_no": 7,
+      "title": "Distribusi data yang berbeda",
+      "file": "m07.json",
+      "status": "ready",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": {
+        "lesson_id": "D11-07-1",
+        "exercise_id": "D11-07-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def bandingkan_bobot(Xw, yw, Xm, ym, Xd, yd, bobot_list):\n    ..."
+      }
+    },
+    {
+      "module_no": 8,
+      "title": "Pipeline, end-to-end, dan atribusi error",
+      "file": "m08.json",
+      "status": "ready",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": {
+        "lesson_id": "D11-08-1",
+        "exercise_id": "D11-08-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def skor_urutan(u, b, s):\n    return sum(u[x] for x in s) + sum(b[s[i - 1]][s[i]] for i in range(1, len(s)))"
+      }
+    }
+  ]
+}

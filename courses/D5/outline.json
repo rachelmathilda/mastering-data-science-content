@@ -1,0 +1,78 @@
+{
+  "id": "D5",
+  "title": "Data Tidak Seimbang dan Metrik",
+  "title_short": "Data Tak Seimbang",
+  "icon": "scale",
+  "track": "D",
+  "track_label": "Machine Learning",
+  "track_name": "Machine Learning",
+  "level": "Menengah",
+  "module_count": 5,
+  "total_minutes": 525,
+  "exercise_count": 60,
+  "prerequisites": [
+    "D4"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "D5",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Data Tidak Seimbang dan Metrik",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-D5"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Masalah ketimpangan kelas",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Precision, recall, dan F-score",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Threshold dan kurva",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Resampling",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Cost-sensitive learning",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

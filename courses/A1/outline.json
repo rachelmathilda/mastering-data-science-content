@@ -1,0 +1,111 @@
+{
+  "id": "A1",
+  "title": "Python untuk Data Science",
+  "title_short": "Python Dasar",
+  "icon": "terminal",
+  "track": "A",
+  "track_label": "Fondasi",
+  "track_name": "Fondasi",
+  "level": "Pemula",
+  "module_count": 8,
+  "total_minutes": 840,
+  "exercise_count": 96,
+  "prerequisites": [],
+  "lock_policy": "recommended",
+  "course_id": "A1",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Python untuk Data Science",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-A1"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Variabel, tipe data, dan operator",
+      "file": "m01.json",
+      "status": "ready",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": {
+        "lesson_id": "A1-01-1",
+        "exercise_id": "A1-01-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def valid_nama(nama):\n    ..."
+      }
+    },
+    {
+      "module_no": 2,
+      "title": "Kontrol alur: kondisi dan perulangan",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "List, tuple, dictionary, dan set",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Fungsi, argumen, dan lambda",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Comprehension dan generator",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "String, format, dan regex dasar",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "File I/O, CSV, dan JSON",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 8,
+      "title": "Error handling, modul, dan gaya kode",
+      "file": "m08.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

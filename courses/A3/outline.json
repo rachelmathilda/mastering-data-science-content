@@ -1,0 +1,88 @@
+{
+  "id": "A3",
+  "title": "Kalkulus dan Optimasi untuk ML",
+  "title_short": "Kalkulus & Optimasi",
+  "icon": "function",
+  "track": "A",
+  "track_label": "Fondasi",
+  "track_name": "Fondasi",
+  "level": "Pemula",
+  "module_count": 6,
+  "total_minutes": 630,
+  "exercise_count": 72,
+  "prerequisites": [
+    "A2"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "A3",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Kalkulus dan Optimasi untuk ML",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-A3"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Fungsi, limit, dan kontinuitas",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Turunan dan aturan dasarnya",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Turunan parsial dan gradien",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Chain rule dan turunan komposisi",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Gradient descent dari nol",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Momentum, learning rate, dan optimizer",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

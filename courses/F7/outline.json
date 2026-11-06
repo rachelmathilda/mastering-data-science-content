@@ -1,0 +1,105 @@
+{
+  "id": "F7",
+  "title": "Pemrosesan Batch dan Stream",
+  "title_short": "Batch & Stream",
+  "icon": "arrow",
+  "track": "F",
+  "track_label": "Data Engineering",
+  "track_name": "Data Engineering",
+  "level": "Lanjutan",
+  "module_count": 7,
+  "total_minutes": 735,
+  "exercise_count": 84,
+  "prerequisites": [
+    "F6"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "F7",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Pemrosesan Batch dan Stream",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-F7"
+  },
+  "sources": [
+    {
+      "code": "DDIA",
+      "title": "Designing Data-Intensive Applications",
+      "author": "Martin Kleppmann",
+      "chapters": "bab 10 sampai 11"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Pemrosesan batch dengan alat Unix",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "MapReduce",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Join pada batch",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Message broker",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Log dan change data capture",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Windowing dan waktu",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Toleransi kesalahan",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

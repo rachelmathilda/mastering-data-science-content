@@ -1,0 +1,1531 @@
+{
+  "schema_version": 2,
+  "course_id": "D11",
+  "module_no": 2,
+  "title": "Dev set, test set, dan metrik tunggal",
+  "estimated_minutes": 120,
+  "learning_outcomes": [
+    "Menentukan dev dan test set dari distribusi yang sama dan mencerminkan data masa depan",
+    "Memilih ukuran dev dan test set berdasarkan perbedaan terkecil yang ingin dideteksi",
+    "Menetapkan satu metrik optimizing dengan batasan satisficing dan tahu kapan mengubahnya"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "D11-02-1",
+    "exercise_id": "D11-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def diagnosis_celah(acc_dev, acc_test, sama_distribusi, batas=0.03):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "D11-02-1",
+      "title": "Training, dev, dan test set serta distribusinya",
+      "estimated_minutes": 40,
+      "read_minutes": 6,
+      "objectives": [
+        "Mendefinisikan training, dev, dan test set beserta peran masing-masing",
+        "Memilih dev dan test set yang mencerminkan data masa depan, bukan sekadar data yang tersedia",
+        "Menjelaskan mengapa dev dan test harus berasal dari distribusi yang sama",
+        "Membagi data per segmen sehingga dev dan test seimbang"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Cerita: detektor kucing yang bagus di lab tetapi buruk di aplikasi",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Cerita: detektor kucing yang bagus di lab tetapi buruk di aplikasi\n\nKamu menjalankan aplikasi ponsel tempat pengguna mengunggah berbagai gambar, dan kamu ingin otomatis menemukan foto kucing. Tim mengunduh banyak gambar kucing (contoh positif) dan bukan kucing (contoh negatif) dari berbagai situs web. Dataset dibagi 70 persen untuk training dan 30 persen untuk test. Detektor bekerja bagus di keduanya.\n\nBegitu dipasang di aplikasi, performanya buruk sekali. Apa yang terjadi? Ternyata foto yang diunggah pengguna terlihat berbeda dari foto situs web. Foto ponsel resolusinya lebih rendah, lebih buram, dan pencahayaannya lebih buruk. Karena training dan test sama-sama dibuat dari gambar web, algoritma tidak pernah dilatih maupun diuji pada distribusi yang benar-benar penting, yaitu foto ponsel.\n\nSebelum era big data, aturan umumnya adalah membagi acak 70 persen dan 30 persen. Cara itu masih bisa bekerja, tetapi menjadi ide buruk pada semakin banyak aplikasi, terutama ketika distribusi training (gambar web) berbeda dari distribusi yang akhirnya dipedulikan (gambar ponsel)."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa tujuan utama dev dan test set?",
+            "options": [
+              "Mengarahkan tim ke perubahan terpenting pada sistem",
+              "Menambah jumlah data"
+            ],
+            "answer_index": 0,
+            "explanation": "Dev dan test set dipakai untuk membuat keputusan pengembangan yang tepat.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tiga set dan tugas masing-masing",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tiga set dan tugas masing-masing\n\nDefinisi yang dipakai di seluruh course:\n\n- **Training set**: tempat kamu menjalankan algoritma pembelajaran.\n- **Dev set** (development set): dipakai menyetel parameter, memilih fitur, dan membuat keputusan lain tentang algoritma. Kadang disebut hold-out cross validation set.\n- **Test set**: dipakai mengevaluasi performa algoritma, tetapi tidak untuk memutuskan algoritma atau parameter mana yang dipakai.\n\nSetelah dev set dan test set ditentukan, tim akan mencoba banyak ide, misalnya parameter yang berbeda, untuk melihat mana yang terbaik. Dev dan test set memungkinkan tim melihat dengan cepat seberapa baik algoritma bekerja.\n\nDengan kata lain, **tujuan dev dan test set adalah mengarahkan tim ke perubahan paling penting pada sistem machine learning.** Itulah ukuran keberhasilan sebuah dev set: apakah ia menunjuk ke arah yang benar. Karena itu pemilihannya adalah keputusan strategis, bukan sekadar urusan teknis pemisahan data."
+            }
+          ],
+          "quick_check": {
+            "question": "Aplikasi belum diluncurkan dan belum punya pengguna. Apa langkah yang disarankan?",
+            "options": [
+              "Tidak membuat dev set",
+              "Mendekati data masa depan, misalnya minta teman memotret dengan ponsel"
+            ],
+            "answer_index": 1,
+            "explanation": "Pendekatan data masa depan lebih baik daripada mengandalkan data yang kebetulan tersedia.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Pilih dev dan test set yang mencerminkan data masa depan",
+          "read_minutes": 4,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pilih dev dan test set yang mencerminkan data masa depan\n\nPrinsip pertama: pilih dev dan test set yang mencerminkan data yang kamu harapkan diterima di masa depan dan ingin kamu kuasai. Test set tidak boleh hanya menjadi 30 persen dari data yang kebetulan tersedia, terutama bila kamu menduga data masa depan berbeda sifatnya dari data training.\n\nBagaimana bila aplikasi belum diluncurkan dan belum ada pengguna? Kamu tetap bisa mendekati. Minta teman memotret kucing dengan ponsel lalu mengirimkannya. Setelah peluncuran, perbarui dev dan test dengan data pengguna nyata. Jika benar-benar tidak ada cara mendekati data masa depan, kamu bisa mulai dengan gambar web, tetapi sadari risikonya: sistem mungkin tidak menggeneralisasi dengan baik.\n\nDibutuhkan penilaian untuk memutuskan seberapa besar investasi pada dev dan test set yang bagus. Tetapi jangan pernah berasumsi bahwa distribusi training sama dengan distribusi test. Usahakan memilih contoh test yang mencerminkan apa yang akhirnya ingin kamu kuasai, bukan data apa pun yang kebetulan kamu punya untuk training."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dev dan test harus berasal dari distribusi yang sama\n\nMisalkan data aplikasi kucingmu terbagi menjadi empat wilayah pasar terbesar: (i) AS, (ii) Tiongkok, (iii) India, dan (iv) lainnya. Untuk membuat dev dan test set, kamu menaruh AS dan India di dev, sedangkan Tiongkok dan lainnya di test. Tampaknya sah, bukan?\n\nTidak. Begitu dev dan test ditentukan, tim akan fokus memperbaiki performa dev. Dev set harus mencerminkan tugas yang paling ingin kamu tingkatkan: bagus di keempat wilayah, bukan hanya dua. Masalah kedua: ada kemungkinan tim membangun sesuatu yang bagus di dev tetapi buruk di test. Ini menyebabkan frustrasi dan usaha yang terbuang.\n\nJika dev dan test berasal dari distribusi yang sama, diagnosisnya jelas: kamu overfit ke dev set, dan obatnya adalah menambah data dev. Tetapi jika distribusinya berbeda, ada beberapa kemungkinan: (1) overfit ke dev, (2) test lebih sulit dari dev sehingga algoritma sudah sebaik yang bisa diharapkan, atau (3) test tidak lebih sulit, hanya berbeda, sehingga banyak usaha pada dev terbuang. Tiga kemungkinan ini membuat prioritas sulit ditentukan.\n\nPada benchmark pihak ketiga, pembuatnya mungkin menetapkan dev dan test dari distribusi berbeda. Keberuntungan akan lebih berpengaruh daripada keterampilan. Mengembangkan algoritma yang dilatih pada satu distribusi dan menggeneralisasi ke distribusi lain adalah topik riset penting. Tetapi jika tujuanmu memajukan aplikasi tertentu, pilih dev dan test dari distribusi yang sama agar tim lebih efisien."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Perhatian",
+              "markdown": "Jangan mengambil satu wilayah, satu bulan, atau satu sumber penuh sebagai dev dan sumber lain sebagai test. Acak dulu dalam setiap segmen yang penting, lalu bagi. Dengan begitu dev dan test sama-sama mencerminkan campuran data yang akan kamu hadapi."
+            },
+            {
+              "type": "code_example",
+              "filename": "sampel.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nW_TRUE = np.array([1.0, -1.0, 0.5, 0.8, -0.6])\n\ndef sampel(m, noise, seed):\n    rng = np.random.default_rng(seed)\n    z = rng.normal(size=(m, 5))\n    y = (z @ W_TRUE > 0).astype(int)\n    x = z + noise * rng.normal(size=(m, 5))\n    return x, y\n\nfrom sklearn.linear_model import LogisticRegression\n\nX_web, y_web = sampel(4000, 0.3, 1)\nX_web_test, y_web_test = sampel(2000, 0.3, 2)\nX_hp, y_hp = sampel(2000, 2.0, 3)\n\nmodel = LogisticRegression(max_iter=1000).fit(X_web, y_web)\nprint(\"akurasi pada test web   :\", round(model.score(X_web_test, y_web_test), 3))\nprint(\"akurasi pada foto ponsel:\", round(model.score(X_hp, y_hp), 3))",
+              "expected_output_note": "akurasi pada test web sekitar 0.90\nakurasi pada foto ponsel sekitar 0.65",
+              "explanation": "Data web dan data ponsel punya label yang ditentukan oleh variabel laten yang sama, tetapi fitur ponsel jauh lebih berisik. Model dilatih hanya dari data web, jadi test web terlihat memuaskan sementara performa pada ponsel jauh lebih rendah. Inilah persis kegagalan cerita kucing: test set tidak mencerminkan distribusi yang penting."
+            },
+            {
+              "type": "code_example",
+              "filename": "sampel.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\nW_TRUE = np.array([1.0, -1.0, 0.5, 0.8, -0.6])\nNOISE = {\"US\": 0.3, \"India\": 0.8, \"Other\": 1.2, \"China\": 2.0}\n\ndef sampel(m, noise, seed):\n    rng = np.random.default_rng(seed)\n    z = rng.normal(size=(m, 5))\n    y = (z @ W_TRUE > 0).astype(int)\n    return z + noise * rng.normal(size=(m, 5)), y\n\nX_tr = np.vstack([sampel(1000, NOISE[r], i)[0] for i, r in enumerate(NOISE)])\ny_tr = np.concatenate([sampel(1000, NOISE[r], i)[1] for i, r in enumerate(NOISE)])\nmodel = LogisticRegression(max_iter=1000).fit(X_tr, y_tr)\n\nev = {r: sampel(500, NOISE[r], 10 + i) for i, r in enumerate(NOISE)}\nacc = lambda rs: np.mean([model.score(*ev[r]) for r in rs])\nprint(\"skema wilayah: dev(US,India)=%.3f  test(China,Other)=%.3f\" % (acc([\"US\", \"India\"]), acc([\"China\", \"Other\"])))\n\nXp = np.vstack([ev[r][0] for r in ev])\nyp = np.concatenate([ev[r][1] for r in ev])\nidx = np.random.default_rng(0).permutation(len(Xp))\ndev, te = idx[:1000], idx[1000:]\nprint(\"skema acak  : dev=%.3f  test=%.3f\" % (model.score(Xp[dev], yp[dev]), model.score(Xp[te], yp[te])))",
+              "expected_output_note": "skema wilayah: dev tinggi, test jauh lebih rendah (selisih besar)\nskema acak: dev dan test hampir sama",
+              "explanation": "Dengan dev dari wilayah berderau rendah dan test dari wilayah berderau tinggi, angka dev menipu dan tim tidak bisa tahu apakah gap itu karena overfit atau karena test memang lebih sulit. Dengan pengacakan lintas wilayah, dev dan test hampir identik, dan gap yang tersisa bisa langsung ditafsirkan sebagai overfit."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nregion = np.array([\"US\"] * 40 + [\"China\"] * 31 + [\"India\"] * 20 + [\"Other\"] * 9)\nrng = np.random.default_rng(0)\ndev, te = [], []\nfor r in sorted(set(region)):\n    idx = rng.permutation(np.where(region == r)[0])\n    setengah = len(idx) // 2\n    dev.extend(idx[:setengah])\n    te.extend(idx[setengah:])\n\nfor r in sorted(set(region)):\n    print(r, \"dev:\", int(np.sum(region[dev] == r)), \"test:\", int(np.sum(region[te] == r)))",
+              "expected_output_note": "China dev: 15 test: 16\nIndia dev: 10 test: 10\nOther dev: 4 test: 5\nUS dev: 20 test: 20",
+              "explanation": "Setiap wilayah diacak sendiri lalu dibagi dua. Hasilnya setiap wilayah hadir di dev dan test dengan proporsi yang hampir sama. Teknik ini disebut stratifikasi, dan ia menjaga dev serta test tetap berasal dari distribusi yang sama."
+            }
+          ],
+          "quick_check": {
+            "question": "Dev dan test dari distribusi sama tetapi performa dev jauh di atas test. Diagnosisnya?",
+            "options": [
+              "Overfit ke dev set",
+              "Test lebih sulit"
+            ],
+            "answer_index": 0,
+            "explanation": "Bila distribusinya sama, penjelasan paling jelas adalah overfit ke dev, dan obatnya menambah data dev.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `hitung_region(region)` yang menerima list atau array nama wilayah dan mengembalikan dictionary jumlah kemunculan tiap wilayah.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def hitung_region(region):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hitung_region([\"US\", \"India\", \"US\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_region([\"US\", \"India\", \"US\"]) == {\"US\": 2, \"India\": 1}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hitung_region([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_region([]) == {}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hitung_region([\"A\"] * 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_region([\"A\"] * 5) == {\"A\": 5}"
+              }
+            ]
+          },
+          "hint": "Gunakan dictionary dengan get atau collections.Counter lalu ubah menjadi dict.",
+          "solution": "from collections import Counter\n\ndef hitung_region(region):\n    return dict(Counter(region))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-02-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bagi_per_region(region, seed)` yang menerima array nama wilayah dan mengembalikan `(dev_idx, test_idx)`.",
+          "note": "Untuk setiap wilayah (urut abjad) acak indeksnya dengan `np.random.default_rng(seed)` yang dibuat sekali, taruh `len // 2` indeks pertama ke dev dan sisanya ke test. Kembalikan keduanya sebagai array NumPy.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef bagi_per_region(region, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "set(dev)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "region = np.array([\"US\"] * 50 + [\"China\"] * 41 + [\"India\"] * 30 + [\"Other\"] * 20)\ndev, te = bagi_per_region(region, 0)\nassert not (set(dev) & set(te))"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sorted(list(dev) + list(te))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sorted(list(dev) + list(te)) == list(range(len(region)))"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "int(np.sum(region[dev] == r))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "for r in [\"US\", \"China\", \"India\", \"Other\"]:\n    a = int(np.sum(region[dev] == r))\n    b = int(np.sum(region[te] == r))\n    assert abs(a - b) <= 1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "list(dev)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "d2, t2 = bagi_per_region(region, 0)\nassert list(dev) == list(d2)"
+              }
+            ]
+          },
+          "hint": "Buat rng sekali di luar loop. Di dalam loop ambil np.where(region == r)[0], acak dengan rng.permutation, lalu iris.",
+          "solution": "import numpy as np\n\ndef bagi_per_region(region, seed):\n    region = np.asarray(region)\n    rng = np.random.default_rng(seed)\n    dev, te = [], []\n    for r in sorted(set(region.tolist())):\n        idx = rng.permutation(np.where(region == r)[0])\n        setengah = len(idx) // 2\n        dev.extend(idx[:setengah].tolist())\n        te.extend(idx[setengah:].tolist())\n    return np.array(dev), np.array(te)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `ada_mismatch(a, b, batas=0.3)` untuk mendeteksi pergeseran distribusi pada satu fitur.",
+          "note": "Hitung `pergeseran = |mean(a) - mean(b)| / sqrt((var(a) + var(b)) / 2)` dengan `np.var` bawaan, lalu kembalikan `True` bila `pergeseran > batas`. Jika pembilang dan penyebut nol, anggap tidak ada mismatch.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef ada_mismatch(a, b, batas=0.3):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ada_mismatch(a, b)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "rng = np.random.default_rng(0)\na = rng.normal(0, 1, 5000)\nb = rng.normal(0, 1, 5000)\nc = rng.normal(1.0, 1, 5000)\nassert ada_mismatch(a, b) is False"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ada_mismatch(a, c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ada_mismatch(a, c) is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ada_mismatch([1, 1, 1], [1, 1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ada_mismatch([1, 1, 1], [1, 1, 1]) is False"
+              }
+            ]
+          },
+          "hint": "Gunakan np.asarray lalu hitung penyebut. Jika penyebut 0, kembalikan False.",
+          "solution": "import numpy as np\n\ndef ada_mismatch(a, b, batas=0.3):\n    a = np.asarray(a, dtype=float)\n    b = np.asarray(b, dtype=float)\n    penyebut = np.sqrt((np.var(a) + np.var(b)) / 2)\n    if penyebut == 0:\n        return False\n    return bool(abs(a.mean() - b.mean()) / penyebut > batas)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `diagnosis_celah(acc_dev, acc_test, sama_distribusi, batas=0.03)`.",
+          "note": "Hitung `celah = round(acc_dev - acc_test, 6)`. Jika `sama_distribusi` benar dan `celah > batas` kembalikan `\"overfit dev: tambah data dev\"`. Jika `sama_distribusi` salah dan `abs(celah) > batas` kembalikan `\"ambigu: overfit, test lebih sulit, atau distribusi berbeda\"`. Selain itu kembalikan `\"ok\"`.",
+          "filename": "solution.py",
+          "starter_code": "def diagnosis_celah(acc_dev, acc_test, sama_distribusi, batas=0.03):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "diagnosis_celah(0.92, 0.85, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosis_celah(0.92, 0.85, True) == \"overfit dev: tambah data dev\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "diagnosis_celah(0.92, 0.85, False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosis_celah(0.92, 0.85, False) == \"ambigu: overfit, test lebih sulit, atau distribusi berbeda\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "diagnosis_celah(0.80, 0.90, False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosis_celah(0.80, 0.90, False) == \"ambigu: overfit, test lebih sulit, atau distribusi berbeda\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "diagnosis_celah(0.90, 0.89, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosis_celah(0.90, 0.89, True) == \"ok\""
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "diagnosis_celah(0.80, 0.90, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosis_celah(0.80, 0.90, True) == \"ok\""
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "diagnosis_celah(0.90, 0.87, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosis_celah(0.90, 0.87, True) == \"ok\""
+              }
+            ]
+          },
+          "hint": "Hitung celah dibulatkan dulu. Perhatikan: pada distribusi sama hanya celah positif yang berarti overfit, sedangkan pada distribusi berbeda selisih berapa pun arahnya membuat diagnosis ambigu.",
+          "solution": "def diagnosis_celah(acc_dev, acc_test, sama_distribusi, batas=0.03):\n    celah = round(acc_dev - acc_test, 6)\n    if sama_distribusi and celah > batas:\n        return \"overfit dev: tambah data dev\"\n    if (not sama_distribusi) and abs(celah) > batas:\n        return \"ambigu: overfit, test lebih sulit, atau distribusi berbeda\"\n    return \"ok\"",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa tujuan utama dev dan test set?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menambah jumlah data",
+              "description": ""
+            },
+            {
+              "label": "Mengarahkan tim ke perubahan terpenting pada sistem",
+              "description": ""
+            },
+            {
+              "label": "Mengurangi biaya komputasi",
+              "description": ""
+            },
+            {
+              "label": "Menggantikan training set",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Dev dan test set dipakai untuk membuat keputusan pengembangan yang tepat."
+        },
+        {
+          "q": "Aplikasi belum diluncurkan dan belum punya pengguna. Apa langkah yang disarankan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak membuat dev set",
+              "description": ""
+            },
+            {
+              "label": "Mendekati data masa depan, misalnya minta teman memotret dengan ponsel",
+              "description": ""
+            },
+            {
+              "label": "Memakai test set sebagai training",
+              "description": ""
+            },
+            {
+              "label": "Menunggu setahun",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Pendekatan data masa depan lebih baik daripada mengandalkan data yang kebetulan tersedia."
+        },
+        {
+          "q": "Dev dan test dari distribusi sama tetapi performa dev jauh di atas test. Diagnosisnya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Overfit ke dev set",
+              "description": ""
+            },
+            {
+              "label": "Test lebih sulit",
+              "description": ""
+            },
+            {
+              "label": "Distribusi berbeda",
+              "description": ""
+            },
+            {
+              "label": "Metrik salah",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": null,
+          "explanation": "Bila distribusinya sama, penjelasan paling jelas adalah overfit ke dev, dan obatnya menambah data dev."
+        },
+        {
+          "q": "Mengapa dev dan test yang berbeda distribusi menyulitkan prioritas?",
+          "code": null,
+          "options": [
+            {
+              "label": "Karena ukuran data berbeda",
+              "description": ""
+            },
+            {
+              "label": "Karena ada beberapa penjelasan yang mungkin sehingga arah perbaikan tidak jelas",
+              "description": ""
+            },
+            {
+              "label": "Karena library tidak mendukung",
+              "description": ""
+            },
+            {
+              "label": "Karena model membeku",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Gap bisa disebabkan overfit, test yang lebih sulit, atau sekadar perbedaan distribusi, sehingga usaha mudah terbuang."
+        },
+        {
+          "q": "Apa keuntungan stratifikasi per wilayah saat membagi dev dan test?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menambah jumlah contoh",
+              "description": ""
+            },
+            {
+              "label": "Menjaga proporsi tiap wilayah sama di dev dan test",
+              "description": ""
+            },
+            {
+              "label": "Mempercepat training",
+              "description": ""
+            },
+            {
+              "label": "Menghilangkan kebutuhan test set",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Setiap wilayah hadir di kedua set dengan proporsi hampir sama sehingga distribusi kedua set sama."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membagi acak 70 persen dan 30 persen dari data yang tersedia tanpa memikirkan data masa depan. Lebih baik: Tentukan dulu distribusi yang ingin dikuasai, lalu bentuk dev dan test dari data yang mencerminkannya.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membagi acak 70 persen dan 30 persen dari data yang tersedia tanpa memikirkan data masa depan.",
+          "fix": "Tentukan dulu distribusi yang ingin dikuasai, lalu bentuk dev dan test dari data yang mencerminkannya."
+        },
+        {
+          "mistake": "Menaruh wilayah atau periode berbeda di dev dan test.",
+          "fix": "Acak dalam tiap segmen lalu bagi sehingga dev dan test berasal dari campuran yang sama."
+        },
+        {
+          "mistake": "Berhenti memperbarui dev dan test setelah peluncuran.",
+          "fix": "Perbarui keduanya dengan data pengguna nyata begitu tersedia."
+        }
+      ],
+      "summary": [
+        "Dev set mengarahkan keputusan pengembangan dan test set memberi estimasi akhir yang jujur.",
+        "Pilih dev dan test yang mencerminkan data masa depan, bukan data yang kebetulan tersedia.",
+        "Dev dan test harus berasal dari distribusi yang sama agar gap bisa didiagnosis dengan jelas.",
+        "Stratifikasi per segmen menjaga dev dan test seimbang."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 5 dan 6 (Andrew Ng): dev dan test set, serta distribusi yang sama"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Training, dev, dan test set serta distribusinya"
+          },
+          {
+            "type": "text",
+            "source": "Data web dan data ponsel punya label yang ditentukan oleh variabel laten yang sama, tetapi fitur ponsel jauh lebih berisik. Model dilatih hanya dari data web, jadi test web terlihat memuaskan sementara performa pada ponsel jauh lebih rendah. Inilah persis kegagalan cerita kucing: test set tidak mencerminkan distribusi yang penting."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nW_TRUE = np.array([1.0, -1.0, 0.5, 0.8, -0.6])\n\ndef sampel(m, noise, seed):\n    rng = np.random.default_rng(seed)\n    z = rng.normal(size=(m, 5))\n    y = (z @ W_TRUE > 0).astype(int)\n    x = z + noise * rng.normal(size=(m, 5))\n    return x, y\n\nfrom sklearn.linear_model import LogisticRegression\n\nX_web, y_web = sampel(4000, 0.3, 1)\nX_web_test, y_web_test = sampel(2000, 0.3, 2)\nX_hp, y_hp = sampel(2000, 2.0, 3)\n\nmodel = LogisticRegression(max_iter=1000).fit(X_web, y_web)\nprint(\"akurasi pada test web   :\", round(model.score(X_web_test, y_web_test), 3))\nprint(\"akurasi pada foto ponsel:\", round(model.score(X_hp, y_hp), 3))"
+          },
+          {
+            "type": "text",
+            "source": "Dengan dev dari wilayah berderau rendah dan test dari wilayah berderau tinggi, angka dev menipu dan tim tidak bisa tahu apakah gap itu karena overfit atau karena test memang lebih sulit. Dengan pengacakan lintas wilayah, dev dan test hampir identik, dan gap yang tersisa bisa langsung ditafsirkan sebagai overfit."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\nW_TRUE = np.array([1.0, -1.0, 0.5, 0.8, -0.6])\nNOISE = {\"US\": 0.3, \"India\": 0.8, \"Other\": 1.2, \"China\": 2.0}\n\ndef sampel(m, noise, seed):\n    rng = np.random.default_rng(seed)\n    z = rng.normal(size=(m, 5))\n    y = (z @ W_TRUE > 0).astype(int)\n    return z + noise * rng.normal(size=(m, 5)), y\n\nX_tr = np.vstack([sampel(1000, NOISE[r], i)[0] for i, r in enumerate(NOISE)])\ny_tr = np.concatenate([sampel(1000, NOISE[r], i)[1] for i, r in enumerate(NOISE)])\nmodel = LogisticRegression(max_iter=1000).fit(X_tr, y_tr)\n\nev = {r: sampel(500, NOISE[r], 10 + i) for i, r in enumerate(NOISE)}\nacc = lambda rs: np.mean([model.score(*ev[r]) for r in rs])\nprint(\"skema wilayah: dev(US,India)=%.3f  test(China,Other)=%.3f\" % (acc([\"US\", \"India\"]), acc([\"China\", \"Other\"])))\n\nXp = np.vstack([ev[r][0] for r in ev])\nyp = np.concatenate([ev[r][1] for r in ev])\nidx = np.random.default_rng(0).permutation(len(Xp))\ndev, te = idx[:1000], idx[1000:]\nprint(\"skema acak  : dev=%.3f  test=%.3f\" % (model.score(Xp[dev], yp[dev]), model.score(Xp[te], yp[te])))"
+          },
+          {
+            "type": "text",
+            "source": "Setiap wilayah diacak sendiri lalu dibagi dua. Hasilnya setiap wilayah hadir di dev dan test dengan proporsi yang hampir sama. Teknik ini disebut stratifikasi, dan ia menjaga dev serta test tetap berasal dari distribusi yang sama."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nregion = np.array([\"US\"] * 40 + [\"China\"] * 31 + [\"India\"] * 20 + [\"Other\"] * 9)\nrng = np.random.default_rng(0)\ndev, te = [], []\nfor r in sorted(set(region)):\n    idx = rng.permutation(np.where(region == r)[0])\n    setengah = len(idx) // 2\n    dev.extend(idx[:setengah])\n    te.extend(idx[setengah:])\n\nfor r in sorted(set(region)):\n    print(r, \"dev:\", int(np.sum(region[dev] == r)), \"test:\", int(np.sum(region[te] == r)))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "D11-02-2",
+      "title": "Ukuran dev dan test set serta metrik tunggal",
+      "estimated_minutes": 40,
+      "read_minutes": 7,
+      "objectives": [
+        "Menentukan ukuran dev set yang cukup untuk mendeteksi perbedaan antar algoritma",
+        "Menjelaskan mengapa fraksi 30 persen untuk test set tidak selalu masuk akal",
+        "Menggabungkan beberapa metrik menjadi satu angka dengan F1 dan rata-rata berbobot",
+        "Memilih classifier terbaik memakai metrik tunggal"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Seberapa besar dev set harus dibuat",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Seberapa besar dev set harus dibuat\n\nDev set harus cukup besar untuk mendeteksi perbedaan antar algoritma yang sedang kamu coba. Misalkan classifier A memiliki akurasi 90,0 persen dan classifier B 90,1 persen. Dev set berisi 100 contoh tidak akan mampu mendeteksi selisih 0,1 persen itu. Dibandingkan masalah machine learning lain, dev set 100 contoh itu kecil. Ukuran 1.000 sampai 10.000 contoh umum dipakai. Dengan 10.000 contoh, kamu punya peluang yang baik mendeteksi perbaikan 0,1 persen.\n\nUntuk aplikasi matang dan penting, seperti iklan, pencarian web, dan rekomendasi produk, ada tim yang sangat termotivasi memeras perbaikan 0,01 persen karena berdampak langsung pada keuntungan. Dev set pada kasus itu bisa jauh lebih besar dari 10.000 agar perbaikan yang lebih kecil terdeteksi.\n\nDalam teori, kamu juga bisa menguji apakah sebuah perubahan algoritma berbeda secara signifikan statistik pada dev set. Dalam praktik, kebanyakan tim tidak melakukannya kecuali menulis makalah akademik, dan uji signifikansi tidak terlalu berguna untuk mengukur kemajuan sementara. Meski begitu, memahami derau pengukuran tetap penting, dan kamu akan menghitungnya sendiri di bawah."
+            }
+          ],
+          "quick_check": {
+            "question": "Pada akurasi 90 persen, standard error dengan n = 100 mendekati?",
+            "options": [
+              "0,03",
+              "0,3"
+            ],
+            "answer_index": 0,
+            "explanation": "sqrt(0,9 * 0,1 / 100) = 0,03.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Derau pengukuran dan ukuran sampel",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Derau pengukuran dan ukuran sampel\n\nAkurasi yang diukur pada n contoh adalah rata-rata dari n hasil benar atau salah. Jika akurasi sebenarnya p, simpangan baku estimasi akurasi (standard error) adalah `sqrt(p * (1 - p) / n)`. Untuk p = 0,9 dan n = 100 angka itu sekitar 0,03, yaitu 3 poin persen. Tiga poin persen jauh lebih besar dari selisih 0,1 poin persen yang ingin dideteksi, jadi selisih sekecil itu tenggelam dalam derau.\n\nDengan n = 10.000, standard error turun menjadi 0,003, yaitu 0,3 poin persen. Selisih 0,1 poin persen masih berada di bawah derau satu pengukuran, tetapi dua classifier yang dievaluasi pada contoh yang sama punya derau yang berkorelasi sehingga selisihnya lebih mudah dideteksi daripada angka sederhana ini menyiratkan. Intinya: makin kecil perbaikan yang ingin kamu deteksi, makin besar dev set yang kamu butuhkan, dan kebutuhannya tumbuh sangat cepat.\n\nSimulasi di bawah memperlihatkan hal ini langsung. Kamu akan melihat seberapa sering classifier yang sebenarnya sedikit lebih baik justru terukur lebih buruk."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang terjadi pada standard error bila n dikali 100?",
+            "options": [
+              "Turun menjadi 1/100",
+              "Turun menjadi 1/10"
+            ],
+            "answer_index": 1,
+            "explanation": "Standard error sebanding dengan 1 per akar n, jadi n dikali 100 membuatnya sepersepuluh.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Ukuran test set dan mitos 30 persen",
+          "read_minutes": 4,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ukuran test set dan mitos 30 persen\n\nBagaimana dengan test set? Ia harus cukup besar untuk memberi keyakinan tinggi pada performa keseluruhan sistem. Satu heuristik populer adalah memakai 30 persen data untuk test. Ini bekerja baik bila jumlah contoh moderat, misalnya 100 sampai 10.000.\n\nDi era big data, ada masalah dengan lebih dari satu miliar contoh. Fraksi data untuk dev dan test terus mengecil walau jumlah absolutnya membesar. Tidak ada gunanya memiliki dev dan test jauh lebih besar dari yang dibutuhkan untuk mengevaluasi algoritma. Jadi kata kuncinya adalah **jumlah absolut yang cukup untuk tugasnya**, bukan persentase tetap.\n\nContoh praktis: bila dataset 10 juta contoh dan kamu hanya butuh 20.000 contoh untuk mendeteksi perbaikan yang kamu pedulikan, maka dev dan test masing-masing cukup 0,2 persen dari data. Sisanya lebih berguna sebagai training karena model yang lebih besar bisa memanfaatkannya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Satu angka untuk mengatur tim\n\n**Akurasi klasifikasi** adalah contoh metrik evaluasi bernilai tunggal: jalankan classifier pada dev set dan terima satu angka tentang pecahan contoh yang diklasifikasikan benar. Jika A mendapat 97 persen dan B 90 persen, A lebih unggul menurut metrik ini.\n\nSebaliknya, **precision dan recall** bukan metrik tunggal karena memberi dua angka. Misalkan A memiliki precision 95 persen dan recall 90 persen, sedangkan B memiliki precision 98 persen dan recall 85 persen. Tidak ada yang jelas lebih unggul, sehingga perbandingan tidak mengarahkan pilihan.\n\nJika kamu benar-benar peduli pada keduanya, gabungkan menjadi satu angka. Rata-rata sederhana bisa dipakai, tetapi **F1 score** yang merupakan rata-rata harmonik `2 / (1/P + 1/R)` bekerja lebih baik karena menghukum ketimpangan antara precision dan recall. Dengan F1, A mendapat sekitar 92,4 persen dan B sekitar 91,0 persen, sehingga A jelas dipilih.\n\nContoh lain: kamu memantau akurasi di empat wilayah AS, Tiongkok, India, dan lainnya. Itu empat angka. Rata-rata atau rata-rata berbobot keempatnya menjadi satu angka. Rata-rata (berbobot) adalah salah satu cara paling umum menggabungkan beberapa metrik. Dengan satu angka, kamu dapat mengurutkan semua model dan segera memutuskan mana yang terbaik."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tips",
+              "markdown": "Ketika tim berdebat tanpa akhir tentang model mana yang lebih baik, sering penyebabnya adalah belum ada metrik tunggal yang disepakati. Menyepakati satu angka, walau belum sempurna, mengubah debat menjadi pengurutan."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import numpy as np\n\np = 0.9\nprint(\"n        standard error\")\nfor n in [100, 1000, 10000, 100000]:\n    print(f\"{n:7d}  {np.sqrt(p * (1 - p) / n):.4f}\")",
+              "expected_output_note": "n        standard error\n    100  0.0300\n   1000  0.0095\n  10000  0.0030\n 100000  0.0009",
+              "explanation": "Standard error menurun dengan akar jumlah sampel. Untuk membuat derau 10 kali lebih kecil, kamu butuh data 100 kali lebih banyak. Itulah sebabnya mendeteksi perbaikan yang sangat kecil menuntut dev set yang sangat besar."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nrng = np.random.default_rng(0)\na, b = 0.900, 0.901\ntrials = 4000\nprint(\"n        P(B terukur lebih baik dari A)\")\nfor n in [100, 1000, 10000, 100000]:\n    acc_a = rng.binomial(n, a, size=trials) / n\n    acc_b = rng.binomial(n, b, size=trials) / n\n    print(f\"{n:7d}  {np.mean(acc_b > acc_a):.3f}\")",
+              "expected_output_note": "n        P(B terukur lebih baik dari A)\n    100  sekitar 0.45\n   1000  sekitar 0.50 sampai 0.53\n  10000  sekitar 0.60\n 100000  sekitar 0.77",
+              "explanation": "Dua classifier dengan akurasi sebenarnya 90,0 persen dan 90,1 persen dievaluasi pada dev set independen. Pada n kecil, hasilnya hampir seperti lempar koin. Bahkan pada 10.000 contoh peluangnya baru sekitar 60 persen dalam simulasi independen ini, dan baru mendekati 77 persen pada 100.000 contoh. Evaluasi pada contoh yang sama membuat deteksi lebih mudah, tetapi pesan utamanya tetap: perbedaan sangat kecil butuh dev set sangat besar."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.metrics import f1_score, precision_score, recall_score\n\nrng = np.random.default_rng(1)\ny_true = rng.integers(0, 2, 1000)\ny_pred = np.where(rng.random(1000) < 0.85, y_true, 1 - y_true)\n\ntp = np.sum((y_true == 1) & (y_pred == 1))\nfp = np.sum((y_true == 0) & (y_pred == 1))\nfn = np.sum((y_true == 1) & (y_pred == 0))\nprecision = tp / (tp + fp)\nrecall = tp / (tp + fn)\nf1 = 2 / (1 / precision + 1 / recall)\n\nprint(\"F1 manual   :\", round(float(f1), 4))\nprint(\"F1 sklearn  :\", round(float(f1_score(y_true, y_pred)), 4))\nprint(\"cocok       :\", bool(np.isclose(f1, f1_score(y_true, y_pred))))",
+              "expected_output_note": "F1 manual dan sklearn sama\ncocok: True",
+              "explanation": "Precision, recall, dan F1 dihitung dari jumlah true positive, false positive, dan false negative. F1 adalah rata-rata harmonik precision dan recall. Menghitungnya manual dan mencocokkannya dengan library memastikan kamu paham persis apa yang dioptimalkan oleh tim."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa F1 lebih disukai daripada rata-rata aritmetika precision dan recall?",
+            "options": [
+              "Menghukum ketimpangan antara precision dan recall",
+              "Lebih mudah dihitung"
+            ],
+            "answer_index": 0,
+            "explanation": "Rata-rata harmonik rendah jika salah satu dari keduanya rendah.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `standard_error(p, n)` yang mengembalikan `sqrt(p * (1 - p) / n)` sebagai float.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef standard_error(p, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(standard_error(0.9, 100) - 0.03)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(standard_error(0.9, 100) - 0.03) < 1e-12"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(standard_error(0.5, 10000) - 0.005)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(standard_error(0.5, 10000) - 0.005) < 1e-12"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isinstance(standard_error(0.9, 100), float)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isinstance(standard_error(0.9, 100), float)"
+              }
+            ]
+          },
+          "hint": "Gunakan math.sqrt dan pastikan hasilnya float.",
+          "solution": "import math\n\ndef standard_error(p, n):\n    return float(math.sqrt(p * (1 - p) / n))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-02-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `n_minimum(p, se_target)` yang mengembalikan jumlah sampel integer terkecil agar `sqrt(p * (1 - p) / n) <= se_target`.",
+          "note": "Gunakan pembulatan ke atas dari `p * (1 - p) / se_target**2` dengan pengamanan terhadap galat floating point (bulatkan dulu ke 6 desimal).",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef n_minimum(p, se_target):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "n_minimum(0.9, 0.003)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert n_minimum(0.9, 0.003) == 10000"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "n_minimum(0.5, 0.01)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert n_minimum(0.5, 0.01) == 2500"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "n_minimum(0.9, 0.03)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert n_minimum(0.9, 0.03) == 100"
+              }
+            ]
+          },
+          "hint": "Dari rumus standard error, n = p(1-p) / se^2. Bulatkan ke 6 desimal sebelum math.ceil agar 10000.000000001 tidak menjadi 10001.",
+          "solution": "import math\n\ndef n_minimum(p, se_target):\n    n = round(p * (1 - p) / se_target ** 2, 6)\n    return int(math.ceil(n))",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `f1(precision, recall)` yang mengembalikan rata-rata harmonik `2 * P * R / (P + R)`.",
+          "note": "Jika `P + R` sama dengan nol kembalikan `0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def f1(precision, recall):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(f1(0.95, 0.90) - 0.924324324)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(f1(0.95, 0.90) - 0.924324324) < 1e-6"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(f1(0.98, 0.85) - 0.910382513)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(f1(0.98, 0.85) - 0.910382513) < 1e-6"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "f1(0.0, 0.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert f1(0.0, 0.0) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "f1(1.0, 1.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert f1(1.0, 1.0) == 1.0"
+              }
+            ]
+          },
+          "hint": "Tangani kasus pembagi nol lebih dulu, lalu hitung 2 * P * R / (P + R).",
+          "solution": "def f1(precision, recall):\n    if precision + recall == 0:\n        return 0.0\n    return 2 * precision * recall / (precision + recall)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pilih_terbaik(tabel, bobot)`.",
+          "note": "`tabel` memetakan nama classifier ke dictionary akurasi per wilayah, dan `bobot` memetakan wilayah ke bobot. Hitung rata-rata berbobot yang dinormalkan (jumlah bobot dibagi sehingga totalnya 1) untuk tiap classifier, lalu kembalikan tuple `(nama_terbaik, skor_terbaik)`. Jika seri, pilih nama yang lebih dulu secara abjad.",
+          "filename": "solution.py",
+          "starter_code": "def pilih_terbaik(tabel, bobot):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "tabel = {\n    \"A\": {\"US\": 0.95, \"China\": 0.90, \"India\": 0.80, \"Other\": 0.85},\n    \"B\": {\"US\": 0.92, \"China\": 0.93, \"India\": 0.85, \"Other\": 0.80},\n}\nbobot = {\"US\": 0.4, \"China\": 0.3, \"India\": 0.2, \"Other\": 0.1}\nnama, skor = pilih_terbaik(tabel, bobot)\nassert nama == \"B\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(skor - 0.897)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(skor - 0.897) < 1e-9"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "abs(skor2 - 0.897)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "bobot2 = {\"US\": 4, \"China\": 3, \"India\": 2, \"Other\": 1}\nnama2, skor2 = pilih_terbaik(tabel, bobot2)\nassert nama2 == \"B\" and abs(skor2 - 0.897) < 1e-9"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pilih_terbaik(seri, {\"US\": 1})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "seri = {\"X\": {\"US\": 0.9}, \"A\": {\"US\": 0.9}}\nassert pilih_terbaik(seri, {\"US\": 1})[0] == \"A\""
+              }
+            ]
+          },
+          "hint": "Normalkan bobot dengan membaginya terhadap jumlah bobot. Urutkan kandidat berdasarkan (-skor, nama) untuk menangani seri.",
+          "solution": "def pilih_terbaik(tabel, bobot):\n    total = sum(bobot.values())\n    skor = {}\n    for nama, akurasi in tabel.items():\n        skor[nama] = sum(akurasi[w] * bobot[w] / total for w in bobot)\n    terbaik = sorted(skor, key=lambda n: (-round(skor[n], 12), n))[0]\n    return terbaik, skor[terbaik]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Pada akurasi 90 persen, standard error dengan n = 100 mendekati?",
+          "code": null,
+          "options": [
+            {
+              "label": "0,3",
+              "description": ""
+            },
+            {
+              "label": "0,03",
+              "description": ""
+            },
+            {
+              "label": "0,003",
+              "description": ""
+            },
+            {
+              "label": "0,0003",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "sqrt(0,9 * 0,1 / 100) = 0,03."
+        },
+        {
+          "q": "Apa yang terjadi pada standard error bila n dikali 100?",
+          "code": null,
+          "options": [
+            {
+              "label": "Turun menjadi 1/100",
+              "description": ""
+            },
+            {
+              "label": "Turun menjadi 1/10",
+              "description": ""
+            },
+            {
+              "label": "Tidak berubah",
+              "description": ""
+            },
+            {
+              "label": "Naik 10 kali",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Standard error sebanding dengan 1 per akar n, jadi n dikali 100 membuatnya sepersepuluh."
+        },
+        {
+          "q": "Mengapa F1 lebih disukai daripada rata-rata aritmetika precision dan recall?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lebih mudah dihitung",
+              "description": ""
+            },
+            {
+              "label": "Menghukum ketimpangan antara precision dan recall",
+              "description": ""
+            },
+            {
+              "label": "Selalu lebih besar",
+              "description": ""
+            },
+            {
+              "label": "Tidak butuh label",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Rata-rata harmonik rendah jika salah satu dari keduanya rendah."
+        },
+        {
+          "q": "Dataset 10 juta contoh. Kebutuhan dev dan test masing-masing 20.000. Pendekatan yang benar?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pakai 30 persen untuk test",
+              "description": ""
+            },
+            {
+              "label": "Pakai jumlah absolut yang cukup dan sisanya untuk training",
+              "description": ""
+            },
+            {
+              "label": "Tidak memakai test",
+              "description": ""
+            },
+            {
+              "label": "Pakai semua sebagai dev",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Jumlah absolut yang cukup lebih penting daripada fraksi tetap pada dataset sangat besar."
+        },
+        {
+          "q": "Classifier A: precision 95 persen dan recall 90 persen. B: 98 persen dan 85 persen. Mana yang unggul menurut F1?",
+          "code": null,
+          "options": [
+            {
+              "label": "A",
+              "description": ""
+            },
+            {
+              "label": "B",
+              "description": ""
+            },
+            {
+              "label": "Seri",
+              "description": ""
+            },
+            {
+              "label": "Tidak bisa dihitung",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": null,
+          "explanation": "F1 A sekitar 92,4 persen dan F1 B sekitar 91,0 persen."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menganggap dev set 100 contoh cukup untuk membandingkan model yang beda 0,1 persen. Lebih baik: Hitung standard error dan sesuaikan ukuran dev set dengan perbedaan terkecil yang ingin dideteksi.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menganggap dev set 100 contoh cukup untuk membandingkan model yang beda 0,1 persen.",
+          "fix": "Hitung standard error dan sesuaikan ukuran dev set dengan perbedaan terkecil yang ingin dideteksi."
+        },
+        {
+          "mistake": "Selalu memakai 30 persen data sebagai test set pada dataset besar.",
+          "fix": "Gunakan jumlah absolut yang cukup untuk tugasnya dan simpan sisanya untuk training."
+        },
+        {
+          "mistake": "Membiarkan tim melacak precision dan recall tanpa satu angka gabungan.",
+          "fix": "Gabungkan menjadi F1 atau rata-rata berbobot agar semua model bisa diurutkan."
+        }
+      ],
+      "summary": [
+        "Dev set harus cukup besar untuk mendeteksi perbedaan terkecil yang kamu pedulikan.",
+        "Standard error menurun dengan akar n, sehingga perbaikan kecil membutuhkan data sangat besar.",
+        "Ukuran test set ditentukan jumlah absolut yang cukup, bukan fraksi tetap seperti 30 persen.",
+        "Metrik tunggal seperti akurasi, F1, atau rata-rata berbobot memungkinkan pengurutan model yang cepat."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 7 dan 8 (Andrew Ng): ukuran dev dan test set, serta metrik evaluasi tunggal"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Ukuran dev dan test set serta metrik tunggal"
+          },
+          {
+            "type": "text",
+            "source": "Standard error menurun dengan akar jumlah sampel. Untuk membuat derau 10 kali lebih kecil, kamu butuh data 100 kali lebih banyak. Itulah sebabnya mendeteksi perbaikan yang sangat kecil menuntut dev set yang sangat besar."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\np = 0.9\nprint(\"n        standard error\")\nfor n in [100, 1000, 10000, 100000]:\n    print(f\"{n:7d}  {np.sqrt(p * (1 - p) / n):.4f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Dua classifier dengan akurasi sebenarnya 90,0 persen dan 90,1 persen dievaluasi pada dev set independen. Pada n kecil, hasilnya hampir seperti lempar koin. Bahkan pada 10.000 contoh peluangnya baru sekitar 60 persen dalam simulasi independen ini, dan baru mendekati 77 persen pada 100.000 contoh. Evaluasi pada contoh yang sama membuat deteksi lebih mudah, tetapi pesan utamanya tetap: perbedaan sangat kecil butuh dev set sangat besar."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nrng = np.random.default_rng(0)\na, b = 0.900, 0.901\ntrials = 4000\nprint(\"n        P(B terukur lebih baik dari A)\")\nfor n in [100, 1000, 10000, 100000]:\n    acc_a = rng.binomial(n, a, size=trials) / n\n    acc_b = rng.binomial(n, b, size=trials) / n\n    print(f\"{n:7d}  {np.mean(acc_b > acc_a):.3f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Precision, recall, dan F1 dihitung dari jumlah true positive, false positive, dan false negative. F1 adalah rata-rata harmonik precision dan recall. Menghitungnya manual dan mencocokkannya dengan library memastikan kamu paham persis apa yang dioptimalkan oleh tim."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.metrics import f1_score, precision_score, recall_score\n\nrng = np.random.default_rng(1)\ny_true = rng.integers(0, 2, 1000)\ny_pred = np.where(rng.random(1000) < 0.85, y_true, 1 - y_true)\n\ntp = np.sum((y_true == 1) & (y_pred == 1))\nfp = np.sum((y_true == 0) & (y_pred == 1))\nfn = np.sum((y_true == 1) & (y_pred == 0))\nprecision = tp / (tp + fp)\nrecall = tp / (tp + fn)\nf1 = 2 / (1 / precision + 1 / recall)\n\nprint(\"F1 manual   :\", round(float(f1), 4))\nprint(\"F1 sklearn  :\", round(float(f1_score(y_true, y_pred)), 4))\nprint(\"cocok       :\", bool(np.isclose(f1, f1_score(y_true, y_pred))))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "D11-02-3",
+      "title": "Optimizing, satisficing, iterasi, dan kapan mengubah",
+      "estimated_minutes": 40,
+      "read_minutes": 6,
+      "objectives": [
+        "Memisahkan metrik menjadi satu optimizing metric dan beberapa satisficing metric",
+        "Menjelaskan siklus ide, kode, eksperimen dan mengapa dev set serta metrik mempercepatnya",
+        "Mengenali tiga penyebab dev set dan metrik harus diubah",
+        "Mengukur inflasi akibat overfit ke dev set"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Optimizing dan satisficing metric",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Optimizing dan satisficing metric\n\nAda cara lain menggabungkan beberapa metrik evaluasi. Misalkan kamu peduli akurasi sekaligus waktu eksekusi, dan harus memilih dari tiga classifier: A dengan akurasi 90 persen dan 80 ms, B dengan 92 persen dan 95 ms, serta C dengan 95 persen dan 1.500 ms.\n\nMemasukkan akurasi dan waktu eksekusi ke satu rumus, misalnya `akurasi - 0,5 * waktu`, terasa tidak wajar. Yang bisa dilakukan: tentukan dulu waktu eksekusi yang dapat diterima, misalnya apa pun di bawah 100 ms. Lalu maksimalkan akurasi dengan syarat classifier memenuhi batas waktu itu. Di sini waktu eksekusi adalah **satisficing metric**: classifier hanya perlu cukup baik. Akurasi adalah **optimizing metric**.\n\nJika kamu menimbang N kriteria, misalnya ukuran berkas model (penting untuk aplikasi ponsel karena pengguna tidak ingin mengunduh aplikasi besar), waktu eksekusi, dan akurasi, pertimbangkan menetapkan N dikurangi 1 kriteria sebagai satisficing. Tetapkan ambang yang dapat diterima untuk ukuran berkas dan waktu, lalu optimalkan akurasi di bawah batasan itu."
+            }
+          ],
+          "quick_check": {
+            "question": "Pada wakeword, mana yang menjadi optimizing metric?",
+            "options": [
+              "False negative rate",
+              "False positive per 24 jam"
+            ],
+            "answer_index": 0,
+            "explanation": "False negative rate diminimalkan dengan syarat false positive per 24 jam tidak lebih dari satu.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Contoh wakeword",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Contoh wakeword\n\nMisalkan kamu membangun perangkat dengan mikrofon yang mendengarkan kata bangun tertentu, seperti \"Alexa\", \"Hey Siri\", \"Okay Google\", atau \"Hello Baidu\". Kamu peduli pada dua hal: false positive rate, yaitu seberapa sering sistem bangun walau tidak ada yang mengucapkan kata itu, dan false negative rate, yaitu seberapa sering sistem gagal bangun ketika kata itu diucapkan.\n\nTujuan yang masuk akal: minimalkan false negative rate (optimizing metric) dengan syarat tidak lebih dari satu false positive per 24 jam operasi (satisficing metric). Perhatikan betapa jelasnya aturan ini. Kamu tidak perlu membobotkan dua jenis kesalahan dalam satu rumus yang sulit dijustifikasi. Cukup satu batas yang bisa dijelaskan kepada siapa pun, dan satu angka untuk dimaksimalkan.\n\nSetelah tim sepakat pada metrik yang dioptimalkan, mereka dapat bergerak jauh lebih cepat."
+            }
+          ],
+          "quick_check": {
+            "question": "Jika menimbang N kriteria, berapa yang dijadikan satisficing?",
+            "options": [
+              "N",
+              "N - 1"
+            ],
+            "answer_index": 1,
+            "explanation": "Satu kriteria menjadi optimizing metric dan sisanya N - 1 menjadi satisficing dengan ambang.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dev set dan metrik mempercepat iterasi",
+          "read_minutes": 4,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dev set dan metrik mempercepat iterasi\n\nHampir mustahil mengetahui di awal pendekatan mana yang paling berhasil untuk masalah baru. Peneliti berpengalaman pun biasanya mencoba puluhan ide sebelum menemukan yang memuaskan. Ketika membangun sistem machine learning, siklusnya: mulai dengan sebuah **ide**, implementasikan dalam **kode**, lalu jalankan **eksperimen** untuk melihat seberapa baik idenya. Biasanya beberapa ide pertama tidak berhasil. Berdasarkan hasil, kembali menghasilkan ide dan terus berputar.\n\nSemakin cepat putaran ini, semakin cepat kemajuan. Itulah mengapa dev set dan metrik penting. Tanpa keduanya, setiap classifier baru harus dimasukkan ke aplikasi dan dicoba berjam-jam untuk merasakan apakah lebih baik. Itu sangat lambat. Selain itu, perbaikan akurasi dari 95,0 persen ke 95,1 persen tidak terdeteksi dengan mencoba aplikasi secara manual, padahal banyak kemajuan sistem datang dari menumpuk puluhan perbaikan 0,1 persen. Dengan dev set dan metrik, ide yang memberi perbaikan kecil maupun besar terdeteksi cepat, sehingga kamu tahu ide mana yang dilanjutkan dan mana yang dibuang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan mengubah dev set, test set, dan metrik\n\nSaat memulai proyek baru, tentukan dev dan test set dengan cepat karena itu memberi tim target yang jelas. Biasanya tim diminta menentukan dev dan test awal serta metrik awal dalam waktu kurang dari seminggu, jarang lebih lama. Lebih baik memulai dengan sesuatu yang tidak sempurna daripada terlalu lama berpikir. Aturan satu minggu itu tidak berlaku untuk aplikasi matang seperti anti-spam, yang timnya bisa menghabiskan berbulan-bulan untuk dev dan test set yang lebih baik.\n\nJika kemudian ternyata dev, test, atau metrik awal meleset, segera ubah. Tanda utamanya: dev dan metrik memeringkat A di atas B, tetapi tim yakin B lebih baik untuk produk. Ada tiga penyebab utama:\n\n1. **Distribusi sebenarnya berbeda.** Misalnya dev awal banyak berisi kucing dewasa, padahal pengguna banyak mengunggah anak kucing. Perbarui dev dan test agar lebih representatif.\n2. **Overfit ke dev set.** Mengevaluasi ide berulang kali pada dev set membuat algoritma perlahan overfit padanya. Jika performa dev jauh lebih baik dari test, ambil dev set baru.\n3. **Metrik mengukur hal yang salah.** Misalnya akurasi memeringkat A lebih baik, tetapi A membiarkan gambar tidak pantas lolos sesekali sehingga tidak dapat diterima. Ganti metrik, misalnya dengan hukuman berat untuk kesalahan itu.\n\nBoleh melacak kemajuan dengan mengevaluasi sistem secara berkala pada test set, misalnya mingguan. Tetapi jangan gunakan hasilnya untuk keputusan apa pun, termasuk memutuskan rollback. Jika dilakukan, kamu mulai overfit ke test set dan tidak bisa lagi mengandalkannya sebagai estimasi tidak bias."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Perhatian",
+              "markdown": "Mengubah dev set atau metrik di tengah proyek itu normal. Yang berbahaya adalah mengubahnya tanpa memberi tahu tim. Setiap perubahan harus diumumkan agar semua orang mengejar target yang sama."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "models = {\n    \"A\": {\"akurasi\": 0.90, \"ms\": 80},\n    \"B\": {\"akurasi\": 0.92, \"ms\": 95},\n    \"C\": {\"akurasi\": 0.95, \"ms\": 1500},\n}\nbatas_ms = 100\nlayak = {n: m for n, m in models.items() if m[\"ms\"] <= batas_ms}\nterbaik = max(layak, key=lambda n: layak[n][\"akurasi\"])\nprint(\"layak:\", sorted(layak))\nprint(\"terbaik:\", terbaik)",
+              "expected_output_note": "layak: ['A', 'B']\nterbaik: B",
+              "explanation": "Waktu eksekusi dijadikan filter (satisficing), lalu akurasi dimaksimalkan di antara yang lolos (optimizing). C paling akurat tetapi gugur oleh batas waktu. Aturan ini bisa dijelaskan dalam satu kalimat kepada siapa pun di tim."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "kandidat = {\n    \"m1\": {\"fn\": 0.08, \"fp_per_24j\": 0.6},\n    \"m2\": {\"fn\": 0.05, \"fp_per_24j\": 1.4},\n    \"m3\": {\"fn\": 0.06, \"fp_per_24j\": 0.9},\n    \"m4\": {\"fn\": 0.12, \"fp_per_24j\": 0.1},\n}\nlayak = {n: v for n, v in kandidat.items() if v[\"fp_per_24j\"] <= 1.0}\nterbaik = min(layak, key=lambda n: (layak[n][\"fn\"], layak[n][\"fp_per_24j\"]))\nprint(\"layak:\", sorted(layak))\nprint(\"terbaik:\", terbaik)",
+              "expected_output_note": "layak: ['m1', 'm3', 'm4']\nterbaik: m3",
+              "explanation": "Model m2 punya false negative terendah tetapi melanggar batas satu false positive per 24 jam, jadi tersingkir. Di antara yang layak, m3 memiliki false negative terendah. Pola ini sama dengan contoh wakeword pada teks."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nrng = np.random.default_rng(0)\ntrue_acc, n_dev, trials = 0.80, 500, 4000\nprint(\"jumlah model dicoba   rata-rata inflasi dev\")\nfor n_model in [1, 5, 50, 500]:\n    acc = rng.binomial(n_dev, true_acc, size=(trials, n_model)) / n_dev\n    inflasi = float((acc.max(axis=1) - true_acc).mean())\n    print(f\"{n_model:19d}   {inflasi:.4f}\")",
+              "expected_output_note": "jumlah model dicoba   rata-rata inflasi dev\n                  1   sekitar 0.0000\n                  5   sekitar 0.02\n                 50   sekitar 0.04\n                500   sekitar 0.05",
+              "explanation": "Semua model sebenarnya sama baik (akurasi 80 persen). Tetapi bila kamu mencoba banyak ide lalu mengambil yang terbaik di dev set, angka dev yang kamu laporkan lebih tinggi dari kenyataan, dan inflasinya naik dengan banyaknya percobaan. Ini mekanisme overfit ke dev set, dan alasan test set yang tidak disentuh tetap diperlukan."
+            }
+          ],
+          "quick_check": {
+            "question": "Performa dev jauh lebih baik dari test pada distribusi yang sama. Tindakan yang disarankan?",
+            "options": [
+              "Ambil dev set baru",
+              "Ganti metrik"
+            ],
+            "answer_index": 0,
+            "explanation": "Itu tanda overfit ke dev set akibat evaluasi berulang, dan solusinya dev set baru.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pilih_model(models, maks_ms)` yang memilih nama model dengan akurasi tertinggi di antara yang memiliki `ms <= maks_ms`.",
+          "note": "`models` berbentuk dictionary nama ke dictionary dengan kunci `akurasi` dan `ms`. Kembalikan `None` jika tidak ada yang layak.",
+          "filename": "solution.py",
+          "starter_code": "def pilih_model(models, maks_ms):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pilih_model(models, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "models = {\n    \"A\": {\"akurasi\": 0.90, \"ms\": 80},\n    \"B\": {\"akurasi\": 0.92, \"ms\": 95},\n    \"C\": {\"akurasi\": 0.95, \"ms\": 1500},\n}\nassert pilih_model(models, 100) == \"B\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pilih_model(models, 2000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_model(models, 2000) == \"C\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pilih_model(models, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_model(models, 10) is None"
+              }
+            ]
+          },
+          "hint": "Saring dulu model yang memenuhi batas waktu. Jika hasil saringan kosong kembalikan None, jika tidak ambil max berdasarkan akurasi.",
+          "solution": "def pilih_model(models, maks_ms):\n    layak = {n: m for n, m in models.items() if m[\"ms\"] <= maks_ms}\n    if not layak:\n        return None\n    return max(layak, key=lambda n: layak[n][\"akurasi\"])",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-02-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pilih_wakeword(kandidat, maks_fp)` yang memilih model dengan `fn` terkecil di antara yang `fp_per_24j <= maks_fp`.",
+          "note": "Jika seri pada `fn`, pilih `fp_per_24j` yang lebih kecil, lalu nama yang lebih dulu secara abjad. Kembalikan `None` jika tidak ada yang layak.",
+          "filename": "solution.py",
+          "starter_code": "def pilih_wakeword(kandidat, maks_fp):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pilih_wakeword(kandidat, 1.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "kandidat = {\n    \"m1\": {\"fn\": 0.08, \"fp_per_24j\": 0.6},\n    \"m2\": {\"fn\": 0.05, \"fp_per_24j\": 1.4},\n    \"m3\": {\"fn\": 0.06, \"fp_per_24j\": 0.9},\n    \"m4\": {\"fn\": 0.12, \"fp_per_24j\": 0.1},\n}\nassert pilih_wakeword(kandidat, 1.0) == \"m3\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pilih_wakeword(kandidat, 2.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_wakeword(kandidat, 2.0) == \"m2\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pilih_wakeword(kandidat, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_wakeword(kandidat, 0.05) is None"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pilih_wakeword(seri, 1.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "seri = {\"b\": {\"fn\": 0.1, \"fp_per_24j\": 0.5}, \"a\": {\"fn\": 0.1, \"fp_per_24j\": 0.5}, \"c\": {\"fn\": 0.1, \"fp_per_24j\": 0.2}}\nassert pilih_wakeword(seri, 1.0) == \"c\""
+              }
+            ]
+          },
+          "hint": "Saring dengan batas fp, lalu gunakan key tuple (fn, fp, nama) pada min.",
+          "solution": "def pilih_wakeword(kandidat, maks_fp):\n    layak = {n: v for n, v in kandidat.items() if v[\"fp_per_24j\"] <= maks_fp}\n    if not layak:\n        return None\n    return min(layak, key=lambda n: (layak[n][\"fn\"], layak[n][\"fp_per_24j\"], n))",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `sinyal_ganti(dev_acc, test_acc, distribusi_berubah, ranking_sesuai_tim)` yang mengembalikan satu dari empat string.",
+          "note": "Jika `distribusi_berubah` benar kembalikan `\"perbarui dev dan test\"`. Jika tidak, dan `round(dev_acc - test_acc, 6) > 0.03` kembalikan `\"ambil dev set baru\"`. Jika tidak, dan `ranking_sesuai_tim` salah kembalikan `\"ganti metrik\"`. Selain itu kembalikan `\"pertahankan\"`.",
+          "filename": "solution.py",
+          "starter_code": "def sinyal_ganti(dev_acc, test_acc, distribusi_berubah, ranking_sesuai_tim):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "sinyal_ganti(0.9, 0.9, True, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sinyal_ganti(0.9, 0.9, True, True) == \"perbarui dev dan test\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sinyal_ganti(0.95, 0.88, False, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sinyal_ganti(0.95, 0.88, False, True) == \"ambil dev set baru\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sinyal_ganti(0.90, 0.89, False, False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sinyal_ganti(0.90, 0.89, False, False) == \"ganti metrik\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sinyal_ganti(0.90, 0.89, False, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sinyal_ganti(0.90, 0.89, False, True) == \"pertahankan\""
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "sinyal_ganti(0.90, 0.87, False, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sinyal_ganti(0.90, 0.87, False, True) == \"pertahankan\""
+              }
+            ]
+          },
+          "hint": "Periksa kondisi secara berurutan sesuai prioritas yang diberikan.",
+          "solution": "def sinyal_ganti(dev_acc, test_acc, distribusi_berubah, ranking_sesuai_tim):\n    if distribusi_berubah:\n        return \"perbarui dev dan test\"\n    if round(dev_acc - test_acc, 6) > 0.03:\n        return \"ambil dev set baru\"\n    if not ranking_sesuai_tim:\n        return \"ganti metrik\"\n    return \"pertahankan\"",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `inflasi_best_of_n(true_acc, n_dev, n_models, trials, seed)`.",
+          "note": "Buat `rng = np.random.default_rng(seed)`, ambil `acc = rng.binomial(n_dev, true_acc, size=(trials, n_models)) / n_dev`, lalu kembalikan rata-rata (float) dari `acc.max(axis=1) - true_acc`. Fungsi ini mengukur seberapa tinggi angka dev terbaik melebihi akurasi sebenarnya.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef inflasi_best_of_n(true_acc, n_dev, n_models, trials, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(i1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "i1 = inflasi_best_of_n(0.8, 500, 1, 4000, 0)\ni5 = inflasi_best_of_n(0.8, 500, 5, 4000, 0)\ni50 = inflasi_best_of_n(0.8, 500, 50, 4000, 0)\nassert abs(i1) < 0.003"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 0.012 < i5 < 0.03"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert i5 < i50 < 0.07"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "isinstance(i50, float)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isinstance(i50, float)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "inflasi_best_of_n(0.8, 500, 5, 4000, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert inflasi_best_of_n(0.8, 500, 5, 4000, 0) == i5"
+              }
+            ]
+          },
+          "hint": "Satu panggilan rng.binomial dengan size=(trials, n_models) cukup. Gunakan max sepanjang axis=1 lalu mean.",
+          "solution": "import numpy as np\n\ndef inflasi_best_of_n(true_acc, n_dev, n_models, trials, seed):\n    rng = np.random.default_rng(seed)\n    acc = rng.binomial(n_dev, true_acc, size=(trials, n_models)) / n_dev\n    return float((acc.max(axis=1) - true_acc).mean())",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Pada wakeword, mana yang menjadi optimizing metric?",
+          "code": null,
+          "options": [
+            {
+              "label": "False positive per 24 jam",
+              "description": ""
+            },
+            {
+              "label": "False negative rate",
+              "description": ""
+            },
+            {
+              "label": "Ukuran berkas model",
+              "description": ""
+            },
+            {
+              "label": "Waktu eksekusi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "False negative rate diminimalkan dengan syarat false positive per 24 jam tidak lebih dari satu."
+        },
+        {
+          "q": "Jika menimbang N kriteria, berapa yang dijadikan satisficing?",
+          "code": null,
+          "options": [
+            {
+              "label": "N",
+              "description": ""
+            },
+            {
+              "label": "N - 1",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Satu kriteria menjadi optimizing metric dan sisanya N - 1 menjadi satisficing dengan ambang."
+        },
+        {
+          "q": "Performa dev jauh lebih baik dari test pada distribusi yang sama. Tindakan yang disarankan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Ganti metrik",
+              "description": ""
+            },
+            {
+              "label": "Ambil dev set baru",
+              "description": ""
+            },
+            {
+              "label": "Hapus test set",
+              "description": ""
+            },
+            {
+              "label": "Latih lebih lama",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Itu tanda overfit ke dev set akibat evaluasi berulang, dan solusinya dev set baru."
+        },
+        {
+          "q": "Apa yang tidak boleh dilakukan dengan hasil evaluasi test set mingguan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dilaporkan ke tim",
+              "description": ""
+            },
+            {
+              "label": "Dipakai memutuskan rollback",
+              "description": ""
+            },
+            {
+              "label": "Dicatat",
+              "description": ""
+            },
+            {
+              "label": "Dibandingkan antar minggu",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Memakai test set untuk keputusan membuatnya ikut overfit dan tidak lagi bisa menjadi estimasi tidak bias."
+        },
+        {
+          "q": "Mengapa angka dev terbaik dari 500 percobaan cenderung terlalu optimis?",
+          "code": null,
+          "options": [
+            {
+              "label": "Karena data berubah",
+              "description": ""
+            },
+            {
+              "label": "Karena memilih maksimum dari banyak pengukuran berderau",
+              "description": ""
+            },
+            {
+              "label": "Karena test lebih mudah",
+              "description": ""
+            },
+            {
+              "label": "Karena komputasi kurang",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Maksimum dari banyak pengukuran berderau secara sistematis berada di atas nilai sebenarnya."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menggabungkan akurasi dan waktu eksekusi dalam rumus berbobot yang sulit dijustifikasi. Lebih baik: Tetapkan batas yang dapat diterima untuk satu metrik (satisficing) lalu optimalkan metrik lain.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menggabungkan akurasi dan waktu eksekusi dalam rumus berbobot yang sulit dijustifikasi.",
+          "fix": "Tetapkan batas yang dapat diterima untuk satu metrik (satisficing) lalu optimalkan metrik lain."
+        },
+        {
+          "mistake": "Memakai test set mingguan untuk memutuskan rollback.",
+          "fix": "Gunakan test set hanya untuk pelacakan, dan ambil keputusan dengan dev set."
+        },
+        {
+          "mistake": "Terlalu lama menyempurnakan dev set dan metrik awal.",
+          "fix": "Tetapkan versi pertama dalam kurang dari seminggu untuk aplikasi baru, lalu perbaiki saat terbukti meleset."
+        }
+      ],
+      "summary": [
+        "Pilih satu optimizing metric dan jadikan sisanya satisficing dengan ambang yang jelas.",
+        "Siklus ide, kode, eksperimen berjalan jauh lebih cepat dengan dev set dan metrik.",
+        "Ubah dev, test, atau metrik bila distribusi berubah, dev overfit, atau metrik salah, dan umumkan ke tim.",
+        "Test set tidak dipakai untuk keputusan, dan percobaan berulang pada dev menginflasi angka dev."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 9 sampai 12 (Andrew Ng): metrik optimizing dan satisficing, iterasi, kapan mengubah, dan ringkasan"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Optimizing, satisficing, iterasi, dan kapan mengubah"
+          },
+          {
+            "type": "text",
+            "source": "Waktu eksekusi dijadikan filter (satisficing), lalu akurasi dimaksimalkan di antara yang lolos (optimizing). C paling akurat tetapi gugur oleh batas waktu. Aturan ini bisa dijelaskan dalam satu kalimat kepada siapa pun di tim."
+          },
+          {
+            "type": "code",
+            "source": "models = {\n    \"A\": {\"akurasi\": 0.90, \"ms\": 80},\n    \"B\": {\"akurasi\": 0.92, \"ms\": 95},\n    \"C\": {\"akurasi\": 0.95, \"ms\": 1500},\n}\nbatas_ms = 100\nlayak = {n: m for n, m in models.items() if m[\"ms\"] <= batas_ms}\nterbaik = max(layak, key=lambda n: layak[n][\"akurasi\"])\nprint(\"layak:\", sorted(layak))\nprint(\"terbaik:\", terbaik)"
+          },
+          {
+            "type": "text",
+            "source": "Model m2 punya false negative terendah tetapi melanggar batas satu false positive per 24 jam, jadi tersingkir. Di antara yang layak, m3 memiliki false negative terendah. Pola ini sama dengan contoh wakeword pada teks."
+          },
+          {
+            "type": "code",
+            "source": "kandidat = {\n    \"m1\": {\"fn\": 0.08, \"fp_per_24j\": 0.6},\n    \"m2\": {\"fn\": 0.05, \"fp_per_24j\": 1.4},\n    \"m3\": {\"fn\": 0.06, \"fp_per_24j\": 0.9},\n    \"m4\": {\"fn\": 0.12, \"fp_per_24j\": 0.1},\n}\nlayak = {n: v for n, v in kandidat.items() if v[\"fp_per_24j\"] <= 1.0}\nterbaik = min(layak, key=lambda n: (layak[n][\"fn\"], layak[n][\"fp_per_24j\"]))\nprint(\"layak:\", sorted(layak))\nprint(\"terbaik:\", terbaik)"
+          },
+          {
+            "type": "text",
+            "source": "Semua model sebenarnya sama baik (akurasi 80 persen). Tetapi bila kamu mencoba banyak ide lalu mengambil yang terbaik di dev set, angka dev yang kamu laporkan lebih tinggi dari kenyataan, dan inflasinya naik dengan banyaknya percobaan. Ini mekanisme overfit ke dev set, dan alasan test set yang tidak disentuh tetap diperlukan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nrng = np.random.default_rng(0)\ntrue_acc, n_dev, trials = 0.80, 500, 4000\nprint(\"jumlah model dicoba   rata-rata inflasi dev\")\nfor n_model in [1, 5, 50, 500]:\n    acc = rng.binomial(n_dev, true_acc, size=(trials, n_model)) / n_dev\n    inflasi = float((acc.max(axis=1) - true_acc).mean())\n    print(f\"{n_model:19d}   {inflasi:.4f}\")"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": true,
+    "kind": "ai_slides",
+    "reason": "Diagram aliran data web ke ponsel dan ilustrasi derau pengukuran lebih jelas secara visual.",
+    "brief": [
+      "Slide 1: cerita kucing, training dari web dan pengguna dari ponsel",
+      "Slide 2: tiga set data dan perannya",
+      "Slide 3: empat wilayah dan mengapa dev dan test harus dicampur",
+      "Slide 4: standard error dan ukuran dev set",
+      "Slide 5: F1, rata-rata berbobot, dan metrik tunggal",
+      "Slide 6: optimizing versus satisficing dengan contoh wakeword",
+      "Slide 7: tiga penyebab mengganti dev set atau metrik"
+    ]
+  },
+  "references": [
+    {
+      "book": "Machine Learning Yearning (Andrew Ng)",
+      "chapters": "bab 5 sampai 12"
+    }
+  ]
+}

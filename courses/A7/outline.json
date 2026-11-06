@@ -1,0 +1,68 @@
+{
+  "id": "A7",
+  "title": "Git dan Alur Kerja Reproducible",
+  "title_short": "Git & Reproduksi",
+  "icon": "git",
+  "track": "A",
+  "track_label": "Fondasi",
+  "track_name": "Fondasi",
+  "level": "Pemula",
+  "module_count": 4,
+  "total_minutes": 420,
+  "exercise_count": 48,
+  "prerequisites": [
+    "A6"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "A7",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Git dan Alur Kerja Reproducible",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-A7"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Konsep version control",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Commit, branch, dan riwayat",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Merge, konflik, dan kolaborasi",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Workflow analisis yang reproducible",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

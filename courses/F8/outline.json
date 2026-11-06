@@ -1,0 +1,85 @@
+{
+  "id": "F8",
+  "title": "Merancang Sistem Data",
+  "title_short": "Desain Sistem Data",
+  "icon": "database",
+  "track": "F",
+  "track_label": "Data Engineering",
+  "track_name": "Data Engineering",
+  "level": "Menengah",
+  "module_count": 5,
+  "total_minutes": 525,
+  "exercise_count": 60,
+  "prerequisites": [
+    "F7"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "F8",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Merancang Sistem Data",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-F8"
+  },
+  "sources": [
+    {
+      "code": "DDIA",
+      "title": "Designing Data-Intensive Applications",
+      "author": "Martin Kleppmann",
+      "chapters": "bab 1 dan 12"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Reliability",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Scalability",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Maintainability",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Integrasi data",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Kebenaran dan etika data",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

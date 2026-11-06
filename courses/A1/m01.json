@@ -1,0 +1,1556 @@
+{
+  "schema_version": 2,
+  "course_id": "A1",
+  "module_no": 1,
+  "title": "Variabel, tipe data, dan operator",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menggunakan variabel dan lima tipe dasar Python dengan benar",
+    "Menulis ekspresi aritmetika, perbandingan, dan logika yang aman",
+    "Memformat keluaran dan memvalidasi input pengguna"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A1-01-1",
+    "exercise_id": "A1-01-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def valid_nama(nama):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A1-01-1",
+      "title": "Variabel dan tipe data dasar",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan variabel sebagai nama yang menunjuk ke sebuah nilai",
+        "Mengenali tipe int, float, str, bool, dan None serta memeriksanya dengan type()",
+        "Menerapkan aturan penamaan variabel dan konvensi snake_case",
+        "Mengubah tipe nilai dengan int(), float(), str(), dan bool()"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Variabel sebagai nama untuk sebuah nilai",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Variabel sebagai nama untuk sebuah nilai\n\nSetiap program mengolah data, dan data itu perlu diberi nama agar bisa dipakai lagi. Di Python, **variabel** adalah nama yang menunjuk ke sebuah nilai di memori. Kamu membuatnya dengan tanda sama dengan: `umur = 21` berarti nama `umur` sekarang menunjuk ke angka 21. Tanda sama dengan di sini bukan pernyataan kesetaraan seperti di matematika, melainkan perintah penugasan: simpan nilai di kanan ke nama di kiri.\n\nPython tidak meminta kamu mendeklarasikan tipe lebih dulu. Tipe melekat pada nilai, bukan pada nama. Nama yang sama boleh menunjuk ke angka sekarang dan ke teks beberapa baris kemudian. Kelonggaran ini membuat kode singkat, tetapi juga berarti kamu perlu disiplin: nama yang jelas dan tipe yang konsisten menghindarkan kejutan di tengah program.\n\nDalam data science, hampir semua pekerjaan dimulai dengan menamai data: `harga`, `jumlah_baris`, `rata_rata`, `nama_kolom`. Kebiasaan menamai dengan baik sejak awal akan menyelamatkanmu ketika notebook sudah berisi ratusan baris."
+            },
+            {
+              "type": "text",
+              "markdown": "## Lima tipe yang paling sering muncul\n\nAda lima tipe dasar yang wajib kamu kenal. **int** adalah bilangan bulat seperti `7` atau `-3`, dan Python mengizinkan ukurannya sebesar apa pun selama memori cukup. **float** adalah bilangan pecahan seperti `3.14` atau `2.0`, yang disimpan sebagai pendekatan biner sehingga kadang tidak persis. **str** adalah teks yang diapit tanda kutip tunggal atau ganda, misalnya `\"Jakarta\"`. **bool** hanya punya dua nilai, `True` dan `False`, dan muncul dari hasil perbandingan. Terakhir **None**, nilai khusus yang berarti tidak ada nilai.\n\nFungsi `type()` memberi tahu tipe sebuah nilai, dan ini alat pertama saat kamu bingung mengapa kode berperilaku aneh. Banyak galat pemula sebenarnya galat tipe: menjumlahkan teks dengan angka, atau mengira `\"5\"` sama dengan `5`.\n\nPerhatikan bahwa `True` dan `False` ditulis dengan huruf kapital di awal. Menulis `true` akan memunculkan `NameError` karena Python menganggapnya nama biasa yang belum didefinisikan."
+            },
+            {
+              "type": "analogy",
+              "title": "Analogi label pada kotak",
+              "text": "Bayangkan nilai sebagai kotak berisi barang, dan variabel sebagai label yang ditempel pada kotak. Satu kotak boleh punya dua label, dan label boleh dipindah ke kotak lain. Barang di dalam kotak punya jenis sendiri, sedangkan label hanyalah nama untuk menemukannya.",
+              "image": null
+            },
+            {
+              "type": "code_example",
+              "filename": "lima_tipe.py",
+              "runnable": true,
+              "code": "umur = 21\ntinggi = 170.5\nkota = \"Depok\"\naktif = True\ncatatan = None\n\nfor nilai in [umur, tinggi, kota, aktif, catatan]:\n    print(nilai, type(nilai).__name__)",
+              "expected_output_note": "21 int\n170.5 float\nDepok str\nTrue bool\nNone NoneType",
+              "explanation": "Lima nilai dengan lima tipe berbeda. Atribut `__name__` pada hasil `type()` memberi nama tipe yang lebih rapi dibaca."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa tipe dari nilai 7.0?",
+            "options": [
+              "float",
+              "int"
+            ],
+            "answer_index": 0,
+            "explanation": "Angka dengan titik desimal bertipe float meski bagian pecahannya nol.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Aturan dan konvensi penamaan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Aturan dan konvensi penamaan\n\nNama variabel boleh berisi huruf, angka, dan garis bawah, tetapi tidak boleh diawali angka dan tidak boleh berupa kata kunci Python seperti `if`, `for`, atau `class`. Python membedakan huruf besar dan kecil, jadi `Total` dan `total` adalah dua nama yang berbeda.\n\nDi luar aturan wajib, komunitas Python memakai konvensi **snake_case**: huruf kecil semua dengan garis bawah sebagai pemisah kata, seperti `rata_rata_harga`. Nama konstanta ditulis huruf besar semua, misalnya `BATAS_MAKSIMAL`. Nama yang menjelaskan isi lebih baik daripada singkatan samar. `n_pelanggan` jauh lebih jelas daripada `x1`.\n\nHindari menimpa nama bawaan seperti `list`, `str`, `sum`, atau `max`. Jika kamu menulis `sum = 10`, fungsi `sum()` bawaan tidak bisa lagi dipanggil di sesi yang sama, dan error yang muncul berikutnya membingungkan."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Jangan timpa nama bawaan",
+              "markdown": "Menimpa nama bawaan adalah sumber bug yang sulit dilacak di notebook, karena sel lama masih menyimpan nama yang sudah tertimpa. Jika terlanjur, restart kernel atau jalankan `del sum` untuk mengembalikan nama bawaan."
+            },
+            {
+              "type": "code_example",
+              "filename": "penugasan.py",
+              "runnable": true,
+              "code": "x = 10\ny = x\nx = 25\nprint(x, y)\n\na = b = 0\na = a + 5\nprint(a, b)\n\np, q = 3, 4\np, q = q, p\nprint(p, q)",
+              "expected_output_note": "25 10\n5 0\n4 3",
+              "explanation": "Penugasan `y = x` menyalin acuan ke nilai, bukan hubungan permanen, jadi mengubah `x` kemudian tidak memengaruhi `y`. Python juga mendukung penugasan ganda dan pertukaran dua nilai tanpa variabel bantu."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil int(-3.9)?",
+            "options": [
+              "-4",
+              "-3"
+            ],
+            "answer_index": 1,
+            "explanation": "int() memotong menuju nol sehingga -3.9 menjadi -3.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Konversi tipe",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Konversi tipe\n\nData dari file atau input pengguna hampir selalu datang sebagai teks. Untuk menghitung, kamu perlu mengubahnya. `int(\"42\")` menghasilkan 42, `float(\"3.5\")` menghasilkan 3.5, dan `str(99)` menghasilkan `\"99\"`. Konversi yang mustahil, seperti `int(\"halo\")`, menimbulkan `ValueError`.\n\nFungsi `int()` pada float memotong bagian pecahan menuju nol, bukan membulatkan. Jadi `int(3.9)` adalah 3 dan `int(-3.9)` adalah -3. Untuk pembulatan gunakan `round()`.\n\nFungsi `bool()` mengubah nilai apa pun menjadi benar atau salah. Angka nol, string kosong, dan `None` dianggap `False`. Hampir semua nilai lain dianggap `True`. Sifat ini disebut *truthiness* dan akan sering kamu pakai pada kondisi `if`."
+            },
+            {
+              "type": "code_example",
+              "filename": "konversi.py",
+              "runnable": true,
+              "code": "print(int(\"42\") + 1)\nprint(float(\"3.5\") * 2)\nprint(str(99) + \"!\")\nprint(int(3.9), int(-3.9), round(3.9))\nprint(bool(0), bool(\"\"), bool(None), bool(\"0\"), bool(-1))",
+              "expected_output_note": "43\n7.0\n99!\n3 -3 4\nFalse False False True True",
+              "explanation": "`int()` memotong menuju nol sedangkan `round()` membulatkan. String `\"0\"` bernilai `True` karena tidak kosong."
+            }
+          ],
+          "quick_check": {
+            "question": "Nama variabel mana yang tidak sah?",
+            "options": [
+              "2harga",
+              "harga_2"
+            ],
+            "answer_index": 0,
+            "explanation": "Nama tidak boleh diawali angka.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-01-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `nama_tipe(nilai)` yang mengembalikan nama tipe nilai sebagai string, misalnya `\"int\"` atau `\"str\"`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def nama_tipe(nilai):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_tipe(5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_tipe(5) == \"int\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_tipe(2.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_tipe(2.5) == \"float\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_tipe(\"a\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_tipe(\"a\") == \"str\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "nama_tipe(True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_tipe(True) == \"bool\""
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "nama_tipe(None)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_tipe(None) == \"NoneType\""
+              }
+            ]
+          },
+          "hint": "Gunakan type(nilai).__name__.",
+          "solution": "def nama_tipe(nilai):\n    return type(nilai).__name__",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-01-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `tukar(a, b)` yang mengembalikan tuple `(b, a)` tanpa memakai variabel bantu.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def tukar(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tukar(1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tukar(1, 2) == (2, 1)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tukar(\"x\", \"y\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tukar(\"x\", \"y\") == (\"y\", \"x\")"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tukar(None, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tukar(None, 0) == (0, None)"
+              }
+            ]
+          },
+          "hint": "Python bisa langsung mengembalikan b, a.",
+          "solution": "def tukar(a, b):\n    return b, a",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-01-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `ke_angka(teks)` yang mengubah string menjadi int bila bisa.",
+          "note": "Jika tidak bisa tetapi bisa menjadi float kembalikan float. Jika keduanya gagal kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "def ke_angka(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isinstance(ke_angka(\"42\"), int)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_angka(\"42\") == 42 and isinstance(ke_angka(\"42\"), int)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ke_angka(\"3.5\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_angka(\"3.5\") == 3.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ke_angka(\"halo\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_angka(\"halo\") is None"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ke_angka(\"-7\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_angka(\"-7\") == -7"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "ke_angka(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_angka(\"\") is None"
+              }
+            ]
+          },
+          "hint": "Coba int() dalam blok try, lalu float(), tangkap ValueError.",
+          "solution": "def ke_angka(teks):\n    try:\n        return int(teks)\n    except ValueError:\n        pass\n    try:\n        return float(teks)\n    except ValueError:\n        return None",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-01-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `valid_nama(nama)` yang mengembalikan `True` bila `nama` adalah nama variabel Python yang sah menurut aturan penamaan dan tidak ada di himpunan `RESERVED` yang sudah disediakan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "RESERVED = {\"for\", \"if\", \"class\", \"def\", \"while\", \"return\"}\n\ndef valid_nama(nama):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "valid_nama(\"rata_rata\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_nama(\"rata_rata\") is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "valid_nama(\"_x1\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_nama(\"_x1\") is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "valid_nama(\"1x\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_nama(\"1x\") is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "valid_nama(\"for\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_nama(\"for\") is False"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "valid_nama(\"return\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_nama(\"return\") is False"
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "valid_nama(\"a-b\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_nama(\"a-b\") is False"
+              },
+              {
+                "id": 7,
+                "name": "Kasus 7",
+                "label": "valid_nama(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_nama(\"\") is False"
+              }
+            ]
+          },
+          "hint": "String punya metode isidentifier(). Gabungkan dengan pemeriksaan keanggotaan di RESERVED.",
+          "solution": "RESERVED = {\"for\", \"if\", \"class\", \"def\", \"while\", \"return\"}\n\ndef valid_nama(nama):\n    return nama.isidentifier() and nama not in RESERVED",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa tipe dari nilai 7.0?",
+          "code": null,
+          "options": [
+            {
+              "label": "int",
+              "description": ""
+            },
+            {
+              "label": "float",
+              "description": ""
+            },
+            {
+              "label": "str",
+              "description": ""
+            },
+            {
+              "label": "bool",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Perhatikan ada tidaknya titik desimal.",
+          "explanation": "Angka dengan titik desimal bertipe float meski bagian pecahannya nol."
+        },
+        {
+          "q": "Hasil int(-3.9)?",
+          "code": null,
+          "options": [
+            {
+              "label": "-4",
+              "description": ""
+            },
+            {
+              "label": "-3",
+              "description": ""
+            },
+            {
+              "label": "3",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "int() tidak membulatkan.",
+          "explanation": "int() memotong menuju nol sehingga -3.9 menjadi -3."
+        },
+        {
+          "q": "Nama variabel mana yang tidak sah?",
+          "code": null,
+          "options": [
+            {
+              "label": "harga_2",
+              "description": ""
+            },
+            {
+              "label": "_total",
+              "description": ""
+            },
+            {
+              "label": "2harga",
+              "description": ""
+            },
+            {
+              "label": "Harga",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Lihat karakter pertama.",
+          "explanation": "Nama tidak boleh diawali angka."
+        },
+        {
+          "q": "Hasil bool('0')?",
+          "code": null,
+          "options": [
+            {
+              "label": "False",
+              "description": ""
+            },
+            {
+              "label": "True",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Yang menentukan hanya apakah string kosong.",
+          "explanation": "String tidak kosong selalu True, termasuk '0'."
+        },
+        {
+          "q": "Setelah x = 10, y = x, x = 25, berapa y?",
+          "code": null,
+          "options": [
+            {
+              "label": "25",
+              "description": ""
+            },
+            {
+              "label": "10",
+              "description": ""
+            },
+            {
+              "label": "35",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Mengubah x tidak menyentuh y.",
+          "explanation": "y tetap menunjuk ke nilai 10 karena penugasan tidak menghubungkan dua nama."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis true atau false dengan huruf kecil. Lebih baik: Tulis True dan False dengan huruf kapital di awal.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis true atau false dengan huruf kecil.",
+          "fix": "Tulis True dan False dengan huruf kapital di awal."
+        },
+        {
+          "mistake": "Menjumlahkan teks dan angka langsung.",
+          "fix": "Ubah dulu salah satunya dengan str() atau int()."
+        },
+        {
+          "mistake": "Memakai nama bawaan seperti list atau sum sebagai variabel.",
+          "fix": "Pilih nama lain yang lebih deskriptif."
+        }
+      ],
+      "summary": [
+        "Variabel adalah nama yang menunjuk ke nilai dan tipe melekat pada nilai.",
+        "Lima tipe dasar adalah int, float, str, bool, dan None.",
+        "Gunakan snake_case dan jangan menimpa nama bawaan.",
+        "Konversi dengan int, float, str, bool dan kenali truthiness."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Variabel dan tipe data dasar"
+          },
+          {
+            "type": "text",
+            "source": "Lima nilai dengan lima tipe berbeda. Atribut `__name__` pada hasil `type()` memberi nama tipe yang lebih rapi dibaca."
+          },
+          {
+            "type": "code",
+            "source": "umur = 21\ntinggi = 170.5\nkota = \"Depok\"\naktif = True\ncatatan = None\n\nfor nilai in [umur, tinggi, kota, aktif, catatan]:\n    print(nilai, type(nilai).__name__)"
+          },
+          {
+            "type": "text",
+            "source": "Penugasan `y = x` menyalin acuan ke nilai, bukan hubungan permanen, jadi mengubah `x` kemudian tidak memengaruhi `y`. Python juga mendukung penugasan ganda dan pertukaran dua nilai tanpa variabel bantu."
+          },
+          {
+            "type": "code",
+            "source": "x = 10\ny = x\nx = 25\nprint(x, y)\n\na = b = 0\na = a + 5\nprint(a, b)\n\np, q = 3, 4\np, q = q, p\nprint(p, q)"
+          },
+          {
+            "type": "text",
+            "source": "`int()` memotong menuju nol sedangkan `round()` membulatkan. String `\"0\"` bernilai `True` karena tidak kosong."
+          },
+          {
+            "type": "code",
+            "source": "print(int(\"42\") + 1)\nprint(float(\"3.5\") * 2)\nprint(str(99) + \"!\")\nprint(int(3.9), int(-3.9), round(3.9))\nprint(bool(0), bool(\"\"), bool(None), bool(\"0\"), bool(-1))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-01-2",
+      "title": "Operator aritmetika, perbandingan, dan logika",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Memakai operator aritmetika termasuk //, %, dan **",
+        "Menjelaskan mengapa 0.1 + 0.2 tidak persis 0.3 dan cara membandingkan float",
+        "Menyusun ekspresi perbandingan termasuk perbandingan berantai",
+        "Menggabungkan kondisi dengan and, or, not dan memahami short-circuit"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Operator aritmetika",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Operator aritmetika\n\nPython menyediakan operator aritmetika yang familiar: `+`, `-`, `*`, dan `/`. Perhatikan bahwa pembagian `/` selalu menghasilkan float, bahkan bila hasilnya bulat: `6 / 3` adalah `2.0`. Untuk pembagian bulat yang membuang pecahan, pakai `//`. Untuk sisa bagi, pakai `%`. Untuk pangkat, pakai `**`.\n\nOperator sisa bagi sangat berguna. Ia mengecek bilangan genap atau ganjil (`n % 2`), mengelompokkan indeks secara melingkar, dan mengubah detik menjadi menit dan sisa detik. Pembagian bulat dan sisa bagi saling melengkapi: untuk bilangan positif, `a == (a // b) * b + a % b` selalu benar.\n\nUntuk bilangan negatif, `//` membulatkan ke bawah menuju minus tak hingga, bukan menuju nol. Jadi `-7 // 2` adalah `-4`. Perilaku ini berbeda dengan sebagian bahasa lain, dan menjadi sumber kejutan bila kamu terbiasa dengan bahasa tersebut."
+            },
+            {
+              "type": "code_example",
+              "filename": "aritmetika.py",
+              "runnable": true,
+              "code": "print(7 / 2, 7 // 2, 7 % 2, 2 ** 10)\nprint(-7 // 2, -7 % 2)\ndetik = 3725\nmenit, sisa = divmod(detik, 60)\njam, menit = divmod(menit, 60)\nprint(jam, menit, sisa)",
+              "expected_output_note": "3.5 3 1 1024\n-4 1\n1 2 5",
+              "explanation": "`divmod` mengembalikan hasil bagi bulat dan sisa sekaligus, cocok untuk konversi satuan waktu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Galat pembulatan pada float\n\nKomputer menyimpan float dalam biner, dan banyak pecahan desimal sederhana tidak punya representasi biner yang tepat. Akibatnya `0.1 + 0.2` menghasilkan `0.30000000000000004`, bukan `0.3`. Ini bukan bug Python, melainkan sifat standar IEEE 754 yang dipakai hampir semua bahasa.\n\nKonsekuensinya, jangan pernah membandingkan dua float dengan `==` bila keduanya hasil perhitungan. Gunakan toleransi: dua angka dianggap sama bila selisih mutlaknya sangat kecil. Modul `math` menyediakan `math.isclose(a, b)` untuk itu.\n\nDalam data science kamu akan sering menghitung rata-rata, jumlah, dan rasio dari float, sehingga kebiasaan ini penting. Untuk uang, pertimbangkan menyimpan sebagai bilangan bulat dalam satuan terkecil, misalnya sen, atau memakai modul `decimal`."
+            },
+            {
+              "type": "code_example",
+              "filename": "float_galat.py",
+              "runnable": true,
+              "code": "import math\n\nprint(0.1 + 0.2)\nprint(0.1 + 0.2 == 0.3)\nprint(math.isclose(0.1 + 0.2, 0.3))\nprint(round(0.1 + 0.2, 2) == 0.3)",
+              "expected_output_note": "0.30000000000000004\nFalse\nTrue\nTrue",
+              "explanation": "Perbandingan `==` gagal karena galat biner kecil. `math.isclose` dan pembulatan sama-sama memberi jawaban yang diharapkan."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil 7 // 2?",
+            "options": [
+              "3",
+              "3.5"
+            ],
+            "answer_index": 0,
+            "explanation": "Pembagian bulat membuang pecahan sehingga hasilnya 3.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Operator perbandingan dan hasilnya",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Operator perbandingan dan hasilnya\n\nOperator perbandingan adalah `==`, `!=`, `<`, `>`, `<=`, dan `>=`. Hasilnya selalu bertipe bool. Jangan keliru antara `=` yang menugaskan dan `==` yang membandingkan. Menulis `if x = 3` menimbulkan `SyntaxError`, yang justru membantu menangkap kesalahan itu.\n\nPython mengizinkan perbandingan berantai yang terbaca seperti matematika: `0 <= x < 10` bernilai benar bila x berada di rentang nol sampai sebelum sepuluh. Ini lebih ringkas dan lebih jelas daripada `x >= 0 and x < 10`.\n\nTeks juga bisa dibandingkan dan diurutkan secara leksikografis berdasarkan kode karakter. Huruf kapital berurutan sebelum huruf kecil, jadi `\"Z\" < \"a\"` bernilai benar. Karena itu, untuk perbandingan tanpa peduli kapitalisasi, ubah kedua teks ke huruf kecil lebih dulu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Operator logika dan short-circuit\n\nOperator `and`, `or`, dan `not` menggabungkan kondisi. `and` benar bila keduanya benar, `or` benar bila salah satunya benar, dan `not` membalik nilai. Prioritasnya: `not` lebih dulu, lalu `and`, lalu `or`. Gunakan tanda kurung agar maksud kamu jelas bagi pembaca.\n\nPython mengevaluasi dengan **short-circuit**: pada `A and B`, bila A salah maka B tidak pernah dievaluasi karena hasilnya sudah pasti salah. Pada `A or B`, bila A benar maka B dilewati. Sifat ini dipakai untuk menjaga keamanan, misalnya `n != 0 and 10 / n > 2` tidak akan pernah membagi dengan nol.\n\nSatu detail menarik: `and` dan `or` mengembalikan salah satu operandnya, bukan selalu True atau False. `\"\" or \"default\"` menghasilkan `\"default\"`. Pola ini sering dipakai untuk nilai bawaan."
+            },
+            {
+              "type": "code_example",
+              "filename": "logika.py",
+              "runnable": true,
+              "code": "x = 7\nprint(0 <= x < 10, 10 <= x < 20)\nn = 0\nprint(n != 0 and 10 / n > 2)\nprint(\"\" or \"default\", \"isi\" or \"default\")\nprint(not (x > 5 and x < 6), x > 5 or 1 / 0)\nprint(\"Z\" < \"a\", \"z\".lower() == \"Z\".lower())",
+              "expected_output_note": "True False\nFalse\ndefault isi\nTrue True\nTrue True",
+              "explanation": "Short-circuit mencegah pembagian dengan nol dan membuat ekspresi `x > 5 or 1 / 0` aman. Operator `or` mengembalikan operand pertama yang bernilai benar."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil -7 // 2?",
+            "options": [
+              "-3",
+              "-4"
+            ],
+            "answer_index": 1,
+            "explanation": "Pembagian bulat membulatkan ke bawah.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Penugasan gabungan dan urutan evaluasi",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Penugasan gabungan dan urutan evaluasi\n\nOperator penugasan gabungan seperti `+=`, `-=`, `*=`, dan `//=` menyingkat pola `x = x + 1` menjadi `x += 1`. Pola ini ada di hampir setiap perulangan penghitung. Python tidak punya operator `++`, jadi kamu menulis `x += 1`.\n\nUrutan evaluasi mengikuti prioritas: tanda kurung, lalu pangkat, lalu perkalian dan pembagian, lalu penjumlahan dan pengurangan, kemudian perbandingan, dan terakhir operator logika. Meski begitu, jangan mengandalkan hafalan. Tanda kurung tambahan tidak merugikan dan membuat maksud langsung terbaca. Ekspresi seperti `-2 ** 2` bernilai `-4`, karena pangkat lebih kuat dari tanda minus, dan ini sering mengejutkan pemula.\n\nLatih kebiasaan memecah ekspresi panjang menjadi beberapa baris dengan variabel perantara yang bernama jelas. Kode data science yang mudah dibaca sama pentingnya dengan kode yang benar."
+            },
+            {
+              "type": "callout",
+              "kind": "note",
+              "title": "Perbedaan == dan is",
+              "markdown": "Operator `==` membandingkan nilai, sedangkan `is` memeriksa apakah dua nama menunjuk ke objek yang sama. Untuk angka dan teks gunakan `==`. Gunakan `is` hanya untuk `None`, misalnya `if hasil is None`, karena `None` hanya ada satu di seluruh program dan itulah cara yang dianjurkan."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa 0.1 + 0.2 == 0.3 bernilai False?",
+            "options": [
+              "Float disimpan sebagai pendekatan biner",
+              "Bug Python"
+            ],
+            "answer_index": 0,
+            "explanation": "Banyak pecahan desimal tidak punya representasi biner tepat.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-01-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `genap(n)` yang mengembalikan `True` bila bilangan bulat `n` genap.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def genap(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "genap(4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert genap(4) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "genap(7)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert genap(7) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "genap(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert genap(0) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "genap(-2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert genap(-2) is True"
+              }
+            ]
+          },
+          "hint": "Sisa bagi dengan 2 sama dengan nol.",
+          "solution": "def genap(n):\n    return n % 2 == 0",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-01-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ke_jam(detik)` yang mengembalikan tuple `(jam, menit, sisa_detik)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def ke_jam(detik):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ke_jam(3725)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_jam(3725) == (1, 2, 5)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ke_jam(59)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_jam(59) == (0, 0, 59)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ke_jam(7200)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_jam(7200) == (2, 0, 0)"
+              }
+            ]
+          },
+          "hint": "Pakai divmod dua kali.",
+          "solution": "def ke_jam(detik):\n    menit, sisa = divmod(detik, 60)\n    jam, menit = divmod(menit, 60)\n    return jam, menit, sisa",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-01-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `hampir_sama(a, b, toleransi)` yang mengembalikan `True` bila selisih mutlak `a` dan `b` tidak lebih dari `toleransi`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def hampir_sama(a, b, toleransi):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hampir_sama(0.1 + 0.2, 0.3, 1e-9)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hampir_sama(0.1 + 0.2, 0.3, 1e-9) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hampir_sama(1.0, 1.1, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hampir_sama(1.0, 1.1, 0.05) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hampir_sama(5, 5, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hampir_sama(5, 5, 0) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "hampir_sama(1.0, 1.05, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hampir_sama(1.0, 1.05, 0.05) is True"
+              }
+            ]
+          },
+          "hint": "Gunakan abs(a - b) <= toleransi. Perhatikan galat float pada kasus terakhir, uji dengan nilai yang aman.",
+          "solution": "def hampir_sama(a, b, toleransi):\n    return abs(a - b) <= toleransi + 1e-12",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-01-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `tahun_kabisat(tahun)` yang mengembalikan `True` bila tahun kabisat: habis dibagi 4, kecuali habis dibagi 100 tetapi tidak habis dibagi 400.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def tahun_kabisat(tahun):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tahun_kabisat(2024)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tahun_kabisat(2024) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tahun_kabisat(2023)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tahun_kabisat(2023) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tahun_kabisat(1900)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tahun_kabisat(1900) is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tahun_kabisat(2000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tahun_kabisat(2000) is True"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "tahun_kabisat(2100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tahun_kabisat(2100) is False"
+              }
+            ]
+          },
+          "hint": "Gabungkan tiga kondisi dengan and dan or serta tanda kurung.",
+          "solution": "def tahun_kabisat(tahun):\n    return (tahun % 4 == 0 and tahun % 100 != 0) or tahun % 400 == 0",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Hasil 7 // 2?",
+          "code": null,
+          "options": [
+            {
+              "label": "3.5",
+              "description": ""
+            },
+            {
+              "label": "3",
+              "description": ""
+            },
+            {
+              "label": "4",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Operator // memberi bagian bulat.",
+          "explanation": "Pembagian bulat membuang pecahan sehingga hasilnya 3."
+        },
+        {
+          "q": "Hasil -7 // 2?",
+          "code": null,
+          "options": [
+            {
+              "label": "-3",
+              "description": ""
+            },
+            {
+              "label": "-4",
+              "description": ""
+            },
+            {
+              "label": "3",
+              "description": ""
+            },
+            {
+              "label": "-3.5",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ke bawah berarti makin negatif.",
+          "explanation": "Pembagian bulat membulatkan ke bawah."
+        },
+        {
+          "q": "Mengapa 0.1 + 0.2 == 0.3 bernilai False?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bug Python",
+              "description": ""
+            },
+            {
+              "label": "Float disimpan sebagai pendekatan biner",
+              "description": ""
+            },
+            {
+              "label": "Operator salah",
+              "description": ""
+            },
+            {
+              "label": "Angka terlalu kecil",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pikirkan cara komputer menyimpan float.",
+          "explanation": "Banyak pecahan desimal tidak punya representasi biner tepat."
+        },
+        {
+          "q": "Hasil dari 0 <= 5 < 10?",
+          "code": null,
+          "options": [
+            {
+              "label": "True",
+              "description": ""
+            },
+            {
+              "label": "False",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baca seperti notasi matematika.",
+          "explanation": "Perbandingan berantai memeriksa kedua sisi sekaligus."
+        },
+        {
+          "q": "Hasil dari '' or 'default'?",
+          "code": null,
+          "options": [
+            {
+              "label": "''",
+              "description": ""
+            },
+            {
+              "label": "'default'",
+              "description": ""
+            },
+            {
+              "label": "True",
+              "description": ""
+            },
+            {
+              "label": "False",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Operand mana yang pertama benar?",
+          "explanation": "or mengembalikan operand pertama yang bernilai benar, dan string kosong salah."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membandingkan float hasil hitungan dengan ==. Lebih baik: Pakai math.isclose atau toleransi selisih.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membandingkan float hasil hitungan dengan ==.",
+          "fix": "Pakai math.isclose atau toleransi selisih."
+        },
+        {
+          "mistake": "Menukar = dengan == pada kondisi.",
+          "fix": "Pakai == untuk membandingkan dan = hanya untuk menugaskan."
+        },
+        {
+          "mistake": "Mengira // selalu membulatkan menuju nol.",
+          "fix": "Ingat bahwa // membulatkan ke bawah, jadi -7 // 2 adalah -4."
+        }
+      ],
+      "summary": [
+        "Gunakan /, //, %, dan ** sesuai kebutuhan dan ingat // membulatkan ke bawah.",
+        "Float punya galat biner sehingga bandingkan dengan toleransi.",
+        "Perbandingan bisa dirantai dan menghasilkan bool.",
+        "and dan or memakai short-circuit dan mengembalikan operand."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Operator aritmetika, perbandingan, dan logika"
+          },
+          {
+            "type": "text",
+            "source": "`divmod` mengembalikan hasil bagi bulat dan sisa sekaligus, cocok untuk konversi satuan waktu."
+          },
+          {
+            "type": "code",
+            "source": "print(7 / 2, 7 // 2, 7 % 2, 2 ** 10)\nprint(-7 // 2, -7 % 2)\ndetik = 3725\nmenit, sisa = divmod(detik, 60)\njam, menit = divmod(menit, 60)\nprint(jam, menit, sisa)"
+          },
+          {
+            "type": "text",
+            "source": "Perbandingan `==` gagal karena galat biner kecil. `math.isclose` dan pembulatan sama-sama memberi jawaban yang diharapkan."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nprint(0.1 + 0.2)\nprint(0.1 + 0.2 == 0.3)\nprint(math.isclose(0.1 + 0.2, 0.3))\nprint(round(0.1 + 0.2, 2) == 0.3)"
+          },
+          {
+            "type": "text",
+            "source": "Short-circuit mencegah pembagian dengan nol dan membuat ekspresi `x > 5 or 1 / 0` aman. Operator `or` mengembalikan operand pertama yang bernilai benar."
+          },
+          {
+            "type": "code",
+            "source": "x = 7\nprint(0 <= x < 10, 10 <= x < 20)\nn = 0\nprint(n != 0 and 10 / n > 2)\nprint(\"\" or \"default\", \"isi\" or \"default\")\nprint(not (x > 5 and x < 6), x > 5 or 1 / 0)\nprint(\"Z\" < \"a\", \"z\".lower() == \"Z\".lower())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-01-3",
+      "title": "Output terformat dan input yang aman",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menampilkan nilai dengan print() dan mengatur sep serta end",
+        "Menyusun teks dengan f-string termasuk format angka dan lebar kolom",
+        "Mengolah input pengguna yang selalu berupa teks",
+        "Membuat fungsi yang menolak input tidak valid dengan pesan yang jelas"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "print dan pengaturannya",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## print dan pengaturannya\n\nFungsi `print()` menampilkan nilai ke layar. Ia menerima banyak argumen dan memisahkannya dengan spasi. Parameter `sep` mengubah pemisah, dan parameter `end` mengubah akhiran baris yang secara bawaan adalah baris baru. `print(1, 2, 3, sep=\"-\")` menampilkan `1-2-3`, dan `print(\"a\", end=\"\")` tidak pindah baris.\n\nDalam eksplorasi data, `print` adalah alat debugging paling cepat. Kamu menampilkan nilai perantara untuk memastikan perhitungan benar. Di notebook, nilai ekspresi terakhir sebuah sel ditampilkan otomatis, tetapi `print` tetap berguna ketika kamu ingin beberapa keluaran dari satu sel.\n\nKebiasaan baik adalah menampilkan label bersama nilai, misalnya `print(\"rata-rata:\", rata)`, supaya keluaran berbaris-baris tidak membingungkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## f-string untuk teks yang rapi\n\nCara modern menyisipkan nilai ke dalam teks adalah **f-string**: awali string dengan huruf `f` dan taruh ekspresi di dalam kurung kurawal. `f\"Halo {nama}\"` mengganti `{nama}` dengan isi variabel. Ekspresi apa pun boleh berada di dalam kurung kurawal, termasuk perhitungan.\n\nSetelah ekspresi kamu bisa menambah spesifikasi format dengan titik dua. `{harga:.2f}` menampilkan dua angka di belakang koma, `{n:,}` memberi pemisah ribuan, `{rasio:.1%}` menampilkan persentase, dan `{teks:>10}` menyelaraskan ke kanan dalam lebar sepuluh karakter. Format ini membuat tabel teks rapi tanpa pustaka tambahan.\n\nMenyisipkan tanda `{` literal dilakukan dengan menggandakannya: `{{`. Dan sejak Python 3.8 ada bentuk `{nilai=}` yang menampilkan nama dan nilai sekaligus, sangat berguna untuk debugging cepat."
+            },
+            {
+              "type": "code_example",
+              "filename": "fstring.py",
+              "runnable": true,
+              "code": "nama = \"Sari\"\nharga = 1234567.891\nrasio = 0.4567\nprint(f\"Halo {nama}, total {harga:,.2f}\")\nprint(f\"Akurasi {rasio:.1%}\")\nprint(f\"[{nama:>8}] [{nama:<8}] [{nama:^8}]\")\nprint(f\"{2 * 3 + 1 = }\")\nprint(1, 2, 3, sep=\"-\", end=\"!\\n\")",
+              "expected_output_note": "Halo Sari, total 1,234,567.89\nAkurasi 45.7%\n[    Sari] [Sari    ] [  Sari  ]\n2 * 3 + 1 = 7\n1-2-3!",
+              "explanation": "F-string mendukung ribuan, persentase, dan perataan. Bentuk `{ekspresi = }` menampilkan teks ekspresi bersama hasilnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Tipe hasil input()?",
+            "options": [
+              "str",
+              "int"
+            ],
+            "answer_index": 0,
+            "explanation": "input() selalu mengembalikan string.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Input selalu berupa teks",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Input selalu berupa teks\n\nFungsi `input()` membaca satu baris dari pengguna dan selalu mengembalikan string. Jika pengguna mengetik 25, hasilnya adalah `\"25\"`, bukan angka. Untuk menghitung kamu harus mengonversinya, dan konversi itu bisa gagal bila pengguna mengetik hal lain.\n\nAturan emas pemrograman: jangan percaya input. Selalu anggap input bisa kosong, berisi spasi berlebih, salah ketik, atau di luar rentang. Bersihkan dengan `strip()`, ubah dengan `int()` di dalam `try`, lalu periksa rentang nilainya.\n\nPola ini tetap dipakai ketika kamu membaca CSV atau JSON di modul berikutnya. Data dari luar program selalu berpotensi kotor, dan fungsi yang kuat melaporkan masalah dengan pesan yang jelas, bukan crash tanpa penjelasan."
+            },
+            {
+              "type": "analogy",
+              "title": "Analogi petugas pintu",
+              "text": "Anggap fungsi kamu sebagai gedung dan input sebagai tamu. Petugas pintu memeriksa identitas tamu sebelum mengizinkan masuk. Validasi input adalah petugas itu: tamu yang salah ditolak dengan sopan dan alasan yang jelas, bukan dibiarkan masuk lalu merusak isi gedung.",
+              "image": null
+            },
+            {
+              "type": "code_example",
+              "filename": "validasi_umur.py",
+              "runnable": true,
+              "code": "def baca_umur(teks):\n    teks = teks.strip()\n    if not teks:\n        raise ValueError(\"umur kosong\")\n    umur = int(teks)\n    if not 0 <= umur <= 130:\n        raise ValueError(f\"umur di luar rentang: {umur}\")\n    return umur\n\nfor contoh in [\" 25 \", \"\", \"abc\", \"200\"]:\n    try:\n        print(baca_umur(contoh))\n    except ValueError as e:\n        print(\"galat:\", e)",
+              "expected_output_note": "25\ngalat: umur kosong\ngalat: invalid literal for int() with base 10: 'abc'\ngalat: umur di luar rentang: 200",
+              "explanation": "Fungsi membersihkan spasi, mengonversi, lalu memeriksa rentang. Setiap kegagalan menghasilkan `ValueError` dengan pesan yang bisa ditampilkan ke pengguna."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membangun laporan teks dari data\n\nSetelah mampu memformat satu nilai, kamu bisa merakit laporan kecil. Misalkan kamu punya nama produk, harga, dan jumlah terjual. Satu baris laporan memuat nama yang rata kiri, harga dengan pemisah ribuan, dan jumlah rata kanan. Dengan lebar kolom tetap, banyak baris akan sejajar rapi di layar atau file teks.\n\nPola ini sering dipakai untuk log eksperimen. Setelah melatih model, kamu mencetak satu baris berisi nomor epoch, loss, dan akurasi dengan format tetap, sehingga perkembangan mudah dipindai mata. Konsistensi format juga memudahkan pemrosesan log itu kemudian dengan skrip lain.\n\nPerlu diingat bahwa spesifikasi format hanya mengubah tampilan, bukan nilai asli. Nilai `3.14159` tetap utuh di variabel meski ditampilkan sebagai `3.14`. Bila kamu ingin nilainya benar-benar dibulatkan untuk perhitungan lanjutan, gunakan `round()`."
+            },
+            {
+              "type": "code_example",
+              "filename": "laporan_teks.py",
+              "runnable": true,
+              "code": "produk = [(\"Kopi\", 15000, 3), (\"Teh\", 7500.5, 12), (\"Roti\", 22000, 1)]\ntotal = 0\nfor nama, harga, jumlah in produk:\n    print(f\"{nama:<8}{harga:>12,.2f}{jumlah:>4}\")\n    total += harga * jumlah\nprint(f\"{'Total':<8}{total:>12,.2f}\")",
+              "expected_output_note": "Kopi       15,000.00   3\nTeh         7,500.50  12\nRoti       22,000.00   1\nTotal     157,006.00",
+              "explanation": "Lebar kolom tetap membuat angka sejajar. Total dihitung dari nilai asli, sedangkan format hanya memengaruhi tampilan."
+            }
+          ],
+          "quick_check": {
+            "question": "Format {x:.2f} untuk x = 3.14159?",
+            "options": [
+              "3.1",
+              "3.14"
+            ],
+            "answer_index": 1,
+            "explanation": "Spesifikasi .2f menampilkan dua desimal.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Escape dan teks multibaris",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Escape dan teks multibaris\n\nBeberapa karakter khusus ditulis dengan garis miring terbalik. `\\n` adalah baris baru, `\\t` adalah tab, dan `\\\\` adalah garis miring itu sendiri. Untuk teks yang membentang beberapa baris, apit dengan tiga tanda kutip ganda, dan Python mempertahankan baris barunya. Prefiks `r` membuat string mentah yang tidak memproses escape, berguna untuk jalur file Windows dan ekspresi reguler.\n\nGabungkan semua ini dan kamu bisa dengan cepat membuat laporan kecil yang terstruktur tanpa pustaka apa pun, cukup dari f-string, lebar kolom, dan baris baru. Latih dengan mengubah lebar dan perataan sampai tampilannya rapi."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tips log rapi",
+              "markdown": "Saat membuat log pelatihan, pakai f-string dengan lebar tetap seperti `{epoch:>3} {loss:.4f}` agar kolom selalu sejajar."
+            }
+          ],
+          "quick_check": {
+            "question": "Fungsi parameter end pada print?",
+            "options": [
+              "Akhiran baris",
+              "Pemisah argumen"
+            ],
+            "answer_index": 0,
+            "explanation": "end menentukan apa yang dicetak di akhir, bawaannya baris baru.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-01-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `sapa(nama, umur)` yang mengembalikan string `\"Halo <nama>, umur <umur> tahun\"`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def sapa(nama, umur):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "sapa(\"Sari\", 21)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sapa(\"Sari\", 21) == \"Halo Sari, umur 21 tahun\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sapa(\"Budi\", 30)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sapa(\"Budi\", 30) == \"Halo Budi, umur 30 tahun\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sapa(\"\", 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sapa(\"\", 0) == \"Halo , umur 0 tahun\""
+              }
+            ]
+          },
+          "hint": "Gunakan f-string dengan dua ekspresi.",
+          "solution": "def sapa(nama, umur):\n    return f\"Halo {nama}, umur {umur} tahun\"",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-01-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `persen(rasio)` yang mengembalikan string persentase dengan satu desimal, misalnya `0.4567` menjadi `\"45.7%\"`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def persen(rasio):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "persen(0.4567)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen(0.4567) == \"45.7%\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "persen(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen(1) == \"100.0%\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "persen(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen(0) == \"0.0%\""
+              }
+            ]
+          },
+          "hint": "Spesifikasi format .1% sudah mengalikan dengan 100.",
+          "solution": "def persen(rasio):\n    return f\"{rasio:.1%}\"",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-01-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `baca_umur(teks)` yang membersihkan spasi, mengubah ke int, dan mengembalikan umur.",
+          "note": "Jika teks kosong atau bukan angka atau di luar 0 sampai 130, naikkan `ValueError`.",
+          "filename": "solution.py",
+          "starter_code": "def baca_umur(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "baca_umur(\" 25 \")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baca_umur(\" 25 \") == 25"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "gagal(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def gagal(t):\n    try:\n        baca_umur(t)\n    except ValueError:\n        return True\n    return False\nassert gagal(\"\")"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "gagal(\"abc\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gagal(\"abc\")"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "gagal(\"200\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gagal(\"200\")"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "gagal(\"-1\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gagal(\"-1\")"
+              }
+            ]
+          },
+          "hint": "int() sudah menaikkan ValueError untuk teks bukan angka. Periksa rentang sendiri.",
+          "solution": "def baca_umur(teks):\n    teks = teks.strip()\n    if not teks:\n        raise ValueError(\"umur kosong\")\n    umur = int(teks)\n    if not 0 <= umur <= 130:\n        raise ValueError(\"umur di luar rentang\")\n    return umur",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-01-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `baris_tabel(nama, harga, jumlah)` yang mengembalikan satu baris teks: nama rata kiri lebar 10, harga rata kanan lebar 12 dengan pemisah ribuan dan dua desimal, jumlah rata kanan lebar 5.",
+          "note": "Pisahkan kolom dengan satu spasi.",
+          "filename": "solution.py",
+          "starter_code": "def baris_tabel(nama, harga, jumlah):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "baris_tabel(\"Kopi\", 15000, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_tabel(\"Kopi\", 15000, 3) == \"Kopi          15,000.00     3\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "baris_tabel(\"Teh\", 7500.5, 12)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_tabel(\"Teh\", 7500.5, 12) == \"Teh            7,500.50    12\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(baris_tabel(\"X\", 1, 1))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(baris_tabel(\"X\", 1, 1)) == 10 + 1 + 12 + 1 + 5"
+              }
+            ]
+          },
+          "hint": "Gunakan {nama:<10} {harga:>12,.2f} {jumlah:>5}.",
+          "solution": "def baris_tabel(nama, harga, jumlah):\n    return f\"{nama:<10} {harga:>12,.2f} {jumlah:>5}\"",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Tipe hasil input()?",
+          "code": null,
+          "options": [
+            {
+              "label": "int",
+              "description": ""
+            },
+            {
+              "label": "float",
+              "description": ""
+            },
+            {
+              "label": "str",
+              "description": ""
+            },
+            {
+              "label": "bool",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Apa pun yang diketik pengguna adalah teks.",
+          "explanation": "input() selalu mengembalikan string."
+        },
+        {
+          "q": "Format {x:.2f} untuk x = 3.14159?",
+          "code": null,
+          "options": [
+            {
+              "label": "3.1",
+              "description": ""
+            },
+            {
+              "label": "3.14",
+              "description": ""
+            },
+            {
+              "label": "3.142",
+              "description": ""
+            },
+            {
+              "label": "3",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Angka setelah titik adalah jumlah desimal.",
+          "explanation": "Spesifikasi .2f menampilkan dua desimal."
+        },
+        {
+          "q": "Fungsi parameter end pada print?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pemisah argumen",
+              "description": ""
+            },
+            {
+              "label": "Akhiran baris",
+              "description": ""
+            },
+            {
+              "label": "Lebar teks",
+              "description": ""
+            },
+            {
+              "label": "Jumlah cetak",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bandingkan dengan sep.",
+          "explanation": "end menentukan apa yang dicetak di akhir, bawaannya baris baru."
+        },
+        {
+          "q": "Apa hasil f'{0.25:.0%}'?",
+          "code": null,
+          "options": [
+            {
+              "label": "25%",
+              "description": ""
+            },
+            {
+              "label": "0%",
+              "description": ""
+            },
+            {
+              "label": "0.25%",
+              "description": ""
+            },
+            {
+              "label": "2%",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Format % mengalikan seratus.",
+          "explanation": "Format persen mengalikan dengan 100."
+        },
+        {
+          "q": "Mengapa memvalidasi input?",
+          "code": null,
+          "options": [
+            {
+              "label": "Agar kode lebih panjang",
+              "description": ""
+            },
+            {
+              "label": "Karena data luar bisa kotor atau salah",
+              "description": ""
+            },
+            {
+              "label": "Python mewajibkan",
+              "description": ""
+            },
+            {
+              "label": "Untuk mempercepat",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pikirkan siapa yang mengetik.",
+          "explanation": "Input luar tidak bisa dipercaya sehingga perlu diperiksa dan dilaporkan jelas."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira input() mengembalikan angka. Lebih baik: Ubah hasilnya dengan int() atau float() di dalam try.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira input() mengembalikan angka.",
+          "fix": "Ubah hasilnya dengan int() atau float() di dalam try."
+        },
+        {
+          "mistake": "Menyusun teks dengan + dan lupa mengubah angka menjadi str.",
+          "fix": "Pakai f-string agar konversi otomatis."
+        },
+        {
+          "mistake": "Percaya input pengguna tanpa memeriksa.",
+          "fix": "Bersihkan, konversi, lalu periksa rentang dan laporkan galat dengan jelas."
+        }
+      ],
+      "summary": [
+        "print punya sep dan end untuk mengatur keluaran.",
+        "f-string mendukung format angka, persen, dan perataan.",
+        "input() selalu string sehingga perlu dikonversi dengan aman.",
+        "Validasi input dengan pesan galat yang jelas."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Output terformat dan input yang aman"
+          },
+          {
+            "type": "text",
+            "source": "F-string mendukung ribuan, persentase, dan perataan. Bentuk `{ekspresi = }` menampilkan teks ekspresi bersama hasilnya."
+          },
+          {
+            "type": "code",
+            "source": "nama = \"Sari\"\nharga = 1234567.891\nrasio = 0.4567\nprint(f\"Halo {nama}, total {harga:,.2f}\")\nprint(f\"Akurasi {rasio:.1%}\")\nprint(f\"[{nama:>8}] [{nama:<8}] [{nama:^8}]\")\nprint(f\"{2 * 3 + 1 = }\")\nprint(1, 2, 3, sep=\"-\", end=\"!\\n\")"
+          },
+          {
+            "type": "text",
+            "source": "Fungsi membersihkan spasi, mengonversi, lalu memeriksa rentang. Setiap kegagalan menghasilkan `ValueError` dengan pesan yang bisa ditampilkan ke pengguna."
+          },
+          {
+            "type": "code",
+            "source": "def baca_umur(teks):\n    teks = teks.strip()\n    if not teks:\n        raise ValueError(\"umur kosong\")\n    umur = int(teks)\n    if not 0 <= umur <= 130:\n        raise ValueError(f\"umur di luar rentang: {umur}\")\n    return umur\n\nfor contoh in [\" 25 \", \"\", \"abc\", \"200\"]:\n    try:\n        print(baca_umur(contoh))\n    except ValueError as e:\n        print(\"galat:\", e)"
+          },
+          {
+            "type": "text",
+            "source": "Lebar kolom tetap membuat angka sejajar. Total dihitung dari nilai asli, sedangkan format hanya memengaruhi tampilan."
+          },
+          {
+            "type": "code",
+            "source": "produk = [(\"Kopi\", 15000, 3), (\"Teh\", 7500.5, 12), (\"Roti\", 22000, 1)]\ntotal = 0\nfor nama, harga, jumlah in produk:\n    print(f\"{nama:<8}{harga:>12,.2f}{jumlah:>4}\")\n    total += harga * jumlah\nprint(f\"{'Total':<8}{total:>12,.2f}\")"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa kode dan contoh singkat yang cukup jelas dalam teks dan latihan.",
+    "brief": []
+  },
+  "references": []
+}

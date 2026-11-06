@@ -1,0 +1,1556 @@
+{
+  "schema_version": 2,
+  "course_id": "D11",
+  "module_no": 8,
+  "title": "Pipeline, end-to-end, dan atribusi error",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memakai tes verifikasi untuk memisahkan kegagalan pencarian dari fungsi skor",
+    "Memilih antara pipeline dan end-to-end berdasarkan data dan kesederhanaan tugas",
+    "Mengatribusikan error ke komponen dan mendeteksi pipeline yang cacat"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "D11-08-1",
+    "exercise_id": "D11-08-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def skor_urutan(u, b, s):\n    return sum(u[x] for x in s) + sum(b[s[i - 1]][s[i]] for i in range(1, len(s)))"
+  },
+  "lessons": [
+    {
+      "lesson_id": "D11-08-1",
+      "title": "Optimization Verification test",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menjelaskan sistem yang terdiri atas fungsi skor dan algoritma pencarian",
+        "Menerapkan tes verifikasi dengan membandingkan skor jawaban benar dan jawaban keluaran",
+        "Mengklasifikasikan kegagalan sebagai masalah pencarian atau masalah fungsi skor",
+        "Memakai pola yang sama pada kasus umum termasuk reinforcement learning"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dua bagian yang bisa salah",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua bagian yang bisa salah\n\nBanyak sistem pembelajaran mesin bekerja dengan dua komponen. Komponen pertama adalah **fungsi skor** yang menilai seberapa bagus sebuah jawaban kandidat untuk sebuah masukan. Komponen kedua adalah **algoritma pencarian** yang mencari jawaban dengan skor tertinggi. Contohnya pengenalan suara: fungsi skor menilai kecocokan sebuah kalimat dengan rekaman, dan pencarian (misalnya beam search) menelusuri ruang kalimat yang sangat besar untuk menemukan kalimat berskor tinggi.\n\nKetika sistem salah, ada dua kemungkinan. Fungsi skor keliru: jawaban yang benar justru diberi skor lebih rendah dari jawaban yang salah, sehingga bahkan pencarian sempurna akan memilih jawaban salah. Atau pencarian gagal: jawaban benar sebenarnya berskor lebih tinggi, tetapi algoritma tidak menemukannya karena menelusuri ruang secara terbatas.\n\nDua kemungkinan itu butuh perbaikan berbeda. Jika masalahnya fungsi skor, kamu melatih ulang atau memperbaiki model. Jika masalahnya pencarian, kamu memperbesar lebar beam atau memperbaiki algoritma pencariannya. Menebak yang mana membuang waktu berminggu-minggu."
+            }
+          ],
+          "quick_check": {
+            "question": "Skor jawaban benar 6, skor keluaran 1 pada fungsi skor yang sama. Kesimpulan?",
+            "options": [
+              "Pencarian gagal menemukan jawaban benar",
+              "Fungsi skor keliru"
+            ],
+            "answer_index": 0,
+            "explanation": "Jawaban benar berskor lebih tinggi tetapi tidak ditemukan, jadi pencarian yang gagal.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tes verifikasi",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tes verifikasi\n\nTes ini sederhana. Untuk satu contoh yang salah, ambil jawaban benar `y*` dari label manusia, dan jawaban keluaran sistem `y_out`. Hitung skor keduanya dengan fungsi skor yang sama, lalu bandingkan.\n\nJika skor `y*` lebih besar daripada skor `y_out`, fungsi skor sudah menyukai jawaban benar, tetapi pencarian gagal menemukannya. Masalahnya ada di algoritma pencarian. Jika skor `y*` lebih kecil atau sama dengan skor `y_out`, pencarian sudah melakukan tugasnya: ia menemukan jawaban yang skornya setinggi atau lebih tinggi. Fungsi skor sendiri yang menyukai jawaban salah, dan itulah yang perlu diperbaiki.\n\nTes ini murah karena hanya menghitung dua skor per contoh, dan tidak butuh menjalankan eksperimen pelatihan baru. Lakukan pada banyak contoh yang salah untuk melihat pecahan kegagalan masing-masing jenis."
+            }
+          ],
+          "quick_check": {
+            "question": "Skor jawaban benar 1, skor keluaran 3. Kesimpulan?",
+            "options": [
+              "Pencarian gagal",
+              "Fungsi skor menyukai jawaban salah"
+            ],
+            "answer_index": 1,
+            "explanation": "Pencarian menemukan jawaban yang skornya lebih tinggi, sehingga fungsi skor yang keliru.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dari tes ke keputusan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari tes ke keputusan\n\nMisalkan dari 100 contoh dev yang salah, 55 tergolong kegagalan pencarian dan 45 kegagalan fungsi skor. Dengan begitu, kamu punya dasar kuantitatif seperti pada error analysis di modul 3: memperbaiki pencarian paling banyak menghilangkan 55 persen kesalahan, dan memperbaiki fungsi skor paling banyak 45 persen. Pilih berdasarkan batas atas manfaat dan biaya, bukan firasat.\n\nSering kali tim terlalu cepat menyalahkan model dan mengumpulkan data lebih banyak, padahal pencarian yang terlalu sempit yang membuat jawaban benar terlewat. Kebalikannya juga terjadi: tim memperlebar beam berulang kali tanpa hasil karena fungsi skor memang menyukai jawaban yang salah. Tes verifikasi memutus kebuntuan itu dengan data.\n\nSedikit catatan: tes ini berlaku bila jawaban benar bisa dinilai oleh fungsi skor yang sama. Jika ada beberapa jawaban benar yang berbeda, pakai yang skornya tertinggi atau periksa semuanya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Bentuk umum dan reinforcement learning\n\nPola ini bisa digeneralisasi. Nama bentuk umumnya: kamu punya fungsi nilai `Skor_x(y)` yang menilai jawaban `y` untuk masukan `x`, dan algoritma `A` yang mencoba memaksimalkannya. Hasil `y_out = A(x)`. Bandingkan `Skor_x(y*)` dengan `Skor_x(y_out)` untuk jawaban benar `y*`.\n\nDalam reinforcement learning, fungsi skor adalah imbalan kumulatif yang diharapkan dari sebuah kebijakan atau lintasan, dan algoritma pencarian adalah prosedur optimisasi kebijakan. Misalkan sebuah agen mengendalikan helikopter dan jatuh. Jika lintasan pilot manusia mendapat imbalan lebih tinggi daripada lintasan agen menurut fungsi imbalan, optimisasi agen gagal dan perlu diperbaiki. Jika imbalan lintasan manusia justru lebih rendah, fungsi imbalan yang perlu direvisi, karena ia memberi nilai terlalu tinggi pada perilaku yang buruk.\n\nPoin pentingnya adalah memisahkan pertanyaan apakah yang kamu minta sudah benar dari pertanyaan apakah algoritma sudah mengerjakannya dengan baik."
+            },
+            {
+              "type": "analogy",
+              "title": "Analogi navigasi",
+              "text": "Fungsi skor seperti peta yang menandai tujuan terbaik, sedangkan pencarian seperti pengemudi yang mencari jalannya. Jika pengemudi sampai di tempat yang peta nilai lebih rendah dari tujuan benar, ia tersesat. Jika ia sampai di tempat yang peta nilai tinggi tetapi bukan tujuan sebenarnya, petanya yang keliru.",
+              "image": null
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tips verifikasi",
+              "markdown": "Catat dua skor di samping tiap contoh yang salah, lalu hitung fraksi kegagalan pencarian dan fungsi skor. Dua kolom itu langsung menunjukkan ke mana usaha berikutnya diarahkan."
+            },
+            {
+              "type": "code_example",
+              "filename": "greedy_vs_eksak.py",
+              "runnable": true,
+              "code": "import itertools\nimport numpy as np\n\ndef skor_urutan(u, b, s):\n    return sum(u[x] for x in s) + sum(b[s[i - 1]][s[i]] for i in range(1, len(s)))\n\ndef greedy_decode(u, b, L):\n    s = [int(np.argmax(u))]\n    for _ in range(L - 1):\n        s.append(int(np.argmax([u[v] + b[s[-1]][v] for v in range(len(u))])))\n    return tuple(s)\n\ndef eksak(u, b, L):\n    return max(itertools.product(range(len(u)), repeat=L), key=lambda s: skor_urutan(u, b, s))\n\nu = [1.0, 0.0]\nb = [[-3.0, 0.0], [5.0, 0.0]]\nout = greedy_decode(u, b, 2)\nterbaik = eksak(u, b, 2)\nprint(\"greedy :\", out, skor_urutan(u, b, out))\nprint(\"eksak  :\", terbaik, skor_urutan(u, b, terbaik))",
+              "expected_output_note": "greedy : (0, 1) 1.0\neksak  : (1, 0) 6.0",
+              "explanation": "Pencarian greedy memilih langkah pertama terbaik secara lokal lalu terjebak. Jawaban eksak berskor 6 tetapi greedy hanya mendapat 1. Jika jawaban benar adalah (1, 0), tes verifikasi menyalahkan pencarian, bukan fungsi skor."
+            },
+            {
+              "type": "code_example",
+              "filename": "hitung_kegagalan.py",
+              "runnable": true,
+              "code": "import itertools\nimport numpy as np\n\ndef skor_urutan(u, b, s):\n    return sum(u[x] for x in s) + sum(b[s[i - 1]][s[i]] for i in range(1, len(s)))\n\ndef greedy_decode(u, b, L):\n    s = [int(np.argmax(u))]\n    for _ in range(L - 1):\n        s.append(int(np.argmax([u[v] + b[s[-1]][v] for v in range(len(u))])))\n    return tuple(s)\n\ndef eksak(u, b, L):\n    return max(itertools.product(range(len(u)), repeat=L), key=lambda s: skor_urutan(u, b, s))\n\ndef verifikasi(skor_ref, skor_out):\n    return \"pencarian\" if round(skor_ref - skor_out, 9) > 0 else \"fungsi_skor\"\n\nhitung = {\"pencarian\": 0, \"fungsi_skor\": 0}\nfor seed in range(200):\n    r0 = np.random.default_rng(seed)\n    u = r0.normal(size=3)\n    b = r0.normal(size=(3, 3))\n    r1 = np.random.default_rng(1000 + seed)\n    nu = u + 0.6 * r1.normal(size=3)\n    nb = b + 0.6 * r1.normal(size=(3, 3))\n    ref = eksak(nu, nb, 4)\n    out = greedy_decode(u, b, 4)\n    hitung[verifikasi(skor_urutan(u, b, ref), skor_urutan(u, b, out))] += 1\nprint(hitung)",
+              "expected_output_note": "{'pencarian': 55, 'fungsi_skor': 145}",
+              "explanation": "Dari 200 contoh, 55 kegagalan berasal dari pencarian dan 145 dari fungsi skor. Karena pecahan fungsi skor jauh lebih besar, memperlebar pencarian saja paling banyak memperbaiki sekitar seperempat kesalahan."
+            },
+            {
+              "type": "code_example",
+              "filename": "fraksi.py",
+              "runnable": true,
+              "code": "def fraksi(hitung):\n    total = sum(hitung.values())\n    return {k: round(v / total, 4) for k, v in hitung.items()}\n\nprint(fraksi({\"pencarian\": 55, \"fungsi_skor\": 145}))",
+              "expected_output_note": "{'pencarian': 0.275, 'fungsi_skor': 0.725}",
+              "explanation": "Fraksi kegagalan pencarian 27,5 persen dan fungsi skor 72,5 persen. Inilah batas atas manfaat tiap jenis perbaikan, setara dengan fraksi kategori pada error analysis."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa keuntungan utama tes verifikasi?",
+            "options": [
+              "Murah dan memberi arah perbaikan yang tepat",
+              "Menaikkan akurasi langsung"
+            ],
+            "answer_index": 0,
+            "explanation": "Hanya butuh menghitung dua skor per contoh dan menunjukkan komponen yang harus diperbaiki.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-08-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `verifikasi(skor_ref, skor_out)` yang mengembalikan `\"pencarian\"` bila `skor_ref` lebih besar dari `skor_out` (selisih dibulatkan 9 desimal) dan `\"fungsi_skor\"` selainnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def verifikasi(skor_ref, skor_out):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Pencarian gagal",
+                "label": "verifikasi(6.0, 1.0)",
+                "pass_message": "Skor jawaban benar lebih tinggi terdeteksi",
+                "fail_hint": null,
+                "code": "assert verifikasi(6.0, 1.0) == \"pencarian\""
+              },
+              {
+                "id": 2,
+                "name": "Skor sama",
+                "label": "verifikasi(1.0, 1.0)",
+                "pass_message": "Skor sama dianggap fungsi skor",
+                "fail_hint": null,
+                "code": "assert verifikasi(1.0, 1.0) == \"fungsi_skor\""
+              },
+              {
+                "id": 3,
+                "name": "Fungsi skor keliru",
+                "label": "verifikasi(0.5, 2.0)",
+                "pass_message": "Jawaban salah berskor lebih tinggi terdeteksi",
+                "fail_hint": null,
+                "code": "assert verifikasi(0.5, 2.0) == \"fungsi_skor\""
+              },
+              {
+                "id": 4,
+                "name": "Galat floating point",
+                "label": "verifikasi(0.1 + 0.2, 0.3)",
+                "pass_message": "Selisih dibulatkan dengan benar",
+                "fail_hint": null,
+                "code": "assert verifikasi(0.1 + 0.2, 0.3) == \"fungsi_skor\""
+              }
+            ]
+          },
+          "hint": "Jawaban benar yang berskor lebih tinggi berarti pencarian gagal menemukannya. Hati-hati dengan galat floating point pada selisih.",
+          "solution": "def verifikasi(skor_ref, skor_out):\n    return \"pencarian\" if round(skor_ref - skor_out, 9) > 0 else \"fungsi_skor\"",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-08-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `hitung_kategori(pasangan)` yang menerima list tuple `(skor_ref, skor_out)` dan mengembalikan dictionary `{\"pencarian\": a, \"fungsi_skor\": b}` berisi jumlah tiap kategori memakai aturan tes verifikasi (selisih dibulatkan 9 desimal, lebih besar dari 0 berarti pencarian).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def hitung_kategori(pasangan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Campuran kategori",
+                "label": "hitung_kategori(p)",
+                "pass_message": "Dua dan dua terhitung benar",
+                "fail_hint": null,
+                "code": "p = [(6.0, 1.0), (1.0, 1.0), (2.0, 3.0), (5.0, 4.0)]\nassert hitung_kategori(p) == {\"pencarian\": 2, \"fungsi_skor\": 2}"
+              },
+              {
+                "id": 2,
+                "name": "Daftar kosong",
+                "label": "hitung_kategori([])",
+                "pass_message": "Kasus kosong menghasilkan nol",
+                "fail_hint": null,
+                "code": "assert hitung_kategori([]) == {\"pencarian\": 0, \"fungsi_skor\": 0}"
+              },
+              {
+                "id": 3,
+                "name": "Semua pencarian",
+                "label": "hitung_kategori([(1.0, 0.0)] * 3)",
+                "pass_message": "Semua pasangan dikategorikan pencarian",
+                "fail_hint": null,
+                "code": "assert hitung_kategori([(1.0, 0.0)] * 3) == {\"pencarian\": 3, \"fungsi_skor\": 0}"
+              }
+            ]
+          },
+          "hint": "Mulai dari dictionary dengan dua kunci bernilai nol lalu tambahkan satu per pasangan.",
+          "solution": "def hitung_kategori(pasangan):\n    hasil = {\"pencarian\": 0, \"fungsi_skor\": 0}\n    for ref, out in pasangan:\n        hasil[\"pencarian\" if round(ref - out, 9) > 0 else \"fungsi_skor\"] += 1\n    return hasil",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-08-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `skor_urutan(u, b, s)` yang mengembalikan jumlah `u[x]` untuk tiap elemen urutan `s` ditambah jumlah `b[s[i-1]][s[i]]` untuk `i` dari 1.",
+          "note": "Tulis juga `greedy_decode(u, b, L)` yang memilih elemen pertama dengan `argmax(u)` lalu tiap langkah berikutnya memilih `v` yang memaksimalkan `u[v] + b[sebelumnya][v]`. Kembalikan tuple integer sepanjang `L`.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef skor_urutan(u, b, s):\n    # TODO: implementasikan\n    pass\n\ndef greedy_decode(u, b, L):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "skor_urutan(u, b, (1, 0))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "u = [1.0, 0.0]\nb = [[-3.0, 0.0], [5.0, 0.0]]\nassert skor_urutan(u, b, (1, 0)) == 6.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "skor_urutan(u, b, (0, 1))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert skor_urutan(u, b, (0, 1)) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "greedy_decode(u, b, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert greedy_decode(u, b, 2) == (0, 1)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "greedy_decode(u, b, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert greedy_decode(u, b, 1) == (0,)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "all(isinstance(x, int) for x in greedy_decode...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert all(isinstance(x, int) for x in greedy_decode(u, b, 3))"
+              }
+            ]
+          },
+          "hint": "Untuk greedy simpan list hasil dan ubah menjadi tuple di akhir. Gunakan int(np.argmax(...)) agar tipe integer biasa.",
+          "solution": "import numpy as np\n\ndef skor_urutan(u, b, s):\n    return sum(u[x] for x in s) + sum(b[s[i - 1]][s[i]] for i in range(1, len(s)))\n\ndef greedy_decode(u, b, L):\n    s = [int(np.argmax(u))]\n    for _ in range(L - 1):\n        s.append(int(np.argmax([u[v] + b[s[-1]][v] for v in range(len(u))])))\n    return tuple(s)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-08-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `diagnosa_pencarian(u, b, L, y_ref)` yang memakai `greedy_decode` dan `skor_urutan` (sudah disediakan) untuk mendapat `y_out`, lalu mengembalikan tuple `(kategori, skor_ref, skor_out)` dengan `kategori` hasil tes verifikasi (`\"pencarian\"` bila skor ref lebih besar setelah pembulatan 9 desimal, selainnya `\"fungsi_skor\"`).",
+          "note": "Skor dikembalikan sebagai float.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef skor_urutan(u, b, s):\n    return sum(u[x] for x in s) + sum(b[s[i - 1]][s[i]] for i in range(1, len(s)))\n\ndef greedy_decode(u, b, L):\n    s = [int(np.argmax(u))]\n    for _ in range(L - 1):\n        s.append(int(np.argmax([u[v] + b[s[-1]][v] for v in range(len(u))])))\n    return tuple(s)\n\ndef diagnosa_pencarian(u, b, L, y_ref):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "diagnosa_pencarian(u, b, 2, (1, 0))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "u = [1.0, 0.0]\nb = [[-3.0, 0.0], [5.0, 0.0]]\nassert diagnosa_pencarian(u, b, 2, (1, 0)) == (\"pencarian\", 6.0, 1.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "diagnosa_pencarian(u, b, 2, (0, 1))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosa_pencarian(u, b, 2, (0, 1)) == (\"fungsi_skor\", 1.0, 1.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "diagnosa_pencarian(u, b, 2, (1, 1))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosa_pencarian(u, b, 2, (1, 1)) == (\"fungsi_skor\", 0.0, 1.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "isinstance(diagnosa_pencarian(u, b, 2, (1, 0)...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isinstance(diagnosa_pencarian(u, b, 2, (1, 0))[1], float)"
+              }
+            ]
+          },
+          "hint": "Dekode dengan greedy_decode, hitung dua skor dengan skor_urutan, lalu bandingkan.",
+          "solution": "import numpy as np\n\ndef skor_urutan(u, b, s):\n    return sum(u[x] for x in s) + sum(b[s[i - 1]][s[i]] for i in range(1, len(s)))\n\ndef greedy_decode(u, b, L):\n    s = [int(np.argmax(u))]\n    for _ in range(L - 1):\n        s.append(int(np.argmax([u[v] + b[s[-1]][v] for v in range(len(u))])))\n    return tuple(s)\n\ndef diagnosa_pencarian(u, b, L, y_ref):\n    out = greedy_decode(u, b, L)\n    sr = float(skor_urutan(u, b, y_ref))\n    so = float(skor_urutan(u, b, out))\n    kategori = \"pencarian\" if round(sr - so, 9) > 0 else \"fungsi_skor\"\n    return kategori, sr, so",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Skor jawaban benar 6, skor keluaran 1 pada fungsi skor yang sama. Kesimpulan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Fungsi skor keliru",
+              "description": ""
+            },
+            {
+              "label": "Pencarian gagal menemukan jawaban benar",
+              "description": ""
+            },
+            {
+              "label": "Label salah",
+              "description": ""
+            },
+            {
+              "label": "Data kurang",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bandingkan dua skor: mana yang lebih tinggi dan siapa yang seharusnya menemukannya.",
+          "explanation": "Jawaban benar berskor lebih tinggi tetapi tidak ditemukan, jadi pencarian yang gagal."
+        },
+        {
+          "q": "Skor jawaban benar 1, skor keluaran 3. Kesimpulan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pencarian gagal",
+              "description": ""
+            },
+            {
+              "label": "Fungsi skor menyukai jawaban salah",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada masalah",
+              "description": ""
+            },
+            {
+              "label": "Dev set bocor",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pencarian sudah menemukan skor lebih tinggi dari jawaban benar.",
+          "explanation": "Pencarian menemukan jawaban yang skornya lebih tinggi, sehingga fungsi skor yang keliru."
+        },
+        {
+          "q": "Apa keuntungan utama tes verifikasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menaikkan akurasi langsung",
+              "description": ""
+            },
+            {
+              "label": "Murah dan memberi arah perbaikan yang tepat",
+              "description": ""
+            },
+            {
+              "label": "Menghapus bias",
+              "description": ""
+            },
+            {
+              "label": "Mengganti dev set",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pikirkan biaya dan informasi yang diberikan.",
+          "explanation": "Hanya butuh menghitung dua skor per contoh dan menunjukkan komponen yang harus diperbaiki."
+        },
+        {
+          "q": "Pada reinforcement learning, apa padanan fungsi skor?",
+          "code": null,
+          "options": [
+            {
+              "label": "Ukuran batch",
+              "description": ""
+            },
+            {
+              "label": "Imbalan kumulatif yang diharapkan",
+              "description": ""
+            },
+            {
+              "label": "Learning rate",
+              "description": ""
+            },
+            {
+              "label": "Jumlah episode",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Apa yang dinilai terhadap sebuah lintasan?",
+          "explanation": "Fungsi imbalan menilai kebijakan atau lintasan, dan optimisasi kebijakan adalah pencariannya."
+        },
+        {
+          "q": "Dari 100 kesalahan, 80 kegagalan pencarian. Batas atas manfaat memperbaiki pencarian?",
+          "code": null,
+          "options": [
+            {
+              "label": "20 persen",
+              "description": ""
+            },
+            {
+              "label": "80 persen",
+              "description": ""
+            },
+            {
+              "label": "100 persen",
+              "description": ""
+            },
+            {
+              "label": "8 persen",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Sama seperti fraksi kategori pada error analysis.",
+          "explanation": "Memperbaiki pencarian menghilangkan paling banyak kesalahan kategori itu, yaitu 80 persen."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Langsung mengumpulkan data baru ketika sistem salah. Lebih baik: Cek dulu apakah kegagalan berasal dari pencarian atau fungsi skor dengan tes verifikasi.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Langsung mengumpulkan data baru ketika sistem salah.",
+          "fix": "Cek dulu apakah kegagalan berasal dari pencarian atau fungsi skor dengan tes verifikasi."
+        },
+        {
+          "mistake": "Memperlebar beam atau pencarian berulang kali tanpa mengukur skor jawaban benar.",
+          "fix": "Bandingkan skor jawaban benar dengan skor keluaran sebelum memutuskan."
+        },
+        {
+          "mistake": "Membandingkan skor dari dua fungsi skor yang berbeda.",
+          "fix": "Gunakan fungsi skor yang sama untuk jawaban benar dan jawaban keluaran."
+        }
+      ],
+      "summary": [
+        "Sistem punya fungsi skor dan algoritma pencarian yang bisa salah terpisah.",
+        "Jika skor jawaban benar lebih tinggi dari skor keluaran, pencarian yang gagal.",
+        "Jika tidak, fungsi skor yang perlu diperbaiki.",
+        "Pola ini berlaku umum termasuk reinforcement learning."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 44 sampai 46 (Andrew Ng): Optimization Verification test"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Optimization Verification test"
+          },
+          {
+            "type": "text",
+            "source": "Pencarian greedy memilih langkah pertama terbaik secara lokal lalu terjebak. Jawaban eksak berskor 6 tetapi greedy hanya mendapat 1. Jika jawaban benar adalah (1, 0), tes verifikasi menyalahkan pencarian, bukan fungsi skor."
+          },
+          {
+            "type": "code",
+            "source": "import itertools\nimport numpy as np\n\ndef skor_urutan(u, b, s):\n    return sum(u[x] for x in s) + sum(b[s[i - 1]][s[i]] for i in range(1, len(s)))\n\ndef greedy_decode(u, b, L):\n    s = [int(np.argmax(u))]\n    for _ in range(L - 1):\n        s.append(int(np.argmax([u[v] + b[s[-1]][v] for v in range(len(u))])))\n    return tuple(s)\n\ndef eksak(u, b, L):\n    return max(itertools.product(range(len(u)), repeat=L), key=lambda s: skor_urutan(u, b, s))\n\nu = [1.0, 0.0]\nb = [[-3.0, 0.0], [5.0, 0.0]]\nout = greedy_decode(u, b, 2)\nterbaik = eksak(u, b, 2)\nprint(\"greedy :\", out, skor_urutan(u, b, out))\nprint(\"eksak  :\", terbaik, skor_urutan(u, b, terbaik))"
+          },
+          {
+            "type": "text",
+            "source": "Dari 200 contoh, 55 kegagalan berasal dari pencarian dan 145 dari fungsi skor. Karena pecahan fungsi skor jauh lebih besar, memperlebar pencarian saja paling banyak memperbaiki sekitar seperempat kesalahan."
+          },
+          {
+            "type": "code",
+            "source": "import itertools\nimport numpy as np\n\ndef skor_urutan(u, b, s):\n    return sum(u[x] for x in s) + sum(b[s[i - 1]][s[i]] for i in range(1, len(s)))\n\ndef greedy_decode(u, b, L):\n    s = [int(np.argmax(u))]\n    for _ in range(L - 1):\n        s.append(int(np.argmax([u[v] + b[s[-1]][v] for v in range(len(u))])))\n    return tuple(s)\n\ndef eksak(u, b, L):\n    return max(itertools.product(range(len(u)), repeat=L), key=lambda s: skor_urutan(u, b, s))\n\ndef verifikasi(skor_ref, skor_out):\n    return \"pencarian\" if round(skor_ref - skor_out, 9) > 0 else \"fungsi_skor\"\n\nhitung = {\"pencarian\": 0, \"fungsi_skor\": 0}\nfor seed in range(200):\n    r0 = np.random.default_rng(seed)\n    u = r0.normal(size=3)\n    b = r0.normal(size=(3, 3))\n    r1 = np.random.default_rng(1000 + seed)\n    nu = u + 0.6 * r1.normal(size=3)\n    nb = b + 0.6 * r1.normal(size=(3, 3))\n    ref = eksak(nu, nb, 4)\n    out = greedy_decode(u, b, 4)\n    hitung[verifikasi(skor_urutan(u, b, ref), skor_urutan(u, b, out))] += 1\nprint(hitung)"
+          },
+          {
+            "type": "text",
+            "source": "Fraksi kegagalan pencarian 27,5 persen dan fungsi skor 72,5 persen. Inilah batas atas manfaat tiap jenis perbaikan, setara dengan fraksi kategori pada error analysis."
+          },
+          {
+            "type": "code",
+            "source": "def fraksi(hitung):\n    total = sum(hitung.values())\n    return {k: round(v / total, 4) for k, v in hitung.items()}\n\nprint(fraksi({\"pencarian\": 55, \"fungsi_skor\": 145}))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "D11-08-2",
+      "title": "Pipeline melawan end-to-end learning",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membedakan sistem pipeline dan sistem end-to-end",
+        "Menyebutkan keuntungan dan kerugian end-to-end learning",
+        "Memilih komponen pipeline berdasarkan ketersediaan data dan kesederhanaan tugas",
+        "Membandingkan keduanya secara empiris pada berbagai ukuran data"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dua cara menyusun sistem",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua cara menyusun sistem\n\nBanyak aplikasi tersusun dari beberapa tahap. Pengenalan suara klasik memakai urutan: rekaman audio, fitur akustik, fonem, kata, transkrip. Tiap tahap dibangun dan dilatih terpisah, dan keluaran satu tahap menjadi masukan tahap berikutnya. Ini disebut **pipeline**.\n\nAlternatifnya **end-to-end learning**: satu model besar langsung memetakan audio ke transkrip tanpa tahap perantara yang ditentukan manusia. Banyak aplikasi mengalami pergeseran dari pipeline ke end-to-end seiring data dan komputasi bertambah, termasuk pengenalan suara, terjemahan mesin, dan beberapa tugas citra.\n\nPergeseran itu bukan jaminan bahwa end-to-end selalu lebih baik. Banyak tugas masih unggul dengan pipeline, terutama bila data pasangan masukan-keluaran terbatas. Memilih antara keduanya adalah keputusan rekayasa yang bisa dibuat berdasarkan data, bukan tren."
+            }
+          ],
+          "quick_check": {
+            "question": "Pasangan lengkap hanya 300 sedangkan label perantara 20.000. Pendekatan yang kemungkinan unggul?",
+            "options": [
+              "Pipeline",
+              "End-to-end"
+            ],
+            "answer_index": 0,
+            "explanation": "Pipeline memanfaatkan label perantara melimpah sehingga unggul pada data pasangan kecil.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Kelebihan dan kekurangan end-to-end",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kelebihan dan kekurangan end-to-end\n\nKelebihan end-to-end: model belajar representasi perantara sendiri, tanpa kamu harus merancang tahap manual. Hasilnya bisa lebih baik bila data cukup, karena representasi yang dipelajari disesuaikan langsung dengan tujuan akhir. Pengembangan juga lebih sederhana: satu model, satu fungsi tujuan.\n\nKekurangan: butuh banyak pasangan `(x, y)` lengkap, yang mungkin mahal. Ia juga membuang pengetahuan domain yang tertanam di komponen buatan tangan, dan sulit didiagnosis ketika salah karena tidak ada keluaran perantara yang bisa diperiksa.\n\nPipeline sebaliknya. Ia memanfaatkan data untuk tiap tahap, yang sering lebih mudah dikumpulkan dan dilabeli. Keluaran perantaranya bisa diperiksa manusia. Kekurangannya adalah kesalahan menumpuk antar tahap, dan rancangan tahap yang buruk membatasi performa akhir."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih komponen: ketersediaan data\n\nJika kamu memilih pipeline, pertanyaan pertama untuk tiap komponen adalah apakah ada banyak data berlabel untuk melatihnya. Contoh mobil otonom. Kamu bisa memecah tugas menjadi detektor mobil, detektor pejalan kaki, dan perencana jalur. Detektor mobil dan pejalan kaki dapat dilatih dari data citra berlabel yang melimpah. Perencana jalur butuh data berupa pasangan lingkungan dan lintasan aman, yang lebih langka.\n\nAturan umum: pecah tugas menjadi komponen yang masing-masing punya banyak data berlabel. Jika sebuah komponen tidak punya cukup data, sulit melatihnya dan lebih baik digabung dengan komponen lain atau dipelajari end-to-end bersama bagian yang punya data.\n\nDalam praktiknya, hitung jumlah label per tahap. Jika data label tahap perantara jauh lebih banyak daripada data pasangan lengkap, pipeline hampir pasti menang pada ukuran data kecil."
+            }
+          ],
+          "quick_check": {
+            "question": "Kelemahan end-to-end yang utama?",
+            "options": [
+              "Tidak bisa dilatih",
+              "Butuh banyak pasangan masukan-keluaran lengkap"
+            ],
+            "answer_index": 1,
+            "explanation": "Tanpa data pasangan yang banyak, model tidak cukup belajar representasi perantara sendiri.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih komponen: kesederhanaan tugas",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih komponen: kesederhanaan tugas\n\nPertimbangan kedua adalah kesederhanaan. Komponen yang tugasnya sederhana lebih mudah dipelajari dengan sedikit data. Sebuah tahap yang hanya perlu menentukan apakah ada mobil di gambar jauh lebih mudah dipelajari daripada tahap yang menentukan niat pengemudi lain. Pecah tugas kompleks menjadi tugas yang dapat dipelajari manusia dengan jelas dan model dengan sedikit contoh.\n\nDalam contoh penyaring pinjaman, tugas mengklasifikasikan risiko dari dokumen bisa dipecah: ekstraksi angka pendapatan dan utang dari dokumen, lalu model sederhana untuk risiko dari angka tersebut. Tahap ekstraksi mudah dilabeli, dan tahap risiko dapat dilatih dari sedikit contoh karena fiturnya sudah bersih.\n\nKombinasi dua pertimbangan ini menjelaskan pola umum: ketika data pasangan lengkap sedikit, pipeline dengan komponen sederhana dan berlabel melimpah menang. Ketika data pasangan lengkap melimpah, end-to-end menyusul dan sering melampaui."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca hasil eksperimen dengan hati-hati\n\nHasil perbandingan pada data sintetis hanya menunjukkan pola, bukan hukum. Titik silang antara dua pendekatan bergeser bila model tahap kedua diganti, bila label perantara lebih berisik, atau bila hubungan antara tahap pertama dan jawaban akhir lebih rumit. Karena itu, lakukan perbandingan pada beberapa ukuran data pasangan dari kecil sampai besar, lalu gambar kurva error kedua pendekatan. Letak kurva berpotongan memberi tahu kapan investasi pengumpulan data pasangan layak dilakukan.\n\nPertimbangkan juga biaya non-akurasi. Pipeline lebih mudah diaudit dan diperbaiki per bagian, sedangkan end-to-end lebih mudah dipelihara sebagai satu model. Tim kecil dengan data terbatas biasanya memulai dari pipeline sederhana, lalu beralih ketika data pasangan sudah cukup banyak."
+            },
+            {
+              "type": "analogy",
+              "title": "Analogi dapur",
+              "text": "Pipeline seperti dapur dengan stasasiun terpisah: satu orang memotong, satu menumis, satu menyajikan, dan tiap orang bisa dilatih dengan cepat. End-to-end seperti satu koki yang belajar membuat hidangan utuh langsung dari resep dan hasil jadi. Koki tunggal bisa lebih halus, tetapi butuh jauh lebih banyak latihan penuh.",
+              "image": null
+            },
+            {
+              "type": "callout",
+              "kind": "note",
+              "title": "Catatan",
+              "markdown": "Hasil di bawah memakai data sintetis kecil untuk menunjukkan pola, bukan angka universal. Titik silang antara pipeline dan end-to-end bergantung pada masalah, model, dan jumlah label perantara."
+            },
+            {
+              "type": "code_example",
+              "filename": "pipeline_vs_e2e.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.neural_network import MLPClassifier\n\ndef data(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 10))\n    z = (X[:, 0] + X[:, 1] > 0).astype(int)\n    y = ((2 * z - 1) + 0.8 * X[:, 2] > 0).astype(int)\n    return X, z, y\n\nXd, zd, yd = data(5000, 99)\nXa, za, _ = data(20000, 5)\ns1 = LogisticRegression().fit(Xa, za)\n\ndef fitur(X):\n    return np.c_[s1.predict_proba(X)[:, 1], X[:, 2]]\n\nprint(\"n_pasangan  err_end2end  err_pipeline\")\nfor n in [100, 300, 1000, 5000]:\n    X, z, y = data(n, 1)\n    e2e = 1 - MLPClassifier((32,), max_iter=800, random_state=0).fit(X, y).score(Xd, yd)\n    pipe = 1 - LogisticRegression().fit(fitur(X), y).score(fitur(Xd), yd)\n    print(f\"{n:10d}  {e2e:11.3f}  {pipe:12.3f}\")",
+              "expected_output_note": "n 100: end2end sekitar 0.18, pipeline sekitar 0.07\nn 300: end2end sekitar 0.16, pipeline sekitar 0.04\nn 1000: end2end sekitar 0.075, pipeline sekitar 0.04\nn 5000: end2end lebih rendah dari pipeline",
+              "explanation": "Pipeline memakai 20.000 label perantara murah untuk tahap pertama dan hanya sedikit pasangan lengkap untuk tahap kedua. Ia unggul pada data pasangan kecil. End-to-end membutuhkan ribuan pasangan, lalu menyalip karena tidak dibatasi rancangan tahap manual."
+            },
+            {
+              "type": "code_example",
+              "filename": "pilih_pendekatan.py",
+              "runnable": true,
+              "code": "def pilih(n_pasangan, n_label_perantara, ambang_e2e=2000):\n    if n_pasangan >= ambang_e2e:\n        return \"end-to-end\"\n    if n_label_perantara >= 5 * max(1, n_pasangan):\n        return \"pipeline\"\n    return \"pipeline dengan komponen lebih sederhana\"\n\nprint(pilih(300, 20000))\nprint(pilih(5000, 20000))\nprint(pilih(300, 400))",
+              "expected_output_note": "pipeline\nend-to-end\npipeline dengan komponen lebih sederhana",
+              "explanation": "Aturan praktis ini hanya heuristik awal. Ambang ditentukan dengan eksperimen seperti di contoh sebelumnya, tetapi struktur pertimbangannya jelas: bandingkan ukuran data pasangan dengan ukuran label perantara."
+            },
+            {
+              "type": "code_example",
+              "filename": "rasio_data.py",
+              "runnable": true,
+              "code": "def rasio_data(n_pasangan, n_label_perantara):\n    return round(n_label_perantara / n_pasangan, 2)\n\nfor n in [100, 300, 1000, 5000]:\n    print(n, rasio_data(n, 20000))",
+              "expected_output_note": "100 200.0\n300 66.67\n1000 20.0\n5000 4.0",
+              "explanation": "Rasio label perantara terhadap pasangan lengkap mengecil seiring bertambahnya pasangan. Keunggulan pipeline menyusut ketika rasio mendekati satu."
+            }
+          ],
+          "quick_check": {
+            "question": "Kelebihan pipeline dalam diagnosis?",
+            "options": [
+              "Keluaran perantara bisa diperiksa manusia",
+              "Tidak perlu data"
+            ],
+            "answer_index": 0,
+            "explanation": "Keluaran tiap tahap bisa dilihat sehingga kesalahan lebih mudah dilacak.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-08-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pilih_pendekatan(n_pasangan, ambang)` yang mengembalikan `\"end-to-end\"` bila `n_pasangan >= ambang` dan `\"pipeline\"` selainnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pilih_pendekatan(n_pasangan, ambang):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pilih_pendekatan(5000, 2000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_pendekatan(5000, 2000) == \"end-to-end\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pilih_pendekatan(300, 2000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_pendekatan(300, 2000) == \"pipeline\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pilih_pendekatan(2000, 2000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_pendekatan(2000, 2000) == \"end-to-end\""
+              }
+            ]
+          },
+          "hint": "Bandingkan dua angka dengan >=.",
+          "solution": "def pilih_pendekatan(n_pasangan, ambang):\n    return \"end-to-end\" if n_pasangan >= ambang else \"pipeline\"",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-08-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `komponen_layak(n_label_perantara, n_pasangan, rasio_min)` yang mengembalikan `True` bila `n_label_perantara >= rasio_min * n_pasangan` dan `False` selainnya.",
+          "note": "Jika `n_pasangan <= 0` kembalikan `True` bila `n_label_perantara > 0`.",
+          "filename": "solution.py",
+          "starter_code": "def komponen_layak(n_label_perantara, n_pasangan, rasio_min):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "komponen_layak(20000, 300, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_layak(20000, 300, 5) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "komponen_layak(400, 300, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_layak(400, 300, 5) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "komponen_layak(1500, 300, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_layak(1500, 300, 5) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "komponen_layak(10, 0, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_layak(10, 0, 5) is True"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "komponen_layak(0, 0, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_layak(0, 0, 5) is False"
+              }
+            ]
+          },
+          "hint": "Tangani n_pasangan nol atau negatif di awal. Pastikan hasilnya bool murni.",
+          "solution": "def komponen_layak(n_label_perantara, n_pasangan, rasio_min):\n    if n_pasangan <= 0:\n        return bool(n_label_perantara > 0)\n    return bool(n_label_perantara >= rasio_min * n_pasangan)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-08-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `titik_silang(ukuran, err_pipe, err_e2e)` yang mengembalikan ukuran pertama (menurut urutan list) ketika `err_e2e` lebih kecil dari `err_pipe` secara strict.",
+          "note": "Jika tidak pernah, kembalikan `None`. Tiga list sama panjang.",
+          "filename": "solution.py",
+          "starter_code": "def titik_silang(ukuran, err_pipe, err_e2e):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "titik_silang(u, [0.07, 0.04, 0.04, 0.03], [0....",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "u = [100, 300, 1000, 5000]\nassert titik_silang(u, [0.07, 0.04, 0.04, 0.03], [0.18, 0.16, 0.075, 0.01]) == 5000"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "titik_silang(u, [0.07, 0.04, 0.04, 0.03], [0....",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert titik_silang(u, [0.07, 0.04, 0.04, 0.03], [0.18, 0.16, 0.075, 0.03]) is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "titik_silang(u, [0.2, 0.2, 0.2, 0.2], [0.1, 0...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert titik_silang(u, [0.2, 0.2, 0.2, 0.2], [0.1, 0.3, 0.3, 0.3]) == 100"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "titik_silang([], [], [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert titik_silang([], [], []) is None"
+              }
+            ]
+          },
+          "hint": "Telusuri tiga list sekaligus dengan zip dan kembalikan ukuran pada kondisi pertama yang terpenuhi.",
+          "solution": "def titik_silang(ukuran, err_pipe, err_e2e):\n    for u, p, e in zip(ukuran, err_pipe, err_e2e):\n        if e < p:\n            return u\n    return None",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-08-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `latih_pipeline(Xa, za, X, y)` yang melatih `LogisticRegression(max_iter=1000)` tahap pertama pada `(Xa, za)`, lalu membangun fitur `[proba_tahap1, X[:, 2]]` dan melatih `LogisticRegression(max_iter=1000)` tahap kedua pada `(fitur(X), y)`.",
+          "note": "Kembalikan fungsi `prediksi(Xbaru)` yang mengembalikan array label hasil tahap kedua.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef latih_pipeline(Xa, za, X, y):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def data(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 10))\n    z = (X[:, 0] + X[:, 1] > 0).astype(int)\n    y = ((2 * z - 1) + 0.8 * X[:, 2] > 0).astype(int)\n    return X, z, y\nXa, za, _ = data(5000, 5)\nX, z, y = data(200, 1)\nXd, zd, yd = data(2000, 99)\nf = latih_pipeline(Xa, za, X, y)\np = f(Xd)\nassert p.shape == (2000,)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "set(np.unique(p))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert set(np.unique(p)) <= {0, 1}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "(p == yd).mean()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert (p == yd).mean() > 0.9"
+              }
+            ]
+          },
+          "hint": "Simpan model tahap pertama di closure. Fungsi fitur mengambil kolom proba kelas 1 dan kolom indeks 2 dari X.",
+          "solution": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef latih_pipeline(Xa, za, X, y):\n    s1 = LogisticRegression(max_iter=1000).fit(Xa, za)\n\n    def fitur(Xn):\n        return np.c_[s1.predict_proba(Xn)[:, 1], Xn[:, 2]]\n\n    s2 = LogisticRegression(max_iter=1000).fit(fitur(X), y)\n\n    def prediksi(Xbaru):\n        return s2.predict(fitur(Xbaru))\n\n    return prediksi",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Pasangan lengkap hanya 300 sedangkan label perantara 20.000. Pendekatan yang kemungkinan unggul?",
+          "code": null,
+          "options": [
+            {
+              "label": "End-to-end",
+              "description": ""
+            },
+            {
+              "label": "Pipeline",
+              "description": ""
+            },
+            {
+              "label": "Keduanya sama",
+              "description": ""
+            },
+            {
+              "label": "Tidak bisa",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bandingkan jumlah data tiap tahap dengan data pasangan lengkap.",
+          "explanation": "Pipeline memanfaatkan label perantara melimpah sehingga unggul pada data pasangan kecil."
+        },
+        {
+          "q": "Kelemahan end-to-end yang utama?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak bisa dilatih",
+              "description": ""
+            },
+            {
+              "label": "Butuh banyak pasangan masukan-keluaran lengkap",
+              "description": ""
+            },
+            {
+              "label": "Selalu lambat",
+              "description": ""
+            },
+            {
+              "label": "Tidak bisa dievaluasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Apa yang harus tersedia agar model belajar seluruh pemetaan?",
+          "explanation": "Tanpa data pasangan yang banyak, model tidak cukup belajar representasi perantara sendiri."
+        },
+        {
+          "q": "Kelebihan pipeline dalam diagnosis?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak perlu data",
+              "description": ""
+            },
+            {
+              "label": "Keluaran perantara bisa diperiksa manusia",
+              "description": ""
+            },
+            {
+              "label": "Selalu paling akurat",
+              "description": ""
+            },
+            {
+              "label": "Tidak punya bias",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pikirkan apa yang bisa dilihat di antara dua tahap.",
+          "explanation": "Keluaran tiap tahap bisa dilihat sehingga kesalahan lebih mudah dilacak."
+        },
+        {
+          "q": "Komponen pipeline sebaiknya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rumit dan unik",
+              "description": ""
+            },
+            {
+              "label": "Sederhana dengan banyak data berlabel",
+              "description": ""
+            },
+            {
+              "label": "Tanpa label",
+              "description": ""
+            },
+            {
+              "label": "Selalu satu",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dua pertimbangan: data dan kesederhanaan.",
+          "explanation": "Tugas sederhana dengan label melimpah mudah dipelajari dan hemat data."
+        },
+        {
+          "q": "Pola pada data sintetis: end-to-end menyalip pipeline ketika?",
+          "code": null,
+          "options": [
+            {
+              "label": "Data pasangan sedikit",
+              "description": ""
+            },
+            {
+              "label": "Data pasangan melimpah",
+              "description": ""
+            },
+            {
+              "label": "Label perantara hilang",
+              "description": ""
+            },
+            {
+              "label": "Model kecil",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Lihat kolom ukuran data terbesar.",
+          "explanation": "Dengan data pasangan banyak, model end-to-end tidak lagi dibatasi rancangan tahap manual."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menganggap end-to-end selalu lebih baik. Lebih baik: Bandingkan keduanya pada beberapa ukuran data dan pilih berdasarkan hasil.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menganggap end-to-end selalu lebih baik.",
+          "fix": "Bandingkan keduanya pada beberapa ukuran data dan pilih berdasarkan hasil."
+        },
+        {
+          "mistake": "Memecah pipeline menjadi tahap yang tidak punya data berlabel.",
+          "fix": "Pilih tahap yang punya banyak label dan tugas yang sederhana."
+        },
+        {
+          "mistake": "Mengabaikan pengetahuan domain saat memakai end-to-end.",
+          "fix": "Pertimbangkan komponen buatan tangan yang memberi informasi berharga ketika data pasangan terbatas."
+        }
+      ],
+      "summary": [
+        "Pipeline memecah tugas menjadi tahap, end-to-end memetakan masukan ke keluaran langsung.",
+        "End-to-end butuh banyak pasangan lengkap, pipeline memanfaatkan data per tahap.",
+        "Pilih komponen yang punya banyak data berlabel dan tugas sederhana.",
+        "Putuskan lewat perbandingan empiris pada beberapa ukuran data."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 47 sampai 51 (Andrew Ng): end-to-end learning dan memilih komponen pipeline"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Pipeline melawan end-to-end learning"
+          },
+          {
+            "type": "text",
+            "source": "Pipeline memakai 20.000 label perantara murah untuk tahap pertama dan hanya sedikit pasangan lengkap untuk tahap kedua. Ia unggul pada data pasangan kecil. End-to-end membutuhkan ribuan pasangan, lalu menyalip karena tidak dibatasi rancangan tahap manual."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.neural_network import MLPClassifier\n\ndef data(n, seed):\n    r = np.random.default_rng(seed)\n    X = r.normal(size=(n, 10))\n    z = (X[:, 0] + X[:, 1] > 0).astype(int)\n    y = ((2 * z - 1) + 0.8 * X[:, 2] > 0).astype(int)\n    return X, z, y\n\nXd, zd, yd = data(5000, 99)\nXa, za, _ = data(20000, 5)\ns1 = LogisticRegression().fit(Xa, za)\n\ndef fitur(X):\n    return np.c_[s1.predict_proba(X)[:, 1], X[:, 2]]\n\nprint(\"n_pasangan  err_end2end  err_pipeline\")\nfor n in [100, 300, 1000, 5000]:\n    X, z, y = data(n, 1)\n    e2e = 1 - MLPClassifier((32,), max_iter=800, random_state=0).fit(X, y).score(Xd, yd)\n    pipe = 1 - LogisticRegression().fit(fitur(X), y).score(fitur(Xd), yd)\n    print(f\"{n:10d}  {e2e:11.3f}  {pipe:12.3f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Aturan praktis ini hanya heuristik awal. Ambang ditentukan dengan eksperimen seperti di contoh sebelumnya, tetapi struktur pertimbangannya jelas: bandingkan ukuran data pasangan dengan ukuran label perantara."
+          },
+          {
+            "type": "code",
+            "source": "def pilih(n_pasangan, n_label_perantara, ambang_e2e=2000):\n    if n_pasangan >= ambang_e2e:\n        return \"end-to-end\"\n    if n_label_perantara >= 5 * max(1, n_pasangan):\n        return \"pipeline\"\n    return \"pipeline dengan komponen lebih sederhana\"\n\nprint(pilih(300, 20000))\nprint(pilih(5000, 20000))\nprint(pilih(300, 400))"
+          },
+          {
+            "type": "text",
+            "source": "Rasio label perantara terhadap pasangan lengkap mengecil seiring bertambahnya pasangan. Keunggulan pipeline menyusut ketika rasio mendekati satu."
+          },
+          {
+            "type": "code",
+            "source": "def rasio_data(n_pasangan, n_label_perantara):\n    return round(n_label_perantara / n_pasangan, 2)\n\nfor n in [100, 300, 1000, 5000]:\n    print(n, rasio_data(n, 20000))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "D11-08-3",
+      "title": "Error analysis per komponen dan pipeline yang cacat",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung atribusi error ke komponen pipeline dengan mengganti keluaran komponen",
+        "Menyusun tabel atribusi dan memilih komponen yang layak diperbaiki",
+        "Membandingkan tiap komponen dengan performa manusia pada masukan yang sama",
+        "Mengenali pipeline yang cacat dari komponen yang sudah setara manusia tetapi hasil akhir buruk"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari error sistem ke error komponen",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari error sistem ke error komponen\n\nPada pipeline A, B, C, error akhir bisa berasal dari tahap mana pun. Error analysis per komponen menjawab pertanyaan: dari kesalahan akhir, berapa persen disebabkan A, berapa persen B, dan berapa persen C? Jawabannya menentukan komponen mana yang pantas diperbaiki lebih dulu.\n\nCaranya menggunakan substitusi keluaran. Untuk tiap contoh dev yang salah, ganti keluaran komponen A dengan keluaran yang benar (dari label manusia), lalu jalankan B dan C seperti biasa. Jika hasil akhir menjadi benar, kesalahan itu diatribusikan ke A. Jika masih salah, ganti keluaran A dan B dengan yang benar. Jika sekarang benar, atribusinya ke B. Jika masih salah, atribusinya ke C.\n\nKarena substitusi dilakukan berurutan dan kumulatif, tiap contoh salah mendapat tepat satu atribusi: komponen paling awal yang jika diperbaiki membuat hasil akhir benar."
+            }
+          ],
+          "quick_check": {
+            "question": "Setelah keluaran A diganti dengan yang benar, hasil akhir menjadi benar. Atribusi?",
+            "options": [
+              "A",
+              "B"
+            ],
+            "answer_index": 0,
+            "explanation": "Komponen paling awal yang jika diperbaiki membuat hasil benar adalah A.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tabel atribusi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tabel atribusi\n\nHasilnya berupa tabel. Misalkan dari 100 contoh dev yang salah: 45 diatribusikan ke A, 35 ke B, 20 ke C. Maka komponen A menjadi kandidat prioritas karena perbaikannya paling banyak menghilangkan kesalahan, dengan batas atas 45 persen. Seperti error analysis sebelumnya, angka ini adalah plafon, bukan janji.\n\nAtribusi bergantung pada urutan substitusi. Karena kita mengganti dari hulu ke hilir, kesalahan yang bisa diperbaiki lewat A maupun B akan dihitung ke A. Itu wajar jika kamu memang ingin menghitung komponen paling awal yang menyebabkan kegagalan. Untuk pipeline dengan banyak percabangan, ikuti urutan data mengalir.\n\nSatu hal yang perlu diwaspadai: substitusi keluaran yang benar memerlukan label perantara. Jika tahap perantara tidak punya label benar, kamu bisa meminta manusia melabeli contoh salah itu saja, sekitar seratus contoh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membandingkan dengan performa manusia\n\nAtribusi memberi tahu seberapa besar tiap komponen menyumbang kesalahan, tetapi tidak menjawab seberapa jauh komponen itu bisa diperbaiki. Untuk itu, bandingkan tiap komponen dengan performa manusia pada tugas komponen tersebut. Beri manusia masukan yang sama dengan yang diterima komponen dan ukur errornya.\n\nMisalkan komponen A salah 15 persen sementara manusia 1 persen: ada ruang 14 poin. Komponen B salah 4 persen dan manusia 2 persen: ruang 2 poin. Prioritaskan A. Untuk komponen yang sudah dekat manusia, tenaga lebih baik dialihkan.\n\nHati-hati ketika masukan komponen berasal dari keluaran komponen sebelumnya yang bisa salah. Untuk perbandingan yang adil, berikan manusia masukan yang sama persis dengan yang diterima komponen, termasuk keluaran sebelumnya yang cacat. Dengan begitu kamu mengukur kesulitan komponen itu sendiri."
+            }
+          ],
+          "quick_check": {
+            "question": "Atribusi 45 ke A, 35 ke B, 20 ke C. Prioritas awal?",
+            "options": [
+              "B",
+              "A"
+            ],
+            "answer_index": 1,
+            "explanation": "A punya batas atas manfaat terbesar yaitu 45 persen.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mendeteksi pipeline yang cacat",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mendeteksi pipeline yang cacat\n\nBayangkan semua komponen sudah berkinerja setara manusia pada tugasnya masing-masing, tetapi sistem keseluruhan masih jauh di bawah manusia. Itu tanda pipeline cacat: rancangan komponennya membuang informasi yang diperlukan untuk jawaban akhir, atau urutan tahap tidak memadai.\n\nContoh: sistem memprediksi apakah seorang pengemudi akan berhenti di lampu merah, dengan pipeline yang mendeteksi lampu, mendeteksi warna, dan memprediksi aksi. Jika komponen akhir hanya menerima warna lampu tanpa kecepatan kendaraan atau jarak, bahkan manusia yang hanya diberi warna lampu akan sering salah. Setiap komponen sempurna, tetapi informasi yang diteruskan tidak cukup.\n\nPerbaikannya mengubah rancangan: teruskan informasi tambahan ke tahap akhir, tambah tahap yang hilang, atau ganti dengan end-to-end yang mengakses seluruh masukan. Tidak ada jumlah penyetelan komponen yang akan membereskan masalah desain."
+            },
+            {
+              "type": "text",
+              "markdown": "## Langkah praktis menjalankan analisis\n\nMulailah dengan mengambil seratus sampai dua ratus contoh dev yang salah. Untuk tiap contoh, catat keluaran asli tiap komponen dan keluaran yang seharusnya, yang kamu dapat dari label manusia atau dari pelabelan tambahan. Jalankan substitusi berurutan secara otomatis dengan skrip kecil agar bisa diulang setiap kali sistem berubah.\n\nSimpan hasilnya dalam spreadsheet dengan satu kolom per komponen. Ulangi analisis setelah tiap perbaikan besar, karena komponen yang tadinya kecil kontribusinya bisa menjadi penyebab utama setelah komponen lain membaik."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Hati-hati atribusi",
+              "markdown": "Atribusi ke komponen hanya valid bila substitusi keluaran benar-benar memperbaiki hasil akhir. Jika kamu mengganti keluaran A dan hasil akhir tetap salah padahal B dan C sempurna, curigai rancangan pipeline, bukan komponen."
+            },
+            {
+              "type": "code_example",
+              "filename": "atribusi.py",
+              "runnable": true,
+              "code": "def atribusi(fix_a, fix_ab):\n    if fix_a:\n        return \"A\"\n    if fix_ab:\n        return \"B\"\n    return \"C\"\n\nsalah = [(True, True), (False, True), (False, False), (False, True), (True, True), (False, False)]\nhasil = {\"A\": 0, \"B\": 0, \"C\": 0}\nfor fa, fab in salah:\n    hasil[atribusi(fa, fab)] += 1\ntotal = len(salah)\nprint({k: round(v / total, 4) for k, v in hasil.items()})",
+              "expected_output_note": "{'A': 0.3333, 'B': 0.3333, 'C': 0.3333}",
+              "explanation": "Enam contoh salah, masing-masing mendapat satu atribusi lewat substitusi kumulatif. Dua ke A, dua ke B, dua ke C. Tabel yang sama untuk ratusan contoh menunjukkan komponen prioritas."
+            },
+            {
+              "type": "code_example",
+              "filename": "simulasi_atribusi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef simulasi(n, pa, pb, pc, seed):\n    r = np.random.default_rng(seed)\n    a = r.random(n) < pa\n    b = r.random(n) < pb\n    c = r.random(n) < pc\n    gagal = a | b | c\n    ke_a = a & gagal\n    ke_b = (~a) & b\n    ke_c = (~a) & (~b) & c\n    t = gagal.sum()\n    return round(ke_a.sum() / t, 4), round(ke_b.sum() / t, 4), round(ke_c.sum() / t, 4)\n\nprint(simulasi(200000, 0.10, 0.05, 0.03, 0))\npa, pb, pc = 0.10, 0.05, 0.03\nw = [pa, (1 - pa) * pb, (1 - pa) * (1 - pb) * pc]\nprint([round(x / sum(w), 4) for x in w])",
+              "expected_output_note": "simulasi: (0.5887, 0.2606, 0.1507)\nteoretis: [0.586, 0.2637, 0.1503]",
+              "explanation": "Tiga komponen dengan laju gagal 10, 5, dan 3 persen. Atribusi mengikuti komponen paling awal yang gagal, sehingga komponen hulu menanggung bagian terbesar meski laju gagal komponen lain tidak jauh berbeda. Simulasi dan rumus teoretis hampir identik."
+            },
+            {
+              "type": "code_example",
+              "filename": "celah_manusia.py",
+              "runnable": true,
+              "code": "manusia = {\"A\": 0.01, \"B\": 0.02, \"C\": 0.01}\nsistem = {\"A\": 0.15, \"B\": 0.04, \"C\": 0.03}\ncelah = {k: round(sistem[k] - manusia[k], 4) for k in manusia}\nprint(celah)\nprint(\"prioritas:\", max(celah, key=lambda k: (celah[k], k)))",
+              "expected_output_note": "{'A': 0.14, 'B': 0.02, 'C': 0.02}\nprioritas: A",
+              "explanation": "Selisih tiap komponen terhadap manusia menunjukkan ruang perbaikan. Komponen A punya celah 14 poin sehingga menjadi prioritas, sedangkan B dan C sudah dekat manusia."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa membandingkan dengan manusia selain atribusi?",
+            "options": [
+              "Mengetahui seberapa banyak ruang perbaikan komponen",
+              "Menggantikan atribusi"
+            ],
+            "answer_index": 0,
+            "explanation": "Atribusi menunjukkan sumbangan error, perbandingan manusia menunjukkan seberapa bisa diperbaiki.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-08-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `atribusi(fix_a, fix_ab)` yang mengembalikan `\"A\"` bila `fix_a` benar, `\"B\"` bila `fix_a` salah tetapi `fix_ab` benar, dan `\"C\"` selainnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def atribusi(fix_a, fix_ab):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Diperbaiki oleh A",
+                "label": "atribusi(True, True)",
+                "pass_message": "Substitusi A cukup untuk memperbaiki",
+                "fail_hint": null,
+                "code": "assert atribusi(True, True) == \"A\""
+              },
+              {
+                "id": 2,
+                "name": "Diperbaiki oleh B",
+                "label": "atribusi(False, True)",
+                "pass_message": "Substitusi A dan B diperlukan",
+                "fail_hint": null,
+                "code": "assert atribusi(False, True) == \"B\""
+              },
+              {
+                "id": 3,
+                "name": "Hanya C",
+                "label": "atribusi(False, False)",
+                "pass_message": "Masih salah setelah A dan B diganti",
+                "fail_hint": null,
+                "code": "assert atribusi(False, False) == \"C\""
+              },
+              {
+                "id": 4,
+                "name": "A menang urutan",
+                "label": "atribusi(True, False)",
+                "pass_message": "A didahulukan saat kedua benar",
+                "fail_hint": null,
+                "code": "assert atribusi(True, False) == \"A\""
+              }
+            ]
+          },
+          "hint": "Periksa A lebih dulu, lalu B, dan sisanya C.",
+          "solution": "def atribusi(fix_a, fix_ab):\n    if fix_a:\n        return \"A\"\n    if fix_ab:\n        return \"B\"\n    return \"C\"",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-08-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `fraksi_teoretis(pa, pb, pc)` yang menghitung bobot `wA = pa`, `wB = (1 - pa) * pb`, `wC = (1 - pa) * (1 - pb) * pc`, lalu mengembalikan tuple fraksi `(wA / total, wB / total, wC / total)` dibulatkan 4 desimal dengan `total = wA + wB + wC`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def fraksi_teoretis(pa, pb, pc):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "fraksi_teoretis(0.10, 0.05, 0.03)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fraksi_teoretis(0.10, 0.05, 0.03) == (0.586, 0.2637, 0.1503)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "fraksi_teoretis(0.5, 0.0, 0.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fraksi_teoretis(0.5, 0.0, 0.0) == (1.0, 0.0, 0.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "fraksi_teoretis(0.0, 0.5, 0.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fraksi_teoretis(0.0, 0.5, 0.0) == (0.0, 1.0, 0.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(fraksi_teoretis(0.2, 0.2, 0.2))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(fraksi_teoretis(0.2, 0.2, 0.2)) > 0.9999"
+              }
+            ]
+          },
+          "hint": "Hitung tiga bobot, jumlahkan, lalu bagi satu per satu dan bulatkan.",
+          "solution": "def fraksi_teoretis(pa, pb, pc):\n    wa = pa\n    wb = (1 - pa) * pb\n    wc = (1 - pa) * (1 - pb) * pc\n    t = wa + wb + wc\n    return round(wa / t, 4), round(wb / t, 4), round(wc / t, 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-08-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `komponen_prioritas(sistem, manusia)` yang menerima dua dictionary nama komponen ke error.",
+          "note": "Hitung celah `sistem[k] - manusia[k]` dibulatkan 4 desimal dan kembalikan nama komponen dengan celah terbesar. Jika seri pilih nama yang paling awal secara abjad.",
+          "filename": "solution.py",
+          "starter_code": "def komponen_prioritas(sistem, manusia):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "komponen_prioritas({\"A\": 0.15, \"B\": 0.04, \"C\"...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_prioritas({\"A\": 0.15, \"B\": 0.04, \"C\": 0.03}, {\"A\": 0.01, \"B\": 0.02, \"C\": 0.01}) == \"A\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "komponen_prioritas({\"A\": 0.05, \"B\": 0.05}, {\"...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_prioritas({\"A\": 0.05, \"B\": 0.05}, {\"A\": 0.01, \"B\": 0.01}) == \"A\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "komponen_prioritas({\"X\": 0.1, \"Y\": 0.3}, {\"X\"...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_prioritas({\"X\": 0.1, \"Y\": 0.3}, {\"X\": 0.0, \"Y\": 0.25}) == \"X\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "komponen_prioritas({\"X\": 0.1}, {\"X\": 0.1})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_prioritas({\"X\": 0.1}, {\"X\": 0.1}) == \"X\""
+              }
+            ]
+          },
+          "hint": "Gunakan min dengan key tuple (-celah, nama) agar seri jatuh ke abjad.",
+          "solution": "def komponen_prioritas(sistem, manusia):\n    celah = {k: round(sistem[k] - manusia[k], 4) for k in sistem}\n    return min(celah, key=lambda k: (-celah[k], k))",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-08-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `simulasi_atribusi(n, pa, pb, pc, seed)`.",
+          "note": "Pakai `r = np.random.default_rng(seed)` lalu tarik berurutan `a = r.random(n) < pa`, `b = r.random(n) < pb`, `c = r.random(n) < pc`. Contoh gagal adalah `a | b | c`. Atribusi ke A bila `a` benar, ke B bila `a` salah dan `b` benar, ke C bila keduanya salah dan `c` benar. Kembalikan tuple fraksi `(A, B, C)` di antara contoh gagal, dibulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef simulasi_atribusi(n, pa, pb, pc, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(a - 0.586)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a, b, c = simulasi_atribusi(200000, 0.10, 0.05, 0.03, 0)\nassert abs(a - 0.586) < 0.01"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(b - 0.2637)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(b - 0.2637) < 0.01"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "abs(c - 0.1503)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(c - 0.1503) < 0.01"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "abs(a + b + c - 1.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(a + b + c - 1.0) < 0.001"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "simulasi_atribusi(1000, 0.1, 0.1, 0.1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simulasi_atribusi(1000, 0.1, 0.1, 0.1, 2) == simulasi_atribusi(1000, 0.1, 0.1, 0.1, 2)"
+              }
+            ]
+          },
+          "hint": "Gunakan operasi boolean NumPy. Bagi tiap hitungan dengan jumlah contoh gagal.",
+          "solution": "import numpy as np\n\ndef simulasi_atribusi(n, pa, pb, pc, seed):\n    r = np.random.default_rng(seed)\n    a = r.random(n) < pa\n    b = r.random(n) < pb\n    c = r.random(n) < pc\n    gagal = a | b | c\n    t = gagal.sum()\n    ke_a = (a & gagal).sum()\n    ke_b = ((~a) & b).sum()\n    ke_c = ((~a) & (~b) & c).sum()\n    return round(float(ke_a / t), 4), round(float(ke_b / t), 4), round(float(ke_c / t), 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Setelah keluaran A diganti dengan yang benar, hasil akhir menjadi benar. Atribusi?",
+          "code": null,
+          "options": [
+            {
+              "label": "A",
+              "description": ""
+            },
+            {
+              "label": "B",
+              "description": ""
+            },
+            {
+              "label": "C",
+              "description": ""
+            },
+            {
+              "label": "Pipeline",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Aturan: komponen paling awal yang memperbaiki hasil.",
+          "explanation": "Komponen paling awal yang jika diperbaiki membuat hasil benar adalah A."
+        },
+        {
+          "q": "Atribusi 45 ke A, 35 ke B, 20 ke C. Prioritas awal?",
+          "code": null,
+          "options": [
+            {
+              "label": "A",
+              "description": ""
+            },
+            {
+              "label": "B",
+              "description": ""
+            },
+            {
+              "label": "C",
+              "description": ""
+            },
+            {
+              "label": "Tidak jelas",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lihat angka terbesar.",
+          "explanation": "A punya batas atas manfaat terbesar yaitu 45 persen."
+        },
+        {
+          "q": "Mengapa membandingkan dengan manusia selain atribusi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menggantikan atribusi",
+              "description": ""
+            },
+            {
+              "label": "Mengetahui seberapa banyak ruang perbaikan komponen",
+              "description": ""
+            },
+            {
+              "label": "Mengganti dev set",
+              "description": ""
+            },
+            {
+              "label": "Mengurangi data",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Satu mengukur kontribusi, yang lain mengukur potensi.",
+          "explanation": "Atribusi menunjukkan sumbangan error, perbandingan manusia menunjukkan seberapa bisa diperbaiki."
+        },
+        {
+          "q": "Semua komponen setara manusia tetapi sistem buruk. Dugaan utama?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kurang data",
+              "description": ""
+            },
+            {
+              "label": "Pipeline cacat karena informasi penting hilang antar tahap",
+              "description": ""
+            },
+            {
+              "label": "Dev set salah",
+              "description": ""
+            },
+            {
+              "label": "Metrik salah",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Informasi apa yang sampai ke tahap akhir?",
+          "explanation": "Komponen sempurna tidak cukup bila informasi yang diteruskan kurang."
+        },
+        {
+          "q": "Mengapa manusia diberi masukan yang sama persis dengan komponen?",
+          "code": null,
+          "options": [
+            {
+              "label": "Agar lebih cepat",
+              "description": ""
+            },
+            {
+              "label": "Agar perbandingan adil terhadap kesulitan komponen itu sendiri",
+              "description": ""
+            },
+            {
+              "label": "Agar manusia salah",
+              "description": ""
+            },
+            {
+              "label": "Tidak perlu",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Perbandingan adil perlu masukan yang sama.",
+          "explanation": "Masukan yang berbeda mengukur tugas yang berbeda."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memperbaiki komponen yang laju gagalnya tampak paling tinggi tanpa atribusi. Lebih baik: Ganti keluaran komponen dengan yang benar secara berurutan dan hitung atribusinya.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memperbaiki komponen yang laju gagalnya tampak paling tinggi tanpa atribusi.",
+          "fix": "Ganti keluaran komponen dengan yang benar secara berurutan dan hitung atribusinya."
+        },
+        {
+          "mistake": "Membandingkan komponen dengan manusia tanpa memberi masukan yang sama.",
+          "fix": "Beri manusia masukan persis seperti yang diterima komponen."
+        },
+        {
+          "mistake": "Terus menyetel komponen ketika semuanya sudah setara manusia tetapi hasil akhir buruk.",
+          "fix": "Curigai rancangan pipeline dan ubah aliran informasinya."
+        }
+      ],
+      "summary": [
+        "Atribusi error dilakukan dengan mengganti keluaran komponen berurutan dengan yang benar.",
+        "Tabel atribusi memberi batas atas manfaat memperbaiki tiap komponen.",
+        "Bandingkan tiap komponen dengan manusia pada masukan yang sama untuk mengukur ruang perbaikan.",
+        "Komponen setara manusia dengan hasil buruk menandakan pipeline cacat."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 52 sampai 58 (Andrew Ng): error analysis per komponen dan pipeline yang cacat"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Error analysis per komponen dan pipeline yang cacat"
+          },
+          {
+            "type": "text",
+            "source": "Enam contoh salah, masing-masing mendapat satu atribusi lewat substitusi kumulatif. Dua ke A, dua ke B, dua ke C. Tabel yang sama untuk ratusan contoh menunjukkan komponen prioritas."
+          },
+          {
+            "type": "code",
+            "source": "def atribusi(fix_a, fix_ab):\n    if fix_a:\n        return \"A\"\n    if fix_ab:\n        return \"B\"\n    return \"C\"\n\nsalah = [(True, True), (False, True), (False, False), (False, True), (True, True), (False, False)]\nhasil = {\"A\": 0, \"B\": 0, \"C\": 0}\nfor fa, fab in salah:\n    hasil[atribusi(fa, fab)] += 1\ntotal = len(salah)\nprint({k: round(v / total, 4) for k, v in hasil.items()})"
+          },
+          {
+            "type": "text",
+            "source": "Tiga komponen dengan laju gagal 10, 5, dan 3 persen. Atribusi mengikuti komponen paling awal yang gagal, sehingga komponen hulu menanggung bagian terbesar meski laju gagal komponen lain tidak jauh berbeda. Simulasi dan rumus teoretis hampir identik."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef simulasi(n, pa, pb, pc, seed):\n    r = np.random.default_rng(seed)\n    a = r.random(n) < pa\n    b = r.random(n) < pb\n    c = r.random(n) < pc\n    gagal = a | b | c\n    ke_a = a & gagal\n    ke_b = (~a) & b\n    ke_c = (~a) & (~b) & c\n    t = gagal.sum()\n    return round(ke_a.sum() / t, 4), round(ke_b.sum() / t, 4), round(ke_c.sum() / t, 4)\n\nprint(simulasi(200000, 0.10, 0.05, 0.03, 0))\npa, pb, pc = 0.10, 0.05, 0.03\nw = [pa, (1 - pa) * pb, (1 - pa) * (1 - pb) * pc]\nprint([round(x / sum(w), 4) for x in w])"
+          },
+          {
+            "type": "text",
+            "source": "Selisih tiap komponen terhadap manusia menunjukkan ruang perbaikan. Komponen A punya celah 14 poin sehingga menjadi prioritas, sedangkan B dan C sudah dekat manusia."
+          },
+          {
+            "type": "code",
+            "source": "manusia = {\"A\": 0.01, \"B\": 0.02, \"C\": 0.01}\nsistem = {\"A\": 0.15, \"B\": 0.04, \"C\": 0.03}\ncelah = {k: round(sistem[k] - manusia[k], 4) for k in manusia}\nprint(celah)\nprint(\"prioritas:\", max(celah, key=lambda k: (celah[k], k)))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": true,
+    "kind": "ai_slides",
+    "reason": "Substitusi keluaran berurutan dan tabel atribusi lebih jelas lewat diagram aliran bertahap.",
+    "brief": [
+      "Slide 1: diagram pipeline A ke B ke C dengan label keluaran perantara",
+      "Slide 2: animasi substitusi keluaran benar pada A lalu A dan B",
+      "Slide 3: tabel atribusi 45, 35, 20 persen dan tabel celah terhadap manusia",
+      "Slide 4: contoh pipeline cacat dengan informasi hilang di tahap akhir"
+    ]
+  },
+  "references": [
+    {
+      "book": "Machine Learning Yearning (Andrew Ng)",
+      "chapters": "bab 44 sampai 58"
+    }
+  ]
+}

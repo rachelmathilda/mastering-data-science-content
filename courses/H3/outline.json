@@ -1,0 +1,105 @@
+{
+  "id": "H3",
+  "title": "Data Latih",
+  "title_short": "Data Latih",
+  "icon": "gear",
+  "track": "H",
+  "track_label": "MLOps",
+  "track_name": "ML Systems dan MLOps",
+  "level": "Menengah",
+  "module_count": 7,
+  "total_minutes": 735,
+  "exercise_count": 84,
+  "prerequisites": [
+    "H2"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "H3",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Data Latih",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-H3"
+  },
+  "sources": [
+    {
+      "code": "DMLS",
+      "title": "Designing Machine Learning Systems",
+      "author": "Chip Huyen",
+      "chapters": "bab 3"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Sampling",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Labeling",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Label lemah dan semi-supervised",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Class imbalance",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Augmentasi data",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Membagi data dengan benar",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Kebocoran data",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

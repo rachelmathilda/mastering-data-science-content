@@ -1,0 +1,85 @@
+{
+  "id": "H4",
+  "title": "Rekayasa Fitur di Produksi",
+  "title_short": "Fitur di Produksi",
+  "icon": "gear",
+  "track": "H",
+  "track_label": "MLOps",
+  "track_name": "ML Systems dan MLOps",
+  "level": "Menengah",
+  "module_count": 5,
+  "total_minutes": 525,
+  "exercise_count": 60,
+  "prerequisites": [
+    "H3"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "H4",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Rekayasa Fitur di Produksi",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-H4"
+  },
+  "sources": [
+    {
+      "code": "DMLS",
+      "title": "Designing Machine Learning Systems",
+      "author": "Chip Huyen",
+      "chapters": "bab 4"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Kebocoran data pada fitur",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Scaling dan encoding",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Fitur posisi dan embedding",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Train serve skew",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Pentingnya fitur",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

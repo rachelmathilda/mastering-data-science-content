@@ -1,0 +1,1543 @@
+{
+  "schema_version": 2,
+  "course_id": "D11",
+  "module_no": 3,
+  "title": "Sistem pertama dan error analysis dasar",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Membangun sistem dasar dengan cepat dan membaca petunjuk dari baseline",
+    "Melakukan error analysis dan menghitung batas atas manfaat tiap proyek",
+    "Menyusun tabel error analysis multi-kategori dan menurunkannya menjadi prioritas"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "D11-03-1",
+    "exercise_id": "D11-03-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def ablasi(X_tr, y_tr, X_dev, y_dev, grup):\n    n = X_tr.shape[1]\n    penuh = LogisticRegression(max_iter=1000).fit(X_tr, y_tr).score(X_dev, y_dev)"
+  },
+  "lessons": [
+    {
+      "lesson_id": "D11-03-1",
+      "title": "Bangun sistem pertama dengan cepat, lalu iterasi",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan mengapa sistem sempurna tidak perlu dirancang di awal",
+        "Membangun baseline dan membaca perilakunya untuk menemukan arah investasi",
+        "Memakai ablasi kelompok fitur untuk mendapat petunjuk cepat",
+        "Mengenali kapan saran ini berlaku untuk pembangun aplikasi dan kapan tidak untuk peneliti"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Masalah: terlalu banyak arah yang masuk akal",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Masalah: terlalu banyak arah yang masuk akal\n\nKamu ingin membangun sistem anti-spam email baru. Tim punya beberapa ide. Kumpulkan training set spam yang sangat besar, misalnya dengan honeypot: sengaja mengirim alamat email palsu ke para spammer yang diketahui, sehingga pesan spam yang mereka kirim bisa dipanen otomatis. Kembangkan fitur untuk memahami isi teks email. Kembangkan fitur dari amplop atau header email yang menunjukkan server internet mana yang dilewati pesan. Dan masih banyak lagi.\n\nBahkan orang yang sudah lama bekerja di bidang anti-spam akan kesulitan memilih satu arah dengan yakin. Bagi yang bukan ahli di bidang aplikasinya, memilih lebih sulit lagi. Setiap ide terdengar masuk akal, dan setiap ide memakan waktu. Menebak tanpa data hanyalah berjudi dengan berminggu-minggu kerja.\n\nSaran utamanya sederhana: jangan mulai dengan merancang dan membangun sistem yang sempurna. Bangun dan latih sistem dasar secepat mungkin, mungkin hanya dalam beberapa hari. Walau jauh dari sistem terbaik yang bisa kamu buat, memeriksa cara sistem dasar itu bekerja sangat berharga: kamu akan cepat menemukan petunjuk tentang arah paling menjanjikan untuk menanam waktumu."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa tidak langsung merancang sistem anti-spam yang sempurna?",
+            "options": [
+              "Karena sulit menebak arah paling menjanjikan tanpa melihat perilaku sistem nyata",
+              "Karena komputasi mahal"
+            ],
+            "answer_index": 0,
+            "explanation": "Bahkan ahli kesulitan memilih arah tanpa data. Sistem dasar memberi petunjuk nyata dengan cepat.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Apa saja isi sistem dasar",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Apa saja isi sistem dasar\n\nSistem dasar tidak perlu canggih. Ia perlu lengkap dari ujung ke ujung agar bisa dievaluasi. Daftar periksanya:\n\n1. Data yang tersedia sekarang, bukan data ideal, dibagi menjadi training, dev, dan test dengan benar.\n2. Satu metrik tunggal yang disepakati tim.\n3. Model sederhana yang cepat dilatih, seperti regresi logistik atau pohon kecil.\n4. Skrip evaluasi yang menghasilkan error training, error dev, dan daftar contoh yang salah.\n5. Catatan hasil agar eksperimen berikutnya bisa dibandingkan.\n\nTargetnya hari, bukan minggu. Kecepatan bukan tujuan sendiri. Dengan baseline di tangan, kamu mendapat bahan nyata untuk diagnosis: berapa error training, berapa selisihnya ke dev, fitur kelompok mana yang paling berpengaruh, dan contoh seperti apa yang salah. Tanpa baseline, semua diskusi tim hanya berupa opini."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa isi minimal sistem dasar yang baik?",
+            "options": [
+              "Model paling canggih",
+              "Alur lengkap dari data sampai evaluasi dengan satu metrik"
+            ],
+            "answer_index": 1,
+            "explanation": "Alur ujung ke ujung dengan metrik tunggal sudah cukup untuk menghasilkan diagnosis.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Petunjuk apa yang dicari dari baseline",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Petunjuk apa yang dicari dari baseline\n\nSetelah baseline berjalan, ada beberapa pertanyaan murah yang menghasilkan petunjuk kuat.\n\n**Seberapa besar error training dan selisihnya ke dev?** Ini memisahkan masalah bias dari variance, topik yang dibahas penuh di modul 5.\n\n**Fitur kelompok mana yang paling berpengaruh?** Ablasi sederhana: latih ulang tanpa satu kelompok fitur dan lihat berapa turun akurasinya. Jika membuang fitur teks menjatuhkan akurasi jauh dan membuang fitur header nyaris tidak berpengaruh, investasi pada fitur teks lebih menjanjikan daripada fitur header.\n\n**Apa yang terjadi bila data ditambah?** Learning curve dari lesson sebelumnya menunjukkan apakah data baru, misalnya dari honeypot, layak dikejar.\n\n**Contoh apa yang salah?** Ini jalan masuk ke error analysis yang dibahas di lesson berikutnya.\n\nPetunjuk-petunjuk ini tidak memberi jawaban pasti, tetapi mengubah tebakan buta menjadi tebakan terdidik. Itulah inti pendekatan iteratif: bangun cepat, baca petunjuk, perbaiki, ulangi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Untuk siapa saran ini berlaku\n\nPenting dipahami cakupannya. Saran membangun sistem dasar dengan cepat ditujukan untuk pembaca yang ingin membangun aplikasi AI, bukan untuk yang tujuannya menerbitkan makalah akademik. Dalam riset, kebaruan metode dan perbandingan yang adil dengan karya lain sering menentukan, dan itu menuntut pendekatan yang berbeda. Untuk produk, nilai terbesar ada pada kecepatan belajar dari data nyata.\n\nSatu catatan lagi tentang kerendahan hati. Walau kamu ahli di bidang tertentu, intuisi tentang arah paling menjanjikan sering meleset. Sistem dasar yang dibangun dalam beberapa hari akan menunjukkan kapan intuisi itu keliru, dan menunjukkannya pada tahap ketika koreksi masih murah."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tips",
+              "markdown": "Tetapkan batas waktu keras untuk baseline, misalnya tiga hari. Jika kamu tergoda menambah satu fitur lagi sebelum menjalankan evaluasi pertama, itu pertanda kamu sedang merancang sistem sempurna, bukan membangun baseline."
+            },
+            {
+              "type": "code_example",
+              "filename": "buat_spam.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef buat_spam(m, seed):\n    rng = np.random.default_rng(seed)\n    X = rng.normal(size=(m, 10))\n    skor = X[:, :4] @ np.array([1.0, 0.8, 0.6, 0.4]) + 0.4 * X[:, 4:8].sum(axis=1) + 0.05 * X[:, 8:].sum(axis=1)\n    y = (skor + 0.5 * rng.normal(size=m) > 0).astype(int)\n    return X, y\n\nGRUP = {\"teks\": [0, 1, 2, 3], \"header\": [4, 5, 6, 7], \"volume\": [8, 9]}\n\nfrom sklearn.linear_model import LogisticRegression\n\nX_tr, y_tr = buat_spam(3000, 1)\nX_dev, y_dev = buat_spam(1500, 2)\nmodel = LogisticRegression(max_iter=1000).fit(X_tr, y_tr)\nprint(\"error train:\", round(1 - model.score(X_tr, y_tr), 3))\nprint(\"error dev  :\", round(1 - model.score(X_dev, y_dev), 3))\nprint(\"jumlah contoh dev yang salah:\", int((model.predict(X_dev) != y_dev).sum()))",
+              "expected_output_note": "error train sekitar 0.086\nerror dev sekitar 0.084\njumlah contoh dev yang salah sekitar 126",
+              "explanation": "Baseline lengkap dari ujung ke ujung hanya butuh beberapa baris. Dengan tiga angka ini kamu sudah punya bahan diagnosis: selisih train dan dev kecil, dan ada lebih dari seratus contoh salah yang bisa dianalisis. Kecepatan di sini bukan soal terburu-buru, tetapi soal cepat memperoleh bukti."
+            },
+            {
+              "type": "code_example",
+              "filename": "buat_spam.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef buat_spam(m, seed):\n    rng = np.random.default_rng(seed)\n    X = rng.normal(size=(m, 10))\n    skor = X[:, :4] @ np.array([1.0, 0.8, 0.6, 0.4]) + 0.4 * X[:, 4:8].sum(axis=1) + 0.05 * X[:, 8:].sum(axis=1)\n    y = (skor + 0.5 * rng.normal(size=m) > 0).astype(int)\n    return X, y\n\nGRUP = {\"teks\": [0, 1, 2, 3], \"header\": [4, 5, 6, 7], \"volume\": [8, 9]}\n\nfrom sklearn.linear_model import LogisticRegression\n\nX_tr, y_tr = buat_spam(3000, 1)\nX_dev, y_dev = buat_spam(1500, 2)\npenuh = LogisticRegression(max_iter=1000).fit(X_tr, y_tr).score(X_dev, y_dev)\nprint(\"akurasi dev penuh:\", round(penuh, 3))\nfor nama, kol in GRUP.items():\n    sisa = [i for i in range(10) if i not in kol]\n    akurasi = LogisticRegression(max_iter=1000).fit(X_tr[:, sisa], y_tr).score(X_dev[:, sisa], y_dev)\n    print(f\"tanpa {nama:7s}: akurasi {akurasi:.3f}  turun {penuh - akurasi:.3f}\")",
+              "expected_output_note": "tanpa teks: turun sekitar 0.27\ntanpa header: turun sekitar 0.10\ntanpa volume: turun hampir nol",
+              "explanation": "Ablasi membuang satu kelompok fitur lalu mengukur penurunan akurasi dev. Fitur teks memikul sebagian besar sinyal, header menyumbang sedang, dan volume nyaris tidak berarti. Petunjuk ini langsung menyarankan investasi pada fitur teks dan menunda fitur volume."
+            },
+            {
+              "type": "code_example",
+              "filename": "buat_spam.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef buat_spam(m, seed):\n    rng = np.random.default_rng(seed)\n    X = rng.normal(size=(m, 10))\n    skor = X[:, :4] @ np.array([1.0, 0.8, 0.6, 0.4]) + 0.4 * X[:, 4:8].sum(axis=1) + 0.05 * X[:, 8:].sum(axis=1)\n    y = (skor + 0.5 * rng.normal(size=m) > 0).astype(int)\n    return X, y\n\nGRUP = {\"teks\": [0, 1, 2, 3], \"header\": [4, 5, 6, 7], \"volume\": [8, 9]}\n\nfrom sklearn.linear_model import LogisticRegression\n\nX_dev, y_dev = buat_spam(1500, 2)\nprint(\"m_train  error dev\")\nfor m in [100, 300, 1000, 3000, 9000]:\n    X_tr, y_tr = buat_spam(m, 1)\n    err = 1 - LogisticRegression(max_iter=1000).fit(X_tr, y_tr).score(X_dev, y_dev)\n    print(f\"{m:7d}  {err:.3f}\")",
+              "expected_output_note": "error dev turun dari sekitar 0.12 ke sekitar 0.085 lalu mendatar",
+              "explanation": "Learning curve untuk model dasar menunjukkan manfaat data tambahan, misalnya dari honeypot. Jika kurva sudah mendatar di sekitar ukuran data sekarang, mengumpulkan data jauh lebih banyak tidak akan membantu model ini. Ini contoh petunjuk murah yang menghemat berminggu-minggu."
+            }
+          ],
+          "quick_check": {
+            "question": "Ablasi menunjukkan membuang fitur teks menjatuhkan akurasi 25 poin sedangkan membuang volume tidak berpengaruh. Kesimpulan?",
+            "options": [
+              "Investasi pada fitur teks lebih menjanjikan",
+              "Hapus semua fitur"
+            ],
+            "answer_index": 0,
+            "explanation": "Kelompok fitur yang membawa sinyal paling banyak adalah tempat perbaikan paling mungkin berdampak.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-03-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bangun_baseline(X_tr, y_tr, X_dev, y_dev)` yang melatih `LogisticRegression(max_iter=1000)` pada training lalu mengembalikan dictionary `{\"err_train\": ..., \"err_dev\": ...}` dengan nilai error (1 dikurangi akurasi) dibulatkan ke 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "from sklearn.linear_model import LogisticRegression\n\ndef bangun_baseline(X_tr, y_tr, X_dev, y_dev):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "set(hasil)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "rng = np.random.default_rng(0)\nX = rng.normal(size=(800, 4))\ny = (X[:, 0] + X[:, 1] > 0).astype(int)\nhasil = bangun_baseline(X[:500], y[:500], X[500:], y[500:])\nassert set(hasil) == {\"err_train\", \"err_dev\"}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 0.0 <= hasil[\"err_train\"] < 0.1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 0.0 <= hasil[\"err_dev\"] < 0.1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "round(hasil[\"err_train\"], 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hasil[\"err_train\"] == round(hasil[\"err_train\"], 4)"
+              }
+            ]
+          },
+          "hint": "Fit model lalu hitung 1 - model.score untuk training dan dev, dibulatkan dengan round(..., 4).",
+          "solution": "from sklearn.linear_model import LogisticRegression\n\ndef bangun_baseline(X_tr, y_tr, X_dev, y_dev):\n    model = LogisticRegression(max_iter=1000).fit(X_tr, y_tr)\n    return {\n        \"err_train\": round(1 - model.score(X_tr, y_tr), 4),\n        \"err_dev\": round(1 - model.score(X_dev, y_dev), 4),\n    }",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-03-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `ablasi(X_tr, y_tr, X_dev, y_dev, grup)`.",
+          "note": "`grup` adalah dictionary nama kelompok ke list indeks kolom. Untuk tiap kelompok, latih `LogisticRegression(max_iter=1000)` tanpa kolom kelompok itu dan hitung penurunan akurasi dev dibanding model dengan semua kolom. Kembalikan dictionary nama ke penurunan, dibulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "from sklearn.linear_model import LogisticRegression\n\ndef ablasi(X_tr, y_tr, X_dev, y_dev, grup):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "set(d)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "rng = np.random.default_rng(0)\ndef data(m):\n    X = rng.normal(size=(m, 6))\n    y = (3 * X[:, 0] + 3 * X[:, 1] + 0.3 * X[:, 2] + 0.3 * rng.normal(size=m) > 0).astype(int)\n    return X, y\nX_tr, y_tr = data(800)\nX_dev, y_dev = data(600)\ngrup = {\"a\": [0, 1], \"b\": [2, 3], \"c\": [4, 5]}\nd = ablasi(X_tr, y_tr, X_dev, y_dev, grup)\nassert set(d) == {\"a\", \"b\", \"c\"}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert d[\"a\"] > 0.2"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "abs(d[\"c\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(d[\"c\"]) < 0.05"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert d[\"a\"] > d[\"b\"] >= -0.05"
+              }
+            ]
+          },
+          "hint": "Hitung akurasi model penuh sekali. Untuk tiap kelompok bentuk daftar kolom sisa dan latih ulang hanya dengan kolom itu.",
+          "solution": "from sklearn.linear_model import LogisticRegression\n\ndef ablasi(X_tr, y_tr, X_dev, y_dev, grup):\n    n = X_tr.shape[1]\n    penuh = LogisticRegression(max_iter=1000).fit(X_tr, y_tr).score(X_dev, y_dev)\n    hasil = {}\n    for nama, kol in grup.items():\n        sisa = [i for i in range(n) if i not in kol]\n        akurasi = LogisticRegression(max_iter=1000).fit(X_tr[:, sisa], y_tr).score(X_dev[:, sisa], y_dev)\n        hasil[nama] = round(penuh - akurasi, 4)\n    return hasil",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-03-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rekomendasi(err_train, err_dev, drop)` yang menerima dictionary `drop` hasil ablasi.",
+          "note": "Hitung `celah = round(err_dev - err_train, 6)`. Jika `celah > 0.03` kembalikan `\"kumpulkan data atau tambah regularisasi\"`. Jika tidak, kembalikan `\"perbaiki fitur kelompok \" + nama` dengan `nama` kelompok yang penurunan akurasinya terbesar (jika seri pilih nama paling awal secara abjad).",
+          "filename": "solution.py",
+          "starter_code": "def rekomendasi(err_train, err_dev, drop):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rekomendasi(0.05, 0.12, {\"teks\": 0.3})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rekomendasi(0.05, 0.12, {\"teks\": 0.3}) == \"kumpulkan data atau tambah regularisasi\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rekomendasi(0.10, 0.11, {\"teks\": 0.3, \"header...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rekomendasi(0.10, 0.11, {\"teks\": 0.3, \"header\": 0.1}) == \"perbaiki fitur kelompok teks\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rekomendasi(0.10, 0.11, {\"b\": 0.2, \"a\": 0.2})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rekomendasi(0.10, 0.11, {\"b\": 0.2, \"a\": 0.2}) == \"perbaiki fitur kelompok a\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rekomendasi(0.10, 0.13, {\"x\": 0.1})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rekomendasi(0.10, 0.13, {\"x\": 0.1}) == \"perbaiki fitur kelompok x\""
+              }
+            ]
+          },
+          "hint": "Bulatkan celah dahulu. Untuk memilih kelompok gunakan min dengan key (-nilai, nama).",
+          "solution": "def rekomendasi(err_train, err_dev, drop):\n    celah = round(err_dev - err_train, 6)\n    if celah > 0.03:\n        return \"kumpulkan data atau tambah regularisasi\"\n    nama = min(drop, key=lambda n: (-drop[n], n))\n    return \"perbaiki fitur kelompok \" + nama",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-03-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Ablasi dari satu training set bisa berderau.",
+          "note": "Tulis fungsi `ablasi_bootstrap(X_tr, y_tr, X_dev, y_dev, grup, k, seed)`. Buat `rng = np.random.default_rng(seed)`. Ulangi `k` kali: ambil `idx = rng.integers(0, len(X_tr), len(X_tr))`, hitung `ablasi` pada `X_tr[idx], y_tr[idx]`. Kembalikan rata-rata penurunan tiap kelompok, dibulatkan 4 desimal. Fungsi `ablasi` sudah disediakan.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef ablasi(X_tr, y_tr, X_dev, y_dev, grup):\n    n = X_tr.shape[1]\n    penuh = LogisticRegression(max_iter=1000).fit(X_tr, y_tr).score(X_dev, y_dev)\n    hasil = {}\n    for nama, kol in grup.items():\n        sisa = [i for i in range(n) if i not in kol]\n        akurasi = LogisticRegression(max_iter=1000).fit(X_tr[:, sisa], y_tr).score(X_dev[:, sisa], y_dev)\n        hasil[nama] = round(penuh - akurasi, 4)\n    return hasil\n\ndef ablasi_bootstrap(X_tr, y_tr, X_dev, y_dev, grup, k, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "set(r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "rng = np.random.default_rng(0)\ndef data(m):\n    X = rng.normal(size=(m, 6))\n    y = (3 * X[:, 0] + 3 * X[:, 1] + 0.3 * X[:, 2] + 0.3 * rng.normal(size=m) > 0).astype(int)\n    return X, y\nX_tr, y_tr = data(800)\nX_dev, y_dev = data(600)\ngrup = {\"a\": [0, 1], \"b\": [2, 3], \"c\": [4, 5]}\nr = ablasi_bootstrap(X_tr, y_tr, X_dev, y_dev, grup, 5, 0)\nassert set(r) == {\"a\", \"b\", \"c\"}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "max(r, key=r.get)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert max(r, key=r.get) == \"a\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[\"a\"] > 0.2"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ablasi_bootstrap(X_tr, y_tr, X_dev, y_dev, gr...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r == ablasi_bootstrap(X_tr, y_tr, X_dev, y_dev, grup, 5, 0)"
+              }
+            ]
+          },
+          "hint": "Kumpulkan hasil ablasi tiap putaran dalam list, lalu rata-ratakan per kelompok dengan np.mean dan round.",
+          "solution": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\n\ndef ablasi(X_tr, y_tr, X_dev, y_dev, grup):\n    n = X_tr.shape[1]\n    penuh = LogisticRegression(max_iter=1000).fit(X_tr, y_tr).score(X_dev, y_dev)\n    hasil = {}\n    for nama, kol in grup.items():\n        sisa = [i for i in range(n) if i not in kol]\n        akurasi = LogisticRegression(max_iter=1000).fit(X_tr[:, sisa], y_tr).score(X_dev[:, sisa], y_dev)\n        hasil[nama] = round(penuh - akurasi, 4)\n    return hasil\n\ndef ablasi_bootstrap(X_tr, y_tr, X_dev, y_dev, grup, k, seed):\n    rng = np.random.default_rng(seed)\n    kumpul = {nama: [] for nama in grup}\n    for _ in range(k):\n        idx = rng.integers(0, len(X_tr), len(X_tr))\n        d = ablasi(X_tr[idx], y_tr[idx], X_dev, y_dev, grup)\n        for nama, nilai in d.items():\n            kumpul[nama].append(nilai)\n    return {nama: round(float(np.mean(v)), 4) for nama, v in kumpul.items()}",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Mengapa tidak langsung merancang sistem anti-spam yang sempurna?",
+          "code": null,
+          "options": [
+            {
+              "label": "Karena komputasi mahal",
+              "description": ""
+            },
+            {
+              "label": "Karena sulit menebak arah paling menjanjikan tanpa melihat perilaku sistem nyata",
+              "description": ""
+            },
+            {
+              "label": "Karena spam tidak berubah",
+              "description": ""
+            },
+            {
+              "label": "Karena data tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Bahkan ahli kesulitan memilih arah tanpa data. Sistem dasar memberi petunjuk nyata dengan cepat."
+        },
+        {
+          "q": "Apa isi minimal sistem dasar yang baik?",
+          "code": null,
+          "options": [
+            {
+              "label": "Model paling canggih",
+              "description": ""
+            },
+            {
+              "label": "Alur lengkap dari data sampai evaluasi dengan satu metrik",
+              "description": ""
+            },
+            {
+              "label": "Dashboard produksi",
+              "description": ""
+            },
+            {
+              "label": "Fitur sebanyak mungkin",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Alur ujung ke ujung dengan metrik tunggal sudah cukup untuk menghasilkan diagnosis."
+        },
+        {
+          "q": "Ablasi menunjukkan membuang fitur teks menjatuhkan akurasi 25 poin sedangkan membuang volume tidak berpengaruh. Kesimpulan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Investasi pada fitur teks lebih menjanjikan",
+              "description": ""
+            },
+            {
+              "label": "Hapus semua fitur",
+              "description": ""
+            },
+            {
+              "label": "Tambah fitur volume",
+              "description": ""
+            },
+            {
+              "label": "Ganti metrik",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": null,
+          "explanation": "Kelompok fitur yang membawa sinyal paling banyak adalah tempat perbaikan paling mungkin berdampak."
+        },
+        {
+          "q": "Saran membangun sistem dasar dengan cepat terutama ditujukan untuk siapa?",
+          "code": null,
+          "options": [
+            {
+              "label": "Peneliti yang menerbitkan makalah",
+              "description": ""
+            },
+            {
+              "label": "Pembangun aplikasi AI",
+              "description": ""
+            },
+            {
+              "label": "Penguji perangkat keras",
+              "description": ""
+            },
+            {
+              "label": "Pengelola basis data",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Saran ini untuk pembaca yang ingin membangun aplikasi, bukan untuk tujuan publikasi akademik."
+        },
+        {
+          "q": "Jika learning curve baseline sudah mendatar, apa implikasinya untuk ide mengumpulkan data honeypot yang sangat besar?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pasti sangat bermanfaat",
+              "description": ""
+            },
+            {
+              "label": "Mungkin tidak membantu model ini, sehingga perlu dipertimbangkan ulang",
+              "description": ""
+            },
+            {
+              "label": "Wajib dilakukan",
+              "description": ""
+            },
+            {
+              "label": "Menggantikan dev set",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Kurva mendatar menunjukkan data tambahan tidak lagi menurunkan error untuk model itu."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Merancang sistem sempurna selama berminggu-minggu sebelum evaluasi pertama. Lebih baik: Bangun baseline lengkap dalam beberapa hari lalu gunakan hasilnya untuk memilih arah.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Merancang sistem sempurna selama berminggu-minggu sebelum evaluasi pertama.",
+          "fix": "Bangun baseline lengkap dalam beberapa hari lalu gunakan hasilnya untuk memilih arah."
+        },
+        {
+          "mistake": "Menganggap baseline harus mendekati performa akhir.",
+          "fix": "Nilai baseline dari seberapa banyak petunjuk yang diberikannya, bukan dari seberapa tinggi akurasinya."
+        },
+        {
+          "mistake": "Membaca satu kali ablasi sebagai kebenaran pasti.",
+          "fix": "Ulangi dengan beberapa resampling untuk memastikan urutan kelompok fitur stabil."
+        }
+      ],
+      "summary": [
+        "Bangun dan latih sistem dasar dalam hitungan hari, lalu iterasi.",
+        "Sistem dasar harus lengkap dari ujung ke ujung dengan metrik tunggal.",
+        "Error train dev, ablasi fitur, dan learning curve memberi petunjuk murah tentang arah investasi.",
+        "Saran ini untuk pembangun aplikasi, sedangkan riset akademik punya pertimbangan berbeda."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 13 (Andrew Ng): bangun sistem pertama dengan cepat lalu iterasi"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Bangun sistem pertama dengan cepat, lalu iterasi"
+          },
+          {
+            "type": "text",
+            "source": "Baseline lengkap dari ujung ke ujung hanya butuh beberapa baris. Dengan tiga angka ini kamu sudah punya bahan diagnosis: selisih train dan dev kecil, dan ada lebih dari seratus contoh salah yang bisa dianalisis. Kecepatan di sini bukan soal terburu-buru, tetapi soal cepat memperoleh bukti."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef buat_spam(m, seed):\n    rng = np.random.default_rng(seed)\n    X = rng.normal(size=(m, 10))\n    skor = X[:, :4] @ np.array([1.0, 0.8, 0.6, 0.4]) + 0.4 * X[:, 4:8].sum(axis=1) + 0.05 * X[:, 8:].sum(axis=1)\n    y = (skor + 0.5 * rng.normal(size=m) > 0).astype(int)\n    return X, y\n\nGRUP = {\"teks\": [0, 1, 2, 3], \"header\": [4, 5, 6, 7], \"volume\": [8, 9]}\n\nfrom sklearn.linear_model import LogisticRegression\n\nX_tr, y_tr = buat_spam(3000, 1)\nX_dev, y_dev = buat_spam(1500, 2)\nmodel = LogisticRegression(max_iter=1000).fit(X_tr, y_tr)\nprint(\"error train:\", round(1 - model.score(X_tr, y_tr), 3))\nprint(\"error dev  :\", round(1 - model.score(X_dev, y_dev), 3))\nprint(\"jumlah contoh dev yang salah:\", int((model.predict(X_dev) != y_dev).sum()))"
+          },
+          {
+            "type": "text",
+            "source": "Ablasi membuang satu kelompok fitur lalu mengukur penurunan akurasi dev. Fitur teks memikul sebagian besar sinyal, header menyumbang sedang, dan volume nyaris tidak berarti. Petunjuk ini langsung menyarankan investasi pada fitur teks dan menunda fitur volume."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef buat_spam(m, seed):\n    rng = np.random.default_rng(seed)\n    X = rng.normal(size=(m, 10))\n    skor = X[:, :4] @ np.array([1.0, 0.8, 0.6, 0.4]) + 0.4 * X[:, 4:8].sum(axis=1) + 0.05 * X[:, 8:].sum(axis=1)\n    y = (skor + 0.5 * rng.normal(size=m) > 0).astype(int)\n    return X, y\n\nGRUP = {\"teks\": [0, 1, 2, 3], \"header\": [4, 5, 6, 7], \"volume\": [8, 9]}\n\nfrom sklearn.linear_model import LogisticRegression\n\nX_tr, y_tr = buat_spam(3000, 1)\nX_dev, y_dev = buat_spam(1500, 2)\npenuh = LogisticRegression(max_iter=1000).fit(X_tr, y_tr).score(X_dev, y_dev)\nprint(\"akurasi dev penuh:\", round(penuh, 3))\nfor nama, kol in GRUP.items():\n    sisa = [i for i in range(10) if i not in kol]\n    akurasi = LogisticRegression(max_iter=1000).fit(X_tr[:, sisa], y_tr).score(X_dev[:, sisa], y_dev)\n    print(f\"tanpa {nama:7s}: akurasi {akurasi:.3f}  turun {penuh - akurasi:.3f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Learning curve untuk model dasar menunjukkan manfaat data tambahan, misalnya dari honeypot. Jika kurva sudah mendatar di sekitar ukuran data sekarang, mengumpulkan data jauh lebih banyak tidak akan membantu model ini. Ini contoh petunjuk murah yang menghemat berminggu-minggu."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef buat_spam(m, seed):\n    rng = np.random.default_rng(seed)\n    X = rng.normal(size=(m, 10))\n    skor = X[:, :4] @ np.array([1.0, 0.8, 0.6, 0.4]) + 0.4 * X[:, 4:8].sum(axis=1) + 0.05 * X[:, 8:].sum(axis=1)\n    y = (skor + 0.5 * rng.normal(size=m) > 0).astype(int)\n    return X, y\n\nGRUP = {\"teks\": [0, 1, 2, 3], \"header\": [4, 5, 6, 7], \"volume\": [8, 9]}\n\nfrom sklearn.linear_model import LogisticRegression\n\nX_dev, y_dev = buat_spam(1500, 2)\nprint(\"m_train  error dev\")\nfor m in [100, 300, 1000, 3000, 9000]:\n    X_tr, y_tr = buat_spam(m, 1)\n    err = 1 - LogisticRegression(max_iter=1000).fit(X_tr, y_tr).score(X_dev, y_dev)\n    print(f\"{m:7d}  {err:.3f}\")"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "D11-03-2",
+      "title": "Error analysis: hitung dulu sebelum membangun",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Melakukan error analysis dengan memeriksa sampel contoh dev yang salah",
+        "Menghitung batas atas manfaat sebuah proyek dari fraksi kategori error",
+        "Memperkirakan ketidakpastian fraksi dari sampel kecil",
+        "Memutuskan apakah sebuah proyek layak dengan perbandingan manfaat dan biaya"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Skenario: anjing yang dikira kucing",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Skenario: anjing yang dikira kucing\n\nSaat mencoba aplikasi kucingmu, kamu melihat beberapa contoh ketika anjing keliru diklasifikasikan sebagai kucing. Beberapa anjing memang mirip kucing. Seorang rekan tim mengusulkan memasang perangkat lunak pihak ketiga agar sistem lebih baik pada gambar anjing. Pekerjaannya makan waktu sebulan dan rekan itu sangat antusias. Apakah kamu langsung menyuruhnya jalan?\n\nSebelum menanam sebulan, perkirakan dulu seberapa besar proyek itu akan memperbaiki akurasi. Baru setelah itu kamu bisa memutuskan secara rasional apakah sebulan itu sepadan, atau waktu itu lebih baik dipakai untuk tugas lain.\n\nAntusiasme dan intuisi itu penting, tetapi bukan bukti. Banyak insinyur enggan melakukan error analysis. Rasanya lebih seru langsung mengimplementasikan ide daripada mempertanyakan apakah ide itu layak waktunya. Itu kesalahan umum: tim bisa menghabiskan sebulan hanya untuk menyadari kemudian bahwa hasilnya nyaris tidak ada."
+            }
+          ],
+          "quick_check": {
+            "question": "Hanya 5 persen kesalahan berupa anjing dengan error total 10 persen. Berapa error terbaik bila semua masalah anjing teratasi?",
+            "options": [
+              "9,5 persen",
+              "0 persen"
+            ],
+            "answer_index": 0,
+            "explanation": "10 persen dikali (1 dikurangi 0,05) sama dengan 9,5 persen.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Prosedur error analysis",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Prosedur error analysis\n\nLangkahnya sederhana dan murah.\n\n1. Kumpulkan sampel 100 contoh dev set yang **salah diklasifikasikan** oleh sistemmu.\n2. Periksa contoh itu secara manual dan hitung berapa pecahan yang berupa gambar anjing.\n\nProses memeriksa contoh yang salah ini disebut **error analysis**. Misalkan hanya 5 persen contoh salah yang berupa anjing. Sebesar apa pun kamu memperbaiki performa pada gambar anjing, kamu tidak akan menghilangkan lebih dari 5 persen error. Angka 5 persen adalah **batas atas** (ceiling) manfaat proyek itu. Jika sistem sekarang akurat 90 persen (error 10 persen), perbaikan itu paling banyak membawa akurasi ke 90,5 persen (error 9,5 persen).\n\nSebaliknya, jika 50 persen kesalahan berupa anjing, kamu bisa lebih yakin proyek itu berdampak besar. Akurasi bisa naik dari 90 ke 95 persen, yaitu penurunan error relatif 50 persen. Prosedur menghitung sederhana ini memberi dasar kuantitatif untuk memutuskan apakah investasi itu dilakukan."
+            }
+          ],
+          "quick_check": {
+            "question": "Berapa kira-kira contoh salah yang disarankan diperiksa awalnya?",
+            "options": [
+              "Sekitar 5",
+              "Sekitar 100"
+            ],
+            "answer_index": 1,
+            "explanation": "Sekitar 100 contoh yang salah cukup untuk gambaran awal dan hanya butuh sekitar dua jam.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dua jam melawan satu bulan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua jam melawan satu bulan\n\nMemeriksa 100 contoh secara manual tidak lama. Bahkan dengan satu menit per gambar, kamu selesai dalam waktu kurang dari dua jam. Dua jam itu bisa menyelamatkanmu dari sebulan usaha yang sia-sia. Perbandingan biaya ini adalah alasan terkuat melakukan error analysis sebelum proyek besar apa pun.\n\nAda tiga bilangan yang perlu kamu bedakan. **Error total** adalah proporsi contoh dev yang salah, misalnya 10 persen. **Fraksi kategori** adalah bagian dari kesalahan yang berasal dari kategori tertentu, misalnya 5 persen dari kesalahan itu anjing. **Batas atas perbaikan** dalam poin persen adalah error total dikali fraksi kategori, yaitu 0,10 kali 0,05 sama dengan 0,5 poin persen.\n\nError analysis juga menginspirasi arah baru, bukan hanya menilai ide yang sudah ada. Saat melihat contoh yang salah, kamu sering menemukan pola yang tidak terpikirkan sebelumnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ketidakpastian dari sampel kecil\n\nFraksi yang kamu hitung dari 100 contoh adalah estimasi, bukan nilai pasti. Jika dalam 100 contoh ada 5 anjing, fraksi sebenarnya bisa 2 persen atau 10 persen. Rumus interval kepercayaan 95 persen pendekatan normal adalah `p ± 1,96 * sqrt(p * (1 - p) / n)`, dengan `p` fraksi terhitung dan `n` banyaknya contoh salah yang diperiksa.\n\nUntuk keputusan prioritas, ketidakpastian seperti itu biasanya bisa diterima. Kamu hanya perlu tahu apakah batas atas manfaat itu sekitar 5 persen atau sekitar 50 persen. Perbedaan sebesar itu terlihat jelas bahkan dari sampel kecil. Yang perlu diwaspadai adalah ketika dua kategori fraksinya mirip, misalnya 30 dan 35 persen dari sampel 50 contoh. Pada kasus itu pilihan antara keduanya harus dipandu faktor lain seperti biaya dan peluang berhasil."
+            },
+            {
+              "type": "callout",
+              "kind": "note",
+              "title": "Catatan",
+              "markdown": "Batas atas bukan prediksi. Proyek yang menyasar kategori dengan fraksi 50 persen hanya bisa menghilangkan paling banyak setengah error, dan hampir tidak pernah menghilangkan semuanya. Anggap batas atas sebagai alat menyingkirkan ide yang tidak layak, bukan menjanjikan hasil."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "err_total = 0.10\nfor frac in [0.05, 0.50]:\n    err_setelah = err_total * (1 - frac)\n    relatif = (err_total - err_setelah) / err_total\n    print(f\"fraksi anjing {frac:.0%}: error terbaik {err_setelah:.3f}, penurunan relatif {relatif:.0%}\")",
+              "expected_output_note": "fraksi anjing 5%: error terbaik 0.095, penurunan relatif 5%\nfraksi anjing 50%: error terbaik 0.050, penurunan relatif 50%",
+              "explanation": "Dua skenario dibandingkan. Jika hanya 5 persen kesalahan berupa anjing, error terbaik yang mungkin 9,5 persen. Jika 50 persen, error bisa turun ke 5 persen. Perhitungan ini butuh beberapa detik dan menentukan apakah sebulan kerja layak."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nrng = np.random.default_rng(0)\nn_salah = 1000\nkategori = rng.choice([\"anjing\", \"kucing_besar\", \"buram\", \"lain\"], size=n_salah, p=[0.08, 0.30, 0.40, 0.22])\nsampel = rng.choice(kategori, size=100, replace=False)\n\nfor nama in [\"anjing\", \"kucing_besar\", \"buram\", \"lain\"]:\n    k = int(np.sum(sampel == nama))\n    p = k / 100\n    s = 1.96 * np.sqrt(p * (1 - p) / 100)\n    benar = np.mean(kategori == nama)\n    print(f\"{nama:13s} sampel {p:.2f} (CI {max(0, p - s):.2f} sampai {min(1, p + s):.2f})  sebenarnya {benar:.2f}\")",
+              "expected_output_note": "tiap kategori: fraksi sampel dekat fraksi sebenarnya dan CI menutupinya",
+              "explanation": "Dari 1000 kesalahan yang diketahui kategori sebenarnya, kita memeriksa sampel 100. Fraksi sampel mendekati fraksi sebenarnya dan interval kepercayaan menutupinya. Untuk keputusan prioritas, sampel 100 cukup membedakan kategori besar dari kategori kecil."
+            },
+            {
+              "type": "code_example",
+              "filename": "layak.py",
+              "runnable": true,
+              "code": "def layak(frac, err_total, biaya_hari, ambang_poin_per_hari):\n    gain_poin = frac * err_total * 100\n    return gain_poin / biaya_hari >= ambang_poin_per_hari\n\nprint(\"anjing (5%), 30 hari :\", layak(0.05, 0.10, 30, 0.05))\nprint(\"buram (61%), 10 hari :\", layak(0.61, 0.10, 10, 0.05))",
+              "expected_output_note": "anjing (5%), 30 hari : False\nburam (61%), 10 hari : True",
+              "explanation": "Batas atas manfaat dibagi biaya memberi manfaat per hari kerja, yang dibandingkan dengan ambang yang kamu tetapkan. Proyek anjing hanya memberi paling banyak 0,5 poin persen dalam 30 hari, sementara proyek gambar buram bisa memberi hingga 6,1 poin dalam 10 hari."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa error analysis sering dihindari insinyur?",
+            "options": [
+              "Terasa kurang seru dibanding langsung mengimplementasikan ide",
+              "Terlalu mahal"
+            ],
+            "answer_index": 0,
+            "explanation": "Banyak insinyur lebih suka langsung membangun, padahal itu bisa membuang waktu sebulan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-03-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `batas_atas(frac, err_total)` yang mengembalikan tuple `(err_terbaik, penurunan_relatif)`.",
+          "note": "`err_terbaik = err_total * (1 - frac)` dan `penurunan_relatif = frac`. Bulatkan keduanya ke 6 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def batas_atas(frac, err_total):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "batas_atas(0.05, 0.10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_atas(0.05, 0.10) == (0.095, 0.05)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "batas_atas(0.5, 0.10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_atas(0.5, 0.10) == (0.05, 0.5)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "batas_atas(0.0, 0.2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_atas(0.0, 0.2) == (0.2, 0.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "batas_atas(1.0, 0.2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_atas(1.0, 0.2) == (0.0, 1.0)"
+              }
+            ]
+          },
+          "hint": "Hitung err_total * (1 - frac) dan bulatkan dengan round(nilai, 6).",
+          "solution": "def batas_atas(frac, err_total):\n    return round(err_total * (1 - frac), 6), round(frac, 6)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-03-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `ambil_sampel_salah(y_true, y_pred, k, seed)` yang mengembalikan array indeks sampel acak berukuran `min(k, jumlah_salah)` dari contoh yang salah prediksi (`y_true != y_pred`), tanpa pengembalian.",
+          "note": "Gunakan `np.random.default_rng(seed)` dan `rng.choice(..., replace=False)`. Indeks harus terurut naik.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef ambil_sampel_salah(y_true, y_pred, k, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "y_true = np.array([0, 1, 1, 0, 1, 0, 0, 1, 1, 0])\ny_pred = np.array([0, 0, 1, 1, 1, 0, 1, 0, 1, 0])\nsalah = set(np.where(y_true != y_pred)[0])\ns = ambil_sampel_salah(y_true, y_pred, 3, 0)\nassert len(s) == 3 and set(s) <= salah"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "list(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert list(s) == sorted(s)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "set(semua)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "semua = ambil_sampel_salah(y_true, y_pred, 100, 0)\nassert set(semua) == salah"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "list(ambil_sampel_salah(y_true, y_pred, 3, 0))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert list(ambil_sampel_salah(y_true, y_pred, 3, 0)) == list(s)"
+              }
+            ]
+          },
+          "hint": "Cari indeks salah dengan np.where, tentukan ukuran min(k, len(salah)), pilih dengan rng.choice, lalu urutkan dengan np.sort.",
+          "solution": "import numpy as np\n\ndef ambil_sampel_salah(y_true, y_pred, k, seed):\n    y_true = np.asarray(y_true)\n    y_pred = np.asarray(y_pred)\n    salah = np.where(y_true != y_pred)[0]\n    n = min(k, len(salah))\n    rng = np.random.default_rng(seed)\n    return np.sort(rng.choice(salah, size=n, replace=False))",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-03-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `layak_dikerjakan(frac, err_total, biaya_hari, ambang)` yang menghitung `gain = frac * err_total * 100` (poin persen), lalu mengembalikan `True` bila `gain / biaya_hari >= ambang` dan `False` selain itu.",
+          "note": "Jika `biaya_hari <= 0` kembalikan `True` bila `gain > 0`.",
+          "filename": "solution.py",
+          "starter_code": "def layak_dikerjakan(frac, err_total, biaya_hari, ambang):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "layak_dikerjakan(0.05, 0.10, 30, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert layak_dikerjakan(0.05, 0.10, 30, 0.05) is False"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "layak_dikerjakan(0.61, 0.10, 10, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert layak_dikerjakan(0.61, 0.10, 10, 0.05) is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "layak_dikerjakan(0.5, 0.1, 0, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert layak_dikerjakan(0.5, 0.1, 0, 0.05) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "layak_dikerjakan(0.0, 0.1, 0, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert layak_dikerjakan(0.0, 0.1, 0, 0.05) is False"
+              }
+            ]
+          },
+          "hint": "Tangani biaya nol atau negatif lebih dulu, lalu bandingkan gain per hari dengan ambang. Kembalikan nilai bool murni.",
+          "solution": "def layak_dikerjakan(frac, err_total, biaya_hari, ambang):\n    gain = frac * err_total * 100\n    if biaya_hari <= 0:\n        return bool(gain > 0)\n    return bool(gain / biaya_hari >= ambang)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-03-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `interval_fraksi(k, n)` yang mengembalikan interval kepercayaan 95 persen pendekatan normal `(bawah, atas)` untuk fraksi `k / n`: `p = k / n`, `s = 1.96 * sqrt(p * (1 - p) / n)`.",
+          "note": "Potong hasil ke rentang 0 sampai 1 dan bulatkan ke 4 desimal. Untuk `n = 0` kembalikan `(0.0, 1.0)`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef interval_fraksi(k, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(lo - 0.4020)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "lo, hi = interval_fraksi(50, 100)\nassert abs(lo - 0.4020) < 1e-4 and abs(hi - 0.5980) < 1e-4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "lo, hi = interval_fraksi(0, 100)\nassert lo == 0.0 and hi == 0.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "lo, hi = interval_fraksi(100, 100)\nassert lo == 1.0 and hi == 1.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "interval_fraksi(0, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_fraksi(0, 0) == (0.0, 1.0)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "lo, hi = interval_fraksi(5, 100)\nassert 0.0 <= lo < 0.05 < hi < 0.12"
+              }
+            ]
+          },
+          "hint": "Tangani n sama dengan nol lebih dulu. Gunakan max(0.0, ...) dan min(1.0, ...) untuk memotong, lalu round 4.",
+          "solution": "import math\n\ndef interval_fraksi(k, n):\n    if n == 0:\n        return 0.0, 1.0\n    p = k / n\n    s = 1.96 * math.sqrt(p * (1 - p) / n)\n    return round(max(0.0, p - s), 4), round(min(1.0, p + s), 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Hanya 5 persen kesalahan berupa anjing dengan error total 10 persen. Berapa error terbaik bila semua masalah anjing teratasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "0 persen",
+              "description": ""
+            },
+            {
+              "label": "9,5 persen",
+              "description": ""
+            },
+            {
+              "label": "5 persen",
+              "description": ""
+            },
+            {
+              "label": "10 persen",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "10 persen dikali (1 dikurangi 0,05) sama dengan 9,5 persen."
+        },
+        {
+          "q": "Berapa kira-kira contoh salah yang disarankan diperiksa awalnya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sekitar 5",
+              "description": ""
+            },
+            {
+              "label": "Sekitar 100",
+              "description": ""
+            },
+            {
+              "label": "Sekitar 100.000",
+              "description": ""
+            },
+            {
+              "label": "Seluruh dataset",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Sekitar 100 contoh yang salah cukup untuk gambaran awal dan hanya butuh sekitar dua jam."
+        },
+        {
+          "q": "Mengapa error analysis sering dihindari insinyur?",
+          "code": null,
+          "options": [
+            {
+              "label": "Terlalu mahal",
+              "description": ""
+            },
+            {
+              "label": "Terasa kurang seru dibanding langsung mengimplementasikan ide",
+              "description": ""
+            },
+            {
+              "label": "Tidak bisa dilakukan manual",
+              "description": ""
+            },
+            {
+              "label": "Butuh GPU",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Banyak insinyur lebih suka langsung membangun, padahal itu bisa membuang waktu sebulan."
+        },
+        {
+          "q": "Dua kategori punya fraksi 30 dan 35 persen dari 50 contoh. Apa yang sebaiknya dilakukan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Selalu pilih yang 35 persen",
+              "description": ""
+            },
+            {
+              "label": "Pertimbangkan biaya dan peluang berhasil karena perbedaannya dalam ketidakpastian",
+              "description": ""
+            },
+            {
+              "label": "Abaikan keduanya",
+              "description": ""
+            },
+            {
+              "label": "Tambah test set",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Perbedaan kecil pada sampel kecil tidak membedakan kategori secara meyakinkan, jadi faktor lain ikut menentukan."
+        },
+        {
+          "q": "Apa arti batas atas manfaat suatu proyek?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hasil pasti proyek",
+              "description": ""
+            },
+            {
+              "label": "Maksimum error yang bisa dihilangkan jika kategori itu terselesaikan sempurna",
+              "description": ""
+            },
+            {
+              "label": "Biaya proyek",
+              "description": ""
+            },
+            {
+              "label": "Jumlah contoh dev",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Batas atas adalah plafon: paling banyak sebesar fraksi kategori itu yang bisa dihilangkan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Langsung mengerjakan proyek besar karena rekan tim antusias. Lebih baik: Lakukan error analysis dulu untuk memperkirakan batas atas manfaat.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Langsung mengerjakan proyek besar karena rekan tim antusias.",
+          "fix": "Lakukan error analysis dulu untuk memperkirakan batas atas manfaat."
+        },
+        {
+          "mistake": "Memeriksa contoh yang benar atau contoh acak, bukan contoh yang salah.",
+          "fix": "Kumpulkan sampel contoh yang salah diklasifikasikan lalu kelompokkan penyebabnya."
+        },
+        {
+          "mistake": "Menganggap batas atas sebagai hasil yang pasti tercapai.",
+          "fix": "Perlakukan batas atas sebagai alat penyaring ide, dan pertimbangkan peluang berhasil dan biaya."
+        }
+      ],
+      "summary": [
+        "Error analysis adalah memeriksa contoh dev yang salah untuk memahami penyebab kesalahan.",
+        "Fraksi kategori dikali error total memberi batas atas manfaat sebuah proyek.",
+        "Sampel sekitar 100 contoh salah cukup untuk prioritas, dan interval kepercayaan menunjukkan ketidakpastian.",
+        "Dua jam error analysis bisa menyelamatkan sebulan usaha yang sia-sia."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 14 (Andrew Ng): error analysis dengan melihat contoh dev set"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Error analysis: hitung dulu sebelum membangun"
+          },
+          {
+            "type": "text",
+            "source": "Dua skenario dibandingkan. Jika hanya 5 persen kesalahan berupa anjing, error terbaik yang mungkin 9,5 persen. Jika 50 persen, error bisa turun ke 5 persen. Perhitungan ini butuh beberapa detik dan menentukan apakah sebulan kerja layak."
+          },
+          {
+            "type": "code",
+            "source": "err_total = 0.10\nfor frac in [0.05, 0.50]:\n    err_setelah = err_total * (1 - frac)\n    relatif = (err_total - err_setelah) / err_total\n    print(f\"fraksi anjing {frac:.0%}: error terbaik {err_setelah:.3f}, penurunan relatif {relatif:.0%}\")"
+          },
+          {
+            "type": "text",
+            "source": "Dari 1000 kesalahan yang diketahui kategori sebenarnya, kita memeriksa sampel 100. Fraksi sampel mendekati fraksi sebenarnya dan interval kepercayaan menutupinya. Untuk keputusan prioritas, sampel 100 cukup membedakan kategori besar dari kategori kecil."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nrng = np.random.default_rng(0)\nn_salah = 1000\nkategori = rng.choice([\"anjing\", \"kucing_besar\", \"buram\", \"lain\"], size=n_salah, p=[0.08, 0.30, 0.40, 0.22])\nsampel = rng.choice(kategori, size=100, replace=False)\n\nfor nama in [\"anjing\", \"kucing_besar\", \"buram\", \"lain\"]:\n    k = int(np.sum(sampel == nama))\n    p = k / 100\n    s = 1.96 * np.sqrt(p * (1 - p) / 100)\n    benar = np.mean(kategori == nama)\n    print(f\"{nama:13s} sampel {p:.2f} (CI {max(0, p - s):.2f} sampai {min(1, p + s):.2f})  sebenarnya {benar:.2f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Batas atas manfaat dibagi biaya memberi manfaat per hari kerja, yang dibandingkan dengan ambang yang kamu tetapkan. Proyek anjing hanya memberi paling banyak 0,5 poin persen dalam 30 hari, sementara proyek gambar buram bisa memberi hingga 6,1 poin dalam 10 hari."
+          },
+          {
+            "type": "code",
+            "source": "def layak(frac, err_total, biaya_hari, ambang_poin_per_hari):\n    gain_poin = frac * err_total * 100\n    return gain_poin / biaya_hari >= ambang_poin_per_hari\n\nprint(\"anjing (5%), 30 hari :\", layak(0.05, 0.10, 30, 0.05))\nprint(\"buram (61%), 10 hari :\", layak(0.61, 0.10, 10, 0.05))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "D11-03-3",
+      "title": "Evaluasi banyak ide paralel dengan spreadsheet",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membangun tabel error analysis dengan beberapa kategori sekaligus",
+        "Menghitung persentase tiap kategori dan memahami mengapa totalnya bisa lebih dari 100 persen",
+        "Menambah kategori baru saat contoh diperiksa ulang",
+        "Menggabungkan persentase kategori dengan usaha dan peluang untuk menentukan prioritas"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Satu tabel untuk banyak ide",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Satu tabel untuk banyak ide\n\nTim punya beberapa ide untuk memperbaiki detektor kucing: perbaiki masalah anjing yang dikira kucing, perbaiki masalah kucing besar seperti singa dan macan kumbang yang dikira kucing rumahan, dan perbaiki performa pada gambar buram.\n\nSemua ide itu bisa dievaluasi secara paralel dengan satu tabel. Caranya, buat spreadsheet dan isi sambil memeriksa kira-kira 100 gambar dev yang salah. Setiap baris adalah satu gambar. Setiap kolom adalah satu kategori masalah (Anjing, Kucing besar, Buram) dan kamu beri tanda centang bila gambar itu termasuk kategori tersebut. Tambahkan kolom Komentar untuk mencatat hal yang akan membantumu mengingat contoh tertentu, misalnya \"singa di kebun binatang saat hujan\".\n\nDi bagian bawah, hitung persentase tiap kolom dari total baris. Satu tabel kecil itu menggantikan perdebatan panjang: kamu melihat berapa persen kesalahan yang disentuh tiap ide."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa total persentase kategori di tabel error analysis bisa lebih dari 100 persen?",
+            "options": [
+              "Karena satu contoh bisa masuk lebih dari satu kategori",
+              "Karena ada kesalahan hitung"
+            ],
+            "answer_index": 0,
+            "explanation": "Tiap persentase menyatakan bagian kesalahan yang tersentuh oleh kategori itu, dan kategori boleh tumpang tindih.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Satu contoh bisa punya banyak kategori",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Satu contoh bisa punya banyak kategori\n\nGambar tertentu bisa tercentang di lebih dari satu kolom. Misalnya gambar singa di kebun binatang saat hujan masuk kategori Kucing besar sekaligus Buram. Karena itu persentase di bagian bawah tidak harus berjumlah 100 persen. Ini bukan kesalahan. Tiap persentase menjawab pertanyaan berbeda: berapa persen kesalahan yang tersentuh bila kategori ini diselesaikan.\n\nDalam contoh hasil akhir, setelah memeriksa 100 contoh, kamu mungkin mendapat Anjing 8 persen, Kucing besar 43 persen, dan Buram 61 persen. Maka proyek anjing paling banyak menghilangkan 8 persen error. Proyek kucing besar atau gambar buram bisa menghilangkan jauh lebih banyak, jadi kamu memilih salah satunya. Jika tim cukup besar, sebagian insinyur bisa mengerjakan kucing besar dan lainnya mengerjakan gambar buram secara paralel."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kategori baru muncul sambil bekerja\n\nKamu boleh mulai dengan kategori yang sudah dipikirkan, tetapi dalam praktik, begitu mulai memeriksa contoh, kamu akan terinspirasi mengusulkan kategori baru. Misalnya setelah selusin gambar kamu sadar banyak kesalahan terjadi pada foto yang diberi filter Instagram. Kamu bisa kembali dan menambah kolom Instagram ke tabel, lalu memeriksa ulang gambar sebelumnya dengan kategori baru.\n\nKategori yang paling berguna adalah yang kamu punya ide perbaikannya. Misalnya kategori Instagram paling berguna bila kamu punya ide membatalkan filter dan memulihkan gambar asli. Tetapi kamu tidak perlu membatasi diri pada kategori yang sudah kamu tahu cara memperbaikinya. Tujuan proses ini membangun intuisi tentang area yang paling menjanjikan.\n\nError analysis bersifat iteratif. Tidak masalah jika kamu mulai tanpa kategori apa pun. Setelah melihat beberapa gambar, kategori akan muncul, dan setelah mengategorikan sebagian, muncul kategori lain yang membuatmu meninjau ulang gambar-gambar tadi."
+            }
+          ],
+          "quick_check": {
+            "question": "Anjing 8 persen, kucing besar 43 persen, buram 61 persen. Proyek mana yang menyentuh error paling banyak?",
+            "options": [
+              "Anjing",
+              "Buram"
+            ],
+            "answer_index": 1,
+            "explanation": "Buram menyentuh 61 persen kesalahan, tertinggi di tabel.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dari persentase ke prioritas",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari persentase ke prioritas\n\nError analysis tidak menghasilkan rumus matematika kaku yang langsung menunjuk tugas berprioritas tertinggi. Kamu juga harus memperhitungkan seberapa besar kemajuan yang kamu harapkan pada tiap kategori dan seberapa banyak usaha yang dibutuhkan untuk menanganinya.\n\nSkor sederhana yang membantu: `skor = persen_kategori * kemajuan_diharapkan / usaha`. `kemajuan_diharapkan` adalah pecahan kategori itu yang menurutmu bisa benar-benar dibereskan (misalnya 0,5 bila kamu yakin separuhnya bisa teratasi). `usaha` adalah estimasi hari kerja. Skor ini heuristik, sama seperti skor prioritas di awal course. Fungsinya memaksa tim menuliskan asumsi, bukan menggantikan penilaian.\n\nDengan pandas, tabel error analysis menjadi DataFrame boolean yang mudah dihitung, difilter, dan disimpan sebagai CSV, sehingga hasilnya bisa dibaca ulang beberapa minggu kemudian."
+            },
+            {
+              "type": "text",
+              "markdown": "## Praktik menjalankan sesi error analysis\n\nBeberapa kebiasaan membuat sesi ini jauh lebih efektif. Pertama, sediakan alat untuk melihat contoh dengan cepat. Jika tiap gambar atau teks butuh beberapa klik untuk dibuka, seratus contoh akan terasa seperti pekerjaan seharian. Siapkan notebook yang menampilkan contoh bersama label, prediksi, dan skor model dalam satu layar.\n\nKedua, jangan lakukan sendirian bila ada rekan yang bisa membantu. Dua orang yang mengategorikan contoh yang sama sering berbeda pendapat pada contoh yang ambigu. Perbedaan itu bukan gangguan. Itu petunjuk bahwa definisi kategori perlu dipertajam sebelum proyek perbaikannya dirancang.\n\nKetiga, simpan contoh yang menarik. Kolom komentar bukan formalitas. Beberapa minggu kemudian, ketika tim berdebat apakah kategori buram benar-benar dominan, contoh nyata yang tersimpan lebih meyakinkan daripada angka saja.\n\nKeempat, ulangi secara berkala. Setelah satu proyek perbaikan selesai, distribusi kesalahan berubah. Kategori yang tadinya 61 persen mungkin tinggal 20 persen, dan kategori lain naik menjadi yang terbesar. Error analysis bukan acara sekali jalan, melainkan bagian dari ritme kerja tim."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tips",
+              "markdown": "Simpan tabel error analysis bersama versi model yang dianalisis. Ketika model berubah, error analysis lama menjadi usang dan harus diulang pada contoh salah yang baru."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame(\n    {\n        \"anjing\": [True, False, False, False],\n        \"kucing_besar\": [False, False, True, True],\n        \"buram\": [False, True, True, False],\n        \"komentar\": [\"pitbull warna tidak biasa\", \"\", \"singa di kebun binatang saat hujan\", \"macan kumbang di balik pohon\"],\n    }\n)\nkategori = [\"anjing\", \"kucing_besar\", \"buram\"]\nprint((df[kategori].mean() * 100).round(1))\nprint(\"jumlah persen:\", float((df[kategori].mean() * 100).sum()))",
+              "expected_output_note": "anjing          25.0\nkucing_besar    50.0\nburam           50.0\njumlah persen: 125.0",
+              "explanation": "Tabel kecil empat gambar menghasilkan persentase tiap kategori. Totalnya 125 persen karena satu gambar punya dua kategori sekaligus. Itu normal untuk tabel error analysis."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame(\n    {\n        \"anjing\": [True, False, False, False],\n        \"kucing_besar\": [False, False, True, True],\n        \"buram\": [False, True, True, False],\n    }\n)\ndf[\"instagram\"] = [False, False, False, True]\npersen = df.mean() * 100\nprogres = {\"anjing\": 0.7, \"kucing_besar\": 0.4, \"buram\": 0.5, \"instagram\": 0.9}\nusaha = {\"anjing\": 30, \"kucing_besar\": 20, \"buram\": 5, \"instagram\": 3}\ntabel = pd.DataFrame({\"persen\": persen, \"progres\": pd.Series(progres), \"usaha\": pd.Series(usaha)})\ntabel[\"skor\"] = tabel[\"persen\"] * tabel[\"progres\"] / tabel[\"usaha\"]\nprint(tabel.sort_values(\"skor\", ascending=False).round(2))",
+              "expected_output_note": "baris diurutkan menurut skor, dengan kategori murah dan lumayan besar di atas",
+              "explanation": "Kategori baru (instagram) ditambahkan langsung sebagai kolom. Persen dari tabel digabung dengan perkiraan kemajuan dan usaha untuk menghasilkan skor prioritas. Perhatikan kategori kecil tetapi murah bisa mengalahkan kategori besar yang mahal."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame(\n    {\n        \"anjing\": [True, False, False, False, True],\n        \"kucing_besar\": [False, False, True, True, False],\n        \"buram\": [False, True, True, False, False],\n    }\n)\njumlah_label = df.sum(axis=1)\nprint(\"gambar dengan 2 kategori atau lebih:\", int((jumlah_label >= 2).sum()))\nprint(\"gambar tanpa kategori:\", int((jumlah_label == 0).sum()))\nprint(pd.crosstab(df[\"kucing_besar\"], df[\"buram\"]))",
+              "expected_output_note": "gambar dengan 2 kategori atau lebih: 1\ngambar tanpa kategori: 0",
+              "explanation": "Menghitung tumpang tindih kategori membantu memahami hubungan masalah. Jika banyak kucing besar juga buram, memperbaiki satu bisa sekaligus membantu yang lain. Tabel silang mempermudah melihat hubungan itu."
+            }
+          ],
+          "quick_check": {
+            "question": "Kapan menambah kategori baru ke tabel?",
+            "options": [
+              "Saat menemukan pola baru ketika memeriksa contoh",
+              "Tidak boleh setelah dimulai"
+            ],
+            "answer_index": 0,
+            "explanation": "Error analysis iteratif. Kategori baru yang muncul dipakai lalu contoh lama diperiksa ulang.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-03-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `persen_kategori(df, kolom)` yang menerima DataFrame boolean `df` dan list `kolom`, lalu mengembalikan `pandas.Series` berisi persentase baris bernilai `True` pada tiap kolom (0 sampai 100), dibulatkan 1 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef persen_kategori(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isinstance(s, pd.Series)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\"a\": [True, False, False, False], \"b\": [True, True, False, False]})\ns = persen_kategori(df, [\"a\", \"b\"])\nassert isinstance(s, pd.Series)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert s[\"a\"] == 25.0 and s[\"b\"] == 50.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "list(s.index)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert list(s.index) == [\"a\", \"b\"]"
+              }
+            ]
+          },
+          "hint": "Ambil df[kolom].mean() lalu kalikan 100 dan round(1).",
+          "solution": "import pandas as pd\n\ndef persen_kategori(df, kolom):\n    return (df[kolom].mean() * 100).round(1)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-03-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tabel_prioritas(df, kolom, progres, usaha)` yang mengembalikan DataFrame dengan kolom `persen`, `skor` dan indeks nama kategori, diurutkan dari skor tertinggi.",
+          "note": "`persen` adalah persentase `True` per kolom (tanpa pembulatan), dan `skor = persen * progres[nama] / usaha[nama]`.",
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef tabel_prioritas(df, kolom, progres, usaha):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "list(t.columns)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\"a\": [True, False, False, False], \"b\": [True, True, False, False], \"c\": [False, False, False, True]})\nt = tabel_prioritas(df, [\"a\", \"b\", \"c\"], {\"a\": 1.0, \"b\": 0.5, \"c\": 1.0}, {\"a\": 5, \"b\": 10, \"c\": 1})\nassert list(t.columns) == [\"persen\", \"skor\"]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "list(t.index)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert list(t.index) == [\"c\", \"a\", \"b\"]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "abs(t.loc[\"c\", \"skor\"] - 25.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(t.loc[\"c\", \"skor\"] - 25.0) < 1e-9"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "abs(t.loc[\"a\", \"skor\"] - 5.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(t.loc[\"a\", \"skor\"] - 5.0) < 1e-9"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "abs(t.loc[\"b\", \"skor\"] - 2.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(t.loc[\"b\", \"skor\"] - 2.5) < 1e-9"
+              }
+            ]
+          },
+          "hint": "Bangun DataFrame dari persen, lalu hitung skor dengan mengambil nilai dictionary lewat indeks, dan urutkan dengan sort_values.",
+          "solution": "import pandas as pd\n\ndef tabel_prioritas(df, kolom, progres, usaha):\n    persen = df[kolom].mean() * 100\n    t = pd.DataFrame({\"persen\": persen})\n    t[\"skor\"] = [persen[n] * progres[n] / usaha[n] for n in t.index]\n    return t.sort_values(\"skor\", ascending=False)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-03-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `jumlah_tumpang_tindih(df, kolom)` yang mengembalikan banyak baris yang tercentang pada dua kolom kategori atau lebih (sebagai integer).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def jumlah_tumpang_tindih(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_tumpang_tindih(df, [\"a\", \"b\", \"c\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\"a\": [True, False, True, False], \"b\": [True, True, True, False], \"c\": [True, False, False, False]})\nassert jumlah_tumpang_tindih(df, [\"a\", \"b\", \"c\"]) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_tumpang_tindih(df, [\"a\", \"c\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_tumpang_tindih(df, [\"a\", \"c\"]) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isinstance(jumlah_tumpang_tindih(df, [\"a\", \"b...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isinstance(jumlah_tumpang_tindih(df, [\"a\", \"b\"]), int)"
+              }
+            ]
+          },
+          "hint": "Jumlahkan kolom per baris dengan df[kolom].sum(axis=1), lalu hitung baris dengan jumlah >= 2.",
+          "solution": "def jumlah_tumpang_tindih(df, kolom):\n    return int((df[kolom].sum(axis=1) >= 2).sum())",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-03-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `tambah_kategori(df, nama, indeks)` yang mengembalikan DataFrame baru dengan kolom boolean `nama`, bernilai `True` pada baris dengan posisi (nomor baris, bukan label) yang ada di `indeks` dan `False` selainnya.",
+          "note": "DataFrame asli tidak boleh berubah.",
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef tambah_kategori(df, nama, indeks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "list(baru[\"ig\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\"a\": [True, False, False, False]}, index=[10, 20, 30, 40])\nbaru = tambah_kategori(df, \"ig\", [1, 3])\nassert list(baru[\"ig\"]) == [False, True, False, True]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baru[\"ig\"].dtype == bool"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert \"ig\" not in df.columns"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "list(baru.index)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert list(baru.index) == [10, 20, 30, 40]"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "kosong[\"x\"].any()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "kosong = tambah_kategori(df, \"x\", [])\nassert not kosong[\"x\"].any()"
+              }
+            ]
+          },
+          "hint": "Salin DataFrame dengan df.copy(). Buat list boolean dengan i in set(indeks) untuk setiap posisi i lalu pasang sebagai kolom.",
+          "solution": "import pandas as pd\n\ndef tambah_kategori(df, nama, indeks):\n    baru = df.copy()\n    pos = set(indeks)\n    baru[nama] = [i in pos for i in range(len(baru))]\n    return baru",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Mengapa total persentase kategori di tabel error analysis bisa lebih dari 100 persen?",
+          "code": null,
+          "options": [
+            {
+              "label": "Karena ada kesalahan hitung",
+              "description": ""
+            },
+            {
+              "label": "Karena satu contoh bisa masuk lebih dari satu kategori",
+              "description": ""
+            },
+            {
+              "label": "Karena sampel terlalu kecil",
+              "description": ""
+            },
+            {
+              "label": "Karena dev set bocor",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Tiap persentase menyatakan bagian kesalahan yang tersentuh oleh kategori itu, dan kategori boleh tumpang tindih."
+        },
+        {
+          "q": "Anjing 8 persen, kucing besar 43 persen, buram 61 persen. Proyek mana yang menyentuh error paling banyak?",
+          "code": null,
+          "options": [
+            {
+              "label": "Anjing",
+              "description": ""
+            },
+            {
+              "label": "Kucing besar",
+              "description": ""
+            },
+            {
+              "label": "Buram",
+              "description": ""
+            },
+            {
+              "label": "Semua sama",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": null,
+          "explanation": "Buram menyentuh 61 persen kesalahan, tertinggi di tabel."
+        },
+        {
+          "q": "Kapan menambah kategori baru ke tabel?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak boleh setelah dimulai",
+              "description": ""
+            },
+            {
+              "label": "Saat menemukan pola baru ketika memeriksa contoh",
+              "description": ""
+            },
+            {
+              "label": "Hanya di akhir proyek",
+              "description": ""
+            },
+            {
+              "label": "Hanya jika ada GPU",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Error analysis iteratif. Kategori baru yang muncul dipakai lalu contoh lama diperiksa ulang."
+        },
+        {
+          "q": "Kategori mana yang paling berguna ditambahkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Yang paling jarang muncul",
+              "description": ""
+            },
+            {
+              "label": "Yang kamu punya ide perbaikannya",
+              "description": ""
+            },
+            {
+              "label": "Yang paling rumit",
+              "description": ""
+            },
+            {
+              "label": "Yang tidak punya komentar",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Kategori yang punya ide perbaikan langsung bisa diubah menjadi proyek."
+        },
+        {
+          "q": "Apa peran skor prioritas dari persen, kemajuan, dan usaha?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menggantikan semua penilaian",
+              "description": ""
+            },
+            {
+              "label": "Memandu diskusi dengan menuliskan asumsi",
+              "description": ""
+            },
+            {
+              "label": "Menentukan akurasi final",
+              "description": ""
+            },
+            {
+              "label": "Mengganti test set",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Skor adalah heuristik yang memaksa tim menuliskan asumsi, bukan kebenaran mutlak."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira persentase kategori harus berjumlah 100 persen. Lebih baik: Satu contoh boleh punya banyak kategori, jadi total persentase bisa melebihi 100 persen.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira persentase kategori harus berjumlah 100 persen.",
+          "fix": "Satu contoh boleh punya banyak kategori, jadi total persentase bisa melebihi 100 persen."
+        },
+        {
+          "mistake": "Menetapkan kategori di awal lalu tidak pernah mengubahnya.",
+          "fix": "Tambah kategori baru saat kamu menemukannya dan tinjau ulang contoh lama."
+        },
+        {
+          "mistake": "Memilih proyek hanya dari persentase terbesar.",
+          "fix": "Pertimbangkan juga kemajuan yang diharapkan dan usaha yang dibutuhkan."
+        }
+      ],
+      "summary": [
+        "Satu tabel error analysis mengevaluasi banyak ide secara paralel.",
+        "Satu contoh boleh punya banyak kategori sehingga total persentase boleh melebihi 100 persen.",
+        "Kategori baru muncul saat kamu memeriksa contoh, dan proses ini iteratif.",
+        "Gabungkan persen, kemajuan yang diharapkan, dan usaha untuk menyusun prioritas."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 15 (Andrew Ng): evaluasi beberapa ide secara paralel saat error analysis"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Evaluasi banyak ide paralel dengan spreadsheet"
+          },
+          {
+            "type": "text",
+            "source": "Tabel kecil empat gambar menghasilkan persentase tiap kategori. Totalnya 125 persen karena satu gambar punya dua kategori sekaligus. Itu normal untuk tabel error analysis."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame(\n    {\n        \"anjing\": [True, False, False, False],\n        \"kucing_besar\": [False, False, True, True],\n        \"buram\": [False, True, True, False],\n        \"komentar\": [\"pitbull warna tidak biasa\", \"\", \"singa di kebun binatang saat hujan\", \"macan kumbang di balik pohon\"],\n    }\n)\nkategori = [\"anjing\", \"kucing_besar\", \"buram\"]\nprint((df[kategori].mean() * 100).round(1))\nprint(\"jumlah persen:\", float((df[kategori].mean() * 100).sum()))"
+          },
+          {
+            "type": "text",
+            "source": "Kategori baru (instagram) ditambahkan langsung sebagai kolom. Persen dari tabel digabung dengan perkiraan kemajuan dan usaha untuk menghasilkan skor prioritas. Perhatikan kategori kecil tetapi murah bisa mengalahkan kategori besar yang mahal."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame(\n    {\n        \"anjing\": [True, False, False, False],\n        \"kucing_besar\": [False, False, True, True],\n        \"buram\": [False, True, True, False],\n    }\n)\ndf[\"instagram\"] = [False, False, False, True]\npersen = df.mean() * 100\nprogres = {\"anjing\": 0.7, \"kucing_besar\": 0.4, \"buram\": 0.5, \"instagram\": 0.9}\nusaha = {\"anjing\": 30, \"kucing_besar\": 20, \"buram\": 5, \"instagram\": 3}\ntabel = pd.DataFrame({\"persen\": persen, \"progres\": pd.Series(progres), \"usaha\": pd.Series(usaha)})\ntabel[\"skor\"] = tabel[\"persen\"] * tabel[\"progres\"] / tabel[\"usaha\"]\nprint(tabel.sort_values(\"skor\", ascending=False).round(2))"
+          },
+          {
+            "type": "text",
+            "source": "Menghitung tumpang tindih kategori membantu memahami hubungan masalah. Jika banyak kucing besar juga buram, memperbaiki satu bisa sekaligus membantu yang lain. Tabel silang mempermudah melihat hubungan itu."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame(\n    {\n        \"anjing\": [True, False, False, False, True],\n        \"kucing_besar\": [False, False, True, True, False],\n        \"buram\": [False, True, True, False, False],\n    }\n)\njumlah_label = df.sum(axis=1)\nprint(\"gambar dengan 2 kategori atau lebih:\", int((jumlah_label >= 2).sum()))\nprint(\"gambar tanpa kategori:\", int((jumlah_label == 0).sum()))\nprint(pd.crosstab(df[\"kucing_besar\"], df[\"buram\"]))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa kode dan tabel yang cukup jelas dalam teks dan latihan.",
+    "brief": []
+  },
+  "references": [
+    {
+      "book": "Machine Learning Yearning (Andrew Ng)",
+      "chapters": "bab 13 sampai 15 dan bab 19"
+    }
+  ]
+}

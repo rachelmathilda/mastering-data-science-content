@@ -1,0 +1,95 @@
+{
+  "id": "F2",
+  "title": "Model Data dan Bahasa Query",
+  "title_short": "Model Data & Query",
+  "icon": "database",
+  "track": "F",
+  "track_label": "Data Engineering",
+  "track_name": "Data Engineering",
+  "level": "Menengah",
+  "module_count": 6,
+  "total_minutes": 630,
+  "exercise_count": 72,
+  "prerequisites": [
+    "F1"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "F2",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Model Data dan Bahasa Query",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-F2"
+  },
+  "sources": [
+    {
+      "code": "DDIA",
+      "title": "Designing Data-Intensive Applications",
+      "author": "Martin Kleppmann",
+      "chapters": "bab 2"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Model relasional vs dokumen",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Ketidakcocokan object-relational",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Relasi many-to-one dan many-to-many",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Bahasa query deklaratif",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Model graf",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Memilih model data",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

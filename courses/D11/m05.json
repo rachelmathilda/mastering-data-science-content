@@ -1,0 +1,1516 @@
+{
+  "schema_version": 2,
+  "course_id": "D11",
+  "module_no": 5,
+  "title": "Bias dan variance",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Mendiagnosis bias dan variance dari error training, dev, dan optimal",
+    "Memilih tindakan yang sesuai dengan komponen error dominan",
+    "Menjalankan sapuan regularisasi, ukuran model, dan early stopping secara terkontrol"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "D11-05-1",
+    "exercise_id": "D11-05-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def _data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)"
+  },
+  "lessons": [
+    {
+      "lesson_id": "D11-05-1",
+      "title": "Bias, variance, dan batas error optimal",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Mendefinisikan bias dan variance sebagai sumber error yang praktis",
+        "Menghitung avoidable bias dan variance dari error training dan dev",
+        "Menjelaskan peran optimal error rate sebagai garis dasar",
+        "Mendiagnosis kombinasi bias dan variance dari tiga angka sederhana"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dua sumber error besar",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua sumber error besar\n\nMisalkan kamu berharap algoritmamu mencapai error 5 persen, tetapi hasilnya 15 persen. Dua puluh ide bisa muncul sekaligus: tambah data, tambah regularisasi, ganti arsitektur, tambah fitur. Tanpa panduan, kamu memilih berdasarkan firasat. Panduan paling berguna adalah memecah error menjadi dua komponen yang masing-masing punya obat berbeda.\n\n**Bias** adalah error yang tetap ada pada training set. Algoritmamu belum bisa menyesuaikan diri bahkan dengan data yang ia lihat sendiri. Contoh: classifier kucing memakai model linear sederhana, dan error training-nya 15 persen. Menambah data tidak akan membantu karena model memang terlalu sederhana untuk pola yang ada.\n\n**Variance** adalah seberapa jauh performa di dev set lebih buruk daripada di training set. Jika error training 1 persen tetapi error dev 11 persen, variance-nya sekitar 10 poin. Algoritmamu menghafal training set dan gagal menggeneralisasi.\n\nDefinisi di sini bersifat praktis, bukan definisi statistik formal. Ng sengaja memakainya agar bias dan variance bisa dibaca langsung dari dua angka yang selalu kamu punya."
+            }
+          ],
+          "quick_check": {
+            "question": "Error optimal 2, error training 4, error dev 15 (persen). Berapa variance?",
+            "options": [
+              "11",
+              "2"
+            ],
+            "answer_index": 0,
+            "explanation": "Variance sama dengan error dev dikurangi error training, yaitu 15 dikurangi 4 sama dengan 11.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Bacalah dari tiga angka",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bacalah dari tiga angka\n\nTiga bilangan cukup: error training, error dev, dan perkiraan error optimal. Error training dan dev kamu ukur. Error optimal adalah error terbaik yang bisa dicapai sistem apa pun pada tugas itu, yang sering mendekati error manusia ahli atau derau yang melekat pada data.\n\nDari ketiganya dihitung: **avoidable bias** sama dengan error training dikurangi error optimal. **Variance** sama dengan error dev dikurangi error training. Total error dev sama dengan error optimal ditambah avoidable bias ditambah variance.\n\nContoh: error optimal 2 persen, error training 4 persen, error dev 15 persen. Avoidable bias 2 poin, variance 11 poin. Walau kedua komponen ada, variance jauh lebih besar sehingga perbaikan terbesar ada di sisi variance: data lebih banyak atau regularisasi. Mengupayakan bias di titik ini membuang waktu."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa arti avoidable bias?",
+            "options": [
+              "Error dev dikurangi training",
+              "Error training dikurangi error optimal"
+            ],
+            "answer_index": 1,
+            "explanation": "Bagian bias yang masih bisa dikurangi karena tidak termasuk error tak terhindarkan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mengapa perlu error optimal",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa perlu error optimal\n\nTanpa garis dasar, angka error training hampir tidak bermakna. Error 15 persen pada training set tampak buruk, tetapi bila tugasnya adalah mengenali ucapan di tengah bising yang bahkan manusia salah 14 persen, maka 15 persen hampir sempurna. Ada derau yang memang tidak bisa dihilangkan, yang sering disebut error tak terhindarkan (unavoidable bias) atau Bayes error.\n\nKarena itu, jangan berhenti pada \"bias tinggi\" atau \"bias rendah\". Selalu tanyakan: dibanding apa? Perbandingan yang tepat adalah dengan error optimal. Selisihnya, avoidable bias, adalah satu-satunya bagian bias yang bisa diperbaiki.\n\nUntuk banyak tugas persepsi seperti gambar atau suara, error manusia ahli menjadi perkiraan yang baik. Untuk tugas dengan derau intrinsik seperti memprediksi respons pelanggan, error optimal bisa tinggi dan tidak diketahui. Dalam kasus itu, kamu menaksirnya dari eksperimen, misalnya dengan melihat di mana model yang makin besar berhenti membaik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kombinasi yang mungkin\n\nDengan dua komponen, ada empat keadaan sederhana. Bias rendah dan variance rendah berarti kamu sudah dekat dengan optimal. Bias tinggi dan variance rendah berarti model kurang kuat (underfitting). Bias rendah dan variance tinggi berarti model menghafal (overfitting). Keduanya tinggi berarti model yang buruk di training sekaligus tidak menggeneralisasi dengan baik.\n\nKeadaan terakhir nyata dan terlihat paradoks. Model bisa underfit pada sebagian data dan overfit pada sebagian lainnya, misalnya bila ada kelompok contoh yang sangat berderau dan kelompok lain yang sistematis. Jangan terjebak dikotomi. Hitung kedua angka, lalu kerjakan yang lebih besar dulu.\n\nKamu juga bisa melihat efek ini pada contoh regresi polinomial. Derajat 1 tidak mampu mengikuti kurva sinus sehingga error training dan dev sama-sama tinggi. Derajat tinggi dengan data sedikit mengikuti derau sehingga error training sangat rendah tetapi error dev melonjak. Derajat menengah berada di antara keduanya dan mendekati error optimal."
+            },
+            {
+              "type": "callout",
+              "kind": "note",
+              "title": "Catatan",
+              "markdown": "Definisi bias dan variance di sini sengaja praktis agar bisa dihitung dari angka yang kamu miliki. Definisi statistik formal berbeda dalam detail, tetapi untuk memutuskan langkah berikutnya definisi praktis lebih berguna."
+            },
+            {
+              "type": "code_example",
+              "filename": "uraikan.py",
+              "runnable": true,
+              "code": "def uraikan(optimal, train, dev):\n    return {\"avoidable_bias\": round(train - optimal, 4), \"variance\": round(dev - train, 4)}\n\nprint(uraikan(0.02, 0.04, 0.15))\nprint(uraikan(0.05, 0.15, 0.16))\nprint(uraikan(0.01, 0.01, 0.11))",
+              "expected_output_note": "{'avoidable_bias': 0.02, 'variance': 0.11}\n{'avoidable_bias': 0.1, 'variance': 0.01}\n{'avoidable_bias': 0.0, 'variance': 0.1}",
+              "explanation": "Tiga skenario dengan total error berbeda tetapi obat berbeda. Skenario pertama didominasi variance. Kedua didominasi avoidable bias. Ketiga murni variance. Satu perhitungan dua pengurangan menunjukkan arah perbaikan."
+            },
+            {
+              "type": "code_example",
+              "filename": "data.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\nOPTIMAL = 0.09\n\nxt, yt = data(30, 1)\nxd, yd = data(2000, 2)\nprint(\"derajat  error_train  error_dev  avoidable_bias  variance\")\nfor d in [1, 3, 9, 12]:\n    c = np.polyfit(xt, yt, d)\n    tr = np.mean((np.polyval(c, xt) - yt) ** 2)\n    dv = np.mean((np.polyval(c, xd) - yd) ** 2)\n    print(f\"{d:7d}  {tr:11.3f}  {dv:9.3f}  {tr - OPTIMAL:14.3f}  {dv - tr:8.3f}\")",
+              "expected_output_note": "derajat 1: error train sekitar 0.27 dan error dev sekitar 0.31\nderajat 3: error train sekitar 0.08 dan error dev sekitar 0.10\nderajat 12: error train sekitar 0.04 dan error dev sekitar 0.40",
+              "explanation": "Data sintetis dibangkitkan dari sinus dengan derau berdeviasi baku 0,3, sehingga error optimal adalah variansinya, 0,09. Derajat 1 dominan di avoidable bias. Derajat 12 dominan di variance. Derajat 3 mendekati optimal pada keduanya."
+            },
+            {
+              "type": "code_example",
+              "filename": "data.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\nOPTIMAL = 0.09\n\nxd, yd = data(2000, 2)\nprint(\"m_train  error_train  error_dev\")\nfor m in [20, 40, 80, 160, 640]:\n    x, y = data(m, 1)\n    c = np.polyfit(x, y, 9)\n    tr = np.mean((np.polyval(c, x) - y) ** 2)\n    dv = np.mean((np.polyval(c, xd) - yd) ** 2)\n    print(f\"{m:7d}  {tr:11.3f}  {dv:9.3f}\")",
+              "expected_output_note": "error dev turun dari sekitar 0.42 ke sekitar 0.09 saat data bertambah\nerror train naik dari sekitar 0.06 ke sekitar 0.09",
+              "explanation": "Model berderajat 9 punya variance besar pada 20 contoh, tetapi celahnya menutup saat data bertambah. Error training naik mendekati error optimal dan error dev turun mendekatinya dari atas. Ini pola khas masalah variance yang bisa dibantu data."
+            }
+          ],
+          "quick_check": {
+            "question": "Error training 15 persen, tetapi manusia ahli juga salah 14 persen. Kesimpulan?",
+            "options": [
+              "Avoidable bias kecil, sekitar 1 poin",
+              "Bias sangat besar"
+            ],
+            "answer_index": 0,
+            "explanation": "Error manusia menjadi perkiraan error optimal, sehingga avoidable bias hanya sekitar 1 poin.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-05-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `avoidable_bias(train, optimal)` dan `variance(dev, train)`.",
+          "note": "Masing-masing mengembalikan selisihnya dibulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def avoidable_bias(train, optimal):\n    # TODO: implementasikan\n    pass\n\ndef variance(dev, train):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "avoidable_bias(0.04, 0.02)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert avoidable_bias(0.04, 0.02) == 0.02"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "variance(0.15, 0.04)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert variance(0.15, 0.04) == 0.11"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "avoidable_bias(0.10, 0.10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert avoidable_bias(0.10, 0.10) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "variance(0.12, 0.12)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert variance(0.12, 0.12) == 0.0"
+              }
+            ]
+          },
+          "hint": "Kurangkan lalu round(..., 4).",
+          "solution": "def avoidable_bias(train, optimal):\n    return round(train - optimal, 4)\n\ndef variance(dev, train):\n    return round(dev - train, 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-05-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `diagnosa(optimal, train, dev, toleransi)` yang menghitung avoidable bias dan variance (dibulatkan 4 desimal).",
+          "note": "Jika keduanya lebih besar dari `toleransi` kembalikan `\"bias dan variance\"`. Jika hanya bias lebih besar kembalikan `\"bias\"`. Jika hanya variance lebih besar kembalikan `\"variance\"`. Jika tidak ada yang lebih besar kembalikan `\"baik\"`.",
+          "filename": "solution.py",
+          "starter_code": "def diagnosa(optimal, train, dev, toleransi):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "diagnosa(0.02, 0.04, 0.15, 0.01)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosa(0.02, 0.04, 0.15, 0.01) == \"bias dan variance\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "diagnosa(0.05, 0.15, 0.16, 0.02)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosa(0.05, 0.15, 0.16, 0.02) == \"bias\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "diagnosa(0.01, 0.01, 0.11, 0.02)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosa(0.01, 0.01, 0.11, 0.02) == \"variance\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "diagnosa(0.05, 0.06, 0.07, 0.02)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosa(0.05, 0.06, 0.07, 0.02) == \"baik\""
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "diagnosa(0.05, 0.07, 0.09, 0.02)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diagnosa(0.05, 0.07, 0.09, 0.02) == \"baik\""
+              }
+            ]
+          },
+          "hint": "Gunakan strict greater than. Nilai tepat sama dengan toleransi dianggap belum melewati batas.",
+          "solution": "def diagnosa(optimal, train, dev, toleransi):\n    b = round(train - optimal, 4)\n    v = round(dev - train, 4)\n    if b > toleransi and v > toleransi:\n        return \"bias dan variance\"\n    if b > toleransi:\n        return \"bias\"\n    if v > toleransi:\n        return \"variance\"\n    return \"baik\"",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-05-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `error_poli(derajat, seed_train, seed_dev)` yang membangkitkan `x ~ U(0,1)` dan `y = sin(2*pi*x) + 0.3*N(0,1)` dengan `np.random.default_rng(seed)`.",
+          "note": "Gunakan 30 contoh untuk training dan 2000 untuk dev. Urutan: `x = r.uniform(0, 1, m)` lalu `y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)`. Fit `np.polyfit(x, y, derajat)`. Kembalikan `(mse_train, mse_dev)` dibulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef error_poli(derajat, seed_train, seed_dev):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "tr1, dv1 = error_poli(1, 1, 2)\ntr3, dv3 = error_poli(3, 1, 2)\ntr12, dv12 = error_poli(12, 1, 2)\nassert tr1 > tr3 > tr12"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert dv1 > dv3"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert dv12 > dv3 * 2"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "abs(dv3 - 0.09)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(dv3 - 0.09) < 0.04"
+              }
+            ]
+          },
+          "hint": "Bangun fungsi pembangkit lokal. Gunakan rng baru per seed. MSE adalah rata-rata kuadrat selisih.",
+          "solution": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef _data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\ndef error_poli(derajat, seed_train, seed_dev):\n    xt, yt = _data(30, seed_train)\n    xd, yd = _data(2000, seed_dev)\n    c = np.polyfit(xt, yt, derajat)\n    tr = np.mean((np.polyval(c, xt) - yt) ** 2)\n    dv = np.mean((np.polyval(c, xd) - yd) ** 2)\n    return round(float(tr), 4), round(float(dv), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-05-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `derajat_terbaik(derajat_list, seed_train, seed_dev)` yang memakai `error_poli` (sudah disediakan) dan mengembalikan derajat dengan MSE dev terendah.",
+          "note": "Jika seri pilih derajat terkecil.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef _data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\ndef error_poli(derajat, seed_train, seed_dev):\n    xt, yt = _data(30, seed_train)\n    xd, yd = _data(2000, seed_dev)\n    c = np.polyfit(xt, yt, derajat)\n    tr = np.mean((np.polyval(c, xt) - yt) ** 2)\n    dv = np.mean((np.polyval(c, xd) - yd) ** 2)\n    return round(float(tr), 4), round(float(dv), 4)\n\ndef derajat_terbaik(derajat_list, seed_train, seed_dev):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "derajat_terbaik([1, 3, 12], 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert derajat_terbaik([1, 3, 12], 1, 2) == 3"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "derajat_terbaik([12, 1], 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert derajat_terbaik([12, 1], 1, 2) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "derajat_terbaik([3, 3], 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert derajat_terbaik([3, 3], 1, 2) == 3"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "derajat_terbaik([5, 3, 4], 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert derajat_terbaik([5, 3, 4], 1, 2) in (3, 4, 5)"
+              }
+            ]
+          },
+          "hint": "Gunakan min dengan key berupa tuple (mse_dev, derajat).",
+          "solution": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef _data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\ndef error_poli(derajat, seed_train, seed_dev):\n    xt, yt = _data(30, seed_train)\n    xd, yd = _data(2000, seed_dev)\n    c = np.polyfit(xt, yt, derajat)\n    tr = np.mean((np.polyval(c, xt) - yt) ** 2)\n    dv = np.mean((np.polyval(c, xd) - yd) ** 2)\n    return round(float(tr), 4), round(float(dv), 4)\n\ndef derajat_terbaik(derajat_list, seed_train, seed_dev):\n    return min(derajat_list, key=lambda d: (error_poli(d, seed_train, seed_dev)[1], d))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Error optimal 2, error training 4, error dev 15 (persen). Berapa variance?",
+          "code": null,
+          "options": [
+            {
+              "label": "2",
+              "description": ""
+            },
+            {
+              "label": "11",
+              "description": ""
+            },
+            {
+              "label": "13",
+              "description": ""
+            },
+            {
+              "label": "15",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Variance sama dengan error dev dikurangi error training, yaitu 15 dikurangi 4 sama dengan 11."
+        },
+        {
+          "q": "Apa arti avoidable bias?",
+          "code": null,
+          "options": [
+            {
+              "label": "Error dev dikurangi training",
+              "description": ""
+            },
+            {
+              "label": "Error training dikurangi error optimal",
+              "description": ""
+            },
+            {
+              "label": "Error test",
+              "description": ""
+            },
+            {
+              "label": "Selisih dua model",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Bagian bias yang masih bisa dikurangi karena tidak termasuk error tak terhindarkan."
+        },
+        {
+          "q": "Error training 15 persen, tetapi manusia ahli juga salah 14 persen. Kesimpulan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bias sangat besar",
+              "description": ""
+            },
+            {
+              "label": "Avoidable bias kecil, sekitar 1 poin",
+              "description": ""
+            },
+            {
+              "label": "Variance besar",
+              "description": ""
+            },
+            {
+              "label": "Dev set rusak",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Error manusia menjadi perkiraan error optimal, sehingga avoidable bias hanya sekitar 1 poin."
+        },
+        {
+          "q": "Model polinomial derajat tinggi dengan 30 contoh: error training sangat kecil, error dev besar. Masalahnya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bias",
+              "description": ""
+            },
+            {
+              "label": "Variance",
+              "description": ""
+            },
+            {
+              "label": "Label salah",
+              "description": ""
+            },
+            {
+              "label": "Metrik",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Celah besar antara training dan dev adalah variance."
+        },
+        {
+          "q": "Bias dan variance sama-sama besar. Strategi paling masuk akal?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak melakukan apa pun",
+              "description": ""
+            },
+            {
+              "label": "Kerjakan yang lebih besar dulu",
+              "description": ""
+            },
+            {
+              "label": "Ganti metrik",
+              "description": ""
+            },
+            {
+              "label": "Hapus dev set",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Perbaikan terbesar ada di komponen yang lebih besar."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menilai error training tinggi sebagai bias buruk tanpa membandingkan dengan error optimal. Lebih baik: Hitung avoidable bias sebagai error training dikurangi error optimal.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menilai error training tinggi sebagai bias buruk tanpa membandingkan dengan error optimal.",
+          "fix": "Hitung avoidable bias sebagai error training dikurangi error optimal."
+        },
+        {
+          "mistake": "Mengira bias dan variance saling meniadakan sehingga hanya salah satu yang ada.",
+          "fix": "Keduanya bisa tinggi sekaligus, jadi hitung keduanya dan kerjakan yang lebih besar."
+        },
+        {
+          "mistake": "Menambah data untuk masalah bias.",
+          "fix": "Data tambahan membantu variance. Untuk bias ubah model atau fitur."
+        }
+      ],
+      "summary": [
+        "Bias adalah error pada training, variance adalah selisih dev terhadap training.",
+        "Avoidable bias sama dengan error training dikurangi error optimal.",
+        "Error optimal sering didekati error manusia ahli atau derau data.",
+        "Total error dev sama dengan optimal ditambah avoidable bias ditambah variance."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 20 sampai 22 (Andrew Ng): bias, variance, dan error optimal"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Bias, variance, dan batas error optimal"
+          },
+          {
+            "type": "text",
+            "source": "Tiga skenario dengan total error berbeda tetapi obat berbeda. Skenario pertama didominasi variance. Kedua didominasi avoidable bias. Ketiga murni variance. Satu perhitungan dua pengurangan menunjukkan arah perbaikan."
+          },
+          {
+            "type": "code",
+            "source": "def uraikan(optimal, train, dev):\n    return {\"avoidable_bias\": round(train - optimal, 4), \"variance\": round(dev - train, 4)}\n\nprint(uraikan(0.02, 0.04, 0.15))\nprint(uraikan(0.05, 0.15, 0.16))\nprint(uraikan(0.01, 0.01, 0.11))"
+          },
+          {
+            "type": "text",
+            "source": "Data sintetis dibangkitkan dari sinus dengan derau berdeviasi baku 0,3, sehingga error optimal adalah variansinya, 0,09. Derajat 1 dominan di avoidable bias. Derajat 12 dominan di variance. Derajat 3 mendekati optimal pada keduanya."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\nOPTIMAL = 0.09\n\nxt, yt = data(30, 1)\nxd, yd = data(2000, 2)\nprint(\"derajat  error_train  error_dev  avoidable_bias  variance\")\nfor d in [1, 3, 9, 12]:\n    c = np.polyfit(xt, yt, d)\n    tr = np.mean((np.polyval(c, xt) - yt) ** 2)\n    dv = np.mean((np.polyval(c, xd) - yd) ** 2)\n    print(f\"{d:7d}  {tr:11.3f}  {dv:9.3f}  {tr - OPTIMAL:14.3f}  {dv - tr:8.3f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Model berderajat 9 punya variance besar pada 20 contoh, tetapi celahnya menutup saat data bertambah. Error training naik mendekati error optimal dan error dev turun mendekatinya dari atas. Ini pola khas masalah variance yang bisa dibantu data."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\nOPTIMAL = 0.09\n\nxd, yd = data(2000, 2)\nprint(\"m_train  error_train  error_dev\")\nfor m in [20, 40, 80, 160, 640]:\n    x, y = data(m, 1)\n    c = np.polyfit(x, y, 9)\n    tr = np.mean((np.polyval(c, x) - y) ** 2)\n    dv = np.mean((np.polyval(c, xd) - yd) ** 2)\n    print(f\"{m:7d}  {tr:11.3f}  {dv:9.3f}\")"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "D11-05-2",
+      "title": "Mengatasi bias dan variance serta tradeoff-nya",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memetakan diagnosis bias atau variance ke tindakan perbaikan yang relevan",
+        "Menjelaskan mengapa tradeoff bias variance tidak selalu berlaku di era data besar",
+        "Menggunakan regularisasi dan kapasitas model sebagai tuas dan membacanya dari dua error",
+        "Menentukan urutan prioritas ketika bias dan variance sama-sama ada"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Rumus paling sederhana",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Rumus paling sederhana\n\nNg meringkas strategi dasar dalam satu kalimat: jika avoidable bias tinggi, tambah kapasitas model, misalnya jaringan lebih besar atau lebih banyak lapisan. Jika variance tinggi, tambah data latih. Dalam banyak kasus, dua tindakan itu saja sudah menjadi sebagian besar kemajuan, selama kamu punya akses ke banyak data dan daya komputasi.\n\nAlasannya intuitif. Model yang lebih besar mampu menyesuaikan diri lebih baik dengan training set sehingga error training turun. Data yang lebih banyak membuat celah antara training dan dev menyempit karena model sulit menghafal sesuatu yang lebih besar. Dengan keduanya, kamu bisa terus mendorong angka ke bawah, asalkan kamu tahu sedang berada di sisi mana.\n\nPeringatan: model besar membawa risiko variance dan menuntut regularisasi bila data tidak cukup. Data besar membawa biaya pelabelan dan penyimpanan. Dua tuas itu bukan gratis, tetapi biayanya terukur, jauh lebih terukur daripada trial and error tanpa arah."
+            }
+          ],
+          "quick_check": {
+            "question": "Avoidable bias tinggi. Tindakan paling relevan?",
+            "options": [
+              "Perbesar model atau tambah fitur",
+              "Tambah data"
+            ],
+            "answer_index": 0,
+            "explanation": "Bias dibantu dengan kapasitas dan fitur yang lebih baik.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tradeoff yang sering dibicarakan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tradeoff yang sering dibicarakan\n\nDalam buku teks klasik, bias dan variance dianggap bertukar: menurunkan satu menaikkan yang lain. Menambah kapasitas model menurunkan bias tetapi menaikkan variance. Menambah regularisasi menurunkan variance tetapi menaikkan bias. Pada kurva derajat polinomial yang kamu lihat di lesson sebelumnya, itu terlihat jelas.\n\nTetapi di era data besar, tradeoff itu tidak lagi menjadi batasan. Kalau kamu punya akses ke data yang sangat banyak, kamu bisa menambah ukuran model dan data sekaligus dan menurunkan keduanya. Regularisasi yang dirancang baik juga bisa menurunkan variance tanpa menaikkan bias secara berarti. Itu sebabnya Ng menekankan bahwa tradeoff bukan hukum alam, melainkan kondisi ketika sumber dayamu terbatas.\n\nKonsekuensi praktis: jangan pasrah pada alasan \"ini tradeoff\" bila kamu masih punya jalan lain. Tanyakan apakah menambah data atau memilih arsitektur lebih baik memungkinkan kamu bergerak ke arah yang lebih baik di kedua sumbu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Regularisasi sebagai tuas\n\nRegularisasi membatasi kebebasan model. Pada ridge regression, penalti `alpha` pada kuadrat koefisien membuat koefisien kecil dan kurva lebih halus. Dengan alpha sangat kecil model menyesuaikan diri bebas dan variance besar. Dengan alpha sangat besar model hampir konstan dan bias besar. Di antaranya ada nilai yang meminimalkan error dev.\n\nCara membaca hasilnya: lihat dua kolom, error training dan error dev. Ketika alpha naik, error training biasanya naik bertahap. Error dev awalnya turun karena variance berkurang, lalu naik ketika bias mulai mendominasi. Titik terendah error dev adalah pilihan alpha yang masuk akal, dan jumlah dua komponen (bias plus variance) sama dengan error di dev.\n\nProsedur yang sama berlaku untuk tuas lain: ukuran jaringan, jumlah pohon, kedalaman pohon, early stopping. Selalu jalankan sapuan (sweep), catat error training dan dev, dan baca polanya, bukan hanya angka terendah."
+            }
+          ],
+          "quick_check": {
+            "question": "Variance tinggi. Tindakan paling relevan?",
+            "options": [
+              "Kurangi regularisasi",
+              "Tambah data latih"
+            ],
+            "answer_index": 1,
+            "explanation": "Data lebih banyak mempersempit celah training dan dev.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Urutan prioritas",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Urutan prioritas\n\nJika avoidable bias 8 poin dan variance 2 poin, mulailah dari bias. Jika bias 1 poin dan variance 9 poin, mulailah dari variance. Jika kedua hampir sama, pilih yang biayanya lebih rendah. Menambah data bisa mahal, sedangkan menambah ukuran model sering murah. Mengubah arsitektur menuntut waktu riset.\n\nSatu hal lagi yang sering dilupakan: setiap tindakan bisa menggeser sisi lain. Setelah menambah kapasitas model, ukur ulang kedua komponen. Jangan mengandaikan bias sudah teratasi hanya karena kamu membesarkan jaringan. Diagnosis adalah ritual yang diulang setiap iterasi, bukan satu kali di awal proyek."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh alur keputusan dalam satu iterasi\n\nMisalkan classifier-mu menghasilkan error optimal 3 persen, training 9 persen, dev 12 persen. Avoidable bias 6 poin dan variance 3 poin. Kamu mulai dari bias dan memperbesar model dua kali lipat. Hasil baru: training 5 persen, dev 9 persen. Avoidable bias 2 poin, variance 4 poin. Perhatikan bahwa variance ikut naik karena model lebih besar. Sekarang komponen terbesar berpindah ke variance, jadi giliran regularisasi atau data.\n\nSetelah menambah regularisasi ringan: training 6 persen, dev 8 persen. Avoidable bias 3, variance 2. Total error dev turun dari 12 ke 8 persen dalam dua langkah, dan di tiap langkah kamu tahu mengapa memilih tindakan itu. Pola kerja yang sama bisa diulang sampai sisa error mendekati batas optimal atau sampai biaya perbaikan tidak lagi sepadan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tips",
+              "markdown": "Setelah tiap perubahan, catat tiga angka: error training, error dev, dan error optimal. Tiga baris catatan itu cukup untuk menceritakan seluruh riwayat proyekmu."
+            },
+            {
+              "type": "code_example",
+              "filename": "saran.py",
+              "runnable": true,
+              "code": "TINDAKAN = {\n    \"bias\": [\"perbesar model\", \"tambah fitur dari error analysis\", \"kurangi regularisasi\", \"ubah arsitektur\"],\n    \"variance\": [\"tambah data latih\", \"tambah regularisasi\", \"early stopping\", \"kurangi ukuran model\", \"seleksi fitur\"],\n}\n\ndef saran(bias, variance):\n    kunci = \"bias\" if bias >= variance else \"variance\"\n    return kunci, TINDAKAN[kunci][:2]\n\nprint(saran(0.08, 0.02))\nprint(saran(0.01, 0.09))",
+              "expected_output_note": "('bias', ['perbesar model', 'tambah fitur dari error analysis'])\n('variance', ['tambah data latih', 'tambah regularisasi'])",
+              "explanation": "Fungsi sederhana memetakan komponen error terbesar ke dua tindakan teratas. Daftar lengkapnya dibahas di lesson berikutnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "data.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\nOPTIMAL = 0.09\n\nfrom sklearn.linear_model import Ridge\nfrom sklearn.preprocessing import PolynomialFeatures\n\nxt, yt = data(30, 1)\nxd, yd = data(2000, 2)\nP = PolynomialFeatures(9)\nXt = P.fit_transform(xt[:, None])\nXd = P.transform(xd[:, None])\nprint(\"alpha        train    dev\")\nfor a in [1e-8, 1e-6, 1e-4, 1e-2, 1, 10]:\n    m = Ridge(alpha=a).fit(Xt, yt)\n    tr = np.mean((m.predict(Xt) - yt) ** 2)\n    dv = np.mean((m.predict(Xd) - yd) ** 2)\n    print(f\"{a:8.0e}  {tr:7.3f}  {dv:6.3f}\")",
+              "expected_output_note": "error dev terendah sekitar 0.11 pada alpha sekitar 1e-4 sampai 1e-6\nerror train naik terus dari sekitar 0.05 ke sekitar 0.37 saat alpha membesar",
+              "explanation": "Alpha kecil membuat variance bertahan tinggi, alpha besar mengundang bias besar. Titik terbaik ada di tengah. Error training naik secara monoton, error dev berbentuk huruf U."
+            },
+            {
+              "type": "code_example",
+              "filename": "data.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\nOPTIMAL = 0.09\n\nfrom sklearn.linear_model import Ridge\nfrom sklearn.preprocessing import PolynomialFeatures\n\nxd, yd = data(2000, 2)\nP = PolynomialFeatures(9)\nXd = P.fit_transform(xd[:, None])\nprint(\"m_train  dev(alpha=1e-6)  dev(alpha=1e-2)\")\nfor m in [20, 40, 80, 320, 1280]:\n    x, y = data(m, 1)\n    X = P.transform(x[:, None])\n    d1 = np.mean((Ridge(alpha=1e-6).fit(X, y).predict(Xd) - yd) ** 2)\n    d2 = np.mean((Ridge(alpha=1e-2).fit(X, y).predict(Xd) - yd) ** 2)\n    print(f\"{m:7d}  {d1:15.3f}  {d2:15.3f}\")",
+              "expected_output_note": "error dev kedua alpha turun dari sekitar 0.2 menuju 0.09 saat data bertambah\npada data besar kedua alpha berhimpit di sekitar 0.09",
+              "explanation": "Dengan data sangat sedikit regularisasi kuat sedikit membantu, tetapi pada ukuran menengah alpha kecil justru lebih baik. Ketika data bertambah, perbedaan menghilang karena data sendiri sudah mengurangi variance. Dua obat variance ini saling menggantikan."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa tradeoff bias variance tidak selalu mengikat?",
+            "options": [
+              "Dengan data besar dan regularisasi baik, keduanya bisa turun bersama",
+              "Karena itu mitos"
+            ],
+            "answer_index": 0,
+            "explanation": "Menambah data dan kapasitas sekaligus bisa menurunkan bias dan variance.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-05-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `tindakan_utama(bias, variance)` yang mengembalikan `\"kapasitas\"` bila `bias >= variance` dan `\"data\"` selainnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def tindakan_utama(bias, variance):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tindakan_utama(0.08, 0.02)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tindakan_utama(0.08, 0.02) == \"kapasitas\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tindakan_utama(0.01, 0.09)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tindakan_utama(0.01, 0.09) == \"data\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tindakan_utama(0.05, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tindakan_utama(0.05, 0.05) == \"kapasitas\""
+              }
+            ]
+          },
+          "hint": "Bandingkan dua angka dengan >=.",
+          "solution": "def tindakan_utama(bias, variance):\n    return \"kapasitas\" if bias >= variance else \"data\"",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-05-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `alpha_terbaik(alphas, err_dev)` yang mengembalikan alpha dengan error dev terendah.",
+          "note": "Jika seri pilih alpha terkecil. Dua list sama panjang.",
+          "filename": "solution.py",
+          "starter_code": "def alpha_terbaik(alphas, err_dev):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "alpha_terbaik([0.001, 0.01, 0.1, 1], [0.30, 0...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert alpha_terbaik([0.001, 0.01, 0.1, 1], [0.30, 0.12, 0.15, 0.40]) == 0.01"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "alpha_terbaik([1, 0.1, 10], [0.2, 0.2, 0.5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert alpha_terbaik([1, 0.1, 10], [0.2, 0.2, 0.5]) == 0.1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "alpha_terbaik([5], [0.3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert alpha_terbaik([5], [0.3]) == 5"
+              }
+            ]
+          },
+          "hint": "Pasangkan tiap alpha dengan errornya dan ambil minimum atas (error, alpha).",
+          "solution": "def alpha_terbaik(alphas, err_dev):\n    return min(zip(err_dev, alphas))[1]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-05-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `sapuan_ridge(Xt, yt, Xd, yd, alphas)` yang mengembalikan list tuple `(alpha, mse_train, mse_dev)` untuk tiap alpha memakai `sklearn.linear_model.Ridge(alpha=alpha)`.",
+          "note": "MSE dibulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nfrom sklearn.linear_model import Ridge\n\ndef sapuan_ridge(Xt, yt, Xd, yd, alphas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "rng = np.random.default_rng(0)\nXt = rng.normal(size=(40, 8))\nw = np.array([2.0, -1, 0, 0, 0, 0, 0, 0])\nyt = Xt @ w + rng.normal(size=40)\nXd = rng.normal(size=(500, 8))\nyd = Xd @ w + rng.normal(size=500)\nhasil = sapuan_ridge(Xt, yt, Xd, yd, [0.001, 1, 100])\nassert [h[0] for h in hasil] == [0.001, 1, 100]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hasil[0][1] <= hasil[1][1] <= hasil[2][1]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hasil[2][2] > hasil[1][2]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "all(len(h) == 3 for h in hasil)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert all(len(h) == 3 for h in hasil)"
+              }
+            ]
+          },
+          "hint": "Latih Ridge per alpha, hitung np.mean((prediksi - y) ** 2) untuk train dan dev.",
+          "solution": "import numpy as np\nfrom sklearn.linear_model import Ridge\n\ndef sapuan_ridge(Xt, yt, Xd, yd, alphas):\n    hasil = []\n    for a in alphas:\n        m = Ridge(alpha=a).fit(Xt, yt)\n        tr = float(np.mean((m.predict(Xt) - yt) ** 2))\n        dv = float(np.mean((m.predict(Xd) - yd) ** 2))\n        hasil.append((a, round(tr, 4), round(dv, 4)))\n    return hasil",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-05-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `rencana(optimal, train, dev, biaya)` dengan `biaya` dictionary berisi kunci `\"bias\"` dan `\"variance\"` (biaya relatif per poin perbaikan).",
+          "note": "Hitung avoidable bias dan variance. Skor tiap komponen adalah `nilai / biaya`. Kembalikan `\"bias\"` bila skor bias lebih besar atau sama dengan skor variance, selainnya `\"variance\"`.",
+          "filename": "solution.py",
+          "starter_code": "def rencana(optimal, train, dev, biaya):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rencana(0.02, 0.10, 0.12, {\"bias\": 1, \"varian...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rencana(0.02, 0.10, 0.12, {\"bias\": 1, \"variance\": 1}) == \"bias\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rencana(0.02, 0.04, 0.16, {\"bias\": 1, \"varian...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rencana(0.02, 0.04, 0.16, {\"bias\": 1, \"variance\": 1}) == \"variance\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rencana(0.02, 0.10, 0.12, {\"bias\": 10, \"varia...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rencana(0.02, 0.10, 0.12, {\"bias\": 10, \"variance\": 1}) == \"variance\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rencana(0.02, 0.06, 0.10, {\"bias\": 1, \"varian...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rencana(0.02, 0.06, 0.10, {\"bias\": 1, \"variance\": 1}) == \"bias\""
+              }
+            ]
+          },
+          "hint": "Bias 0.08 dengan biaya 10 menghasilkan skor 0.008, lebih kecil dari variance 0.02 dengan biaya 1.",
+          "solution": "def rencana(optimal, train, dev, biaya):\n    bias = round(train - optimal, 6)\n    var = round(dev - train, 6)\n    skor_b = bias / biaya[\"bias\"]\n    skor_v = var / biaya[\"variance\"]\n    return \"bias\" if skor_b >= skor_v else \"variance\"",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Avoidable bias tinggi. Tindakan paling relevan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tambah data",
+              "description": ""
+            },
+            {
+              "label": "Perbesar model atau tambah fitur",
+              "description": ""
+            },
+            {
+              "label": "Tambah dropout",
+              "description": ""
+            },
+            {
+              "label": "Kurangi ukuran model",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Bias dibantu dengan kapasitas dan fitur yang lebih baik."
+        },
+        {
+          "q": "Variance tinggi. Tindakan paling relevan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kurangi regularisasi",
+              "description": ""
+            },
+            {
+              "label": "Tambah data latih",
+              "description": ""
+            },
+            {
+              "label": "Perbesar model",
+              "description": ""
+            },
+            {
+              "label": "Ganti metrik",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Data lebih banyak mempersempit celah training dan dev."
+        },
+        {
+          "q": "Mengapa tradeoff bias variance tidak selalu mengikat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Karena itu mitos",
+              "description": ""
+            },
+            {
+              "label": "Dengan data besar dan regularisasi baik, keduanya bisa turun bersama",
+              "description": ""
+            },
+            {
+              "label": "Karena model tidak punya bias",
+              "description": ""
+            },
+            {
+              "label": "Karena dev set kecil",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Menambah data dan kapasitas sekaligus bisa menurunkan bias dan variance."
+        },
+        {
+          "q": "Alpha ridge naik dari kecil ke besar. Pola error training?",
+          "code": null,
+          "options": [
+            {
+              "label": "Turun",
+              "description": ""
+            },
+            {
+              "label": "Naik bertahap",
+              "description": ""
+            },
+            {
+              "label": "Konstan",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Regularisasi yang lebih kuat membatasi model sehingga error training naik."
+        },
+        {
+          "q": "Bias 1 poin dan variance 9 poin. Mulai dari mana?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bias",
+              "description": ""
+            },
+            {
+              "label": "Variance",
+              "description": ""
+            },
+            {
+              "label": "Keduanya acak",
+              "description": ""
+            },
+            {
+              "label": "Metrik",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Kerjakan komponen terbesar dulu."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menambah data untuk memperbaiki underfitting. Lebih baik: Underfitting dibantu kapasitas dan fitur, bukan data tambahan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menambah data untuk memperbaiki underfitting.",
+          "fix": "Underfitting dibantu kapasitas dan fitur, bukan data tambahan."
+        },
+        {
+          "mistake": "Menganggap tradeoff bias variance selalu mengikat.",
+          "fix": "Dengan data dan komputasi cukup, kapasitas dan data bisa dinaikkan bersama."
+        },
+        {
+          "mistake": "Mengambil nilai regularisasi dari satu angka terendah tanpa melihat training error.",
+          "fix": "Baca kedua error dalam sapuan agar tahu apakah kamu di sisi bias atau variance."
+        }
+      ],
+      "summary": [
+        "Bias dibantu kapasitas dan fitur, variance dibantu data dan regularisasi.",
+        "Tradeoff bias variance bukan hukum alam di era data besar.",
+        "Sapuan hyperparameter dibaca dari dua error, bukan dari satu angka dev.",
+        "Ukur ulang kedua komponen setelah setiap perubahan."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 23 dan 24 (Andrew Ng): mengatasi bias dan variance serta tradeoff-nya"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Mengatasi bias dan variance serta tradeoff-nya"
+          },
+          {
+            "type": "text",
+            "source": "Fungsi sederhana memetakan komponen error terbesar ke dua tindakan teratas. Daftar lengkapnya dibahas di lesson berikutnya."
+          },
+          {
+            "type": "code",
+            "source": "TINDAKAN = {\n    \"bias\": [\"perbesar model\", \"tambah fitur dari error analysis\", \"kurangi regularisasi\", \"ubah arsitektur\"],\n    \"variance\": [\"tambah data latih\", \"tambah regularisasi\", \"early stopping\", \"kurangi ukuran model\", \"seleksi fitur\"],\n}\n\ndef saran(bias, variance):\n    kunci = \"bias\" if bias >= variance else \"variance\"\n    return kunci, TINDAKAN[kunci][:2]\n\nprint(saran(0.08, 0.02))\nprint(saran(0.01, 0.09))"
+          },
+          {
+            "type": "text",
+            "source": "Alpha kecil membuat variance bertahan tinggi, alpha besar mengundang bias besar. Titik terbaik ada di tengah. Error training naik secara monoton, error dev berbentuk huruf U."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\nOPTIMAL = 0.09\n\nfrom sklearn.linear_model import Ridge\nfrom sklearn.preprocessing import PolynomialFeatures\n\nxt, yt = data(30, 1)\nxd, yd = data(2000, 2)\nP = PolynomialFeatures(9)\nXt = P.fit_transform(xt[:, None])\nXd = P.transform(xd[:, None])\nprint(\"alpha        train    dev\")\nfor a in [1e-8, 1e-6, 1e-4, 1e-2, 1, 10]:\n    m = Ridge(alpha=a).fit(Xt, yt)\n    tr = np.mean((m.predict(Xt) - yt) ** 2)\n    dv = np.mean((m.predict(Xd) - yd) ** 2)\n    print(f\"{a:8.0e}  {tr:7.3f}  {dv:6.3f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Dengan data sangat sedikit regularisasi kuat sedikit membantu, tetapi pada ukuran menengah alpha kecil justru lebih baik. Ketika data bertambah, perbedaan menghilang karena data sendiri sudah mengurangi variance. Dua obat variance ini saling menggantikan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport warnings\nwarnings.simplefilter(\"ignore\")\n\ndef data(m, seed):\n    r = np.random.default_rng(seed)\n    x = r.uniform(0, 1, m)\n    y = np.sin(2 * np.pi * x) + 0.3 * r.normal(size=m)\n    return x, y\n\nOPTIMAL = 0.09\n\nfrom sklearn.linear_model import Ridge\nfrom sklearn.preprocessing import PolynomialFeatures\n\nxd, yd = data(2000, 2)\nP = PolynomialFeatures(9)\nXd = P.fit_transform(xd[:, None])\nprint(\"m_train  dev(alpha=1e-6)  dev(alpha=1e-2)\")\nfor m in [20, 40, 80, 320, 1280]:\n    x, y = data(m, 1)\n    X = P.transform(x[:, None])\n    d1 = np.mean((Ridge(alpha=1e-6).fit(X, y).predict(Xd) - yd) ** 2)\n    d2 = np.mean((Ridge(alpha=1e-2).fit(X, y).predict(Xd) - yd) ** 2)\n    print(f\"{m:7d}  {d1:15.3f}  {d2:15.3f}\")"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "D11-05-3",
+      "title": "Teknik mengurangi bias dan variance",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menyebutkan dan mengurutkan teknik untuk mengurangi avoidable bias",
+        "Menyebutkan dan mengurutkan teknik untuk mengurangi variance",
+        "Memakai early stopping dan ukuran model sebagai eksperimen terkontrol",
+        "Menghitung efek penambahan data pada celah training dan dev"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Teknik untuk mengurangi avoidable bias",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Teknik untuk mengurangi avoidable bias\n\nBerikut tuas untuk avoidable bias, diurutkan dari yang biasanya paling murah.\n\n**Perbesar model.** Tambah neuron, lapisan, pohon, atau derajat. Ini meningkatkan kemampuan model menyesuaikan diri dengan training set. Risiko variance naik, tetapi bila itu terjadi kamu menanganinya dengan regularisasi atau data. Dengan toolkit modern, tuas ini mudah dan sering ampuh.\n\n**Ubah fitur dari error analysis.** Periksa contoh training yang masih salah, cari pola, lalu tambah fitur yang menjawabnya. Fitur baru memberi model informasi yang tidak ia miliki sebelumnya.\n\n**Kurangi atau hilangkan regularisasi.** Regularisasi L2, L1, atau dropout membatasi model. Jika bias tinggi, longgarkan. Ingat bahwa ini menaikkan variance, jadi pantau celah.\n\n**Ubah arsitektur atau keluarga model.** Misalnya dari model linear ke pohon, atau dari jaringan penuh ke jaringan konvolusi. Ini lebih mahal dan hasilnya tidak pasti, tetapi kadang satu-satunya jalan bila model lama tidak cocok dengan struktur data.\n\nTeknik yang sering salah dipakai untuk bias adalah menambah data. Pada masalah bias murni, model tetap tidak mampu menyesuaikan diri dengan training, sehingga lebih banyak contoh tidak mengubah kemampuan tersebut."
+            }
+          ],
+          "quick_check": {
+            "question": "Mana yang bukan teknik untuk mengurangi avoidable bias?",
+            "options": [
+              "Tambah data latih saja pada bias murni",
+              "Perbesar model"
+            ],
+            "answer_index": 0,
+            "explanation": "Pada bias murni, data tambahan tidak mengubah kemampuan model menyesuaikan diri.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Teknik untuk mengurangi variance",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Teknik untuk mengurangi variance\n\nTuas untuk variance juga berderet.\n\n**Tambah data latih.** Ini cara paling andal selama kamu punya akses ke data yang sesuai distribusinya. Kelemahannya biaya: pengumpulan, pelabelan, penyimpanan, dan waktu latih.\n\n**Tambah regularisasi.** L2, L1, dropout, atau batas kedalaman pohon. Murah untuk dicoba, tetapi dapat menaikkan bias jika berlebihan.\n\n**Tambah early stopping.** Hentikan latihan saat error dev berhenti turun. Teknik ini menjaga model agar tidak menghafal. Konsekuensinya, error training tidak diminimalkan sepenuhnya, jadi bias bisa sedikit naik.\n\n**Seleksi fitur.** Buang fitur yang tidak membantu agar model tidak punya ruang untuk menghafal derau. Berguna bila banyak fitur dan sedikit data, dan kurang berguna ketika data melimpah.\n\n**Kurangi ukuran model.** Membuang neuron atau lapisan. Dalam praktik, ini kurang disukai karena regularisasi dan data lebih baik daripada sekadar membatasi kapasitas.\n\n**Modifikasi arsitektur.** Arsitektur dengan induktif bias yang cocok, seperti konvolusi untuk gambar, mengurangi parameter efektif dan variance."
+            }
+          ],
+          "quick_check": {
+            "question": "Teknik early stopping bekerja dengan cara?",
+            "options": [
+              "Menambah layer",
+              "Menghentikan latihan di epoch dengan error dev terendah"
+            ],
+            "answer_index": 1,
+            "explanation": "Epoch ketika error dev minimum dipilih sebelum model menghafal.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dua tuas yang tidak perlu mengorbankan keduanya",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua tuas yang tidak perlu mengorbankan keduanya\n\nDua teknik layak disorot karena sering membantu kedua komponen sekaligus. Pertama, perubahan arsitektur yang cocok dengan masalah. Arsitektur yang tepat memberi model bias induktif yang benar sehingga ia belajar pola nyata dengan lebih sedikit parameter dan lebih sedikit derau.\n\nKedua, ketika kamu menambah ukuran model dan data bersamaan. Model yang lebih besar menurunkan bias, dan data tambahan menutup celah variance yang ditimbulkan model besar itu. Kombinasi inilah yang melandasi perkembangan pembelajaran mendalam selama sepuluh tahun terakhir.\n\nPerlu dicatat pula bahwa teknik di atas bersifat heuristik. Ada kasus ketika perilakunya berbeda dari yang diharapkan. Karena itu, buat eksperimen terkontrol: ubah satu hal, ukur ulang tiga angka, lalu putuskan. Jangan menggabungkan lima perubahan dalam satu percobaan karena kamu tidak akan tahu mana yang bekerja."
+            },
+            {
+              "type": "text",
+              "markdown": "## Early stopping sebagai eksperimen\n\nPada pelatihan iteratif seperti gradient descent, error training turun terus seiring epoch. Error dev biasanya turun lalu naik kembali ketika model mulai menghafal. Early stopping memilih epoch ketika error dev terendah. Implementasinya sederhana: simpan error dev tiap epoch, lalu ambil indeks minimum. Biasanya dipakai kesabaran (patience), yaitu berhenti bila tidak ada perbaikan selama beberapa epoch berturut-turut.\n\nHati-hati: karena kamu memakai dev set untuk memilih epoch, dev set ikut dipakai untuk penyetelan. Seperti dibahas di modul sebelumnya, ini sah selama dev set tidak dipakai sampai habis dan test set tetap bersih."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Perhatian",
+              "markdown": "Early stopping bukan obat universal. Jika bias tinggi, menghentikan pelatihan lebih awal justru memperburuk error training. Pakai hanya setelah bias kamu anggap cukup rendah."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.datasets import make_moons\n\nX, y = make_moons(n_samples=1200, noise=0.35, random_state=0)\nXt, yt, Xd, yd = X[:200], y[:200], X[200:], y[200:]\nprint(\"neuron  err_train  err_dev\")\nfor h in [1, 2, 8, 64]:\n    m = MLPClassifier(hidden_layer_sizes=(h,), max_iter=3000, random_state=0, tol=1e-6).fit(Xt, yt)\n    print(f\"{h:6d}  {1 - m.score(Xt, yt):9.3f}  {1 - m.score(Xd, yd):7.3f}\")",
+              "expected_output_note": "error train turun dari sekitar 0.145 ke sekitar 0.075 saat neuron bertambah\nerror dev turun dari sekitar 0.15 ke sekitar 0.10",
+              "explanation": "Jaringan satu neuron hanya membuat batas linear sehingga tidak bisa mengikuti dua bulan sabit. Menambah neuron menurunkan error training dan dev. Celah antara keduanya melebar pada model besar, tanda variance mulai tumbuh."
+            },
+            {
+              "type": "code_example",
+              "filename": "epoch_terbaik.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndev = [0.40, 0.31, 0.25, 0.22, 0.21, 0.22, 0.24, 0.27]\n\ndef epoch_terbaik(errs, patience=2):\n    terbaik, idx, sabar = float(\"inf\"), 0, 0\n    for i, e in enumerate(errs):\n        if e < terbaik:\n            terbaik, idx, sabar = e, i, 0\n        else:\n            sabar += 1\n            if sabar >= patience:\n                break\n    return idx, terbaik\n\nprint(epoch_terbaik(dev))",
+              "expected_output_note": "(4, 0.21)",
+              "explanation": "Early stopping dengan kesabaran 2 berhenti setelah dua epoch tanpa perbaikan dan mengembalikan epoch ke-5 (indeks 4) dengan error dev 0,21. Lompatan kecil derau di epoch 3 tidak langsung memicu berhenti."
+            },
+            {
+              "type": "code_example",
+              "filename": "contoh.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.neighbors import KNeighborsClassifier\nfrom sklearn.datasets import make_moons\n\nX, y = make_moons(n_samples=6000, noise=0.35, random_state=0)\nXd, yd = X[-2000:], y[-2000:]\nprint(\"m_train  err_train  err_dev  celah\")\nfor m in [30, 100, 300, 1000, 4000]:\n    k = KNeighborsClassifier(n_neighbors=1).fit(X[:m], y[:m])\n    tr = 1 - k.score(X[:m], y[:m])\n    dv = 1 - k.score(Xd, yd)\n    print(f\"{m:7d}  {tr:9.3f}  {dv:7.3f}  {dv - tr:5.3f}\")",
+              "expected_output_note": "error train 1-NN selalu 0\nerror dev berkisar 0.145 sampai 0.165 dan hampir tidak turun\ncelah tetap sekitar 0.15",
+              "explanation": "Tetangga terdekat menghafal training sehingga error training nol dan seluruh error adalah variance. Karena label berderau, data tambahan nyaris tidak membantu model ini. Obat yang tepat adalah regularisasi, misalnya k tetangga yang lebih besar, bukan sekadar menambah data."
+            }
+          ],
+          "quick_check": {
+            "question": "Model 1-NN memberi error training 0. Error dev 17 persen. Komponen dominan?",
+            "options": [
+              "Variance",
+              "Bias"
+            ],
+            "answer_index": 0,
+            "explanation": "Semua error adalah selisih dev terhadap training, yaitu variance.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "D11-05-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `epoch_terbaik(errs)` yang mengembalikan indeks error dev terendah.",
+          "note": "Jika seri pilih indeks paling awal.",
+          "filename": "solution.py",
+          "starter_code": "def epoch_terbaik(errs):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "epoch_terbaik([0.4, 0.3, 0.25, 0.27])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert epoch_terbaik([0.4, 0.3, 0.25, 0.27]) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "epoch_terbaik([0.3, 0.2, 0.2, 0.25])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert epoch_terbaik([0.3, 0.2, 0.2, 0.25]) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "epoch_terbaik([0.5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert epoch_terbaik([0.5]) == 0"
+              }
+            ]
+          },
+          "hint": "Gunakan min atas range dengan key (errs[i], i).",
+          "solution": "def epoch_terbaik(errs):\n    return min(range(len(errs)), key=lambda i: (errs[i], i))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-05-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `early_stop(errs, patience)` yang membaca error dev urut per epoch.",
+          "note": "Simpan error terbaik dan hitung epoch berturut-turut tanpa perbaikan strict. Berhenti saat hitungan mencapai `patience`. Kembalikan tuple `(indeks_terbaik, error_terbaik)`. Jika tidak pernah berhenti, kembalikan terbaik dari seluruh list.",
+          "filename": "solution.py",
+          "starter_code": "def early_stop(errs, patience):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "early_stop(dev, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "dev = [0.40, 0.31, 0.25, 0.22, 0.21, 0.22, 0.24, 0.27]\nassert early_stop(dev, 2) == (4, 0.21)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "early_stop(dev, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert early_stop(dev, 5) == (4, 0.21)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "early_stop([0.3, 0.2, 0.19], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert early_stop([0.3, 0.2, 0.19], 3) == (2, 0.19)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "early_stop([0.3, 0.31, 0.32, 0.2], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert early_stop([0.3, 0.31, 0.32, 0.2], 2) == (0, 0.3)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "early_stop([0.3, 0.31, 0.2], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert early_stop([0.3, 0.31, 0.2], 2) == (2, 0.2)"
+              }
+            ]
+          },
+          "hint": "Perbaikan harus strict lebih kecil. Reset hitungan saat ada perbaikan.",
+          "solution": "def early_stop(errs, patience):\n    terbaik, idx, sabar = float(\"inf\"), 0, 0\n    for i, e in enumerate(errs):\n        if e < terbaik:\n            terbaik, idx, sabar = e, i, 0\n        else:\n            sabar += 1\n            if sabar >= patience:\n                break\n    return idx, terbaik",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-05-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `celah_vs_data(ukuran, err_train, err_dev)` yang menerima tiga list sama panjang dan mengembalikan list tuple `(ukuran, celah)` dengan `celah = round(err_dev - err_train, 4)`, diurutkan menurut ukuran naik.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def celah_vs_data(ukuran, err_train, err_dev):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = celah_vs_data([100, 20, 50], [0.05, 0.0, 0.02], [0.15, 0.30, 0.20])\nassert r == [(20, 0.3), (50, 0.18), (100, 0.1)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "celah_vs_data([], [], [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert celah_vs_data([], [], []) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "celah_vs_data([1], [0.1], [0.3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert celah_vs_data([1], [0.1], [0.3]) == [(1, 0.2)]"
+              }
+            ]
+          },
+          "hint": "Gabungkan dengan zip, hitung celah, lalu sorted.",
+          "solution": "def celah_vs_data(ukuran, err_train, err_dev):\n    return sorted((u, round(d - t, 4)) for u, t, d in zip(ukuran, err_train, err_dev))",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "D11-05-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ukuran_model_terbaik(ukuran_list, Xt, yt, Xd, yd)` yang melatih `MLPClassifier(hidden_layer_sizes=(h,), max_iter=2000, random_state=0)` untuk tiap h dan mengembalikan h dengan error dev terendah (jika seri, h terkecil).",
+          "note": "Hasilnya adalah integer.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nfrom sklearn.neural_network import MLPClassifier\n\ndef ukuran_model_terbaik(ukuran_list, Xt, yt, Xd, yd):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "from sklearn.datasets import make_moons",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "X, y = make_moons(n_samples=1000, noise=0.2, random_state=0)\nh = ukuran_model_terbaik([1, 8, 32], X[:300], y[:300], X[300:], y[300:])\nassert h in (8, 32)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "isinstance(h, int)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isinstance(h, int)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ukuran_model_terbaik([8], X[:300], y[:300], X...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_model_terbaik([8], X[:300], y[:300], X[300:], y[300:]) == 8"
+              }
+            ]
+          },
+          "hint": "Hitung error dev tiap ukuran lalu pilih minimum atas tuple (error, h).",
+          "solution": "import numpy as np\nfrom sklearn.neural_network import MLPClassifier\n\ndef ukuran_model_terbaik(ukuran_list, Xt, yt, Xd, yd):\n    hasil = []\n    for h in ukuran_list:\n        m = MLPClassifier(hidden_layer_sizes=(h,), max_iter=2000, random_state=0).fit(Xt, yt)\n        hasil.append((round(1 - m.score(Xd, yd), 6), int(h)))\n    return min(hasil)[1]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Mana yang bukan teknik untuk mengurangi avoidable bias?",
+          "code": null,
+          "options": [
+            {
+              "label": "Perbesar model",
+              "description": ""
+            },
+            {
+              "label": "Tambah fitur dari error analysis",
+              "description": ""
+            },
+            {
+              "label": "Tambah data latih saja pada bias murni",
+              "description": ""
+            },
+            {
+              "label": "Kurangi regularisasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": null,
+          "explanation": "Pada bias murni, data tambahan tidak mengubah kemampuan model menyesuaikan diri."
+        },
+        {
+          "q": "Teknik early stopping bekerja dengan cara?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menambah layer",
+              "description": ""
+            },
+            {
+              "label": "Menghentikan latihan di epoch dengan error dev terendah",
+              "description": ""
+            },
+            {
+              "label": "Mengganti metrik",
+              "description": ""
+            },
+            {
+              "label": "Menghapus fitur",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Epoch ketika error dev minimum dipilih sebelum model menghafal."
+        },
+        {
+          "q": "Model 1-NN memberi error training 0. Error dev 17 persen. Komponen dominan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bias",
+              "description": ""
+            },
+            {
+              "label": "Variance",
+              "description": ""
+            },
+            {
+              "label": "Optimal",
+              "description": ""
+            },
+            {
+              "label": "Metrik",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Semua error adalah selisih dev terhadap training, yaitu variance."
+        },
+        {
+          "q": "Mengapa tidak menggabungkan lima perubahan dalam satu eksperimen?",
+          "code": null,
+          "options": [
+            {
+              "label": "Terlalu mahal",
+              "description": ""
+            },
+            {
+              "label": "Tidak jelas mana yang bekerja",
+              "description": ""
+            },
+            {
+              "label": "Dilarang",
+              "description": ""
+            },
+            {
+              "label": "Menaikkan bias",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Satu perubahan per percobaan membuat sebab akibat terbaca."
+        },
+        {
+          "q": "Kombinasi tuas yang menurunkan bias dan variance sekaligus?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kurangi model dan kurangi data",
+              "description": ""
+            },
+            {
+              "label": "Perbesar model dan tambah data",
+              "description": ""
+            },
+            {
+              "label": "Hapus regularisasi",
+              "description": ""
+            },
+            {
+              "label": "Ganti metrik",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": null,
+          "explanation": "Model besar menurunkan bias, data tambahan menutup celah variance yang ditimbulkannya."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menggunakan early stopping saat bias masih tinggi. Lebih baik: Pakai early stopping setelah bias cukup rendah, karena ia menghentikan pelatihan sebelum training diminimalkan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menggunakan early stopping saat bias masih tinggi.",
+          "fix": "Pakai early stopping setelah bias cukup rendah, karena ia menghentikan pelatihan sebelum training diminimalkan."
+        },
+        {
+          "mistake": "Mengubah banyak hal sekaligus dalam satu percobaan.",
+          "fix": "Ubah satu tuas per percobaan lalu ukur ulang tiga angka."
+        },
+        {
+          "mistake": "Mengurangi ukuran model sebagai pilihan pertama untuk variance.",
+          "fix": "Prioritaskan data dan regularisasi karena mengurangi kapasitas bisa menaikkan bias."
+        }
+      ],
+      "summary": [
+        "Bias: perbesar model, tambah fitur, kurangi regularisasi, ubah arsitektur.",
+        "Variance: tambah data, tambah regularisasi, early stopping, seleksi fitur.",
+        "Early stopping memilih epoch dengan error dev terendah dan sebaiknya dipakai saat bias sudah rendah.",
+        "Satu perubahan per eksperimen dan ukur ulang tiga angka."
+      ],
+      "further_reading": [
+        "Machine Learning Yearning, bab 25 sampai 27 (Andrew Ng): teknik mengurangi bias dan variance"
+      ],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Teknik mengurangi bias dan variance"
+          },
+          {
+            "type": "text",
+            "source": "Jaringan satu neuron hanya membuat batas linear sehingga tidak bisa mengikuti dua bulan sabit. Menambah neuron menurunkan error training dan dev. Celah antara keduanya melebar pada model besar, tanda variance mulai tumbuh."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.datasets import make_moons\n\nX, y = make_moons(n_samples=1200, noise=0.35, random_state=0)\nXt, yt, Xd, yd = X[:200], y[:200], X[200:], y[200:]\nprint(\"neuron  err_train  err_dev\")\nfor h in [1, 2, 8, 64]:\n    m = MLPClassifier(hidden_layer_sizes=(h,), max_iter=3000, random_state=0, tol=1e-6).fit(Xt, yt)\n    print(f\"{h:6d}  {1 - m.score(Xt, yt):9.3f}  {1 - m.score(Xd, yd):7.3f}\")"
+          },
+          {
+            "type": "text",
+            "source": "Early stopping dengan kesabaran 2 berhenti setelah dua epoch tanpa perbaikan dan mengembalikan epoch ke-5 (indeks 4) dengan error dev 0,21. Lompatan kecil derau di epoch 3 tidak langsung memicu berhenti."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndev = [0.40, 0.31, 0.25, 0.22, 0.21, 0.22, 0.24, 0.27]\n\ndef epoch_terbaik(errs, patience=2):\n    terbaik, idx, sabar = float(\"inf\"), 0, 0\n    for i, e in enumerate(errs):\n        if e < terbaik:\n            terbaik, idx, sabar = e, i, 0\n        else:\n            sabar += 1\n            if sabar >= patience:\n                break\n    return idx, terbaik\n\nprint(epoch_terbaik(dev))"
+          },
+          {
+            "type": "text",
+            "source": "Tetangga terdekat menghafal training sehingga error training nol dan seluruh error adalah variance. Karena label berderau, data tambahan nyaris tidak membantu model ini. Obat yang tepat adalah regularisasi, misalnya k tetangga yang lebih besar, bukan sekadar menambah data."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.neighbors import KNeighborsClassifier\nfrom sklearn.datasets import make_moons\n\nX, y = make_moons(n_samples=6000, noise=0.35, random_state=0)\nXd, yd = X[-2000:], y[-2000:]\nprint(\"m_train  err_train  err_dev  celah\")\nfor m in [30, 100, 300, 1000, 4000]:\n    k = KNeighborsClassifier(n_neighbors=1).fit(X[:m], y[:m])\n    tr = 1 - k.score(X[:m], y[:m])\n    dv = 1 - k.score(Xd, yd)\n    print(f\"{m:7d}  {tr:9.3f}  {dv:7.3f}  {dv - tr:5.3f}\")"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": true,
+    "kind": "ai_slides",
+    "reason": "Konsep bias dan variance sangat terbantu animasi kurva polinomial dan diagram dekomposisi error.",
+    "brief": [
+      "Slide 1: bar bertumpuk error dev: optimal, avoidable bias, variance",
+      "Slide 2: tiga plot polinomial derajat 1, 3, 12 pada titik data yang sama",
+      "Slide 3: grafik error training dan dev terhadap alpha berbentuk U",
+      "Slide 4: tabel dua kolom tindakan untuk bias dan untuk variance"
+    ]
+  },
+  "references": [
+    {
+      "book": "Machine Learning Yearning (Andrew Ng)",
+      "chapters": "bab 20 sampai 27"
+    }
+  ]
+}

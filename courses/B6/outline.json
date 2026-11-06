@@ -1,0 +1,115 @@
+{
+  "id": "B6",
+  "title": "Rekayasa Fitur",
+  "title_short": "Rekayasa Fitur",
+  "icon": "gear",
+  "track": "B",
+  "track_label": "Data",
+  "track_name": "Data Wrangling dan Visualisasi",
+  "level": "Menengah",
+  "module_count": 8,
+  "total_minutes": 840,
+  "exercise_count": 96,
+  "prerequisites": [
+    "B5"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "B6",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Rekayasa Fitur",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-B6"
+  },
+  "sources": [
+    {
+      "code": "DMLS",
+      "title": "Designing Machine Learning Systems",
+      "author": "Chip Huyen",
+      "chapters": "bab 4"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Encoding variabel kategorikal",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Scaling dan normalisasi",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Transformasi numerik",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Binning dan diskretisasi",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Interaksi dan polinomial",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Fitur dari tanggal",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Fitur teks sederhana",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 8,
+      "title": "Seleksi fitur",
+      "file": "m08.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

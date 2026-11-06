@@ -1,0 +1,95 @@
+{
+  "id": "E6",
+  "title": "Fondasi Graph dan Metode Spektral",
+  "title_short": "Fondasi Graph",
+  "icon": "network",
+  "track": "E",
+  "track_label": "Deep Learning",
+  "track_name": "Deep Learning, Graph, dan Framework",
+  "level": "Menengah",
+  "module_count": 6,
+  "total_minutes": 630,
+  "exercise_count": 72,
+  "prerequisites": [
+    "E5"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "E6",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Fondasi Graph dan Metode Spektral",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-E6"
+  },
+  "sources": [
+    {
+      "code": "GRL",
+      "title": "Graph Representation Learning",
+      "author": "William L. Hamilton",
+      "chapters": "bab 1 sampai 2"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Apa itu graf",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Statistik level node",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Fitur level graf",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Ukuran overlap tetangga",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Graph Laplacian",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Spectral clustering",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

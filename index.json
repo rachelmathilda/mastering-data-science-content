@@ -1,0 +1,1218 @@
+{
+  "schema_version": 2,
+  "content_version": 2,
+  "curriculum_version": "1.0",
+  "icons": [
+    "alert",
+    "arrow",
+    "book",
+    "brain",
+    "chart_bar",
+    "chart_line",
+    "clock",
+    "compass",
+    "cube",
+    "database",
+    "dice",
+    "eye",
+    "flask",
+    "function",
+    "gear",
+    "git",
+    "grid",
+    "network",
+    "photo",
+    "rocket",
+    "scale",
+    "search",
+    "sigma",
+    "sliders",
+    "sparkles",
+    "star",
+    "table",
+    "target",
+    "terminal",
+    "text",
+    "tree",
+    "waveform"
+  ],
+  "courses": [
+    {
+      "id": "A1",
+      "title": "Python untuk Data Science",
+      "title_short": "Python Dasar",
+      "icon": "terminal",
+      "track": "A",
+      "track_label": "Fondasi",
+      "track_name": "Fondasi",
+      "level": "Pemula",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [],
+      "lock_policy": "recommended",
+      "modules_ready": 1,
+      "url": "courses/A1/outline.json"
+    },
+    {
+      "id": "A2",
+      "title": "Aljabar Linear untuk Data Science",
+      "title_short": "Aljabar Linear",
+      "icon": "grid",
+      "track": "A",
+      "track_label": "Fondasi",
+      "track_name": "Fondasi",
+      "level": "Pemula",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "A1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/A2/outline.json"
+    },
+    {
+      "id": "A3",
+      "title": "Kalkulus dan Optimasi untuk ML",
+      "title_short": "Kalkulus & Optimasi",
+      "icon": "function",
+      "track": "A",
+      "track_label": "Fondasi",
+      "track_name": "Fondasi",
+      "level": "Pemula",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "A2"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/A3/outline.json"
+    },
+    {
+      "id": "A4",
+      "title": "Probabilitas untuk Data Science",
+      "title_short": "Probabilitas",
+      "icon": "dice",
+      "track": "A",
+      "track_label": "Fondasi",
+      "track_name": "Fondasi",
+      "level": "Pemula",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "A3"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/A4/outline.json"
+    },
+    {
+      "id": "A5",
+      "title": "Statistika Deskriptif",
+      "title_short": "Statistik Deskriptif",
+      "icon": "chart_bar",
+      "track": "A",
+      "track_label": "Fondasi",
+      "track_name": "Fondasi",
+      "level": "Pemula",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "A4"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/A5/outline.json"
+    },
+    {
+      "id": "A6",
+      "title": "SQL untuk Analisis Data",
+      "title_short": "SQL Analisis Data",
+      "icon": "database",
+      "track": "A",
+      "track_label": "Fondasi",
+      "track_name": "Fondasi",
+      "level": "Pemula",
+      "module_count": 9,
+      "total_minutes": 945,
+      "exercise_count": 108,
+      "prerequisites": [
+        "A5"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/A6/outline.json"
+    },
+    {
+      "id": "A7",
+      "title": "Git dan Alur Kerja Reproducible",
+      "title_short": "Git & Reproduksi",
+      "icon": "git",
+      "track": "A",
+      "track_label": "Fondasi",
+      "track_name": "Fondasi",
+      "level": "Pemula",
+      "module_count": 4,
+      "total_minutes": 420,
+      "exercise_count": 48,
+      "prerequisites": [
+        "A6"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/A7/outline.json"
+    },
+    {
+      "id": "B1",
+      "title": "Penguasaan NumPy",
+      "title_short": "NumPy",
+      "icon": "cube",
+      "track": "B",
+      "track_label": "Data",
+      "track_name": "Data Wrangling dan Visualisasi",
+      "level": "Pemula",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "A1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/B1/outline.json"
+    },
+    {
+      "id": "B2",
+      "title": "Penguasaan Pandas",
+      "title_short": "Pandas",
+      "icon": "table",
+      "track": "B",
+      "track_label": "Data",
+      "track_name": "Data Wrangling dan Visualisasi",
+      "level": "Menengah",
+      "module_count": 10,
+      "total_minutes": 1050,
+      "exercise_count": 120,
+      "prerequisites": [
+        "B1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/B2/outline.json"
+    },
+    {
+      "id": "B3",
+      "title": "Pembersihan dan Persiapan Data",
+      "title_short": "Pembersihan Data",
+      "icon": "sparkles",
+      "track": "B",
+      "track_label": "Data",
+      "track_name": "Data Wrangling dan Visualisasi",
+      "level": "Menengah",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "B2"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/B3/outline.json"
+    },
+    {
+      "id": "B4",
+      "title": "Visualisasi Data dengan Matplotlib dan Seaborn",
+      "title_short": "Visualisasi Data",
+      "icon": "chart_bar",
+      "track": "B",
+      "track_label": "Data",
+      "track_name": "Data Wrangling dan Visualisasi",
+      "level": "Pemula",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "B3"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/B4/outline.json"
+    },
+    {
+      "id": "B5",
+      "title": "Analisis Data Eksploratif",
+      "title_short": "Analisis Eksploratif",
+      "icon": "search",
+      "track": "B",
+      "track_label": "Data",
+      "track_name": "Data Wrangling dan Visualisasi",
+      "level": "Menengah",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "B4"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/B5/outline.json"
+    },
+    {
+      "id": "B6",
+      "title": "Rekayasa Fitur",
+      "title_short": "Rekayasa Fitur",
+      "icon": "gear",
+      "track": "B",
+      "track_label": "Data",
+      "track_name": "Data Wrangling dan Visualisasi",
+      "level": "Menengah",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "B5"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/B6/outline.json"
+    },
+    {
+      "id": "B7",
+      "title": "Data Storytelling",
+      "title_short": "Data Storytelling",
+      "icon": "book",
+      "track": "B",
+      "track_label": "Data",
+      "track_name": "Data Wrangling dan Visualisasi",
+      "level": "Menengah",
+      "module_count": 5,
+      "total_minutes": 525,
+      "exercise_count": 60,
+      "prerequisites": [
+        "B6"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/B7/outline.json"
+    },
+    {
+      "id": "C1",
+      "title": "Inferensi Statistik",
+      "title_short": "Inferensi Statistik",
+      "icon": "sigma",
+      "track": "C",
+      "track_label": "Statistik",
+      "track_name": "Statistik dan Inferensi",
+      "level": "Menengah",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "A5"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/C1/outline.json"
+    },
+    {
+      "id": "C2",
+      "title": "Uji Hipotesis dan A/B Testing",
+      "title_short": "Uji Hipotesis & A/B",
+      "icon": "flask",
+      "track": "C",
+      "track_label": "Statistik",
+      "track_name": "Statistik dan Inferensi",
+      "level": "Menengah",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "C1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/C2/outline.json"
+    },
+    {
+      "id": "C3",
+      "title": "Regresi Linear dan Logistik",
+      "title_short": "Regresi",
+      "icon": "chart_line",
+      "track": "C",
+      "track_label": "Statistik",
+      "track_name": "Statistik dan Inferensi",
+      "level": "Menengah",
+      "module_count": 9,
+      "total_minutes": 945,
+      "exercise_count": 108,
+      "prerequisites": [
+        "C2"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/C3/outline.json"
+    },
+    {
+      "id": "C4",
+      "title": "Generalized Linear Models",
+      "title_short": "Model Linear Umum",
+      "icon": "sigma",
+      "track": "C",
+      "track_label": "Statistik",
+      "track_name": "Statistik dan Inferensi",
+      "level": "Lanjutan",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "C3"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/C4/outline.json"
+    },
+    {
+      "id": "C5",
+      "title": "Statistik Bayesian I: Dunia Kecil dan Model Linear",
+      "title_short": "Bayesian I",
+      "icon": "sigma",
+      "track": "C",
+      "track_label": "Statistik",
+      "track_name": "Statistik dan Inferensi",
+      "level": "Lanjutan",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "C4"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/C5/outline.json"
+    },
+    {
+      "id": "C6",
+      "title": "Dasar Inferensi Kausal",
+      "title_short": "Inferensi Kausal",
+      "icon": "arrow",
+      "track": "C",
+      "track_label": "Statistik",
+      "track_name": "Statistik dan Inferensi",
+      "level": "Lanjutan",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "C5"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/C6/outline.json"
+    },
+    {
+      "id": "C7",
+      "title": "Desain Eksperimen",
+      "title_short": "Desain Eksperimen",
+      "icon": "flask",
+      "track": "C",
+      "track_label": "Statistik",
+      "track_name": "Statistik dan Inferensi",
+      "level": "Menengah",
+      "module_count": 5,
+      "total_minutes": 525,
+      "exercise_count": 60,
+      "prerequisites": [
+        "C6"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/C7/outline.json"
+    },
+    {
+      "id": "C8",
+      "title": "Statistik Bayesian II: MCMC, GLM, dan Multilevel",
+      "title_short": "Bayesian II",
+      "icon": "sigma",
+      "track": "C",
+      "track_label": "Statistik",
+      "track_name": "Statistik dan Inferensi",
+      "level": "Lanjutan",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "C7"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/C8/outline.json"
+    },
+    {
+      "id": "D1",
+      "title": "Dasar Supervised Learning",
+      "title_short": "Supervised Learning",
+      "icon": "brain",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Menengah",
+      "module_count": 9,
+      "total_minutes": 945,
+      "exercise_count": 108,
+      "prerequisites": [
+        "B2",
+        "C1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/D1/outline.json"
+    },
+    {
+      "id": "D2",
+      "title": "Pohon Keputusan dan Ensemble",
+      "title_short": "Pohon & Ensemble",
+      "icon": "tree",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Menengah",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "D1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/D2/outline.json"
+    },
+    {
+      "id": "D3",
+      "title": "Evaluasi dan Tuning Model",
+      "title_short": "Evaluasi & Tuning",
+      "icon": "sliders",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Menengah",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "D2"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/D3/outline.json"
+    },
+    {
+      "id": "D4",
+      "title": "Unsupervised Learning",
+      "title_short": "Unsupervised",
+      "icon": "network",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Menengah",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "D3"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/D4/outline.json"
+    },
+    {
+      "id": "D5",
+      "title": "Data Tidak Seimbang dan Metrik",
+      "title_short": "Data Tak Seimbang",
+      "icon": "scale",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Menengah",
+      "module_count": 5,
+      "total_minutes": 525,
+      "exercise_count": 60,
+      "prerequisites": [
+        "D4"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/D5/outline.json"
+    },
+    {
+      "id": "D6",
+      "title": "Peramalan Deret Waktu",
+      "title_short": "Deret Waktu",
+      "icon": "clock",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Lanjutan",
+      "module_count": 9,
+      "total_minutes": 945,
+      "exercise_count": 108,
+      "prerequisites": [
+        "D5"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/D6/outline.json"
+    },
+    {
+      "id": "D7",
+      "title": "Sistem Rekomendasi",
+      "title_short": "Sistem Rekomendasi",
+      "icon": "star",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Lanjutan",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "D6"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/D7/outline.json"
+    },
+    {
+      "id": "D8",
+      "title": "Deteksi Anomali",
+      "title_short": "Deteksi Anomali",
+      "icon": "alert",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Lanjutan",
+      "module_count": 5,
+      "total_minutes": 525,
+      "exercise_count": 60,
+      "prerequisites": [
+        "D7"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/D8/outline.json"
+    },
+    {
+      "id": "D9",
+      "title": "Interpretabilitas Model",
+      "title_short": "Interpretabilitas",
+      "icon": "eye",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Lanjutan",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "D8"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/D9/outline.json"
+    },
+    {
+      "id": "D10",
+      "title": "Text Mining Klasik",
+      "title_short": "Text Mining",
+      "icon": "text",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Menengah",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "D9"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/D10/outline.json"
+    },
+    {
+      "id": "D11",
+      "title": "Strategi ML dan Analisis Error",
+      "title_short": "Strategi ML",
+      "icon": "compass",
+      "track": "D",
+      "track_label": "Machine Learning",
+      "track_name": "Machine Learning",
+      "level": "Menengah",
+      "module_count": 8,
+      "total_minutes": 845,
+      "exercise_count": 96,
+      "prerequisites": [
+        "D10"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 8,
+      "url": "courses/D11/outline.json"
+    },
+    {
+      "id": "E1",
+      "title": "Jaringan Saraf dari Nol",
+      "title_short": "Jaringan Saraf",
+      "icon": "brain",
+      "track": "E",
+      "track_label": "Deep Learning",
+      "track_name": "Deep Learning, Graph, dan Framework",
+      "level": "Lanjutan",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "D1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/E1/outline.json"
+    },
+    {
+      "id": "E2",
+      "title": "Konvolusi dan Konsep Visi",
+      "title_short": "Konvolusi & Visi",
+      "icon": "photo",
+      "track": "E",
+      "track_label": "Deep Learning",
+      "track_name": "Deep Learning, Graph, dan Framework",
+      "level": "Lanjutan",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "E1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/E2/outline.json"
+    },
+    {
+      "id": "E3",
+      "title": "Konsep Model Sekuens",
+      "title_short": "Model Sekuens",
+      "icon": "waveform",
+      "track": "E",
+      "track_label": "Deep Learning",
+      "track_name": "Deep Learning, Graph, dan Framework",
+      "level": "Lanjutan",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "E2"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/E3/outline.json"
+    },
+    {
+      "id": "E4",
+      "title": "Konsep Attention dan Transformer",
+      "title_short": "Transformer",
+      "icon": "sparkles",
+      "track": "E",
+      "track_label": "Deep Learning",
+      "track_name": "Deep Learning, Graph, dan Framework",
+      "level": "Lanjutan",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "E3"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/E4/outline.json"
+    },
+    {
+      "id": "E5",
+      "title": "Dasar Reinforcement Learning",
+      "title_short": "RL Dasar",
+      "icon": "target",
+      "track": "E",
+      "track_label": "Deep Learning",
+      "track_name": "Deep Learning, Graph, dan Framework",
+      "level": "Lanjutan",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "E4"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/E5/outline.json"
+    },
+    {
+      "id": "E6",
+      "title": "Fondasi Graph dan Metode Spektral",
+      "title_short": "Fondasi Graph",
+      "icon": "network",
+      "track": "E",
+      "track_label": "Deep Learning",
+      "track_name": "Deep Learning, Graph, dan Framework",
+      "level": "Menengah",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "E5"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/E6/outline.json"
+    },
+    {
+      "id": "E7",
+      "title": "Node Embedding dan Knowledge Graph",
+      "title_short": "Node Embedding",
+      "icon": "network",
+      "track": "E",
+      "track_label": "Deep Learning",
+      "track_name": "Deep Learning, Graph, dan Framework",
+      "level": "Lanjutan",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "E6"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/E7/outline.json"
+    },
+    {
+      "id": "E8",
+      "title": "Graph Neural Network dari Nol",
+      "title_short": "Graph Neural Network",
+      "icon": "network",
+      "track": "E",
+      "track_label": "Deep Learning",
+      "track_name": "Deep Learning, Graph, dan Framework",
+      "level": "Lanjutan",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "E7"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/E8/outline.json"
+    },
+    {
+      "id": "E9",
+      "title": "Model Generatif Graph",
+      "title_short": "Generatif Graph",
+      "icon": "network",
+      "track": "E",
+      "track_label": "Deep Learning",
+      "track_name": "Deep Learning, Graph, dan Framework",
+      "level": "Lanjutan",
+      "module_count": 5,
+      "total_minutes": 525,
+      "exercise_count": 60,
+      "prerequisites": [
+        "E8"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/E9/outline.json"
+    },
+    {
+      "id": "E10",
+      "title": "Framework Deep Learning: PyTorch dan TensorFlow",
+      "title_short": "PyTorch & TensorFlow",
+      "icon": "cube",
+      "track": "E",
+      "track_label": "Deep Learning",
+      "track_name": "Deep Learning, Graph, dan Framework",
+      "level": "Menengah",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "E9"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/E10/outline.json"
+    },
+    {
+      "id": "F1",
+      "title": "Data Pipeline dan Konsep ETL",
+      "title_short": "Pipeline & ETL",
+      "icon": "arrow",
+      "track": "F",
+      "track_label": "Data Engineering",
+      "track_name": "Data Engineering",
+      "level": "Menengah",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "A1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/F1/outline.json"
+    },
+    {
+      "id": "F2",
+      "title": "Model Data dan Bahasa Query",
+      "title_short": "Model Data & Query",
+      "icon": "database",
+      "track": "F",
+      "track_label": "Data Engineering",
+      "track_name": "Data Engineering",
+      "level": "Menengah",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "F1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/F2/outline.json"
+    },
+    {
+      "id": "F3",
+      "title": "Storage Engine dan Indexing",
+      "title_short": "Storage & Indexing",
+      "icon": "database",
+      "track": "F",
+      "track_label": "Data Engineering",
+      "track_name": "Data Engineering",
+      "level": "Lanjutan",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "F2"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/F3/outline.json"
+    },
+    {
+      "id": "F4",
+      "title": "Encoding dan Evolusi Skema",
+      "title_short": "Encoding & Skema",
+      "icon": "database",
+      "track": "F",
+      "track_label": "Data Engineering",
+      "track_name": "Data Engineering",
+      "level": "Menengah",
+      "module_count": 5,
+      "total_minutes": 525,
+      "exercise_count": 60,
+      "prerequisites": [
+        "F3"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/F4/outline.json"
+    },
+    {
+      "id": "F5",
+      "title": "Replikasi dan Partisi",
+      "title_short": "Replikasi & Partisi",
+      "icon": "database",
+      "track": "F",
+      "track_label": "Data Engineering",
+      "track_name": "Data Engineering",
+      "level": "Lanjutan",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "F4"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/F5/outline.json"
+    },
+    {
+      "id": "F6",
+      "title": "Transaksi, Konsistensi, dan Konsensus",
+      "title_short": "Transaksi",
+      "icon": "database",
+      "track": "F",
+      "track_label": "Data Engineering",
+      "track_name": "Data Engineering",
+      "level": "Lanjutan",
+      "module_count": 8,
+      "total_minutes": 840,
+      "exercise_count": 96,
+      "prerequisites": [
+        "F5"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/F6/outline.json"
+    },
+    {
+      "id": "F7",
+      "title": "Pemrosesan Batch dan Stream",
+      "title_short": "Batch & Stream",
+      "icon": "arrow",
+      "track": "F",
+      "track_label": "Data Engineering",
+      "track_name": "Data Engineering",
+      "level": "Lanjutan",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "F6"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/F7/outline.json"
+    },
+    {
+      "id": "F8",
+      "title": "Merancang Sistem Data",
+      "title_short": "Desain Sistem Data",
+      "icon": "database",
+      "track": "F",
+      "track_label": "Data Engineering",
+      "track_name": "Data Engineering",
+      "level": "Menengah",
+      "module_count": 5,
+      "total_minutes": 525,
+      "exercise_count": 60,
+      "prerequisites": [
+        "F7"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/F8/outline.json"
+    },
+    {
+      "id": "G1",
+      "title": "Capstone: Analitik Bisnis",
+      "title_short": "Capstone Analitik",
+      "icon": "rocket",
+      "track": "G",
+      "track_label": "Capstone",
+      "track_name": "Capstone",
+      "level": "Menengah",
+      "module_count": 4,
+      "total_minutes": 420,
+      "exercise_count": 48,
+      "prerequisites": [
+        "B5"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/G1/outline.json"
+    },
+    {
+      "id": "G2",
+      "title": "Capstone: Pemodelan Prediktif",
+      "title_short": "Capstone Prediktif",
+      "icon": "rocket",
+      "track": "G",
+      "track_label": "Capstone",
+      "track_name": "Capstone",
+      "level": "Lanjutan",
+      "module_count": 4,
+      "total_minutes": 420,
+      "exercise_count": 48,
+      "prerequisites": [
+        "G1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/G2/outline.json"
+    },
+    {
+      "id": "G3",
+      "title": "Capstone: Eksperimen dan Kausal",
+      "title_short": "Capstone Kausal",
+      "icon": "rocket",
+      "track": "G",
+      "track_label": "Capstone",
+      "track_name": "Capstone",
+      "level": "Lanjutan",
+      "module_count": 4,
+      "total_minutes": 420,
+      "exercise_count": 48,
+      "prerequisites": [
+        "G2"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/G3/outline.json"
+    },
+    {
+      "id": "H1",
+      "title": "Fondasi ML Systems",
+      "title_short": "Fondasi ML Systems",
+      "icon": "gear",
+      "track": "H",
+      "track_label": "MLOps",
+      "track_name": "ML Systems dan MLOps",
+      "level": "Pemula",
+      "module_count": 5,
+      "total_minutes": 525,
+      "exercise_count": 60,
+      "prerequisites": [
+        "D1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/H1/outline.json"
+    },
+    {
+      "id": "H2",
+      "title": "Data Engineering untuk ML",
+      "title_short": "Data Eng. untuk ML",
+      "icon": "gear",
+      "track": "H",
+      "track_label": "MLOps",
+      "track_name": "ML Systems dan MLOps",
+      "level": "Menengah",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "H1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/H2/outline.json"
+    },
+    {
+      "id": "H3",
+      "title": "Data Latih",
+      "title_short": "Data Latih",
+      "icon": "gear",
+      "track": "H",
+      "track_label": "MLOps",
+      "track_name": "ML Systems dan MLOps",
+      "level": "Menengah",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "H2"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/H3/outline.json"
+    },
+    {
+      "id": "H4",
+      "title": "Rekayasa Fitur di Produksi",
+      "title_short": "Fitur di Produksi",
+      "icon": "gear",
+      "track": "H",
+      "track_label": "MLOps",
+      "track_name": "ML Systems dan MLOps",
+      "level": "Menengah",
+      "module_count": 5,
+      "total_minutes": 525,
+      "exercise_count": 60,
+      "prerequisites": [
+        "H3"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/H4/outline.json"
+    },
+    {
+      "id": "H5",
+      "title": "Pengembangan dan Pemilihan Model",
+      "title_short": "Pemilihan Model",
+      "icon": "gear",
+      "track": "H",
+      "track_label": "MLOps",
+      "track_name": "ML Systems dan MLOps",
+      "level": "Menengah",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "H4"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/H5/outline.json"
+    },
+    {
+      "id": "H6",
+      "title": "Deployment dan Serving",
+      "title_short": "Deployment",
+      "icon": "gear",
+      "track": "H",
+      "track_label": "MLOps",
+      "track_name": "ML Systems dan MLOps",
+      "level": "Menengah",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "H5"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/H6/outline.json"
+    },
+    {
+      "id": "H7",
+      "title": "Kegagalan, Monitoring, dan MLOps",
+      "title_short": "Monitoring & MLOps",
+      "icon": "gear",
+      "track": "H",
+      "track_label": "MLOps",
+      "track_name": "ML Systems dan MLOps",
+      "level": "Lanjutan",
+      "module_count": 7,
+      "total_minutes": 735,
+      "exercise_count": 84,
+      "prerequisites": [
+        "H6"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/H7/outline.json"
+    },
+    {
+      "id": "I1",
+      "title": "Fondasi AI dan AGI",
+      "title_short": "Fondasi AI & AGI",
+      "icon": "compass",
+      "track": "I",
+      "track_label": "Elective",
+      "track_name": "Elective",
+      "level": "Menengah",
+      "module_count": 6,
+      "total_minutes": 630,
+      "exercise_count": 72,
+      "prerequisites": [
+        "D1"
+      ],
+      "lock_policy": "recommended",
+      "modules_ready": 0,
+      "url": "courses/I1/outline.json"
+    }
+  ]
+}

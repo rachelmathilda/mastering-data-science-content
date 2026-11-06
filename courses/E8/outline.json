@@ -1,0 +1,115 @@
+{
+  "id": "E8",
+  "title": "Graph Neural Network dari Nol",
+  "title_short": "Graph Neural Network",
+  "icon": "network",
+  "track": "E",
+  "track_label": "Deep Learning",
+  "track_name": "Deep Learning, Graph, dan Framework",
+  "level": "Lanjutan",
+  "module_count": 8,
+  "total_minutes": 840,
+  "exercise_count": 96,
+  "prerequisites": [
+    "E7"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "E8",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Graph Neural Network dari Nol",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-E8"
+  },
+  "sources": [
+    {
+      "code": "GRL",
+      "title": "Graph Representation Learning",
+      "author": "William L. Hamilton",
+      "chapters": "bab 5 sampai 7"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Message passing",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "GNN dasar",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Normalisasi tetangga",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Aggregator",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Attention pada graf",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Update dan skip connection",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Graph pooling",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 8,
+      "title": "Aplikasi dan teori Weisfeiler-Lehman",
+      "file": "m08.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

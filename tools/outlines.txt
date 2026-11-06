@@ -1,0 +1,536 @@
+@A1 | Python for Data Science | A | Pemula | 8 | -
+1 | Variabel, tipe data, dan operator
+2 | Kontrol alur: kondisi dan perulangan
+3 | List, tuple, dictionary, dan set
+4 | Fungsi, argumen, dan lambda
+5 | Comprehension dan generator
+6 | String, format, dan regex dasar
+7 | File I/O, CSV, dan JSON
+8 | Error handling, modul, dan gaya kode
+
+@A2 | Linear Algebra for Data Science | A | Pemula | 7 | -
+1 | Vektor, norma, dan jarak
+2 | Matriks dan operasi dasar
+3 | Sistem persamaan linear
+4 | Determinan dan invers
+5 | Eigenvalue dan eigenvector
+6 | Singular Value Decomposition
+7 | PCA dari nol
+
+@A3 | Calculus and Optimization for ML | A | Pemula | 6 | -
+1 | Fungsi, limit, dan kontinuitas
+2 | Turunan dan aturan dasarnya
+3 | Turunan parsial dan gradien
+4 | Chain rule dan turunan komposisi
+5 | Gradient descent dari nol
+6 | Momentum, learning rate, dan optimizer
+
+@A4 | Probability for Data Science | A | Pemula | 8 | -
+1 | Ruang sampel dan aturan peluang
+2 | Peluang bersyarat dan teorema Bayes
+3 | Variabel acak diskrit
+4 | Variabel acak kontinu
+5 | Distribusi yang sering dipakai
+6 | Ekspektasi, varians, dan kovarians
+7 | Hukum bilangan besar dan CLT
+8 | Simulasi Monte Carlo
+
+@A5 | Descriptive Statistics | A | Pemula | 6 | -
+1 | Jenis data dan skala pengukuran
+2 | Ukuran pemusatan
+3 | Ukuran penyebaran
+4 | Bentuk distribusi dan kuantil
+5 | Korelasi dan kovariansi
+6 | Meringkas data dengan pandas
+
+@A6 | SQL for Data Analysis | A | Pemula | 9 | -
+1 | Pengantar relasional dan SELECT
+2 | Filter, urutan, dan limit
+3 | Agregasi dan GROUP BY
+4 | JOIN antar tabel
+5 | Subquery dan CTE
+6 | Window function
+7 | Fungsi tanggal dan teks
+8 | Desain tabel, constraint, dan index
+9 | Query analitik end-to-end
+
+@A7 | Git and Reproducible Workflow | A | Pemula | 4 | -
+1 | Konsep version control
+2 | Commit, branch, dan riwayat
+3 | Merge, konflik, dan kolaborasi
+4 | Workflow analisis yang reproducible
+
+@B1 | NumPy Mastery | B | Pemula | 6 | -
+1 | ndarray, dtype, dan shape
+2 | Indexing, slicing, dan masking
+3 | Broadcasting
+4 | Operasi vectorized dan ufunc
+5 | Aljabar linear dengan NumPy
+6 | Random, reproducibility, dan performa
+
+@B2 | Pandas Mastery | B | Menengah | 10 | -
+1 | Series dan DataFrame
+2 | Memilih data dengan loc dan iloc
+3 | Filtering, sorting, dan query
+4 | Kolom turunan, map, dan apply
+5 | Missing value dasar
+6 | GroupBy dan agregasi
+7 | Merge, join, dan concat
+8 | Pivot, melt, dan reshape
+9 | Time series di pandas
+10 | Idiom pandas dan performa
+
+@B3 | Data Cleaning and Preparation | B | Menengah | 7 | DMLS bab 2
+1 | Audit kualitas data
+2 | Strategi missing value
+3 | Duplikat dan inkonsistensi
+4 | Outlier
+5 | Parsing tanggal dan waktu
+6 | Pembersihan teks
+7 | Pipeline pembersihan yang bisa diulang
+
+@B4 | Data Visualization with Matplotlib and Seaborn | B | Pemula | 8 | -
+1 | Anatomi sebuah plot
+2 | Line plot dan bar plot
+3 | Histogram dan distribusi
+4 | Scatter plot dan hubungan antarvariabel
+5 | Boxplot dan violin plot
+6 | Seaborn dan tema
+7 | Subplot dan layout
+8 | Memilih grafik yang tepat
+
+@B5 | Exploratory Data Analysis | B | Menengah | 7 | -
+1 | Kerangka kerja EDA
+2 | Profil dataset
+3 | Analisis univariat
+4 | Analisis bivariat
+5 | Multivariat dan korelasi
+6 | Dari temuan ke hipotesis
+7 | Menulis laporan EDA
+
+@B6 | Feature Engineering | B | Menengah | 8 | DMLS bab 4
+1 | Encoding variabel kategorikal
+2 | Scaling dan normalisasi
+3 | Transformasi numerik
+4 | Binning dan diskretisasi
+5 | Interaksi dan polinomial
+6 | Fitur dari tanggal
+7 | Fitur teks sederhana
+8 | Seleksi fitur
+
+@B7 | Data Storytelling | B | Menengah | 5 | -
+1 | Audiens dan pertanyaan keputusan
+2 | Struktur narasi data
+3 | Visual yang jujur
+4 | Dashboard sederhana
+5 | Presentasi rekomendasi
+
+@C1 | Statistical Inference | C | Menengah | 8 | -
+1 | Populasi, sampel, dan bias sampling
+2 | Distribusi sampling
+3 | Estimasi titik
+4 | Confidence interval
+5 | Bootstrap
+6 | Ukuran efek
+7 | Salah tafsir yang umum
+8 | Studi kasus inferensi
+
+@C2 | Hypothesis Testing and A/B Testing | C | Menengah | 8 | -
+1 | Logika uji hipotesis
+2 | p-value, alpha, dan kesalahan tipe I dan II
+3 | Uji t
+4 | Uji proporsi
+5 | Uji chi-square
+6 | Uji nonparametrik
+7 | Power dan ukuran sampel
+8 | A/B testing end-to-end
+
+@C3 | Linear and Logistic Regression | C | Menengah | 9 | -
+1 | Regresi linear sederhana
+2 | Regresi linear berganda
+3 | Asumsi dan diagnostik residual
+4 | Multikolinearitas
+5 | Variabel kategorikal dan interaksi
+6 | Regularisasi ridge dan lasso
+7 | Regresi logistik
+8 | Evaluasi model klasifikasi
+9 | Studi kasus regresi
+
+@C4 | Generalized Linear Models | C | Lanjutan | 6 | SR bab 9 sampai 10
+1 | Dari model linear ke GLM
+2 | Regresi binomial
+3 | Regresi Poisson
+4 | Overdispersion
+5 | Offset dan exposure
+6 | Studi kasus data count
+
+@C5 | Bayesian Statistics I: Small Worlds and Linear Models | C | Lanjutan | 7 | SR bab 1 sampai 7
+1 | Logika inferensi Bayes
+2 | Small world dan large world
+3 | Sampling dari posterior
+4 | Model linear Gaussian
+5 | Regresi multivariat
+6 | Overfitting dan information criteria
+7 | Interaksi
+
+@C6 | Causal Inference Basics | C | Lanjutan | 7 | SR bab 5
+1 | Korelasi dan kausalitas
+2 | DAG dasar
+3 | Confounder, collider, dan mediator
+4 | Asosiasi palsu dan variabel tertutup
+5 | Matching dan weighting
+6 | Difference-in-differences
+7 | Studi kasus kausal
+
+@C7 | Experimental Design | C | Menengah | 5 | -
+1 | Prinsip eksperimen
+2 | Randomisasi
+3 | Ukuran sampel
+4 | Blocking dan stratifikasi
+5 | Analisis dan pelaporan
+
+@C8 | Bayesian Statistics II: MCMC, GLM and Multilevel | C | Lanjutan | 8 | SR bab 8 sampai 14
+1 | Metropolis dan MCMC
+2 | Hamiltonian Monte Carlo dari nol
+3 | Diagnostik chain
+4 | Entropi maksimum dan GLM
+5 | Regresi binomial dan Poisson Bayesian
+6 | Ordered, zero-inflated, dan over-dispersed
+7 | Model multilevel
+8 | Varying slopes, missing data, dan measurement error
+
+@D1 | Supervised Learning Foundations | D | Menengah | 9 | -
+1 | Kerangka supervised learning
+2 | Train test split
+3 | Regresi linear dengan scikit-learn
+4 | k-nearest neighbors
+5 | Regresi logistik
+6 | Decision tree
+7 | Pipeline dan preprocessing
+8 | Metrik regresi dan klasifikasi
+9 | Proyek mini end-to-end
+
+@D2 | Trees and Ensembles | D | Menengah | 8 | -
+1 | Decision tree mendalam
+2 | Bagging
+3 | Random forest
+4 | Gradient boosting
+5 | Tuning boosting
+6 | Feature importance
+7 | Perbandingan ensemble
+8 | Studi kasus ensemble
+
+@D3 | Model Evaluation and Tuning | D | Menengah | 8 | SR bab 6, MLY bab 20 sampai 32
+1 | Overfitting dan underfitting
+2 | Cross-validation
+3 | Grid search dan random search
+4 | Learning curve
+5 | Validation curve
+6 | Information criteria
+7 | Kebocoran data
+8 | Memilih model
+
+@D4 | Unsupervised Learning | D | Menengah | 7 | -
+1 | Intuisi clustering
+2 | k-means
+3 | Hierarchical clustering
+4 | DBSCAN
+5 | Evaluasi clustering
+6 | PCA untuk reduksi dimensi
+7 | Reduksi dimensi lainnya
+
+@D5 | Imbalanced Data and Metrics | D | Menengah | 5 | -
+1 | Masalah ketimpangan kelas
+2 | Precision, recall, dan F-score
+3 | Threshold dan kurva
+4 | Resampling
+5 | Cost-sensitive learning
+
+@D6 | Time Series Forecasting | D | Lanjutan | 9 | -
+1 | Komponen time series
+2 | Stasioneritas
+3 | Smoothing
+4 | Exponential smoothing
+5 | Model AR dan MA
+6 | ARIMA
+7 | Musiman
+8 | Backtesting
+9 | Studi kasus forecasting
+
+@D7 | Recommender Systems | D | Lanjutan | 6 | -
+1 | Jenis sistem rekomendasi
+2 | Content-based
+3 | Collaborative filtering
+4 | Matrix factorization
+5 | Evaluasi rekomendasi
+6 | Cold start
+
+@D8 | Anomaly Detection | D | Lanjutan | 5 | -
+1 | Jenis anomali
+2 | Statistik robust
+3 | Isolation forest
+4 | Berbasis jarak dan densitas
+5 | Evaluasi deteksi anomali
+
+@D9 | Model Interpretability | D | Lanjutan | 6 | -
+1 | Mengapa interpretasi penting
+2 | Koefisien dan importance
+3 | Permutation importance
+4 | Partial dependence dan ICE
+5 | Interpretasi lokal
+6 | Mengomunikasikan hasil
+
+@D10 | Text Mining Classical | D | Menengah | 7 | -
+1 | Tokenisasi dan normalisasi
+2 | Bag of words
+3 | TF-IDF
+4 | Klasifikasi teks
+5 | Naive Bayes
+6 | Topic modeling sederhana
+7 | Evaluasi dan studi kasus
+
+@D11 | ML Strategy and Error Analysis | D | Menengah | 8 | MLY bab 1 sampai 58
+1 | Mengapa strategi ML penting
+2 | Dev set, test set, dan metrik tunggal
+3 | Sistem pertama dan error analysis dasar
+4 | Label salah, Eyeball dan Blackbox dev set
+5 | Bias dan variance
+6 | Learning curve dan performa manusia
+7 | Distribusi data yang berbeda
+8 | Pipeline, end-to-end, dan atribusi error
+
+@E1 | Neural Networks from Scratch | E | Lanjutan | 8 | TF bab 2 sampai 3, PTPR bab 3 sampai 4
+1 | Neuron dan perceptron
+2 | Fungsi aktivasi
+3 | Forward pass
+4 | Fungsi loss
+5 | Backpropagation
+6 | Training loop
+7 | Softmax regression
+8 | Regularisasi dan inisialisasi
+
+@E2 | Convolution and Vision Concepts | E | Lanjutan | 6 | TF bab 4
+1 | Gambar sebagai array
+2 | Konvolusi 2D
+3 | Pooling dan padding
+4 | Layer CNN manual
+5 | Arsitektur klasik
+6 | Augmentasi dan transfer learning
+
+@E3 | Sequence Models Concepts | E | Lanjutan | 6 | TF bab 5 sampai 6
+1 | Data sekuens
+2 | RNN manual
+3 | Masalah gradien
+4 | LSTM dan GRU
+5 | Word embedding
+6 | Word2vec mini
+
+@E4 | Attention and Transformers Concepts | E | Lanjutan | 6 | -
+1 | Motivasi attention
+2 | Dot-product attention
+3 | Self-attention
+4 | Multi-head attention
+5 | Positional encoding
+6 | Blok transformer
+
+@E5 | Reinforcement Learning Basics | E | Lanjutan | 7 | AGI bab 6
+1 | Agen dan lingkungan
+2 | Multi-armed bandit
+3 | Markov decision process
+4 | Value function
+5 | Q-learning
+6 | Eksplorasi dan eksploitasi
+7 | Dari tabular ke deep RL
+
+@E6 | Graph Foundations and Spectral Methods | E | Menengah | 6 | GRL bab 1 sampai 2
+1 | Apa itu graf
+2 | Statistik level node
+3 | Fitur level graf
+4 | Ukuran overlap tetangga
+5 | Graph Laplacian
+6 | Spectral clustering
+
+@E7 | Node Embeddings and Knowledge Graphs | E | Lanjutan | 6 | GRL bab 3 sampai 4
+1 | Perspektif encoder dan decoder
+2 | Pendekatan faktorisasi
+3 | Random walk embedding
+4 | Batas shallow embedding
+5 | Knowledge graph
+6 | Decoder multi-relasional
+
+@E8 | Graph Neural Networks from Scratch | E | Lanjutan | 8 | GRL bab 5 sampai 7
+1 | Message passing
+2 | GNN dasar
+3 | Normalisasi tetangga
+4 | Aggregator
+5 | Attention pada graf
+6 | Update dan skip connection
+7 | Graph pooling
+8 | Aplikasi dan teori Weisfeiler-Lehman
+
+@E9 | Generative Graph Models | E | Lanjutan | 5 | GRL bab 8 sampai 9
+1 | Model Erdos-Renyi
+2 | Stochastic block model
+3 | Preferential attachment
+4 | Model generatif dalam untuk graf
+5 | Evaluasi graf hasil generate
+
+@E10 | Deep Learning Frameworks: PyTorch and TensorFlow Concepts | E | Menengah | 8 | PTPR bab 1 sampai 8, TF bab 1 sampai 10
+1 | Tensor
+2 | Autograd
+3 | Modul neural network
+4 | Training loop
+5 | Kustomisasi komponen
+6 | Akselerasi dan optimasi
+7 | Deployment model
+8 | Konsep TensorFlow dan komputasi graf
+
+@F1 | Data Pipelines and ETL Concepts | F | Menengah | 6 | DMLS bab 2
+1 | Konsep pipeline data
+2 | Extract
+3 | Transform
+4 | Load
+5 | Orkestrasi sederhana
+6 | Kualitas dan validasi data
+
+@F2 | Data Models and Query Languages | F | Menengah | 6 | DDIA bab 2
+1 | Model relasional vs dokumen
+2 | Ketidakcocokan object-relational
+3 | Relasi many-to-one dan many-to-many
+4 | Bahasa query deklaratif
+5 | Model graf
+6 | Memilih model data
+
+@F3 | Storage Engines and Indexing | F | Lanjutan | 7 | DDIA bab 3
+1 | Log append-only
+2 | Hash index
+3 | SSTable dan LSM-tree
+4 | B-tree
+5 | Membandingkan B-tree dan LSM-tree
+6 | OLTP vs OLAP dan data warehouse
+7 | Penyimpanan berorientasi kolom
+
+@F4 | Encoding and Schema Evolution | F | Menengah | 5 | DDIA bab 4
+1 | Format encoding data
+2 | JSON dan format biner
+3 | Skema dan IDL
+4 | Kompatibilitas maju dan mundur
+5 | Mode aliran data
+
+@F5 | Replication and Partitioning | F | Lanjutan | 7 | DDIA bab 5 sampai 6
+1 | Leader dan follower
+2 | Replication lag
+3 | Multi-leader
+4 | Leaderless dan quorum
+5 | Partisi berdasarkan key
+6 | Secondary index pada partisi
+7 | Rebalancing dan request routing
+
+@F6 | Transactions, Consistency and Consensus | F | Lanjutan | 8 | DDIA bab 7 sampai 9
+1 | ACID
+2 | Isolasi lemah
+3 | Snapshot isolation
+4 | Lost update dan write skew
+5 | Serializability
+6 | Masalah pada sistem terdistribusi
+7 | Konsistensi dan linearizability
+8 | Konsensus
+
+@F7 | Batch and Stream Processing | F | Lanjutan | 7 | DDIA bab 10 sampai 11
+1 | Pemrosesan batch dengan alat Unix
+2 | MapReduce
+3 | Join pada batch
+4 | Message broker
+5 | Log dan change data capture
+6 | Windowing dan waktu
+7 | Toleransi kesalahan
+
+@F8 | Designing Data Systems | F | Menengah | 5 | DDIA bab 1 dan 12
+1 | Reliability
+2 | Scalability
+3 | Maintainability
+4 | Integrasi data
+5 | Kebenaran dan etika data
+
+@G1 | Capstone: Business Analytics | G | Menengah | 4 | -
+1 | Merumuskan masalah bisnis
+2 | Data dan EDA
+3 | Analisis dan insight
+4 | Rekomendasi dan laporan
+
+@G2 | Capstone: Predictive Modeling | G | Lanjutan | 4 | -
+1 | Framing prediksi
+2 | Pipeline fitur
+3 | Modeling dan evaluasi
+4 | Interpretasi dan laporan
+
+@G3 | Capstone: Experimentation and Causal | G | Lanjutan | 4 | -
+1 | Desain eksperimen
+2 | Analisis A/B
+3 | Inferensi kausal
+4 | Laporan keputusan
+
+@H1 | ML Systems Foundations | H | Pemula | 5 | DMLS bab 1, MLY bab 1 sampai 4
+1 | Kapan memakai machine learning
+2 | ML riset vs produksi
+3 | Framing masalah ML
+4 | Metrik bisnis dan metrik ML
+5 | Siklus pengembangan iteratif
+
+@H2 | Data Engineering for ML | H | Menengah | 6 | DMLS bab 2
+1 | Sumber data
+2 | Format data
+3 | Model data
+4 | Batch dan stream
+5 | ETL untuk ML
+6 | Penyimpanan dan akses
+
+@H3 | Training Data | H | Menengah | 7 | DMLS bab 3
+1 | Sampling
+2 | Labeling
+3 | Label lemah dan semi-supervised
+4 | Class imbalance
+5 | Augmentasi data
+6 | Membagi data dengan benar
+7 | Kebocoran data
+
+@H4 | Feature Engineering in Production | H | Menengah | 5 | DMLS bab 4
+1 | Kebocoran data pada fitur
+2 | Scaling dan encoding
+3 | Fitur posisi dan embedding
+4 | Train serve skew
+5 | Pentingnya fitur
+
+@H5 | Model Development and Selection | H | Menengah | 7 | DMLS bab 5
+1 | Baseline
+2 | Memilih model
+3 | Ensemble
+4 | Pencatatan eksperimen
+5 | Debugging model
+6 | Evaluasi offline
+7 | Evaluasi berbasis slice
+
+@H6 | Deployment and Serving | H | Menengah | 6 | DMLS bab 6, PTPR bab 7, TF bab 10
+1 | Prediksi batch vs online
+2 | Kompresi model
+3 | Edge vs cloud
+4 | Latency dan throughput
+5 | Pipeline serving
+6 | Rilis bertahap
+
+@H7 | Failures, Monitoring and MLOps | H | Lanjutan | 7 | DMLS bab 7
+1 | Kegagalan umum sistem ML
+2 | Pergeseran distribusi data
+3 | Deteksi drift
+4 | Monitoring
+5 | Alert dan respons
+6 | Retraining
+7 | Studi kasus kegagalan
+
+@I1 | Foundations of AI and AGI | I | Menengah | 6 | AGI bab 1, 5, 6, 16
+1 | Apa itu AGI
+2 | Definisi inteligensi
+3 | Pendekatan simbolik dan konektionis
+4 | Universal AI
+5 | Reinforcement learning dan AGI
+6 | Teori kecerdasan buatan

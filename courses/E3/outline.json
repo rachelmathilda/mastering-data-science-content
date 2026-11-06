@@ -1,0 +1,95 @@
+{
+  "id": "E3",
+  "title": "Konsep Model Sekuens",
+  "title_short": "Model Sekuens",
+  "icon": "waveform",
+  "track": "E",
+  "track_label": "Deep Learning",
+  "track_name": "Deep Learning, Graph, dan Framework",
+  "level": "Lanjutan",
+  "module_count": 6,
+  "total_minutes": 630,
+  "exercise_count": 72,
+  "prerequisites": [
+    "E2"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "E3",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Konsep Model Sekuens",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-E3"
+  },
+  "sources": [
+    {
+      "code": "TF",
+      "title": "Learning TensorFlow",
+      "author": "Tom Hope, Yehezkel S. Resheff, Itay Lieder",
+      "chapters": "bab 5 sampai 6"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Data sekuens",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "RNN manual",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Masalah gradien",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "LSTM dan GRU",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Word embedding",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Word2vec mini",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

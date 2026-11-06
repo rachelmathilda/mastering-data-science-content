@@ -1,0 +1,121 @@
+{
+  "id": "E10",
+  "title": "Framework Deep Learning: PyTorch dan TensorFlow",
+  "title_short": "PyTorch & TensorFlow",
+  "icon": "cube",
+  "track": "E",
+  "track_label": "Deep Learning",
+  "track_name": "Deep Learning, Graph, dan Framework",
+  "level": "Menengah",
+  "module_count": 8,
+  "total_minutes": 840,
+  "exercise_count": 96,
+  "prerequisites": [
+    "E9"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "E10",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Framework Deep Learning: PyTorch dan TensorFlow",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-E10"
+  },
+  "sources": [
+    {
+      "code": "PTPR",
+      "title": "PyTorch Pocket Reference",
+      "author": "Joe Papa",
+      "chapters": "bab 1 sampai 8"
+    },
+    {
+      "code": "TF",
+      "title": "Learning TensorFlow",
+      "author": "Tom Hope, Yehezkel S. Resheff, Itay Lieder",
+      "chapters": "bab 1 sampai 10"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Tensor",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Autograd",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Modul neural network",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Training loop",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Kustomisasi komponen",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Akselerasi dan optimasi",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Deployment model",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 8,
+      "title": "Konsep TensorFlow dan komputasi graf",
+      "file": "m08.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

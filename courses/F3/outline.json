@@ -1,0 +1,105 @@
+{
+  "id": "F3",
+  "title": "Storage Engine dan Indexing",
+  "title_short": "Storage & Indexing",
+  "icon": "database",
+  "track": "F",
+  "track_label": "Data Engineering",
+  "track_name": "Data Engineering",
+  "level": "Lanjutan",
+  "module_count": 7,
+  "total_minutes": 735,
+  "exercise_count": 84,
+  "prerequisites": [
+    "F2"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "F3",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Storage Engine dan Indexing",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-F3"
+  },
+  "sources": [
+    {
+      "code": "DDIA",
+      "title": "Designing Data-Intensive Applications",
+      "author": "Martin Kleppmann",
+      "chapters": "bab 3"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Log append-only",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Hash index",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "SSTable dan LSM-tree",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "B-tree",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Membandingkan B-tree dan LSM-tree",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "OLTP vs OLAP dan data warehouse",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Penyimpanan berorientasi kolom",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

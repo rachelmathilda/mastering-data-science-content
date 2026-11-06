@@ -1,0 +1,78 @@
+{
+  "id": "B7",
+  "title": "Data Storytelling",
+  "title_short": "Data Storytelling",
+  "icon": "book",
+  "track": "B",
+  "track_label": "Data",
+  "track_name": "Data Wrangling dan Visualisasi",
+  "level": "Menengah",
+  "module_count": 5,
+  "total_minutes": 525,
+  "exercise_count": 60,
+  "prerequisites": [
+    "B6"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "B7",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Data Storytelling",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-B7"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Audiens dan pertanyaan keputusan",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Struktur narasi data",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Visual yang jujur",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Dashboard sederhana",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Presentasi rekomendasi",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

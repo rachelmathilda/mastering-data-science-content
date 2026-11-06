@@ -1,0 +1,107 @@
+{
+  "id": "H6",
+  "title": "Deployment dan Serving",
+  "title_short": "Deployment",
+  "icon": "gear",
+  "track": "H",
+  "track_label": "MLOps",
+  "track_name": "ML Systems dan MLOps",
+  "level": "Menengah",
+  "module_count": 6,
+  "total_minutes": 630,
+  "exercise_count": 72,
+  "prerequisites": [
+    "H5"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "H6",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Deployment dan Serving",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-H6"
+  },
+  "sources": [
+    {
+      "code": "DMLS",
+      "title": "Designing Machine Learning Systems",
+      "author": "Chip Huyen",
+      "chapters": "bab 6"
+    },
+    {
+      "code": "PTPR",
+      "title": "PyTorch Pocket Reference",
+      "author": "Joe Papa",
+      "chapters": "bab 7"
+    },
+    {
+      "code": "TF",
+      "title": "Learning TensorFlow",
+      "author": "Tom Hope, Yehezkel S. Resheff, Itay Lieder",
+      "chapters": "bab 10"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Prediksi batch vs online",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Kompresi model",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Edge vs cloud",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Latency dan throughput",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Pipeline serving",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Rilis bertahap",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

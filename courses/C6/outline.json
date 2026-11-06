@@ -1,0 +1,105 @@
+{
+  "id": "C6",
+  "title": "Dasar Inferensi Kausal",
+  "title_short": "Inferensi Kausal",
+  "icon": "arrow",
+  "track": "C",
+  "track_label": "Statistik",
+  "track_name": "Statistik dan Inferensi",
+  "level": "Lanjutan",
+  "module_count": 7,
+  "total_minutes": 735,
+  "exercise_count": 84,
+  "prerequisites": [
+    "C5"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "C6",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Dasar Inferensi Kausal",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-C6"
+  },
+  "sources": [
+    {
+      "code": "SR",
+      "title": "Statistical Rethinking",
+      "author": "Richard McElreath",
+      "chapters": "bab 5"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Korelasi dan kausalitas",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "DAG dasar",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Confounder, collider, dan mediator",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Asosiasi palsu dan variabel tertutup",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Matching dan weighting",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Difference-in-differences",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Studi kasus kausal",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "id": "G3",
+  "title": "Capstone: Eksperimen dan Kausal",
+  "title_short": "Capstone Kausal",
+  "icon": "rocket",
+  "track": "G",
+  "track_label": "Capstone",
+  "track_name": "Capstone",
+  "level": "Lanjutan",
+  "module_count": 4,
+  "total_minutes": 420,
+  "exercise_count": 48,
+  "prerequisites": [
+    "G2"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "G3",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Capstone: Eksperimen dan Kausal",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-G3"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Desain eksperimen",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Analisis A/B",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Inferensi kausal",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Laporan keputusan",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

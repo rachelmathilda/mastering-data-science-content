@@ -1,0 +1,91 @@
+{
+  "id": "H1",
+  "title": "Fondasi ML Systems",
+  "title_short": "Fondasi ML Systems",
+  "icon": "gear",
+  "track": "H",
+  "track_label": "MLOps",
+  "track_name": "ML Systems dan MLOps",
+  "level": "Pemula",
+  "module_count": 5,
+  "total_minutes": 525,
+  "exercise_count": 60,
+  "prerequisites": [
+    "D1"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "H1",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Fondasi ML Systems",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-H1"
+  },
+  "sources": [
+    {
+      "code": "DMLS",
+      "title": "Designing Machine Learning Systems",
+      "author": "Chip Huyen",
+      "chapters": "bab 1"
+    },
+    {
+      "code": "MLY",
+      "title": "Machine Learning Yearning",
+      "author": "Andrew Ng",
+      "chapters": "bab 1 sampai 4"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Kapan memakai machine learning",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "ML riset vs produksi",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Framing masalah ML",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Metrik bisnis dan metrik ML",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Siklus pengembangan iteratif",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

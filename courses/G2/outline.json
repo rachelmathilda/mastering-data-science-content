@@ -1,0 +1,68 @@
+{
+  "id": "G2",
+  "title": "Capstone: Pemodelan Prediktif",
+  "title_short": "Capstone Prediktif",
+  "icon": "rocket",
+  "track": "G",
+  "track_label": "Capstone",
+  "track_name": "Capstone",
+  "level": "Lanjutan",
+  "module_count": 4,
+  "total_minutes": 420,
+  "exercise_count": 48,
+  "prerequisites": [
+    "G1"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "G2",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Capstone: Pemodelan Prediktif",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-G2"
+  },
+  "sources": [],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "Framing prediksi",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Pipeline fitur",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Modeling dan evaluasi",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Interpretasi dan laporan",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}

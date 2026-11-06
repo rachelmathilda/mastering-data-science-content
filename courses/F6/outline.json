@@ -1,0 +1,115 @@
+{
+  "id": "F6",
+  "title": "Transaksi, Konsistensi, dan Konsensus",
+  "title_short": "Transaksi",
+  "icon": "database",
+  "track": "F",
+  "track_label": "Data Engineering",
+  "track_name": "Data Engineering",
+  "level": "Lanjutan",
+  "module_count": 8,
+  "total_minutes": 840,
+  "exercise_count": 96,
+  "prerequisites": [
+    "F5"
+  ],
+  "lock_policy": "recommended",
+  "course_id": "F6",
+  "curriculum_version": "1.0",
+  "has_certificate": true,
+  "certificate": {
+    "title": "Transaksi, Konsistensi, dan Konsensus",
+    "scope": "Modul kurikulum penuh",
+    "id_prefix": "MDS-F6"
+  },
+  "sources": [
+    {
+      "code": "DDIA",
+      "title": "Designing Data-Intensive Applications",
+      "author": "Martin Kleppmann",
+      "chapters": "bab 7 sampai 9"
+    }
+  ],
+  "modules": [
+    {
+      "module_no": 1,
+      "title": "ACID",
+      "file": "m01.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 2,
+      "title": "Isolasi lemah",
+      "file": "m02.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 3,
+      "title": "Snapshot isolation",
+      "file": "m03.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 4,
+      "title": "Lost update dan write skew",
+      "file": "m04.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 5,
+      "title": "Serializability",
+      "file": "m05.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 6,
+      "title": "Masalah pada sistem terdistribusi",
+      "file": "m06.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 7,
+      "title": "Konsistensi dan linearizability",
+      "file": "m07.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    },
+    {
+      "module_no": 8,
+      "title": "Konsensus",
+      "file": "m08.json",
+      "status": "todo",
+      "estimated_minutes": 105,
+      "lesson_count": 3,
+      "exercise_count": 12,
+      "practice_preview": null
+    }
+  ]
+}
