@@ -1,0 +1,1560 @@
+{
+  "schema_version": 2,
+  "course_id": "A6",
+  "module_no": 5,
+  "title": "Subquery dan CTE",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menulis subquery skalar, IN, dan EXISTS dengan benar",
+    "Menghindari jebakan NOT IN dan NULL",
+    "Memecah query rumit dengan CTE dan agregasi dua tingkat"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A6-05-1",
+    "exercise_id": "A6-05-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def pelanggan_tanpa_pesanan_aman(c):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A6-05-1",
+      "title": "Subquery skalar dan IN",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menulis subquery skalar yang mengembalikan satu nilai",
+        "Menyaring dengan IN dan NOT IN memakai subquery",
+        "Menjelaskan jebakan NOT IN ketika subquery mengandung NULL",
+        "Menggunakan subquery untuk membandingkan baris dengan agregat"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Query di dalam query",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Query di dalam query\n\n**Subquery** adalah query yang bersarang di dalam query lain, ditulis di dalam tanda kurung. Ia memungkinkan kita menjawab pertanyaan dua langkah dalam satu pernyataan: produk mana yang harganya di atas rata-rata? Langkah pertama menghitung rata-rata, langkah kedua membandingkan tiap produk dengannya.\n\nTanpa subquery kita harus menjalankan dua query dan memindahkan angka rata-rata secara manual ke query kedua. Subquery menghilangkan langkah manual itu dan menjaga seluruh logika tetap berada di basis data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Subquery skalar\n\n**Subquery skalar** menghasilkan tepat satu baris dengan satu kolom, sehingga dapat dipakai di mana pun nilai tunggal diizinkan: di `WHERE`, di daftar `SELECT`, atau di ekspresi. Bila ia menghasilkan lebih dari satu baris, sebagian basis data melempar galat dan SQLite diam-diam mengambil baris pertama, perilaku yang berbahaya.\n\nPastikan subquery skalar memang menghasilkan satu nilai, biasanya lewat fungsi agregat tanpa `GROUP BY`. Bila hasilnya kosong, nilainya `NULL`, dan perbandingan dengan `NULL` menghasilkan tidak diketahui sehingga tak ada baris yang lolos."
+            },
+            {
+              "type": "code_example",
+              "filename": "subquery_skalar.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nprint(c.execute('SELECT AVG(harga) FROM produk').fetchone())\nq = 'SELECT nama FROM produk WHERE harga > (SELECT AVG(harga) FROM produk) ORDER BY id'\nprint(c.execute(q).fetchall())\nq = 'SELECT nama, harga - (SELECT AVG(harga) FROM produk) FROM produk ORDER BY id'\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "(49875.0,)\n[('Tas',)]\n[('Pensil', -47375.0), ('Buku', -37875.0), ('Tas', 100125.0), ('Botol', -14875.0)]",
+              "explanation": "Hanya tas yang harganya di atas rata-rata 49.875, dan selisih terhadap rata-rata dapat dihitung untuk setiap produk."
+            },
+            {
+              "type": "text",
+              "markdown": "## Subquery dan agregat\n\nSalah satu kegunaan terpenting subquery skalar adalah membandingkan baris dengan agregat dari tabel yang sama. Pada query biasa kita tidak bisa menulis `WHERE harga > AVG(harga)` karena agregat belum ada saat `WHERE` dievaluasi. Subquery mengatasinya karena dihitung lebih dulu sebagai nilai tunggal.\n\nPola ini muncul terus: pesanan di atas rata-rata, pelanggan dengan belanja di atas median, produk dengan harga tertinggi. Semuanya membandingkan sebuah baris dengan ringkasan seluruh data."
+            }
+          ],
+          "quick_check": {
+            "question": "Subquery skalar mengembalikan?",
+            "options": [
+              "Satu nilai",
+              "Satu tabel"
+            ],
+            "answer_index": 0,
+            "explanation": "Satu baris satu kolom.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "IN dengan subquery",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## IN dengan subquery\n\n`IN` tidak harus berisi daftar tetap. Ia dapat berisi subquery yang menghasilkan satu kolom: `WHERE id IN (SELECT produk_id FROM pesanan WHERE jumlah >= 3)` memilih produk yang pernah dipesan minimal tiga unit. Subquery dievaluasi menjadi himpunan nilai, lalu tiap baris luar diperiksa keanggotaannya.\n\nBentuk ini menyatakan maksud dengan jelas dan tidak menduplikasi baris seperti JOIN satu-ke-banyak. Itu sebabnya `IN` dengan subquery sering dipilih untuk pertanyaan keanggotaan."
+            },
+            {
+              "type": "code_example",
+              "filename": "in_subquery.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT nama FROM produk\nWHERE id IN (SELECT produk_id FROM pesanan WHERE jumlah >= 3)\nORDER BY id\n'''\nprint(c.execute(q).fetchall())\nq = 'SELECT nama FROM pelanggan WHERE kota IN (SELECT kota FROM pelanggan WHERE nama = ?) ORDER BY id'\nprint(c.execute(q, ('Ani',)).fetchall())",
+              "expected_output_note": "[('Pensil',), ('Buku',)]\n[('Ani',), ('Citra',)]",
+              "explanation": "Pensil dan buku pernah dipesan minimal tiga unit, dan Ani sekota dengan Citra."
+            },
+            {
+              "type": "text",
+              "markdown": "## NOT IN dan NULL\n\n`NOT IN` menyimpan jebakan paling terkenal di SQL. Bila subquery menghasilkan satu saja nilai `NULL`, maka `x NOT IN (...)` tidak pernah benar untuk semua baris: perbandingan dengan `NULL` tidak diketahui, sehingga seluruh hasil menjadi kosong tanpa peringatan.\n\nContoh: tambahkan satu pesanan dengan `pelanggan_id` kosong. Kueri pelanggan tanpa pesanan dengan `NOT IN` tiba-tiba mengembalikan kosong, padahal Eko masih belum memesan. Query yang tadinya benar diam-diam menjadi salah saat data berubah."
+            },
+            {
+              "type": "code_example",
+              "filename": "not_in_null.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = 'SELECT nama FROM pelanggan WHERE id NOT IN (SELECT pelanggan_id FROM pesanan) ORDER BY id'\nprint(c.execute(q).fetchall())\nc.execute('INSERT INTO pesanan VALUES (9, NULL, 1, 1)')\nprint(c.execute(q).fetchall())\naman = '''\nSELECT nama FROM pelanggan\nWHERE id NOT IN (SELECT pelanggan_id FROM pesanan WHERE pelanggan_id IS NOT NULL)\nORDER BY id\n'''\nprint(c.execute(aman).fetchall())",
+              "expected_output_note": "[('Eko',)]\n[]\n[('Eko',)]",
+              "explanation": "Satu NULL pada subquery membuat NOT IN kosong, dan membuang NULL dari subquery memulihkan hasil yang benar."
+            }
+          ],
+          "quick_check": {
+            "question": "Subquery ditulis di dalam?",
+            "options": [
+              "Kurung siku",
+              "Tanda kurung"
+            ],
+            "answer_index": 1,
+            "explanation": "Kurung.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dua perbaikan untuk NOT IN",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua perbaikan untuk NOT IN\n\nAda dua cara aman. Pertama, buang `NULL` dari subquery dengan `WHERE kolom IS NOT NULL`, seperti pada contoh. Kedua, ganti `NOT IN` dengan `NOT EXISTS`, yang tidak terpengaruh `NULL` dan dibahas di pelajaran berikutnya. Banyak panduan gaya SQL melarang `NOT IN` pada subquery kecuali kolomnya dijamin tidak `NULL`.\n\nAturan umum: setiap kali menulis `NOT IN` dengan subquery, tanyakan apakah kolom itu bisa `NULL`. Bila ya atau tidak yakin, pakai `NOT EXISTS`."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Jebakan NOT IN",
+              "markdown": "Satu NULL di dalam subquery NOT IN membuat seluruh hasil kosong. Gunakan NOT EXISTS atau buang NULL dengan IS NOT NULL."
+            },
+            {
+              "type": "text",
+              "markdown": "## Subquery dan keterbacaan\n\nSubquery membuat pertanyaan bisnis terbaca hampir seperti kalimat: produk yang harganya di atas rata-rata, pelanggan yang pernah memesan, pesanan yang jumlahnya besar. Namun subquery yang terlalu dalam justru menyulitkan pembaca. Bila bersarang lebih dari dua tingkat, pertimbangkan memecahnya dengan CTE yang dibahas di pelajaran ketiga.\n\nBiasakan memberi indentasi pada subquery dan menaruh tanda kurungnya sejajar, sehingga batas bagian dalam dan luar terlihat jelas. Query yang rapi lebih mudah diperiksa, diuji, dan diperbaiki oleh rekan kerja."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa subquery secara terpisah\n\nSaat query gagal atau hasilnya aneh, jalankan subquery bagian dalam sendirian lebih dulu. Lihat apakah ia menghasilkan satu nilai bila dimaksudkan skalar, atau kolom tanpa NULL bila dipakai di NOT IN. Setelah bagian dalam terbukti benar, barulah periksa bagian luar.\n\nKebiasaan ini menghemat waktu karena kesalahan hampir selalu bersembunyi di salah satu lapisan saja. Menguji tiap lapisan terpisah jauh lebih cepat daripada menebak dari hasil akhir yang salah."
+            }
+          ],
+          "quick_check": {
+            "question": "NOT IN dengan NULL di subquery menghasilkan?",
+            "options": [
+              "Hasil kosong",
+              "Semua baris"
+            ],
+            "answer_index": 0,
+            "explanation": "Tidak diketahui.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-05-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `produk_di_atas_rata(c)` yang mengembalikan list nama produk dengan harga lebih besar dari rata-rata harga semua produk, terurut menurut id, memakai subquery skalar.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef produk_di_atas_rata(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "produk_di_atas_rata(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert produk_di_atas_rata(c) == ['Tas']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "produk_di_atas_rata(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (5, 'Laptop', 5000000)\")\nassert produk_di_atas_rata(c) == ['Laptop']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "produk_di_atas_rata(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE produk SET harga = 10 WHERE id = 5')\nassert produk_di_atas_rata(c) == ['Tas']"
+              }
+            ]
+          },
+          "hint": "Bandingkan harga dengan SELECT AVG harga dalam kurung.",
+          "solution": "import sqlite3\n\ndef produk_di_atas_rata(c):\n    q = 'SELECT nama FROM produk WHERE harga > (SELECT AVG(harga) FROM produk) ORDER BY id'\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-05-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `produk_pesanan_besar(c, minimum)` yang mengembalikan list nama produk yang pernah dipesan dengan `jumlah` minimal `minimum`, terurut menurut id produk, memakai `IN` dengan subquery.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef produk_pesanan_besar(c, minimum):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "produk_pesanan_besar(c, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert produk_pesanan_besar(c, 3) == ['Pensil', 'Buku']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "produk_pesanan_besar(c, 20)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert produk_pesanan_besar(c, 20) == ['Pensil']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "produk_pesanan_besar(c, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert produk_pesanan_besar(c, 100) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "produk_pesanan_besar(c, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert produk_pesanan_besar(c, 1) == ['Pensil', 'Buku', 'Tas', 'Botol']"
+              }
+            ]
+          },
+          "hint": "Pakai IN dengan subquery yang memilih produk_id dari pesanan dengan syarat jumlah.",
+          "solution": "import sqlite3\n\ndef produk_pesanan_besar(c, minimum):\n    q = 'SELECT nama FROM produk WHERE id IN (SELECT produk_id FROM pesanan WHERE jumlah >= ?) ORDER BY id'\n    return [r[0] for r in c.execute(q, (minimum,)).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-05-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `produk_belum_dipesan(c)` yang mengembalikan list nama produk yang belum pernah muncul di pesanan, terurut menurut id, memakai `NOT IN`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef produk_belum_dipesan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "produk_belum_dipesan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert produk_belum_dipesan(c) == []"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "produk_belum_dipesan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (5, 'Pulpen', 3000)\")\nassert produk_belum_dipesan(c) == ['Pulpen']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "produk_belum_dipesan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (6, 'Kertas', 1000)\")\nassert produk_belum_dipesan(c) == ['Pulpen', 'Kertas']"
+              }
+            ]
+          },
+          "hint": "Pakai NOT IN dengan subquery produk_id dari pesanan.",
+          "solution": "import sqlite3\n\ndef produk_belum_dipesan(c):\n    q = 'SELECT nama FROM produk WHERE id NOT IN (SELECT produk_id FROM pesanan WHERE produk_id IS NOT NULL) ORDER BY id'\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-05-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pelanggan_tanpa_pesanan_aman(c)` yang mengembalikan list nama pelanggan tanpa pesanan, terurut menurut id, dan tetap benar walau ada pesanan dengan `pelanggan_id` `NULL`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pelanggan_tanpa_pesanan_aman(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pelanggan_tanpa_pesanan_aman(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert pelanggan_tanpa_pesanan_aman(c) == ['Eko']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pelanggan_tanpa_pesanan_aman(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, NULL, 1, 1)')\nassert pelanggan_tanpa_pesanan_aman(c) == ['Eko']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pelanggan_tanpa_pesanan_aman(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (10, 5, 1, 1)')\nassert pelanggan_tanpa_pesanan_aman(c) == []"
+              }
+            ]
+          },
+          "hint": "Buang NULL dari subquery atau pakai NOT EXISTS.",
+          "solution": "import sqlite3\n\ndef pelanggan_tanpa_pesanan_aman(c):\n    q = '''\n    SELECT nama FROM pelanggan\n    WHERE id NOT IN (SELECT pelanggan_id FROM pesanan WHERE pelanggan_id IS NOT NULL)\n    ORDER BY id\n    '''\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Subquery skalar mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu nilai",
+              "description": ""
+            },
+            {
+              "label": "Satu tabel",
+              "description": ""
+            },
+            {
+              "label": "Banyak kolom",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu.",
+          "explanation": "Satu baris satu kolom."
+        },
+        {
+          "q": "Subquery ditulis di dalam?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tanda kurung",
+              "description": ""
+            },
+            {
+              "label": "Kurung siku",
+              "description": ""
+            },
+            {
+              "label": "Kutip",
+              "description": ""
+            },
+            {
+              "label": "Komentar",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kurung.",
+          "explanation": "Kurung."
+        },
+        {
+          "q": "NOT IN dengan NULL di subquery menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hasil kosong",
+              "description": ""
+            },
+            {
+              "label": "Semua baris",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "Setengah",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kosong.",
+          "explanation": "Tidak diketahui."
+        },
+        {
+          "q": "Membandingkan baris dengan agregat membutuhkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Subquery skalar",
+              "description": ""
+            },
+            {
+              "label": "GROUP BY",
+              "description": ""
+            },
+            {
+              "label": "DISTINCT",
+              "description": ""
+            },
+            {
+              "label": "LIMIT",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Skalar.",
+          "explanation": "Agregat belum ada di WHERE."
+        },
+        {
+          "q": "IN dengan subquery cocok untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Keanggotaan",
+              "description": ""
+            },
+            {
+              "label": "Penjumlahan",
+              "description": ""
+            },
+            {
+              "label": "Pengurutan",
+              "description": ""
+            },
+            {
+              "label": "Pembuatan tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Anggota.",
+          "explanation": "Anggota himpunan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai NOT IN pada subquery yang bisa berisi NULL. Lebih baik: Buang NULL atau pakai NOT EXISTS.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai NOT IN pada subquery yang bisa berisi NULL.",
+          "fix": "Buang NULL atau pakai NOT EXISTS."
+        },
+        {
+          "mistake": "Menulis subquery skalar yang bisa menghasilkan banyak baris.",
+          "fix": "Pastikan agregat atau LIMIT satu baris."
+        },
+        {
+          "mistake": "Menulis WHERE harga > AVG(harga).",
+          "fix": "Gunakan subquery skalar untuk rata-rata."
+        }
+      ],
+      "summary": [
+        "Subquery skalar memungkinkan membandingkan baris dengan agregat.",
+        "IN dengan subquery menyaring berdasarkan keanggotaan tanpa menduplikasi baris.",
+        "NOT IN gagal bila subquery mengandung NULL.",
+        "Buang NULL atau pakai NOT EXISTS untuk keamanan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Subquery skalar dan IN"
+          },
+          {
+            "type": "text",
+            "source": "Hanya tas yang harganya di atas rata-rata 49.875, dan selisih terhadap rata-rata dapat dihitung untuk setiap produk."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nprint(c.execute('SELECT AVG(harga) FROM produk').fetchone())\nq = 'SELECT nama FROM produk WHERE harga > (SELECT AVG(harga) FROM produk) ORDER BY id'\nprint(c.execute(q).fetchall())\nq = 'SELECT nama, harga - (SELECT AVG(harga) FROM produk) FROM produk ORDER BY id'\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Pensil dan buku pernah dipesan minimal tiga unit, dan Ani sekota dengan Citra."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT nama FROM produk\nWHERE id IN (SELECT produk_id FROM pesanan WHERE jumlah >= 3)\nORDER BY id\n'''\nprint(c.execute(q).fetchall())\nq = 'SELECT nama FROM pelanggan WHERE kota IN (SELECT kota FROM pelanggan WHERE nama = ?) ORDER BY id'\nprint(c.execute(q, ('Ani',)).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Satu NULL pada subquery membuat NOT IN kosong, dan membuang NULL dari subquery memulihkan hasil yang benar."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = 'SELECT nama FROM pelanggan WHERE id NOT IN (SELECT pelanggan_id FROM pesanan) ORDER BY id'\nprint(c.execute(q).fetchall())\nc.execute('INSERT INTO pesanan VALUES (9, NULL, 1, 1)')\nprint(c.execute(q).fetchall())\naman = '''\nSELECT nama FROM pelanggan\nWHERE id NOT IN (SELECT pelanggan_id FROM pesanan WHERE pelanggan_id IS NOT NULL)\nORDER BY id\n'''\nprint(c.execute(aman).fetchall())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-05-2",
+      "title": "Subquery berkorelasi dan EXISTS",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan subquery berkorelasi yang merujuk baris luar",
+        "Memakai EXISTS dan NOT EXISTS",
+        "Menghitung nilai per baris dengan subquery di SELECT",
+        "Membandingkan baris dengan rata-rata kelompoknya sendiri"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Subquery yang merujuk query luar",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Subquery yang merujuk query luar\n\nPada subquery biasa, bagian dalam berdiri sendiri: ia dapat dijalankan terpisah. Pada **subquery berkorelasi**, bagian dalam merujuk kolom dari query luar sehingga hasilnya berbeda untuk setiap baris luar. Secara konsep, subquery itu dijalankan ulang untuk tiap baris query luar dengan nilai kolom yang sesuai.\n\nContoh: untuk tiap pelanggan, hitung jumlah pesanannya dengan `(SELECT COUNT(*) FROM pesanan p WHERE p.pelanggan_id = g.id)`. Kondisi `p.pelanggan_id = g.id` menghubungkan subquery dengan baris pelanggan yang sedang diproses."
+            },
+            {
+              "type": "code_example",
+              "filename": "korelasi_select.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.nama, (SELECT COUNT(*) FROM pesanan p WHERE p.pelanggan_id = g.id) AS n\nFROM pelanggan g ORDER BY g.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Ani', 2), ('Budi', 2), ('Citra', 2), ('Dewi', 1), ('Eko', 0)]",
+              "explanation": "Subquery berkorelasi menghitung pesanan tiap pelanggan, dan Eko benar bernilai nol tanpa perlu LEFT JOIN."
+            },
+            {
+              "type": "text",
+              "markdown": "## Korelasi di WHERE\n\nSubquery berkorelasi juga umum di `WHERE`. `WHERE (SELECT COUNT(*) FROM pesanan p WHERE p.pelanggan_id = g.id) >= 2` memilih pelanggan dengan minimal dua pesanan. Hasilnya sama dengan `GROUP BY` plus `HAVING` pada JOIN, tetapi sebagian orang menganggapnya lebih mudah dibaca karena tidak mengubah baris hasil.\n\nPerlu diingat performanya: tanpa optimasi, subquery berkorelasi dijalankan sekali per baris luar. Mesin basis data modern sering mengubahnya menjadi JOIN secara internal, tetapi pada tabel sangat besar uji dengan rencana eksekusi."
+            },
+            {
+              "type": "text",
+              "markdown": "## EXISTS\n\n`EXISTS (subquery)` bernilai benar bila subquery menghasilkan minimal satu baris, tidak peduli isinya. Karena isinya diabaikan, kebiasaan menulis `SELECT 1` di dalamnya. Ia berhenti begitu menemukan baris pertama, sehingga efisien untuk pertanyaan ada-atau-tidak.\n\nPelanggan yang pernah memesan: `WHERE EXISTS (SELECT 1 FROM pesanan p WHERE p.pelanggan_id = g.id)`. Karena tiap pelanggan muncul sekali tanpa menggandakan baris, tidak perlu `DISTINCT` seperti pada JOIN."
+            },
+            {
+              "type": "code_example",
+              "filename": "exists.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.nama FROM pelanggan g\nWHERE EXISTS (SELECT 1 FROM pesanan p WHERE p.pelanggan_id = g.id)\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())\nq = '''\nSELECT g.nama FROM pelanggan g\nWHERE NOT EXISTS (SELECT 1 FROM pesanan p WHERE p.pelanggan_id = g.id)\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Ani',), ('Budi',), ('Citra',), ('Dewi',)]\n[('Eko',)]",
+              "explanation": "EXISTS memilih pelanggan yang pernah memesan, dan NOT EXISTS memilih yang belum, yaitu Eko."
+            }
+          ],
+          "quick_check": {
+            "question": "Subquery berkorelasi?",
+            "options": [
+              "Merujuk kolom query luar",
+              "Berdiri sendiri"
+            ],
+            "answer_index": 0,
+            "explanation": "Bergantung baris luar.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "NOT EXISTS lebih aman dari NOT IN",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## NOT EXISTS lebih aman dari NOT IN\n\n`NOT EXISTS` tidak terpengaruh nilai `NULL` karena hanya menguji apakah ada baris, bukan membandingkan nilai. Pada pesanan dengan `pelanggan_id` `NULL`, `NOT IN` mengembalikan kosong tetapi `NOT EXISTS` tetap benar. Itu sebabnya ia menjadi bentuk anti-join pilihan banyak praktisi.\n\nDua bentuk anti-join, `LEFT JOIN ... IS NULL` dan `NOT EXISTS`, setara hasilnya. Pilih yang paling jelas bagimu dan timmu, dan konsisten memakainya agar kode mudah dipelihara."
+            },
+            {
+              "type": "code_example",
+              "filename": "not_exists_null.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nc.execute('INSERT INTO pesanan VALUES (9, NULL, 1, 1)')\nq = '''\nSELECT g.nama FROM pelanggan g\nWHERE NOT EXISTS (SELECT 1 FROM pesanan p WHERE p.pelanggan_id = g.id)\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Eko',)]",
+              "explanation": "NOT EXISTS tetap benar walau ada pesanan dengan pelanggan NULL."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membandingkan dengan kelompok sendiri\n\nSubquery berkorelasi sangat cocok untuk membandingkan baris dengan agregat kelompoknya. Pesanan mana yang jumlahnya di atas rata-rata untuk produk yang sama? Subquery `SELECT AVG(jumlah) FROM pesanan WHERE produk_id = p.produk_id` menghitung rata-rata per produk sesuai baris luar.\n\nHasilnya pesanan yang menonjol dibanding pesanan lain untuk produk sama, bukan dibanding seluruh pesanan. Fungsi window pada modul berikutnya melakukan hal serupa lebih ringkas dan cepat, tetapi subquery berkorelasi tetap penting dipahami."
+            },
+            {
+              "type": "code_example",
+              "filename": "korelasi_kelompok.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT p.id FROM pesanan p\nWHERE p.jumlah > (SELECT AVG(jumlah) FROM pesanan WHERE produk_id = p.produk_id)\nORDER BY p.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[(6,), (7,)]",
+              "explanation": "Pesanan enam dan tujuh jumlahnya di atas rata-rata untuk produk masing-masing."
+            }
+          ],
+          "quick_check": {
+            "question": "EXISTS bernilai benar bila?",
+            "options": [
+              "Subquery kosong",
+              "Subquery menghasilkan minimal satu baris"
+            ],
+            "answer_index": 1,
+            "explanation": "Ada baris.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kapan memakai yang mana",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kapan memakai yang mana\n\nUntuk keberadaan, pakai `EXISTS` atau `NOT EXISTS`. Untuk nilai per baris dari tabel lain, pakai subquery berkorelasi di `SELECT` atau JOIN dengan agregasi. Untuk membandingkan dengan agregat kelompok, pakai subquery berkorelasi atau fungsi window. Untuk menyaring berdasarkan daftar nilai, pakai `IN` dengan subquery yang tidak mengandung `NULL`.\n\nTidak ada pilihan tunggal terbaik. Mulailah dengan yang paling jelas menyatakan niat, lalu ukur kinerja bila tabel besar. Keterbacaan jarang kalah penting dibanding kecepatan pada kebanyakan laporan harian."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Anti-join aman",
+              "markdown": "Gunakan NOT EXISTS untuk anti-join. Hasilnya tidak terpengaruh NULL dan niatnya mudah dibaca."
+            },
+            {
+              "type": "text",
+              "markdown": "## Korelasi dan nama alias\n\nPada subquery berkorelasi, alias tabel sangat penting. Bila tabel luar dan dalam sama, seperti pesanan dibandingkan dengan pesanan lain untuk produk yang sama, kita wajib memberi alias berbeda, misalnya `p` untuk luar dan tanpa alias atau `q` untuk dalam. Tanpa alias, nama kolom ambigu dan basis data merujuk ke tabel terdekat, yang sering bukan maksud kita.\n\nSelalu awali kolom dengan alias tabelnya di subquery berkorelasi. Itu menghilangkan keraguan tentang baris mana yang dirujuk dan membuat query lebih mudah dibaca."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kinerja subquery berkorelasi\n\nPada tabel kecil, subquery berkorelasi terasa instan. Pada jutaan baris tanpa indeks, menjalankannya per baris luar bisa sangat lambat. Indeks pada kolom penghubung, seperti `pelanggan_id` di tabel pesanan, mengubah pencarian tiap baris dari menyisir seluruh tabel menjadi lompatan langsung.\n\nBila query lambat, bandingkan beberapa bentuk setara: EXISTS, JOIN dengan agregasi, dan fungsi window. Ukur waktunya pada data yang realistis, sebab pilihan tercepat bergantung pada ukuran data dan indeks yang tersedia."
+            }
+          ],
+          "quick_check": {
+            "question": "Anti-join paling aman terhadap NULL?",
+            "options": [
+              "NOT EXISTS",
+              "NOT IN"
+            ],
+            "answer_index": 0,
+            "explanation": "Tidak membandingkan nilai.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-05-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `banyak_pesanan(c)` yang mengembalikan list tuple `(nama_pelanggan, banyak_pesanan)` untuk semua pelanggan, terurut menurut id pelanggan, memakai subquery berkorelasi di `SELECT`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef banyak_pesanan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "banyak_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert banyak_pesanan(c) == [('Ani', 2), ('Budi', 2), ('Citra', 2), ('Dewi', 1), ('Eko', 0)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "banyak_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, 5, 1, 1)')\nassert banyak_pesanan(c)[-1] == ('Eko', 1)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "banyak_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pelanggan VALUES (6, 'Fani', 'Bogor')\")\nassert banyak_pesanan(c)[-1] == ('Fani', 0)"
+              }
+            ]
+          },
+          "hint": "Hitung pesanan dengan subquery yang merujuk id pelanggan luar.",
+          "solution": "import sqlite3\n\ndef banyak_pesanan(c):\n    q = '''\n    SELECT g.nama, (SELECT COUNT(*) FROM pesanan p WHERE p.pelanggan_id = g.id)\n    FROM pelanggan g ORDER BY g.id\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-05-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pelanggan_min_pesanan(c, n)` yang mengembalikan list nama pelanggan dengan paling sedikit `n` pesanan, terurut menurut id, memakai subquery berkorelasi di `WHERE`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pelanggan_min_pesanan(c, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pelanggan_min_pesanan(c, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert pelanggan_min_pesanan(c, 2) == ['Ani', 'Budi', 'Citra']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pelanggan_min_pesanan(c, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pelanggan_min_pesanan(c, 1) == ['Ani', 'Budi', 'Citra', 'Dewi']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pelanggan_min_pesanan(c, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pelanggan_min_pesanan(c, 3) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pelanggan_min_pesanan(c, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pelanggan_min_pesanan(c, 0) == ['Ani', 'Budi', 'Citra', 'Dewi', 'Eko']"
+              }
+            ]
+          },
+          "hint": "Bandingkan hitungan subquery berkorelasi dengan parameter n.",
+          "solution": "import sqlite3\n\ndef pelanggan_min_pesanan(c, n):\n    q = '''\n    SELECT g.nama FROM pelanggan g\n    WHERE (SELECT COUNT(*) FROM pesanan p WHERE p.pelanggan_id = g.id) >= ?\n    ORDER BY g.id\n    '''\n    return [r[0] for r in c.execute(q, (n,)).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-05-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pesanan_di_atas_rata_produk(c)` yang mengembalikan list id pesanan dengan `jumlah` lebih besar dari rata-rata `jumlah` pesanan untuk produk yang sama, terurut menurut id.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pesanan_di_atas_rata_produk(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pesanan_di_atas_rata_produk(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert pesanan_di_atas_rata_produk(c) == [6, 7]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pesanan_di_atas_rata_produk(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, 1, 3, 5)')\nassert pesanan_di_atas_rata_produk(c) == [6, 7, 9]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pesanan_di_atas_rata_produk(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('DELETE FROM pesanan WHERE id = 9')\nassert pesanan_di_atas_rata_produk(c) == [6, 7]"
+              }
+            ]
+          },
+          "hint": "Subquery berkorelasi menghitung AVG jumlah untuk produk_id yang sama.",
+          "solution": "import sqlite3\n\ndef pesanan_di_atas_rata_produk(c):\n    q = '''\n    SELECT p.id FROM pesanan p\n    WHERE p.jumlah > (SELECT AVG(jumlah) FROM pesanan WHERE produk_id = p.produk_id)\n    ORDER BY p.id\n    '''\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-05-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `teman_sekota(c, nama)` yang mengembalikan list nama pelanggan LAIN yang tinggal di kota yang sama dengan pelanggan bernama `nama`, terurut menurut id, memakai subquery skalar.",
+          "note": "Nama tak dikenal menghasilkan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef teman_sekota(c, nama):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "teman_sekota(c, 'Ani')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert teman_sekota(c, 'Ani') == ['Citra']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "teman_sekota(c, 'Citra')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert teman_sekota(c, 'Citra') == ['Ani']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "teman_sekota(c, 'Budi')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert teman_sekota(c, 'Budi') == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "teman_sekota(c, 'Tidak ada')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert teman_sekota(c, 'Tidak ada') == []"
+              }
+            ]
+          },
+          "hint": "Bandingkan kota dengan hasil subquery skalar dan kecualikan nama itu sendiri.",
+          "solution": "import sqlite3\n\ndef teman_sekota(c, nama):\n    q = '''\n    SELECT nama FROM pelanggan\n    WHERE kota = (SELECT kota FROM pelanggan WHERE nama = ?) AND nama <> ?\n    ORDER BY id\n    '''\n    return [r[0] for r in c.execute(q, (nama, nama)).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Subquery berkorelasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Merujuk kolom query luar",
+              "description": ""
+            },
+            {
+              "label": "Berdiri sendiri",
+              "description": ""
+            },
+            {
+              "label": "Tanpa WHERE",
+              "description": ""
+            },
+            {
+              "label": "Selalu lambat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Rujukan.",
+          "explanation": "Bergantung baris luar."
+        },
+        {
+          "q": "EXISTS bernilai benar bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "Subquery menghasilkan minimal satu baris",
+              "description": ""
+            },
+            {
+              "label": "Subquery kosong",
+              "description": ""
+            },
+            {
+              "label": "Ada NULL",
+              "description": ""
+            },
+            {
+              "label": "Ada duplikat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Minimal satu.",
+          "explanation": "Ada baris."
+        },
+        {
+          "q": "Anti-join paling aman terhadap NULL?",
+          "code": null,
+          "options": [
+            {
+              "label": "NOT EXISTS",
+              "description": ""
+            },
+            {
+              "label": "NOT IN",
+              "description": ""
+            },
+            {
+              "label": "<>",
+              "description": ""
+            },
+            {
+              "label": "!=",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Exists.",
+          "explanation": "Tidak membandingkan nilai."
+        },
+        {
+          "q": "Isi SELECT di dalam EXISTS?",
+          "code": null,
+          "options": [
+            {
+              "label": "Diabaikan",
+              "description": ""
+            },
+            {
+              "label": "Sangat penting",
+              "description": ""
+            },
+            {
+              "label": "Harus kolom id",
+              "description": ""
+            },
+            {
+              "label": "Harus bintang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "SELECT 1.",
+          "explanation": "Hanya keberadaan."
+        },
+        {
+          "q": "Bandingkan baris dengan rata-rata kelompoknya memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Subquery berkorelasi",
+              "description": ""
+            },
+            {
+              "label": "LIMIT",
+              "description": ""
+            },
+            {
+              "label": "DISTINCT",
+              "description": ""
+            },
+            {
+              "label": "ORDER BY",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Korelasi.",
+          "explanation": "Atau fungsi window."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira subquery berkorelasi dijalankan sekali. Lebih baik: Secara konsep dijalankan per baris luar.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira subquery berkorelasi dijalankan sekali.",
+          "fix": "Secara konsep dijalankan per baris luar."
+        },
+        {
+          "mistake": "Memakai NOT IN padahal kolom bisa NULL.",
+          "fix": "Pakai NOT EXISTS."
+        },
+        {
+          "mistake": "Menulis EXISTS dengan SELECT kolom besar.",
+          "fix": "Cukup SELECT 1 karena isinya diabaikan."
+        }
+      ],
+      "summary": [
+        "Subquery berkorelasi bergantung pada baris query luar.",
+        "EXISTS menguji keberadaan tanpa menduplikasi baris.",
+        "NOT EXISTS aman terhadap NULL, tidak seperti NOT IN.",
+        "Subquery berkorelasi membandingkan baris dengan agregat kelompoknya."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Subquery berkorelasi dan EXISTS"
+          },
+          {
+            "type": "text",
+            "source": "Subquery berkorelasi menghitung pesanan tiap pelanggan, dan Eko benar bernilai nol tanpa perlu LEFT JOIN."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.nama, (SELECT COUNT(*) FROM pesanan p WHERE p.pelanggan_id = g.id) AS n\nFROM pelanggan g ORDER BY g.id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "EXISTS memilih pelanggan yang pernah memesan, dan NOT EXISTS memilih yang belum, yaitu Eko."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.nama FROM pelanggan g\nWHERE EXISTS (SELECT 1 FROM pesanan p WHERE p.pelanggan_id = g.id)\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())\nq = '''\nSELECT g.nama FROM pelanggan g\nWHERE NOT EXISTS (SELECT 1 FROM pesanan p WHERE p.pelanggan_id = g.id)\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "NOT EXISTS tetap benar walau ada pesanan dengan pelanggan NULL."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nc.execute('INSERT INTO pesanan VALUES (9, NULL, 1, 1)')\nq = '''\nSELECT g.nama FROM pelanggan g\nWHERE NOT EXISTS (SELECT 1 FROM pesanan p WHERE p.pelanggan_id = g.id)\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Pesanan enam dan tujuh jumlahnya di atas rata-rata untuk produk masing-masing."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT p.id FROM pesanan p\nWHERE p.jumlah > (SELECT AVG(jumlah) FROM pesanan WHERE produk_id = p.produk_id)\nORDER BY p.id\n'''\nprint(c.execute(q).fetchall())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-05-3",
+      "title": "CTE dengan WITH dan subquery di FROM",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menulis CTE dengan WITH untuk memecah query rumit",
+        "Memakai subquery di FROM untuk agregasi dua tingkat",
+        "Merantai beberapa CTE",
+        "Menulis CTE rekursif sederhana"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Masalah query bersarang dalam",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Masalah query bersarang dalam\n\nQuery dengan subquery bersarang beberapa lapis cepat menjadi sulit dibaca: kita harus membacanya dari dalam ke luar, dan satu subquery yang sama sering harus ditulis berulang. **CTE**, Common Table Expression, memperbaikinya dengan memberi nama pada hasil antara dan memakainya seperti tabel.\n\nCTE ditulis dengan `WITH nama AS (query)` di depan query utama. Bacanya dari atas ke bawah seperti langkah-langkah: langkah pertama menghasilkan tabel sementara, langkah berikutnya memakainya. Ini membuat query kompleks menjadi alur yang jelas."
+            },
+            {
+              "type": "code_example",
+              "filename": "cte_dasar.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nWITH belanja AS (\n    SELECT p.pelanggan_id AS pid, SUM(p.jumlah * k.harga) AS total\n    FROM pesanan p JOIN produk k ON k.id = p.produk_id\n    GROUP BY p.pelanggan_id\n)\nSELECT g.nama, b.total\nFROM belanja b JOIN pelanggan g ON g.id = b.pid\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Ani', 49000.0), ('Budi', 186000.0), ('Citra', 82000.0), ('Dewi', 50000.0)]",
+              "explanation": "CTE belanja menghitung total per pelanggan, lalu query utama menggabungkannya dengan nama pelanggan."
+            },
+            {
+              "type": "text",
+              "markdown": "## CTE dipakai berkali-kali\n\nKeunggulan CTE: ia dapat dirujuk lebih dari sekali dalam query yang sama. Untuk mencari pelanggan dengan belanja di atas rata-rata belanja semua pelanggan, kita memakai CTE `belanja` sekali untuk menghitung rata-rata dan sekali lagi untuk menyaring. Tanpa CTE, subquery panjang harus ditulis dua kali.\n\nMenulis ulang subquery yang sama berulang bukan hanya membosankan tetapi rawan kesalahan: mengubah yang satu dan lupa yang lain menimbulkan hasil tidak konsisten. CTE memberi satu sumber kebenaran."
+            },
+            {
+              "type": "code_example",
+              "filename": "cte_dua_kali.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nWITH belanja AS (\n    SELECT p.pelanggan_id AS pid, SUM(p.jumlah * k.harga) AS total\n    FROM pesanan p JOIN produk k ON k.id = p.produk_id\n    GROUP BY p.pelanggan_id\n)\nSELECT AVG(total), MAX(total) FROM belanja\n'''\nprint(c.execute(q).fetchone())\nq = '''\nWITH belanja AS (\n    SELECT p.pelanggan_id AS pid, SUM(p.jumlah * k.harga) AS total\n    FROM pesanan p JOIN produk k ON k.id = p.produk_id\n    GROUP BY p.pelanggan_id\n)\nSELECT g.nama FROM belanja b JOIN pelanggan g ON g.id = b.pid\nWHERE b.total > (SELECT AVG(total) FROM belanja)\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "(73900.0, 186000.0)\n[('Budi',), ('Citra',)]",
+              "explanation": "Rata-rata belanja 73.900 dipakai untuk menyaring, sehingga hanya Budi dan Citra yang di atasnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Agregasi dua tingkat\n\nPertanyaan seperti berapa rata-rata jumlah pesanan per pelanggan membutuhkan agregasi dua tingkat: pertama hitung pesanan per pelanggan dengan `GROUP BY`, lalu rata-ratakan hasilnya. Agregat tidak boleh bersarang langsung seperti `AVG(COUNT(*))`, jadi tingkat pertama dibungkus sebagai subquery di `FROM` atau sebagai CTE.\n\nSubquery di `FROM` wajib diberi alias pada beberapa basis data. Fungsinya sama dengan CTE, tetapi CTE biasanya lebih mudah dibaca karena ditulis di awal dan diberi nama jelas."
+            },
+            {
+              "type": "code_example",
+              "filename": "agregasi_dua_tingkat.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT AVG(n), MAX(n) FROM (\n    SELECT COUNT(*) AS n\n    FROM pesanan p JOIN pelanggan g ON g.id = p.pelanggan_id\n    GROUP BY g.id\n) AS per_pelanggan\n'''\nprint(c.execute(q).fetchone())",
+              "expected_output_note": "(1.75, 2)",
+              "explanation": "Rata-rata pesanan per pelanggan aktif satu koma tujuh lima dan paling banyak dua."
+            }
+          ],
+          "quick_check": {
+            "question": "CTE dimulai dengan?",
+            "options": [
+              "WITH",
+              "FROM"
+            ],
+            "answer_index": 0,
+            "explanation": "WITH nama AS.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Merantai CTE",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Merantai CTE\n\nBeberapa CTE dapat dirantai dengan koma: `WITH a AS (...), b AS (...)`, dan CTE berikutnya boleh memakai yang sebelumnya. Ini mengubah analisis berlapis menjadi daftar langkah bernama. Misalnya langkah pertama menjumlahkan jumlah per pelanggan, langkah kedua menyaring pelanggan dengan jumlah besar, dan query utama menampilkan namanya.\n\nBeri nama CTE yang menggambarkan isinya, bukan `a` dan `b` seperti contoh singkat ini. Nama yang baik membuat query berfungsi sebagai dokumentasi bagi pembacanya."
+            },
+            {
+              "type": "code_example",
+              "filename": "cte_berantai.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nWITH per_pelanggan AS (\n    SELECT pelanggan_id, SUM(jumlah) AS unit\n    FROM pesanan GROUP BY pelanggan_id\n),\nbesar AS (\n    SELECT pelanggan_id FROM per_pelanggan WHERE unit >= 10\n)\nSELECT g.nama FROM besar b JOIN pelanggan g ON g.id = b.pelanggan_id\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Ani',), ('Dewi',)]",
+              "explanation": "Dua CTE berantai menyaring pelanggan dengan total unit sepuluh atau lebih, yaitu Ani dan Dewi."
+            },
+            {
+              "type": "text",
+              "markdown": "## CTE rekursif\n\nCTE dapat merujuk dirinya sendiri dengan `WITH RECURSIVE`, berguna untuk deret, hierarki, dan graf. Strukturnya dua bagian digabung `UNION ALL`: bagian dasar yang menghasilkan baris awal, dan bagian rekursif yang memakai baris sebelumnya untuk menghasilkan baris berikutnya, berhenti saat kondisi tidak terpenuhi.\n\nContoh paling sederhana membangkitkan angka satu sampai lima. Di praktik, CTE rekursif menelusuri struktur organisasi, kategori bersarang, dan rute. Selalu pasang kondisi berhenti agar tidak berulang selamanya."
+            },
+            {
+              "type": "code_example",
+              "filename": "cte_rekursif.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nq = '''\nWITH RECURSIVE n(x) AS (\n    SELECT 1\n    UNION ALL\n    SELECT x + 1 FROM n WHERE x < 5\n)\nSELECT x FROM n\n'''\nprint([r[0] for r in c.execute(q).fetchall()])\nprint(c.execute(q.replace('SELECT x FROM n', 'SELECT SUM(x) FROM n')).fetchone())",
+              "expected_output_note": "[1, 2, 3, 4, 5]\n(15,)",
+              "explanation": "CTE rekursif membangkitkan angka satu sampai lima dan jumlahnya lima belas."
+            }
+          ],
+          "quick_check": {
+            "question": "Keunggulan CTE?",
+            "options": [
+              "Selalu lebih cepat",
+              "Dapat dirujuk berkali-kali dan terbaca berurutan"
+            ],
+            "answer_index": 1,
+            "explanation": "Keterbacaan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "CTE atau tabel sementara atau view",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## CTE atau tabel sementara atau view\n\nCTE hidup hanya selama satu query. Bila hasil antara dipakai oleh beberapa query, pertimbangkan `CREATE VIEW` yang menyimpan definisi query sebagai tabel virtual, atau tabel sementara yang menyimpan hasilnya. View berguna untuk membagi logika umum antar laporan, sedangkan tabel sementara cocok bila hasil antara mahal dihitung.\n\nUntuk kebanyakan analisis sekali jalan, CTE sudah paling tepat: tanpa objek tambahan di basis data, dan seluruh logika terlihat dalam satu skrip."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Nama bermakna",
+              "markdown": "Beri CTE nama yang menggambarkan isinya. Query dengan CTE bernama baik terbaca seperti rangkaian langkah analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan CTE tidak cukup\n\nCTE membuat query terbaca, tetapi ia bukan penyimpanan. Tiap kali dirujuk, sebagian mesin basis data menghitung ulang isinya, sehingga CTE yang berat dan dirujuk berkali-kali bisa lambat. Mesin lain menyimpannya sekali sebagai hasil sementara. Perilaku ini berbeda antar produk dan versi.\n\nKarena itu CTE dipakai terutama demi kejelasan. Bila kinerja menjadi masalah nyata, ukur dulu, lalu pertimbangkan tabel sementara atau indeks yang sesuai pada tabel sumbernya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menyusun analisis bertahap\n\nCara terbaik menulis query analitik panjang adalah bertahap. Mulai dari CTE pertama yang hanya menyaring dan menghitung, jalankan, periksa hasilnya, lalu tambahkan CTE berikutnya. Setiap langkah diverifikasi sebelum melangkah lebih jauh, seperti menulis fungsi kecil yang diuji satu per satu.\n\nPendekatan ini mengurangi kesalahan dan memudahkan menemukan di mana angka mulai menyimpang. Hasil akhirnya query yang bisa dijelaskan langkah demi langkah kepada orang lain."
+            }
+          ],
+          "quick_check": {
+            "question": "Agregasi dua tingkat membutuhkan?",
+            "options": [
+              "Subquery FROM atau CTE",
+              "DISTINCT"
+            ],
+            "answer_index": 0,
+            "explanation": "Agregat tak bersarang langsung.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-05-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `belanja_di_atas_rata(c)` yang mengembalikan list nama pelanggan yang total belanjanya (jumlah kali harga) di atas rata-rata total belanja semua pelanggan yang pernah belanja, terurut menurut id, memakai CTE.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef belanja_di_atas_rata(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "belanja_di_atas_rata(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert belanja_di_atas_rata(c) == ['Budi', 'Citra']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "belanja_di_atas_rata(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, 1, 3, 1)')\nassert belanja_di_atas_rata(c) == ['Ani', 'Budi']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "belanja_di_atas_rata(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('DELETE FROM pesanan')\nassert belanja_di_atas_rata(c) == []"
+              }
+            ]
+          },
+          "hint": "Buat CTE belanja per pelanggan lalu bandingkan dengan AVG dari CTE itu.",
+          "solution": "import sqlite3\n\ndef belanja_di_atas_rata(c):\n    q = '''\n    WITH belanja AS (\n        SELECT p.pelanggan_id AS pid, SUM(p.jumlah * k.harga) AS total\n        FROM pesanan p JOIN produk k ON k.id = p.produk_id\n        GROUP BY p.pelanggan_id\n    )\n    SELECT g.nama FROM belanja b JOIN pelanggan g ON g.id = b.pid\n    WHERE b.total > (SELECT AVG(total) FROM belanja)\n    ORDER BY g.id\n    '''\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-05-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_pesanan_per_pelanggan(c)` yang mengembalikan tuple `(rata, maksimum)` dari banyak pesanan per pelanggan (hanya pesanan yang punya pelanggan), dengan rata dibulatkan 4 desimal, memakai subquery di FROM.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef rata_pesanan_per_pelanggan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_pesanan_per_pelanggan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert rata_pesanan_per_pelanggan(c) == (1.75, 2)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_pesanan_per_pelanggan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, 4, 1, 1)')\nassert rata_pesanan_per_pelanggan(c) == (2.0, 2)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_pesanan_per_pelanggan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (10, 1, 1, 1)')\nc.execute('INSERT INTO pesanan VALUES (11, 1, 1, 1)')\nassert rata_pesanan_per_pelanggan(c) == (2.5, 4)"
+              }
+            ]
+          },
+          "hint": "Hitung pesanan per pelanggan di subquery lalu ambil AVG dan MAX dari hasilnya.",
+          "solution": "import sqlite3\n\ndef rata_pesanan_per_pelanggan(c):\n    q = '''\n    SELECT round(AVG(n), 4), MAX(n) FROM (\n        SELECT COUNT(*) AS n\n        FROM pesanan p JOIN pelanggan g ON g.id = p.pelanggan_id\n        GROUP BY g.id\n    ) AS per_pelanggan\n    '''\n    return c.execute(q).fetchone()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-05-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pelanggan_jumlah_besar(c, batas)` yang mengembalikan list nama pelanggan dengan total `jumlah` pesanan minimal `batas`, terurut menurut id, memakai dua CTE berantai.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pelanggan_jumlah_besar(c, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pelanggan_jumlah_besar(c, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert pelanggan_jumlah_besar(c, 10) == ['Ani', 'Dewi']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pelanggan_jumlah_besar(c, 20)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pelanggan_jumlah_besar(c, 20) == ['Dewi']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pelanggan_jumlah_besar(c, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pelanggan_jumlah_besar(c, 100) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pelanggan_jumlah_besar(c, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pelanggan_jumlah_besar(c, 3) == ['Ani', 'Budi', 'Citra', 'Dewi']"
+              }
+            ]
+          },
+          "hint": "CTE pertama menjumlahkan unit per pelanggan, CTE kedua menyaring batas.",
+          "solution": "import sqlite3\n\ndef pelanggan_jumlah_besar(c, batas):\n    q = '''\n    WITH per_pelanggan AS (\n        SELECT pelanggan_id, SUM(jumlah) AS unit FROM pesanan GROUP BY pelanggan_id\n    ),\n    besar AS (\n        SELECT pelanggan_id FROM per_pelanggan WHERE unit >= ?\n    )\n    SELECT g.nama FROM besar b JOIN pelanggan g ON g.id = b.pelanggan_id ORDER BY g.id\n    '''\n    return [r[0] for r in c.execute(q, (batas,)).fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-05-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `deret(n)` yang memakai CTE rekursif pada basis data memori untuk mengembalikan list bilangan bulat 1 sampai `n`.",
+          "note": "Untuk `n` kurang dari 1 kembalikan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef deret(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "deret(5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert deret(5) == [1, 2, 3, 4, 5]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "deret(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert deret(1) == [1]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "deret(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert deret(0) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(deret(10))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(deret(10)) == 55"
+              }
+            ]
+          },
+          "hint": "Bagian dasar mulai dari 1 dengan syarat n minimal 1, bagian rekursif menambah satu sampai n.",
+          "solution": "import sqlite3\n\ndef deret(n):\n    c = sqlite3.connect(':memory:')\n    q = '''\n    WITH RECURSIVE r(x) AS (\n        SELECT 1 WHERE ? >= 1\n        UNION ALL\n        SELECT x + 1 FROM r WHERE x < ?\n    )\n    SELECT x FROM r\n    '''\n    return [row[0] for row in c.execute(q, (n, n)).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "CTE dimulai dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "WITH",
+              "description": ""
+            },
+            {
+              "label": "FROM",
+              "description": ""
+            },
+            {
+              "label": "SELECT",
+              "description": ""
+            },
+            {
+              "label": "CASE",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "With.",
+          "explanation": "WITH nama AS."
+        },
+        {
+          "q": "Keunggulan CTE?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dapat dirujuk berkali-kali dan terbaca berurutan",
+              "description": ""
+            },
+            {
+              "label": "Selalu lebih cepat",
+              "description": ""
+            },
+            {
+              "label": "Menyimpan permanen",
+              "description": ""
+            },
+            {
+              "label": "Mengganti tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Nama.",
+          "explanation": "Keterbacaan."
+        },
+        {
+          "q": "Agregasi dua tingkat membutuhkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Subquery FROM atau CTE",
+              "description": ""
+            },
+            {
+              "label": "DISTINCT",
+              "description": ""
+            },
+            {
+              "label": "LIMIT",
+              "description": ""
+            },
+            {
+              "label": "UNION",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bungkus.",
+          "explanation": "Agregat tak bersarang langsung."
+        },
+        {
+          "q": "CTE rekursif memiliki bagian?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dasar dan rekursif",
+              "description": ""
+            },
+            {
+              "label": "Hanya dasar",
+              "description": ""
+            },
+            {
+              "label": "Hanya rekursif",
+              "description": ""
+            },
+            {
+              "label": "Tiga bagian",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dua.",
+          "explanation": "UNION ALL."
+        },
+        {
+          "q": "Umur CTE?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu query",
+              "description": ""
+            },
+            {
+              "label": "Satu sesi",
+              "description": ""
+            },
+            {
+              "label": "Permanen",
+              "description": ""
+            },
+            {
+              "label": "Satu hari",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Query.",
+          "explanation": "Sementara."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis ulang subquery yang sama berulang kali. Lebih baik: Bungkus dalam CTE bernama.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis ulang subquery yang sama berulang kali.",
+          "fix": "Bungkus dalam CTE bernama."
+        },
+        {
+          "mistake": "Menyarangkan agregat langsung seperti AVG(COUNT(*)).",
+          "fix": "Hitung tingkat pertama di CTE atau subquery FROM."
+        },
+        {
+          "mistake": "CTE rekursif tanpa kondisi berhenti.",
+          "fix": "Pasang kondisi WHERE yang menghentikan rekursi."
+        }
+      ],
+      "summary": [
+        "CTE memberi nama pada hasil antara agar query terbaca berurutan.",
+        "Agregasi dua tingkat memakai subquery FROM atau CTE.",
+        "CTE dapat dirantai dan dirujuk berkali-kali.",
+        "CTE rekursif membangkitkan deret dengan kondisi berhenti."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# CTE dengan WITH dan subquery di FROM"
+          },
+          {
+            "type": "text",
+            "source": "CTE belanja menghitung total per pelanggan, lalu query utama menggabungkannya dengan nama pelanggan."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nWITH belanja AS (\n    SELECT p.pelanggan_id AS pid, SUM(p.jumlah * k.harga) AS total\n    FROM pesanan p JOIN produk k ON k.id = p.produk_id\n    GROUP BY p.pelanggan_id\n)\nSELECT g.nama, b.total\nFROM belanja b JOIN pelanggan g ON g.id = b.pid\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata belanja 73.900 dipakai untuk menyaring, sehingga hanya Budi dan Citra yang di atasnya."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nWITH belanja AS (\n    SELECT p.pelanggan_id AS pid, SUM(p.jumlah * k.harga) AS total\n    FROM pesanan p JOIN produk k ON k.id = p.produk_id\n    GROUP BY p.pelanggan_id\n)\nSELECT AVG(total), MAX(total) FROM belanja\n'''\nprint(c.execute(q).fetchone())\nq = '''\nWITH belanja AS (\n    SELECT p.pelanggan_id AS pid, SUM(p.jumlah * k.harga) AS total\n    FROM pesanan p JOIN produk k ON k.id = p.produk_id\n    GROUP BY p.pelanggan_id\n)\nSELECT g.nama FROM belanja b JOIN pelanggan g ON g.id = b.pid\nWHERE b.total > (SELECT AVG(total) FROM belanja)\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata pesanan per pelanggan aktif satu koma tujuh lima dan paling banyak dua."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT AVG(n), MAX(n) FROM (\n    SELECT COUNT(*) AS n\n    FROM pesanan p JOIN pelanggan g ON g.id = p.pelanggan_id\n    GROUP BY g.id\n) AS per_pelanggan\n'''\nprint(c.execute(q).fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Dua CTE berantai menyaring pelanggan dengan total unit sepuluh atau lebih, yaitu Ani dan Dewi."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nWITH per_pelanggan AS (\n    SELECT pelanggan_id, SUM(jumlah) AS unit\n    FROM pesanan GROUP BY pelanggan_id\n),\nbesar AS (\n    SELECT pelanggan_id FROM per_pelanggan WHERE unit >= 10\n)\nSELECT g.nama FROM besar b JOIN pelanggan g ON g.id = b.pelanggan_id\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "CTE rekursif membangkitkan angka satu sampai lima dan jumlahnya lima belas."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nq = '''\nWITH RECURSIVE n(x) AS (\n    SELECT 1\n    UNION ALL\n    SELECT x + 1 FROM n WHERE x < 5\n)\nSELECT x FROM n\n'''\nprint([r[0] for r in c.execute(q).fetchall()])\nprint(c.execute(q.replace('SELECT x FROM n', 'SELECT SUM(x) FROM n')).fetchone())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

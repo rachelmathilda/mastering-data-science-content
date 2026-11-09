@@ -28,91 +28,136 @@
       "module_no": 1,
       "title": "Pengantar relasional dan SELECT",
       "file": "m01.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A6-01-1",
+        "exercise_id": "A6-01-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def tipe_nilai(c, tabel, kolom, id_baris):\n    ..."
+      }
     },
     {
       "module_no": 2,
       "title": "Filter, urutan, dan limit",
       "file": "m02.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A6-02-1",
+        "exercise_id": "A6-02-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def jakbdg_besar(c, batas):\n    ..."
+      }
     },
     {
       "module_no": 3,
       "title": "Agregasi dan GROUP BY",
       "file": "m03.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A6-03-1",
+        "exercise_id": "A6-03-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def rata_naif_vs_benar(c):\n    ..."
+      }
     },
     {
       "module_no": 4,
       "title": "JOIN antar tabel",
       "file": "m04.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A6-04-1",
+        "exercise_id": "A6-04-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def nilai_pesanan(c):\n    ..."
+      }
     },
     {
       "module_no": 5,
       "title": "Subquery dan CTE",
       "file": "m05.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A6-05-1",
+        "exercise_id": "A6-05-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def pelanggan_tanpa_pesanan_aman(c):\n    ..."
+      }
     },
     {
       "module_no": 6,
       "title": "Window function",
       "file": "m06.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A6-06-1",
+        "exercise_id": "A6-06-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def di_atas_rata_wilayah(c):\n    ..."
+      }
     },
     {
       "module_no": 7,
       "title": "Fungsi tanggal dan teks",
       "file": "m07.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A6-07-1",
+        "exercise_id": "A6-07-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def jumlah_per_hari(c):\n    ..."
+      }
     },
     {
       "module_no": 8,
       "title": "Desain tabel, constraint, dan index",
       "file": "m08.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A6-08-1",
+        "exercise_id": "A6-08-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def buat_tabel_nilai(c):\n    ..."
+      }
     },
     {
       "module_no": 9,
       "title": "Query analitik end-to-end",
       "file": "m09.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A6-09-1",
+        "exercise_id": "A6-09-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def rata_nilai_pesanan(c):\n    ..."
+      }
     }
   ]
 }

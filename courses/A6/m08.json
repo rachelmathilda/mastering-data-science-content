@@ -1,0 +1,1548 @@
+{
+  "schema_version": 2,
+  "course_id": "A6",
+  "module_no": 8,
+  "title": "Desain tabel, constraint, dan index",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Merancang tabel dengan constraint yang menjaga kualitas data",
+    "Menjaga relasi dengan foreign key dan memahami normalisasi",
+    "Memakai index dan membaca rencana eksekusi"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A6-08-1",
+    "exercise_id": "A6-08-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def buat_tabel_nilai(c):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A6-08-1",
+      "title": "Membuat tabel dan constraint",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menulis CREATE TABLE dengan tipe, PRIMARY KEY, dan DEFAULT",
+        "Memakai NOT NULL, UNIQUE, dan CHECK untuk menjaga kualitas data",
+        "Menangani pelanggaran constraint dengan IntegrityError",
+        "Mendefinisikan primary key gabungan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari membaca ke merancang",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari membaca ke merancang\n\nLima modul SQL sebelumnya berfokus pada membaca data. Modul ini membahas sisi lain: **merancang tabel** yang menyimpan data dengan benar sejak awal. Data yang masuk tanpa aturan akan kotor, dan membersihkannya kemudian jauh lebih mahal daripada mencegahnya di pintu masuk.\n\nAlat pencegahnya adalah **constraint**, yaitu aturan yang ditegakkan basis data pada setiap penyisipan dan pembaruan. Constraint memastikan kualitas data tidak bergantung pada kedisiplinan setiap aplikasi yang menulis ke tabel."
+            },
+            {
+              "type": "text",
+              "markdown": "## CREATE TABLE\n\nPernyataan `CREATE TABLE nama (kolom tipe aturan, ...)` mendefinisikan tabel. Setiap kolom punya nama, tipe, dan aturan opsional. SQLite memakai tipe dinamis dengan afinitas: `INTEGER`, `TEXT`, `REAL`, `BLOB`, dan `NUMERIC`. Tipe yang dideklarasikan menjadi petunjuk konversi, bukan pagar ketat seperti pada basis data lain.\n\nKarena itu constraint seperti `CHECK` menjadi penjaga yang lebih penting di SQLite: tipe saja tidak mencegah nilai aneh masuk."
+            },
+            {
+              "type": "text",
+              "markdown": "## PRIMARY KEY\n\n**Primary key** mengidentifikasi setiap baris secara unik. Kolom `id INTEGER PRIMARY KEY` di SQLite menjadi alias dari `rowid` dan terisi otomatis dengan nomor berikutnya bila tidak diberi nilai. Primary key tidak boleh duplikat, dan sebaiknya tidak pernah berubah selama hidup baris.\n\nPilih kunci yang stabil dan tidak bermakna bisnis. Nomor identitas buatan lebih aman daripada nama atau email yang bisa berubah dan memaksa pembaruan di banyak tempat."
+            },
+            {
+              "type": "text",
+              "markdown": "## NOT NULL, UNIQUE, CHECK, DEFAULT\n\n`NOT NULL` melarang nilai kosong. `UNIQUE` melarang duplikat pada kolom itu. `CHECK (kondisi)` menolak baris yang kondisinya tidak benar, misalnya `harga >= 0`. `DEFAULT nilai` mengisi kolom bila penyisipan tidak menyebutkannya.\n\nKombinasi ini menyatakan aturan bisnis langsung di skema. Kode `UNIQUE` pada kolom kode barang, misalnya, menjamin tidak ada dua barang berkode sama walau dua aplikasi berbeda menulis pada waktu bersamaan."
+            },
+            {
+              "type": "code_example",
+              "filename": "constraint_dasar.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('''\nCREATE TABLE barang (\n    id INTEGER PRIMARY KEY,\n    kode TEXT NOT NULL UNIQUE,\n    nama TEXT NOT NULL,\n    harga INTEGER NOT NULL CHECK (harga >= 0),\n    stok INTEGER NOT NULL DEFAULT 0 CHECK (stok >= 0)\n)\n''')\n\ndef coba(sql, args=()):\n    try:\n        c.execute(sql, args)\n        return 'ok'\n    except sqlite3.IntegrityError:\n        return 'ditolak'\n\nprint(coba(\"INSERT INTO barang (kode, nama, harga) VALUES ('P1', 'Pensil', 2500)\"))\nprint(coba(\"INSERT INTO barang (kode, nama, harga) VALUES ('P1', 'Pena', 3000)\"))\nprint(coba(\"INSERT INTO barang (kode, nama, harga) VALUES ('P2', NULL, 3000)\"))\nprint(coba(\"INSERT INTO barang (kode, nama, harga) VALUES ('P3', 'X', -5)\"))\nprint(coba(\"INSERT INTO barang (kode, nama, harga, stok) VALUES ('P4', 'X', 5, -1)\"))\nprint(c.execute('SELECT * FROM barang').fetchall())",
+              "expected_output_note": "ok\nditolak\nditolak\nditolak\nditolak\n[(1, 'P1', 'Pensil', 2500, 0)]",
+              "explanation": "Hanya penyisipan pertama yang lolos. Duplikat kode, nama kosong, harga negatif, dan stok negatif semuanya ditolak, dan stok bawaan nol terisi otomatis."
+            }
+          ],
+          "quick_check": {
+            "question": "Constraint berfungsi?",
+            "options": [
+              "Menegakkan aturan data di skema",
+              "Mempercepat query"
+            ],
+            "answer_index": 0,
+            "explanation": "Dijaga oleh basis data.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Menangani pelanggaran",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menangani pelanggaran\n\nKetika constraint dilanggar, basis data melempar kesalahan dan baris tidak masuk. Di Python, kesalahan ini adalah `sqlite3.IntegrityError`. Aplikasi yang baik menangkapnya dan menampilkan pesan yang berguna, misalnya kode barang sudah dipakai, bukan membiarkan program berhenti.\n\nPerhatikan bahwa penolakan adalah fitur, bukan bug. Basis data yang menolak data buruk melindungi seluruh analisis di hilir. Lebih baik satu penyisipan gagal daripada seribu laporan salah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Primary key gabungan\n\nKadang identitas baris ditentukan oleh beberapa kolom sekaligus. Nilai ujian, misalnya, unik untuk pasangan siswa dan mata pelajaran: seorang siswa boleh punya banyak nilai, tetapi hanya satu per mata pelajaran. Tulis `PRIMARY KEY (siswa, mapel)` di akhir definisi.\n\nDengan kunci gabungan, duplikasi pasangan ditolak walau tiap kolom sendiri boleh berulang. `CHECK (skor BETWEEN 0 AND 100)` melengkapinya dengan batas nilai wajar."
+            },
+            {
+              "type": "code_example",
+              "filename": "kunci_gabungan.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('''\nCREATE TABLE nilai (\n    siswa INTEGER,\n    mapel TEXT,\n    skor INTEGER CHECK (skor BETWEEN 0 AND 100),\n    PRIMARY KEY (siswa, mapel)\n)\n''')\n\ndef coba(sql):\n    try:\n        c.execute(sql)\n        return 'ok'\n    except sqlite3.IntegrityError:\n        return 'ditolak'\n\nprint(coba(\"INSERT INTO nilai VALUES (1, 'MTK', 90)\"))\nprint(coba(\"INSERT INTO nilai VALUES (1, 'MTK', 80)\"))\nprint(coba(\"INSERT INTO nilai VALUES (1, 'IPA', 101)\"))\nprint(coba(\"INSERT INTO nilai VALUES (1, 'IPA', 100)\"))\nprint(coba(\"INSERT INTO nilai VALUES (2, 'MTK', 0)\"))",
+              "expected_output_note": "ok\nditolak\nditolak\nok\nok",
+              "explanation": "Pasangan siswa dan mapel yang sama ditolak dan skor di luar nol sampai seratus ditolak. Skor nol masih sah, dan siswa lain boleh punya mapel yang sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## NULL dan UNIQUE\n\nPada SQLite, kolom `UNIQUE` yang boleh kosong menerima banyak `NULL`, karena dua `NULL` dianggap tidak sama. Jadi `UNIQUE` saja tidak mencegah banyak baris tanpa email. Bila kolom wajib terisi dan unik, gabungkan `NOT NULL UNIQUE`.\n\nPahami perbedaan ini sebelum bergantung pada `UNIQUE` untuk deduplikasi. Banyak bug identitas ganda berawal dari kolom unik yang diam-diam menerima `NULL`."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Aturan di skema",
+              "markdown": "Letakkan aturan bisnis sederhana di skema dengan NOT NULL, UNIQUE, dan CHECK. Skema menegakkannya untuk semua aplikasi sekaligus."
+            },
+            {
+              "type": "code_example",
+              "filename": "unique_null.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('CREATE TABLE kontak (id INTEGER PRIMARY KEY, email TEXT UNIQUE)')\nc.execute('INSERT INTO kontak (email) VALUES (NULL)')\nc.execute('INSERT INTO kontak (email) VALUES (NULL)')\nc.execute(\"INSERT INTO kontak (email) VALUES ('a@x.com')\")\ntry:\n    c.execute(\"INSERT INTO kontak (email) VALUES ('a@x.com')\")\nexcept sqlite3.IntegrityError:\n    print('duplikat ditolak')\nprint(c.execute('SELECT COUNT(*) FROM kontak').fetchone())\nprint(c.execute('SELECT COUNT(*) FROM kontak WHERE email IS NULL').fetchone())",
+              "expected_output_note": "duplikat ditolak\n(3,)\n(2,)",
+              "explanation": "Dua NULL diterima pada kolom UNIQUE, tetapi email yang sama dua kali ditolak."
+            }
+          ],
+          "quick_check": {
+            "question": "Pelanggaran constraint di Python menimbulkan?",
+            "options": [
+              "ValueError",
+              "sqlite3.IntegrityError"
+            ],
+            "answer_index": 1,
+            "explanation": "IntegrityError.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Merancang dengan hati-hati",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Merancang dengan hati-hati\n\nSebelum menulis `CREATE TABLE`, tuliskan dulu pertanyaan yang harus dijawab tabel itu dan aturan yang harus selalu benar. Dari aturan itulah constraint ditentukan: kolom mana yang wajib, mana yang unik, dan batas nilai wajar. Merancang di atas kertas lebih murah daripada mengubah skema setelah data masuk.\n\nUbah skema yang sudah berisi data memang mungkin, tetapi data lama yang melanggar aturan baru harus dibersihkan lebih dulu. Karena itu semakin awal aturan ditegakkan, semakin murah biayanya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Skema sebagai kontrak\n\nSkema dengan constraint berfungsi sebagai kontrak antara basis data dan semua pengguna datanya. Analis dapat mengandalkan bahwa kolom wajib tidak kosong, kode unik benar-benar unik, dan harga tidak negatif, tanpa memeriksanya satu per satu di setiap laporan.\n\nKontrak ini menghemat waktu seluruh tim. Semakin banyak aturan ditegakkan di skema, semakin sedikit kode pembersihan yang harus ditulis dan dipelihara di tempat lain."
+            }
+          ],
+          "quick_check": {
+            "question": "CHECK (harga >= 0) mencegah?",
+            "options": [
+              "Harga negatif",
+              "Harga kosong"
+            ],
+            "answer_index": 0,
+            "explanation": "Kondisi harus benar.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-08-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `buat_tabel_produk(c)` yang membuat tabel `produk` dengan kolom `id INTEGER PRIMARY KEY`, `kode TEXT` (wajib dan unik), dan `harga INTEGER` (wajib dan tidak boleh negatif).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef buat_tabel_produk(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "_gagal(c, \"INSERT INTO produk (kode, harga) V...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _gagal(c, sql, args=()):\n    try:\n        c.execute(sql, args)\n        return False\n    except sqlite3.IntegrityError:\n        return True\nc = sqlite3.connect(':memory:')\nbuat_tabel_produk(c)\nc.execute(\"INSERT INTO produk (kode, harga) VALUES ('A', 10)\")\nassert _gagal(c, \"INSERT INTO produk (kode, harga) VALUES ('A', 20)\")"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "_gagal(c, \"INSERT INTO produk (kode, harga) V...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert _gagal(c, \"INSERT INTO produk (kode, harga) VALUES ('B', -1)\")"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "_gagal(c, \"INSERT INTO produk (kode, harga) V...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert _gagal(c, \"INSERT INTO produk (kode, harga) VALUES (NULL, 5)\")"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "_gagal(c, \"INSERT INTO produk (kode, harga) V...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert not _gagal(c, \"INSERT INTO produk (kode, harga) VALUES ('C', 0)\")"
+              }
+            ]
+          },
+          "hint": "Gabungkan NOT NULL UNIQUE untuk kode dan NOT NULL CHECK untuk harga.",
+          "solution": "import sqlite3\n\ndef buat_tabel_produk(c):\n    c.execute('''\n    CREATE TABLE produk (\n        id INTEGER PRIMARY KEY,\n        kode TEXT NOT NULL UNIQUE,\n        harga INTEGER NOT NULL CHECK (harga >= 0)\n    )\n    ''')",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-08-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `sisip_aman(c, kode, harga)` yang menyisipkan baris ke tabel `produk(kode, harga)` dan mengembalikan `True` bila berhasil atau `False` bila melanggar constraint (tangkap `sqlite3.IntegrityError`).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef sisip_aman(c, kode, harga):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "sisip_aman(c, 'A', 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _gagal(c, sql, args=()):\n    try:\n        c.execute(sql, args)\n        return False\n    except sqlite3.IntegrityError:\n        return True\nc = sqlite3.connect(':memory:')\nc.execute('CREATE TABLE produk (id INTEGER PRIMARY KEY, kode TEXT NOT NULL UNIQUE, harga INTEGER NOT NULL CHECK (harga >= 0))')\nassert sisip_aman(c, 'A', 10) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sisip_aman(c, 'A', 20)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sisip_aman(c, 'A', 20) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sisip_aman(c, 'B', -5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sisip_aman(c, 'B', -5) is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sisip_aman(c, None, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sisip_aman(c, None, 5) is False"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "c.execute('SELECT COUNT(*) FROM produk').fetc...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert c.execute('SELECT COUNT(*) FROM produk').fetchone()[0] == 1"
+              }
+            ]
+          },
+          "hint": "Bungkus INSERT dengan try dan tangkap sqlite3.IntegrityError.",
+          "solution": "import sqlite3\n\ndef sisip_aman(c, kode, harga):\n    try:\n        c.execute('INSERT INTO produk (kode, harga) VALUES (?, ?)', (kode, harga))\n        return True\n    except sqlite3.IntegrityError:\n        return False",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-08-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `buat_tabel_stok(c)` yang membuat tabel `stok` dengan `id INTEGER PRIMARY KEY`, `nama TEXT` wajib, `jumlah INTEGER` wajib berdefault 0 dan tidak negatif, serta `aktif INTEGER` wajib berdefault 1.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef buat_tabel_stok(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "c.execute('SELECT jumlah, aktif FROM stok').f...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _gagal(c, sql, args=()):\n    try:\n        c.execute(sql, args)\n        return False\n    except sqlite3.IntegrityError:\n        return True\nc = sqlite3.connect(':memory:')\nbuat_tabel_stok(c)\nc.execute(\"INSERT INTO stok (nama) VALUES ('Pensil')\")\nassert c.execute('SELECT jumlah, aktif FROM stok').fetchone() == (0, 1)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "_gagal(c, \"INSERT INTO stok (nama, jumlah) VA...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert _gagal(c, \"INSERT INTO stok (nama, jumlah) VALUES ('X', -1)\")"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "_gagal(c, 'INSERT INTO stok (nama) VALUES (NU...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert _gagal(c, 'INSERT INTO stok (nama) VALUES (NULL)')"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "_gagal(c, \"INSERT INTO stok (nama, jumlah, ak...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert not _gagal(c, \"INSERT INTO stok (nama, jumlah, aktif) VALUES ('Y', 5, 0)\")"
+              }
+            ]
+          },
+          "hint": "Gunakan DEFAULT bersama NOT NULL dan CHECK pada jumlah.",
+          "solution": "import sqlite3\n\ndef buat_tabel_stok(c):\n    c.execute('''\n    CREATE TABLE stok (\n        id INTEGER PRIMARY KEY,\n        nama TEXT NOT NULL,\n        jumlah INTEGER NOT NULL DEFAULT 0 CHECK (jumlah >= 0),\n        aktif INTEGER NOT NULL DEFAULT 1\n    )\n    ''')",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-08-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `buat_tabel_nilai(c)` yang membuat tabel `nilai(siswa INTEGER, mapel TEXT, skor INTEGER)` dengan primary key gabungan `(siswa, mapel)` dan skor harus antara 0 dan 100 termasuk.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef buat_tabel_nilai(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "_gagal(c, \"INSERT INTO nilai VALUES (1, 'MTK'...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _gagal(c, sql, args=()):\n    try:\n        c.execute(sql, args)\n        return False\n    except sqlite3.IntegrityError:\n        return True\nc = sqlite3.connect(':memory:')\nbuat_tabel_nilai(c)\nc.execute(\"INSERT INTO nilai VALUES (1, 'MTK', 90)\")\nassert _gagal(c, \"INSERT INTO nilai VALUES (1, 'MTK', 80)\")"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "_gagal(c, \"INSERT INTO nilai VALUES (1, 'IPA'...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert _gagal(c, \"INSERT INTO nilai VALUES (1, 'IPA', 101)\")"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "_gagal(c, \"INSERT INTO nilai VALUES (1, 'IPA'...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert not _gagal(c, \"INSERT INTO nilai VALUES (1, 'IPA', 100)\")"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "_gagal(c, \"INSERT INTO nilai VALUES (2, 'MTK'...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert not _gagal(c, \"INSERT INTO nilai VALUES (2, 'MTK', 0)\")"
+              }
+            ]
+          },
+          "hint": "Tulis PRIMARY KEY (siswa, mapel) di akhir dan CHECK dengan BETWEEN.",
+          "solution": "import sqlite3\n\ndef buat_tabel_nilai(c):\n    c.execute('''\n    CREATE TABLE nilai (\n        siswa INTEGER,\n        mapel TEXT,\n        skor INTEGER CHECK (skor BETWEEN 0 AND 100),\n        PRIMARY KEY (siswa, mapel)\n    )\n    ''')",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Constraint berfungsi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menegakkan aturan data di skema",
+              "description": ""
+            },
+            {
+              "label": "Mempercepat query",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan baris",
+              "description": ""
+            },
+            {
+              "label": "Menghapus duplikat lama",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Aturan.",
+          "explanation": "Dijaga oleh basis data."
+        },
+        {
+          "q": "Pelanggaran constraint di Python menimbulkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "sqlite3.IntegrityError",
+              "description": ""
+            },
+            {
+              "label": "ValueError",
+              "description": ""
+            },
+            {
+              "label": "KeyError",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Integrity.",
+          "explanation": "IntegrityError."
+        },
+        {
+          "q": "CHECK (harga >= 0) mencegah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Harga negatif",
+              "description": ""
+            },
+            {
+              "label": "Harga kosong",
+              "description": ""
+            },
+            {
+              "label": "Harga duplikat",
+              "description": ""
+            },
+            {
+              "label": "Harga desimal",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Negatif.",
+          "explanation": "Kondisi harus benar."
+        },
+        {
+          "q": "Primary key gabungan berguna saat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Identitas ditentukan beberapa kolom",
+              "description": ""
+            },
+            {
+              "label": "Tabel kosong",
+              "description": ""
+            },
+            {
+              "label": "Kolom bertipe teks",
+              "description": ""
+            },
+            {
+              "label": "Ingin mengurutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pasangan.",
+          "explanation": "Pasangan unik."
+        },
+        {
+          "q": "Banyak NULL pada kolom UNIQUE diterima karena?",
+          "code": null,
+          "options": [
+            {
+              "label": "NULL dianggap tidak sama",
+              "description": ""
+            },
+            {
+              "label": "NULL dianggap nol",
+              "description": ""
+            },
+            {
+              "label": "Bug SQLite",
+              "description": ""
+            },
+            {
+              "label": "NULL dilarang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tidak sama.",
+          "explanation": "Tidak dibandingkan sama."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengandalkan tipe kolom SQLite untuk menolak nilai aneh. Lebih baik: Tambahkan CHECK untuk batas nilai.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengandalkan tipe kolom SQLite untuk menolak nilai aneh.",
+          "fix": "Tambahkan CHECK untuk batas nilai."
+        },
+        {
+          "mistake": "Mengira UNIQUE menolak banyak NULL.",
+          "fix": "Gabungkan NOT NULL UNIQUE."
+        },
+        {
+          "mistake": "Membiarkan IntegrityError mematikan program.",
+          "fix": "Tangkap dan beri pesan yang jelas."
+        }
+      ],
+      "summary": [
+        "Constraint menegakkan kualitas data di pintu masuk.",
+        "NOT NULL, UNIQUE, CHECK, dan DEFAULT menyatakan aturan bisnis di skema.",
+        "Tangkap IntegrityError agar aplikasi tetap ramah.",
+        "Primary key gabungan menjaga keunikan pasangan kolom."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Membuat tabel dan constraint"
+          },
+          {
+            "type": "text",
+            "source": "Hanya penyisipan pertama yang lolos. Duplikat kode, nama kosong, harga negatif, dan stok negatif semuanya ditolak, dan stok bawaan nol terisi otomatis."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('''\nCREATE TABLE barang (\n    id INTEGER PRIMARY KEY,\n    kode TEXT NOT NULL UNIQUE,\n    nama TEXT NOT NULL,\n    harga INTEGER NOT NULL CHECK (harga >= 0),\n    stok INTEGER NOT NULL DEFAULT 0 CHECK (stok >= 0)\n)\n''')\n\ndef coba(sql, args=()):\n    try:\n        c.execute(sql, args)\n        return 'ok'\n    except sqlite3.IntegrityError:\n        return 'ditolak'\n\nprint(coba(\"INSERT INTO barang (kode, nama, harga) VALUES ('P1', 'Pensil', 2500)\"))\nprint(coba(\"INSERT INTO barang (kode, nama, harga) VALUES ('P1', 'Pena', 3000)\"))\nprint(coba(\"INSERT INTO barang (kode, nama, harga) VALUES ('P2', NULL, 3000)\"))\nprint(coba(\"INSERT INTO barang (kode, nama, harga) VALUES ('P3', 'X', -5)\"))\nprint(coba(\"INSERT INTO barang (kode, nama, harga, stok) VALUES ('P4', 'X', 5, -1)\"))\nprint(c.execute('SELECT * FROM barang').fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Pasangan siswa dan mapel yang sama ditolak dan skor di luar nol sampai seratus ditolak. Skor nol masih sah, dan siswa lain boleh punya mapel yang sama."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('''\nCREATE TABLE nilai (\n    siswa INTEGER,\n    mapel TEXT,\n    skor INTEGER CHECK (skor BETWEEN 0 AND 100),\n    PRIMARY KEY (siswa, mapel)\n)\n''')\n\ndef coba(sql):\n    try:\n        c.execute(sql)\n        return 'ok'\n    except sqlite3.IntegrityError:\n        return 'ditolak'\n\nprint(coba(\"INSERT INTO nilai VALUES (1, 'MTK', 90)\"))\nprint(coba(\"INSERT INTO nilai VALUES (1, 'MTK', 80)\"))\nprint(coba(\"INSERT INTO nilai VALUES (1, 'IPA', 101)\"))\nprint(coba(\"INSERT INTO nilai VALUES (1, 'IPA', 100)\"))\nprint(coba(\"INSERT INTO nilai VALUES (2, 'MTK', 0)\"))"
+          },
+          {
+            "type": "text",
+            "source": "Dua NULL diterima pada kolom UNIQUE, tetapi email yang sama dua kali ditolak."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('CREATE TABLE kontak (id INTEGER PRIMARY KEY, email TEXT UNIQUE)')\nc.execute('INSERT INTO kontak (email) VALUES (NULL)')\nc.execute('INSERT INTO kontak (email) VALUES (NULL)')\nc.execute(\"INSERT INTO kontak (email) VALUES ('a@x.com')\")\ntry:\n    c.execute(\"INSERT INTO kontak (email) VALUES ('a@x.com')\")\nexcept sqlite3.IntegrityError:\n    print('duplikat ditolak')\nprint(c.execute('SELECT COUNT(*) FROM kontak').fetchone())\nprint(c.execute('SELECT COUNT(*) FROM kontak WHERE email IS NULL').fetchone())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-08-2",
+      "title": "Foreign key, normalisasi, dan perubahan skema",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengaktifkan dan memakai foreign key untuk menjaga relasi",
+        "Memilih aksi ON DELETE yang tepat",
+        "Menjelaskan alasan normalisasi dan anomali data",
+        "Mengubah skema dengan ALTER TABLE dan UPSERT"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Menjaga relasi antar tabel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menjaga relasi antar tabel\n\nPada modul JOIN, kita melihat pesanan yatim: pesanan yang merujuk pelanggan yang tidak ada. Hal itu terjadi karena tidak ada yang menjaga rujukan. **Foreign key** adalah constraint yang memastikan nilai sebuah kolom selalu cocok dengan primary key di tabel lain.\n\nDitulis sebagai `kategori_id INTEGER REFERENCES kategori(id)`. Dengan itu, menyisipkan barang dengan kategori yang tidak ada ditolak, dan menghapus kategori yang masih dipakai juga ditolak."
+            },
+            {
+              "type": "text",
+              "markdown": "## Foreign key harus diaktifkan\n\nKejutan di SQLite: penegakan foreign key **mati secara bawaan** demi kompatibilitas. Aktifkan per koneksi dengan `PRAGMA foreign_keys = ON`. Pengaturan ini tidak tersimpan di berkas basis data, jadi setiap koneksi baru harus mengaturnya lagi.\n\nLupa mengaktifkan PRAGMA ini adalah sumber data yatim paling umum pada aplikasi SQLite. Jadikan perintah itu bagian dari kode pembuka koneksi, bukan pekerjaan yang diingat manual."
+            },
+            {
+              "type": "code_example",
+              "filename": "foreign_key.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE kategori (id INTEGER PRIMARY KEY, nama TEXT NOT NULL UNIQUE);\nCREATE TABLE barang (\n    id INTEGER PRIMARY KEY,\n    kode TEXT NOT NULL UNIQUE,\n    nama TEXT NOT NULL,\n    harga INTEGER NOT NULL CHECK (harga >= 0),\n    kategori_id INTEGER REFERENCES kategori(id)\n);\nINSERT INTO kategori VALUES (1, 'ATK'), (2, 'Elektronik'), (3, 'Kosong');\nINSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('P1', 'Pensil', 2500, 1), ('E1', 'Kabel', 15000, 2);\n''')\n\ndef coba(sql):\n    try:\n        c.execute(sql)\n        return 'ok'\n    except sqlite3.IntegrityError:\n        return 'ditolak'\n\nprint(c.execute('PRAGMA foreign_keys').fetchone())\nprint(coba(\"INSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('X1', 'Yatim', 100, 99)\"))\nc.execute('DELETE FROM barang WHERE kode = ?', ('X1',))\nc.commit()\nc.execute('PRAGMA foreign_keys = ON')\nprint(c.execute('PRAGMA foreign_keys').fetchone())\nprint(coba(\"INSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('X1', 'Yatim', 100, 99)\"))\nprint(coba('DELETE FROM kategori WHERE id = 1'))\nprint(coba('DELETE FROM kategori WHERE id = 3'))",
+              "expected_output_note": "(0,)\nok\n(1,)\nditolak\nditolak\nok",
+              "explanation": "Saat foreign key mati, barang yatim lolos. Setelah diaktifkan, kategori dengan barang tidak dapat dihapus dan hanya kategori kosong yang boleh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Aksi ON DELETE\n\nPerilaku bawaan adalah menolak penghapusan induk yang masih punya anak. Alternatif lain ditulis pada definisi: `ON DELETE CASCADE` ikut menghapus anak, `ON DELETE SET NULL` mengosongkan rujukan anak, dan `ON DELETE RESTRICT` menolak tegas.\n\nPilih sesuai makna bisnis. Menghapus pesanan seharusnya ikut menghapus rincian pesanan, jadi cocok `CASCADE`. Menghapus kategori sebaiknya tidak menghapus barang, jadi `SET NULL` atau penolakan lebih aman. Hati-hati dengan `CASCADE` karena satu penghapusan dapat meluas."
+            },
+            {
+              "type": "code_example",
+              "filename": "on_delete_cascade.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('PRAGMA foreign_keys = ON')\nc.executescript('''\nCREATE TABLE ortu (id INTEGER PRIMARY KEY);\nCREATE TABLE anak (\n    id INTEGER PRIMARY KEY,\n    ortu_id INTEGER REFERENCES ortu(id) ON DELETE CASCADE\n);\nINSERT INTO ortu VALUES (1), (2);\nINSERT INTO anak VALUES (1, 1), (2, 1), (3, 2);\n''')\nc.execute('PRAGMA foreign_keys = ON')\nc.execute('DELETE FROM ortu WHERE id = 1')\nprint(c.execute('SELECT id FROM anak ORDER BY id').fetchall())",
+              "expected_output_note": "[(3,)]",
+              "explanation": "Menghapus induk satu ikut menghapus kedua anaknya, dan hanya anak ketiga yang tersisa."
+            }
+          ],
+          "quick_check": {
+            "question": "Foreign key menjaga?",
+            "options": [
+              "Rujukan ke tabel lain tetap valid",
+              "Urutan baris"
+            ],
+            "answer_index": 0,
+            "explanation": "Relasi.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mengapa normalisasi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa normalisasi\n\n**Normalisasi** adalah menata tabel agar setiap fakta disimpan di satu tempat. Bayangkan tabel pesanan yang menyimpan nama dan kota pelanggan di setiap baris. Bila pelanggan pindah kota, kita harus memperbarui puluhan baris, dan lupa satu saja menimbulkan data bertentangan.\n\nMasalah itu disebut **anomali pembaruan**. Ada pula anomali penyisipan, yaitu tidak bisa mencatat pelanggan sebelum ia memesan, dan anomali penghapusan, yaitu kehilangan data pelanggan saat pesanan terakhirnya dihapus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memecah tabel\n\nSolusinya memecah tabel menurut subjek. Data pelanggan masuk tabel `pelanggan`, data produk masuk `produk`, dan `pesanan` hanya menyimpan kunci asing ke keduanya. Setiap fakta kini tersimpan sekali, dan perubahan kota pelanggan cukup satu pembaruan.\n\nAturan praktis: bila beberapa kolom hanya bergantung pada sebagian kunci, atau pada kolom non-kunci lain, pindahkan ke tabel sendiri. Untuk analitik, kadang sengaja didenormalisasi demi kecepatan, tetapi mulailah dari desain ternormalisasi."
+            },
+            {
+              "type": "text",
+              "markdown": "## UPSERT\n\nSering kita ingin menyisipkan baris bila belum ada, atau memperbaruinya bila sudah ada. SQLite menyediakan `INSERT ... ON CONFLICT (kolom) DO UPDATE SET ...`. Bagian `excluded.kolom` merujuk nilai yang hendak disisipkan.\n\nTanpa UPSERT, kita harus memeriksa dulu lalu memutuskan, yang rawan balapan antar proses. Dengan UPSERT, keputusan diambil atomik oleh basis data. Ada pula `INSERT OR IGNORE` yang diam-diam melewati baris yang melanggar constraint."
+            },
+            {
+              "type": "code_example",
+              "filename": "upsert.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE kategori (id INTEGER PRIMARY KEY, nama TEXT NOT NULL UNIQUE);\nCREATE TABLE barang (\n    id INTEGER PRIMARY KEY,\n    kode TEXT NOT NULL UNIQUE,\n    nama TEXT NOT NULL,\n    harga INTEGER NOT NULL CHECK (harga >= 0),\n    kategori_id INTEGER REFERENCES kategori(id)\n);\nINSERT INTO kategori VALUES (1, 'ATK'), (2, 'Elektronik'), (3, 'Kosong');\nINSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('P1', 'Pensil', 2500, 1), ('E1', 'Kabel', 15000, 2);\n''')\n\nq = '''\nINSERT INTO barang (kode, nama, harga) VALUES (?, ?, ?)\nON CONFLICT (kode) DO UPDATE SET nama = excluded.nama, harga = excluded.harga\n'''\nc.execute(q, ('P1', 'Pensil 2B', 2600))\nc.execute(q, ('N1', 'Baru', 500))\nprint(c.execute('SELECT kode, nama, harga FROM barang ORDER BY id').fetchall())\nprint(c.execute(\"INSERT OR IGNORE INTO barang (kode, nama, harga) VALUES ('P1', 'Dup', 1)\").rowcount)",
+              "expected_output_note": "[('P1', 'Pensil 2B', 2600), ('E1', 'Kabel', 15000), ('N1', 'Baru', 500)]\n0",
+              "explanation": "Baris P1 diperbarui tanpa duplikat, N1 disisipkan baru, dan INSERT OR IGNORE melewati baris yang bentrok dengan hasil nol baris berubah."
+            }
+          ],
+          "quick_check": {
+            "question": "Pengaturan foreign key di SQLite secara bawaan?",
+            "options": [
+              "Hidup",
+              "Mati"
+            ],
+            "answer_index": 1,
+            "explanation": "Harus diaktifkan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "ALTER TABLE",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## ALTER TABLE\n\nSkema berubah seiring waktu. `ALTER TABLE tabel ADD COLUMN kolom tipe` menambah kolom, dan baris lama mendapat nilai `DEFAULT` kolom itu atau `NULL`. SQLite juga mendukung `RENAME COLUMN`, `RENAME TO`, dan `DROP COLUMN` pada versi baru, tetapi tidak semua jenis perubahan didukung langsung.\n\nUntuk perubahan besar, pola aman adalah membuat tabel baru, menyalin data, menghapus tabel lama, lalu mengganti nama. Lakukan di dalam satu transaksi dan cadangkan data lebih dulu."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Aktifkan foreign key",
+              "markdown": "Foreign key di SQLite tidak aktif secara bawaan. Jalankan PRAGMA foreign_keys = ON di setiap koneksi baru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Transaksi menjaga konsistensi\n\nPerubahan yang terdiri dari beberapa langkah, seperti memindahkan stok dari satu barang ke barang lain, harus berhasil seluruhnya atau tidak sama sekali. **Transaksi** menjamin hal itu: bila satu langkah gagal, semua perubahan dibatalkan dengan `ROLLBACK`.\n\nDi Python, koneksi sqlite3 membuka transaksi otomatis pada perintah yang mengubah data dan baru menyimpannya saat `commit()` dipanggil. Ingat ini karena beberapa PRAGMA, termasuk `foreign_keys`, tidak berpengaruh bila dijalankan di tengah transaksi yang belum di-commit."
+            },
+            {
+              "type": "text",
+              "markdown": "## Nama dan konvensi\n\nPilih nama tabel dan kolom yang konsisten: huruf kecil, tanpa spasi, dan memakai satu bahasa. Kunci asing biasanya dinamai `tabelinduk_id`, misalnya `kategori_id`, sehingga hubungannya langsung terbaca. Hindari singkatan yang membingungkan pembaca baru.\n\nKonvensi yang seragam membuat query lebih mudah ditulis dan diperiksa. Skema yang rapi adalah dokumentasi paling jujur tentang cara kerja data Anda."
+            }
+          ],
+          "quick_check": {
+            "question": "ON DELETE CASCADE berarti?",
+            "options": [
+              "Anak ikut terhapus",
+              "Penghapusan ditolak"
+            ],
+            "answer_index": 0,
+            "explanation": "Ikut hapus.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-08-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `aktifkan_fk(c)` yang mengaktifkan penegakan foreign key pada koneksi `c` dan mengembalikan nilai pengaturan itu sesudahnya (bilangan bulat).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef aktifkan_fk(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "c.execute('PRAGMA foreign_keys').fetchone()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db(fk=False):\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE kategori (id INTEGER PRIMARY KEY, nama TEXT NOT NULL UNIQUE);\n    CREATE TABLE barang (\n        id INTEGER PRIMARY KEY,\n        kode TEXT NOT NULL UNIQUE,\n        nama TEXT NOT NULL,\n        harga INTEGER NOT NULL CHECK (harga >= 0),\n        kategori_id INTEGER REFERENCES kategori(id)\n    );\n    INSERT INTO kategori VALUES (1, 'ATK'), (2, 'Elektronik'), (3, 'Kosong');\n    INSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('P1', 'Pensil', 2500, 1), ('E1', 'Kabel', 15000, 2);\n    ''')\n    if fk:\n        c.execute('PRAGMA foreign_keys = ON')\n    return c\nc = _db()\nassert c.execute('PRAGMA foreign_keys').fetchone()[0] == 0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "aktifkan_fk(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aktifkan_fk(c) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "try:\n    c.execute(\"INSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('Z', 'Z', 1, 99)\")\n    ditolak = False\nexcept sqlite3.IntegrityError:\n    ditolak = True\nassert ditolak"
+              }
+            ]
+          },
+          "hint": "Jalankan PRAGMA foreign_keys = ON lalu baca nilainya.",
+          "solution": "import sqlite3\n\ndef aktifkan_fk(c):\n    c.execute('PRAGMA foreign_keys = ON')\n    return c.execute('PRAGMA foreign_keys').fetchone()[0]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-08-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `hapus_kategori_aman(c, id)` yang menghapus kategori berdasarkan id dan mengembalikan `True` bila berhasil atau `False` bila ditolak oleh foreign key (tangkap `sqlite3.IntegrityError`).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef hapus_kategori_aman(c, id):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hapus_kategori_aman(c, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db(fk=False):\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE kategori (id INTEGER PRIMARY KEY, nama TEXT NOT NULL UNIQUE);\n    CREATE TABLE barang (\n        id INTEGER PRIMARY KEY,\n        kode TEXT NOT NULL UNIQUE,\n        nama TEXT NOT NULL,\n        harga INTEGER NOT NULL CHECK (harga >= 0),\n        kategori_id INTEGER REFERENCES kategori(id)\n    );\n    INSERT INTO kategori VALUES (1, 'ATK'), (2, 'Elektronik'), (3, 'Kosong');\n    INSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('P1', 'Pensil', 2500, 1), ('E1', 'Kabel', 15000, 2);\n    ''')\n    if fk:\n        c.execute('PRAGMA foreign_keys = ON')\n    return c\nc = _db(True)\nassert hapus_kategori_aman(c, 1) is False"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "c.execute('SELECT COUNT(*) FROM kategori').fe...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert c.execute('SELECT COUNT(*) FROM kategori').fetchone()[0] == 3"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hapus_kategori_aman(c, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hapus_kategori_aman(c, 3) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "c.execute('SELECT COUNT(*) FROM kategori').fe...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert c.execute('SELECT COUNT(*) FROM kategori').fetchone()[0] == 2"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "hapus_kategori_aman(c, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hapus_kategori_aman(c, 2) is False"
+              }
+            ]
+          },
+          "hint": "Bungkus DELETE dengan try dan tangkap IntegrityError.",
+          "solution": "import sqlite3\n\ndef hapus_kategori_aman(c, id):\n    try:\n        c.execute('DELETE FROM kategori WHERE id = ?', (id,))\n        return True\n    except sqlite3.IntegrityError:\n        return False",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-08-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `upsert_barang(c, kode, nama, harga)` yang menyisipkan barang baru atau memperbarui `nama` dan `harga` bila `kode` sudah ada, memakai `ON CONFLICT`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef upsert_barang(c, kode, nama, harga):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "c.execute(\"SELECT nama, harga FROM barang WHE...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db(fk=False):\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE kategori (id INTEGER PRIMARY KEY, nama TEXT NOT NULL UNIQUE);\n    CREATE TABLE barang (\n        id INTEGER PRIMARY KEY,\n        kode TEXT NOT NULL UNIQUE,\n        nama TEXT NOT NULL,\n        harga INTEGER NOT NULL CHECK (harga >= 0),\n        kategori_id INTEGER REFERENCES kategori(id)\n    );\n    INSERT INTO kategori VALUES (1, 'ATK'), (2, 'Elektronik'), (3, 'Kosong');\n    INSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('P1', 'Pensil', 2500, 1), ('E1', 'Kabel', 15000, 2);\n    ''')\n    if fk:\n        c.execute('PRAGMA foreign_keys = ON')\n    return c\nc = _db()\nupsert_barang(c, 'P1', 'Pensil 2B', 2600)\nassert c.execute(\"SELECT nama, harga FROM barang WHERE kode = 'P1'\").fetchone() == ('Pensil 2B', 2600)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "c.execute('SELECT COUNT(*) FROM barang').fetc...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert c.execute('SELECT COUNT(*) FROM barang').fetchone()[0] == 2"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "c.execute('SELECT COUNT(*) FROM barang').fetc...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "upsert_barang(c, 'N1', 'Baru', 100)\nassert c.execute('SELECT COUNT(*) FROM barang').fetchone()[0] == 3"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "c.execute(\"SELECT nama, harga FROM barang WHE...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "upsert_barang(c, 'N1', 'Baru lagi', 150)\nassert c.execute(\"SELECT nama, harga FROM barang WHERE kode = 'N1'\").fetchone() == ('Baru lagi', 150)"
+              }
+            ]
+          },
+          "hint": "Pakai INSERT dengan ON CONFLICT (kode) DO UPDATE SET dan excluded.",
+          "solution": "import sqlite3\n\ndef upsert_barang(c, kode, nama, harga):\n    q = '''\n    INSERT INTO barang (kode, nama, harga) VALUES (?, ?, ?)\n    ON CONFLICT (kode) DO UPDATE SET nama = excluded.nama, harga = excluded.harga\n    '''\n    c.execute(q, (kode, nama, harga))",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-08-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `tambah_kolom_aktif(c)` yang menambahkan kolom `aktif INTEGER NOT NULL DEFAULT 1` ke tabel `barang` lalu mengembalikan list nama kolom tabel itu sesuai urutan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef tambah_kolom_aktif(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tambah_kolom_aktif(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db(fk=False):\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE kategori (id INTEGER PRIMARY KEY, nama TEXT NOT NULL UNIQUE);\n    CREATE TABLE barang (\n        id INTEGER PRIMARY KEY,\n        kode TEXT NOT NULL UNIQUE,\n        nama TEXT NOT NULL,\n        harga INTEGER NOT NULL CHECK (harga >= 0),\n        kategori_id INTEGER REFERENCES kategori(id)\n    );\n    INSERT INTO kategori VALUES (1, 'ATK'), (2, 'Elektronik'), (3, 'Kosong');\n    INSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('P1', 'Pensil', 2500, 1), ('E1', 'Kabel', 15000, 2);\n    ''')\n    if fk:\n        c.execute('PRAGMA foreign_keys = ON')\n    return c\nc = _db()\nassert tambah_kolom_aktif(c) == ['id', 'kode', 'nama', 'harga', 'kategori_id', 'aktif']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "c.execute('SELECT aktif FROM barang').fetchall()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert [r[0] for r in c.execute('SELECT aktif FROM barang').fetchall()] == [1, 1]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "c.execute(\"SELECT aktif FROM barang WHERE kod...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO barang (kode, nama, harga) VALUES ('N1', 'Baru', 5)\")\nassert c.execute(\"SELECT aktif FROM barang WHERE kode = 'N1'\").fetchone()[0] == 1"
+              }
+            ]
+          },
+          "hint": "Gunakan ALTER TABLE ADD COLUMN lalu baca PRAGMA table_info.",
+          "solution": "import sqlite3\n\ndef tambah_kolom_aktif(c):\n    c.execute('ALTER TABLE barang ADD COLUMN aktif INTEGER NOT NULL DEFAULT 1')\n    return [r[1] for r in c.execute('PRAGMA table_info(barang)').fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Foreign key menjaga?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rujukan ke tabel lain tetap valid",
+              "description": ""
+            },
+            {
+              "label": "Urutan baris",
+              "description": ""
+            },
+            {
+              "label": "Kecepatan query",
+              "description": ""
+            },
+            {
+              "label": "Ukuran tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Rujukan.",
+          "explanation": "Relasi."
+        },
+        {
+          "q": "Pengaturan foreign key di SQLite secara bawaan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mati",
+              "description": ""
+            },
+            {
+              "label": "Hidup",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Mati.",
+          "explanation": "Harus diaktifkan."
+        },
+        {
+          "q": "ON DELETE CASCADE berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Anak ikut terhapus",
+              "description": ""
+            },
+            {
+              "label": "Penghapusan ditolak",
+              "description": ""
+            },
+            {
+              "label": "Anak dikosongkan",
+              "description": ""
+            },
+            {
+              "label": "Tidak terjadi apa-apa",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ikut.",
+          "explanation": "Ikut hapus."
+        },
+        {
+          "q": "Normalisasi bertujuan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Setiap fakta disimpan satu tempat",
+              "description": ""
+            },
+            {
+              "label": "Memperbesar tabel",
+              "description": ""
+            },
+            {
+              "label": "Menghapus kunci",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan data",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu tempat.",
+          "explanation": "Menghindari anomali."
+        },
+        {
+          "q": "UPSERT dilakukan dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "ON CONFLICT DO UPDATE",
+              "description": ""
+            },
+            {
+              "label": "DROP TABLE",
+              "description": ""
+            },
+            {
+              "label": "SELECT DISTINCT",
+              "description": ""
+            },
+            {
+              "label": "LIMIT",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Conflict.",
+          "explanation": "Sisip atau perbarui."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira foreign key aktif otomatis di SQLite. Lebih baik: Jalankan PRAGMA foreign_keys = ON tiap koneksi.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira foreign key aktif otomatis di SQLite.",
+          "fix": "Jalankan PRAGMA foreign_keys = ON tiap koneksi."
+        },
+        {
+          "mistake": "Memakai CASCADE tanpa memikirkan jangkauannya.",
+          "fix": "Pilih aksi sesuai makna bisnis."
+        },
+        {
+          "mistake": "Menyimpan data yang sama di banyak baris.",
+          "fix": "Normalisasi agar tiap fakta satu tempat."
+        }
+      ],
+      "summary": [
+        "Foreign key menjaga relasi, dan harus diaktifkan di SQLite.",
+        "Pilih aksi ON DELETE sesuai makna bisnis.",
+        "Normalisasi menghindari anomali pembaruan.",
+        "UPSERT dan ALTER TABLE mengelola data dan skema yang berubah."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Foreign key, normalisasi, dan perubahan skema"
+          },
+          {
+            "type": "text",
+            "source": "Saat foreign key mati, barang yatim lolos. Setelah diaktifkan, kategori dengan barang tidak dapat dihapus dan hanya kategori kosong yang boleh."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE kategori (id INTEGER PRIMARY KEY, nama TEXT NOT NULL UNIQUE);\nCREATE TABLE barang (\n    id INTEGER PRIMARY KEY,\n    kode TEXT NOT NULL UNIQUE,\n    nama TEXT NOT NULL,\n    harga INTEGER NOT NULL CHECK (harga >= 0),\n    kategori_id INTEGER REFERENCES kategori(id)\n);\nINSERT INTO kategori VALUES (1, 'ATK'), (2, 'Elektronik'), (3, 'Kosong');\nINSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('P1', 'Pensil', 2500, 1), ('E1', 'Kabel', 15000, 2);\n''')\n\ndef coba(sql):\n    try:\n        c.execute(sql)\n        return 'ok'\n    except sqlite3.IntegrityError:\n        return 'ditolak'\n\nprint(c.execute('PRAGMA foreign_keys').fetchone())\nprint(coba(\"INSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('X1', 'Yatim', 100, 99)\"))\nc.execute('DELETE FROM barang WHERE kode = ?', ('X1',))\nc.commit()\nc.execute('PRAGMA foreign_keys = ON')\nprint(c.execute('PRAGMA foreign_keys').fetchone())\nprint(coba(\"INSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('X1', 'Yatim', 100, 99)\"))\nprint(coba('DELETE FROM kategori WHERE id = 1'))\nprint(coba('DELETE FROM kategori WHERE id = 3'))"
+          },
+          {
+            "type": "text",
+            "source": "Menghapus induk satu ikut menghapus kedua anaknya, dan hanya anak ketiga yang tersisa."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('PRAGMA foreign_keys = ON')\nc.executescript('''\nCREATE TABLE ortu (id INTEGER PRIMARY KEY);\nCREATE TABLE anak (\n    id INTEGER PRIMARY KEY,\n    ortu_id INTEGER REFERENCES ortu(id) ON DELETE CASCADE\n);\nINSERT INTO ortu VALUES (1), (2);\nINSERT INTO anak VALUES (1, 1), (2, 1), (3, 2);\n''')\nc.execute('PRAGMA foreign_keys = ON')\nc.execute('DELETE FROM ortu WHERE id = 1')\nprint(c.execute('SELECT id FROM anak ORDER BY id').fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Baris P1 diperbarui tanpa duplikat, N1 disisipkan baru, dan INSERT OR IGNORE melewati baris yang bentrok dengan hasil nol baris berubah."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE kategori (id INTEGER PRIMARY KEY, nama TEXT NOT NULL UNIQUE);\nCREATE TABLE barang (\n    id INTEGER PRIMARY KEY,\n    kode TEXT NOT NULL UNIQUE,\n    nama TEXT NOT NULL,\n    harga INTEGER NOT NULL CHECK (harga >= 0),\n    kategori_id INTEGER REFERENCES kategori(id)\n);\nINSERT INTO kategori VALUES (1, 'ATK'), (2, 'Elektronik'), (3, 'Kosong');\nINSERT INTO barang (kode, nama, harga, kategori_id) VALUES ('P1', 'Pensil', 2500, 1), ('E1', 'Kabel', 15000, 2);\n''')\n\nq = '''\nINSERT INTO barang (kode, nama, harga) VALUES (?, ?, ?)\nON CONFLICT (kode) DO UPDATE SET nama = excluded.nama, harga = excluded.harga\n'''\nc.execute(q, ('P1', 'Pensil 2B', 2600))\nc.execute(q, ('N1', 'Baru', 500))\nprint(c.execute('SELECT kode, nama, harga FROM barang ORDER BY id').fetchall())\nprint(c.execute(\"INSERT OR IGNORE INTO barang (kode, nama, harga) VALUES ('P1', 'Dup', 1)\").rowcount)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-08-3",
+      "title": "Index dan rencana eksekusi",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan fungsi index dan biayanya",
+        "Membuat index dan index gabungan",
+        "Membaca rencana eksekusi dengan EXPLAIN QUERY PLAN",
+        "Menentukan kolom yang layak diberi index"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mencari tanpa index",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mencari tanpa index\n\nBayangkan mencari satu nama di buku telepon yang tidak terurut: Anda harus membaca halaman demi halaman. Tanpa index, basis data melakukan hal yang sama, yang disebut **table scan**: ia memeriksa setiap baris untuk menemukan yang cocok. Pada ribuan baris cepat, tetapi pada jutaan baris terasa lambat.\n\n**Index** adalah struktur tambahan yang terurut, mirip indeks di belakang buku. Dengan index pada kolom pencarian, basis data melompat langsung ke baris yang dicari tanpa membaca semuanya."
+            },
+            {
+              "type": "text",
+              "markdown": "## CREATE INDEX\n\nSintaksnya `CREATE INDEX nama ON tabel (kolom)`. Setelah dibuat, basis data memakainya otomatis bila berguna, tanpa perubahan pada query. Primary key dan kolom `UNIQUE` sudah memiliki index otomatis, sehingga pencarian berdasarkan keduanya cepat sejak awal.\n\nIndex tidak mengubah hasil query, hanya kecepatannya. Itu menjadikannya alat optimasi yang aman dicoba, asalkan kita mengukur hasilnya dan memahami biayanya."
+            },
+            {
+              "type": "text",
+              "markdown": "## EXPLAIN QUERY PLAN\n\nUntuk mengetahui apakah sebuah query memakai index, gunakan `EXPLAIN QUERY PLAN` di depan query itu. Hasilnya menjelaskan strategi: `SCAN` berarti membaca seluruh tabel, sedangkan `SEARCH ... USING INDEX` berarti memakai index untuk melompat ke baris yang cocok.\n\nTeks persisnya berbeda antar versi SQLite, jadi dalam kode otomatis kita memeriksa keberadaan kata `INDEX` pada kolom keterangan alih-alih mencocokkan kalimat penuh."
+            },
+            {
+              "type": "code_example",
+              "filename": "index_dasar.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('CREATE TABLE log (id INTEGER PRIMARY KEY, user_id INTEGER, aksi TEXT)')\nc.executemany('INSERT INTO log (user_id, aksi) VALUES (?, ?)', [(i % 100, 'a' if i % 2 == 0 else 'b') for i in range(1000)])\n\ndef pakai_indeks(q):\n    return any('INDEX' in r[3] for r in c.execute('EXPLAIN QUERY PLAN ' + q).fetchall())\n\nq = 'SELECT * FROM log WHERE user_id = 5'\nprint(pakai_indeks(q))\nc.execute('CREATE INDEX idx_log_user ON log (user_id)')\nprint(pakai_indeks(q))\nprint(c.execute('SELECT COUNT(*) FROM log WHERE user_id = 5').fetchone())\nprint(pakai_indeks('SELECT * FROM log WHERE id = 5'))",
+              "expected_output_note": "False\nTrue\n(10,)\nFalse",
+              "explanation": "Sebelum index, query memindai tabel. Setelah index, query memakainya dengan hasil tetap sepuluh baris. Pencarian berdasarkan id tidak memakai kata INDEX karena memakai primary key rowid langsung."
+            },
+            {
+              "type": "text",
+              "markdown": "## Index gabungan\n\nIndex dapat mencakup beberapa kolom: `CREATE INDEX idx ON log (user_id, aksi)`. Urutan kolom penting karena index terurut menurut kolom pertama, lalu kolom kedua di dalam tiap nilai kolom pertama. Aturan **awalan kiri** berlaku: index ini membantu query yang menyaring `user_id`, atau `user_id` dan `aksi`, tetapi tidak membantu query yang hanya menyaring `aksi`.\n\nLetakkan kolom yang paling sering disaring dengan kesamaan di depan. Satu index gabungan yang dirancang baik sering menggantikan beberapa index terpisah."
+            },
+            {
+              "type": "code_example",
+              "filename": "index_gabungan.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('CREATE TABLE log (id INTEGER PRIMARY KEY, user_id INTEGER, aksi TEXT)')\nc.executemany('INSERT INTO log (user_id, aksi) VALUES (?, ?)', [(i % 100, 'a' if i % 2 == 0 else 'b') for i in range(1000)])\n\ndef pakai_indeks(q):\n    return any('INDEX' in r[3] for r in c.execute('EXPLAIN QUERY PLAN ' + q).fetchall())\n\nc.execute('CREATE INDEX idx_log_user_aksi ON log (user_id, aksi)')\nprint([r[2] for r in c.execute('PRAGMA index_info(idx_log_user_aksi)').fetchall()])\nprint(pakai_indeks(\"SELECT * FROM log WHERE user_id = 5 AND aksi = 'b'\"))\nprint(pakai_indeks('SELECT * FROM log WHERE user_id = 5'))\nprint(c.execute(\"SELECT COUNT(*) FROM log WHERE user_id = 5 AND aksi = 'b'\").fetchone())\nprint(c.execute(\"SELECT COUNT(*) FROM log WHERE user_id = 5 AND aksi = 'a'\").fetchone())",
+              "expected_output_note": "['user_id', 'aksi']\nTrue\nTrue\n(10,)\n(0,)",
+              "explanation": "Index gabungan melayani query dengan kedua kolom maupun hanya kolom pertama. Pengguna lima selalu berada pada indeks ganjil sehingga seluruh sepuluh barisnya bertindakan b."
+            }
+          ],
+          "quick_check": {
+            "question": "Index mempercepat?",
+            "options": [
+              "Pencarian",
+              "Penulisan"
+            ],
+            "answer_index": 0,
+            "explanation": "Melompat ke baris.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Biaya index",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Biaya index\n\nIndex tidak gratis. Ia memakan ruang penyimpanan, dan setiap `INSERT`, `UPDATE`, dan `DELETE` harus memperbarui semua index terkait sehingga penulisan melambat. Tabel dengan banyak index membaca cepat tetapi menulis lambat.\n\nKarena itu jangan memberi index pada setiap kolom. Beri index pada kolom yang sering muncul di `WHERE`, `JOIN`, dan `ORDER BY` pada query yang benar-benar dijalankan, lalu ukur manfaatnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan index tidak membantu\n\nIndex kurang berguna pada tabel kecil, karena memindai semua baris sudah cepat. Index juga sedikit membantu pada kolom dengan sedikit nilai berbeda, seperti jenis kelamin atau status aktif, karena hampir separuh tabel tetap harus dibaca.\n\nPola query dapat pula menggagalkan index: membungkus kolom dengan fungsi, seperti `WHERE LOWER(email) = ...`, atau memakai `LIKE '%kata'` dengan tanda persen di depan, membuat index biasa tidak terpakai."
+            }
+          ],
+          "quick_check": {
+            "question": "Biaya index?",
+            "options": [
+              "Hasil query berubah",
+              "Ruang dan penulisan lebih lambat"
+            ],
+            "answer_index": 1,
+            "explanation": "Pembaruan index.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "UNIQUE INDEX",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## UNIQUE INDEX\n\n`CREATE UNIQUE INDEX` sekaligus mempercepat pencarian dan menegakkan keunikan. Ia setara dengan constraint `UNIQUE` tetapi dapat ditambahkan setelah tabel dibuat. Bila data yang ada sudah mengandung duplikat, pembuatannya gagal dan duplikat harus dibersihkan lebih dulu.\n\nSeperti `UNIQUE` biasa, banyak `NULL` tetap diterima. Gunakan ini untuk menambahkan aturan keunikan pada tabel lama tanpa membuat ulang tabelnya."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Ukur, jangan menebak",
+              "markdown": "Ukur dulu dengan EXPLAIN QUERY PLAN sebelum dan sesudah membuat index. Index yang tidak terpakai hanya memperlambat penulisan."
+            },
+            {
+              "type": "code_example",
+              "filename": "unique_index.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('CREATE TABLE pengguna (id INTEGER PRIMARY KEY, email TEXT)')\nc.executemany('INSERT INTO pengguna (email) VALUES (?)', [('a@x.com',), ('b@x.com',), ('a@x.com',)])\ntry:\n    c.execute('CREATE UNIQUE INDEX idx_email ON pengguna (email)')\nexcept sqlite3.IntegrityError:\n    print('ada duplikat')\nc.execute(\"DELETE FROM pengguna WHERE id = 3\")\nc.execute('CREATE UNIQUE INDEX idx_email ON pengguna (email)')\ntry:\n    c.execute(\"INSERT INTO pengguna (email) VALUES ('b@x.com')\")\nexcept sqlite3.IntegrityError:\n    print('duplikat baru ditolak')\nprint(c.execute(\"SELECT name FROM sqlite_master WHERE type = 'index'\").fetchall())",
+              "expected_output_note": "ada duplikat\nduplikat baru ditolak\n[('idx_email',)]",
+              "explanation": "Index unik gagal dibuat selama masih ada duplikat. Setelah duplikat dihapus ia berhasil dan menolak duplikat baru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merawat index\n\nIndex perlu dievaluasi berkala. Query yang berubah dapat membuat index lama tidak terpakai lagi, dan index tak terpakai hanya membebani penulisan. Periksa daftar index lewat `sqlite_master`, lalu hapus yang tidak diperlukan dengan `DROP INDEX`.\n\nSetelah banyak perubahan data, statistik tabel dapat usang. Perintah `ANALYZE` memperbarui statistik agar perencana query memilih strategi yang tepat. Merawat index sama pentingnya dengan membuatnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pola query dan index\n\nRancang index dari query nyata, bukan dari kolom. Kumpulkan query yang paling sering atau paling lambat, lihat kolom di `WHERE`, `JOIN`, dan `ORDER BY`, lalu buat index yang melayani banyak query sekaligus. Index yang melayani satu query langka jarang sepadan.\n\nUntuk kunci asing, pertimbangkan memberi index pada kolom rujukan di tabel anak, karena JOIN dan penghapusan induk perlu mencari baris anak dengan cepat."
+            }
+          ],
+          "quick_check": {
+            "question": "SCAN pada rencana berarti?",
+            "options": [
+              "Membaca seluruh tabel",
+              "Memakai index"
+            ],
+            "answer_index": 0,
+            "explanation": "Tanpa index.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-08-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `buat_indeks(c)` yang membuat index bernama `idx_log_user` pada kolom `user_id` tabel `log`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef buat_indeks(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "_pakai(c, q)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE log (id INTEGER PRIMARY KEY, user_id INTEGER, aksi TEXT);\n    CREATE TABLE pengguna (id INTEGER PRIMARY KEY, email TEXT);\n    INSERT INTO pengguna VALUES (1, 'a@x.com'), (2, 'b@x.com'), (3, NULL);\n    ''')\n    c.executemany('INSERT INTO log (user_id, aksi) VALUES (?, ?)', [(i % 100, 'a' if i % 2 == 0 else 'b') for i in range(1000)])\n    return c\ndef _pakai(c, q):\n    return any('INDEX' in r[3] for r in c.execute('EXPLAIN QUERY PLAN ' + q).fetchall())\ndef _gagal(c, sql, args=()):\n    try:\n        c.execute(sql, args)\n        return False\n    except sqlite3.IntegrityError:\n        return True\nc = _db()\nq = 'SELECT * FROM log WHERE user_id = 5'\nassert _pakai(c, q) is False"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "_pakai(c, q)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "buat_indeks(c)\nassert _pakai(c, q) is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "nama = [r[0] for r in c.execute(\"SELECT name FROM sqlite_master WHERE type = 'index'\").fetchall()]\nassert 'idx_log_user' in nama"
+              }
+            ]
+          },
+          "hint": "CREATE INDEX idx_log_user ON log (user_id).",
+          "solution": "import sqlite3\n\ndef buat_indeks(c):\n    c.execute('CREATE INDEX idx_log_user ON log (user_id)')",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-08-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rencana_pakai_indeks(c, q)` yang menjalankan `EXPLAIN QUERY PLAN` untuk query `q` dan mengembalikan `True` bila ada langkah yang keterangannya memuat kata `INDEX`, atau `False` bila tidak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef rencana_pakai_indeks(c, q):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rencana_pakai_indeks(c, q)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE log (id INTEGER PRIMARY KEY, user_id INTEGER, aksi TEXT);\n    CREATE TABLE pengguna (id INTEGER PRIMARY KEY, email TEXT);\n    INSERT INTO pengguna VALUES (1, 'a@x.com'), (2, 'b@x.com'), (3, NULL);\n    ''')\n    c.executemany('INSERT INTO log (user_id, aksi) VALUES (?, ?)', [(i % 100, 'a' if i % 2 == 0 else 'b') for i in range(1000)])\n    return c\ndef _pakai(c, q):\n    return any('INDEX' in r[3] for r in c.execute('EXPLAIN QUERY PLAN ' + q).fetchall())\ndef _gagal(c, sql, args=()):\n    try:\n        c.execute(sql, args)\n        return False\n    except sqlite3.IntegrityError:\n        return True\nc = _db()\nq = 'SELECT * FROM log WHERE user_id = 5'\nassert rencana_pakai_indeks(c, q) is False"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rencana_pakai_indeks(c, 'SELECT * FROM log WH...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rencana_pakai_indeks(c, 'SELECT * FROM log WHERE id = 5') is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rencana_pakai_indeks(c, q)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('CREATE INDEX idx_u ON log (user_id)')\nassert rencana_pakai_indeks(c, q) is True"
+              }
+            ]
+          },
+          "hint": "Baca kolom keterangan (indeks 3) dari hasil EXPLAIN QUERY PLAN.",
+          "solution": "import sqlite3\n\ndef rencana_pakai_indeks(c, q):\n    rows = c.execute('EXPLAIN QUERY PLAN ' + q).fetchall()\n    return any('INDEX' in r[3] for r in rows)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-08-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `buat_indeks_gabungan(c)` yang membuat index `idx_log_user_aksi` pada kolom `(user_id, aksi)` tabel `log` dan mengembalikan list nama kolom index itu sesuai urutan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef buat_indeks_gabungan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "buat_indeks_gabungan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE log (id INTEGER PRIMARY KEY, user_id INTEGER, aksi TEXT);\n    CREATE TABLE pengguna (id INTEGER PRIMARY KEY, email TEXT);\n    INSERT INTO pengguna VALUES (1, 'a@x.com'), (2, 'b@x.com'), (3, NULL);\n    ''')\n    c.executemany('INSERT INTO log (user_id, aksi) VALUES (?, ?)', [(i % 100, 'a' if i % 2 == 0 else 'b') for i in range(1000)])\n    return c\ndef _pakai(c, q):\n    return any('INDEX' in r[3] for r in c.execute('EXPLAIN QUERY PLAN ' + q).fetchall())\ndef _gagal(c, sql, args=()):\n    try:\n        c.execute(sql, args)\n        return False\n    except sqlite3.IntegrityError:\n        return True\nc = _db()\nassert buat_indeks_gabungan(c) == ['user_id', 'aksi']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "_pakai(c, \"SELECT * FROM log WHERE user_id = ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert _pakai(c, \"SELECT * FROM log WHERE user_id = 5 AND aksi = 'b'\") is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "c.execute(\"SELECT COUNT(*) FROM log WHERE use...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert c.execute(\"SELECT COUNT(*) FROM log WHERE user_id = 5 AND aksi = 'b'\").fetchone()[0] == 10"
+              }
+            ]
+          },
+          "hint": "Buat index lalu baca PRAGMA index_info dan ambil kolom nama.",
+          "solution": "import sqlite3\n\ndef buat_indeks_gabungan(c):\n    c.execute('CREATE INDEX idx_log_user_aksi ON log (user_id, aksi)')\n    return [r[2] for r in c.execute('PRAGMA index_info(idx_log_user_aksi)').fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-08-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `buat_indeks_unik(c)` yang membuat index unik bernama `idx_email` pada kolom `email` tabel `pengguna`, sehingga email ganda ditolak tetapi `NULL` berganda tetap diterima.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef buat_indeks_unik(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "_gagal(c, \"INSERT INTO pengguna (email) VALUE...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE log (id INTEGER PRIMARY KEY, user_id INTEGER, aksi TEXT);\n    CREATE TABLE pengguna (id INTEGER PRIMARY KEY, email TEXT);\n    INSERT INTO pengguna VALUES (1, 'a@x.com'), (2, 'b@x.com'), (3, NULL);\n    ''')\n    c.executemany('INSERT INTO log (user_id, aksi) VALUES (?, ?)', [(i % 100, 'a' if i % 2 == 0 else 'b') for i in range(1000)])\n    return c\ndef _pakai(c, q):\n    return any('INDEX' in r[3] for r in c.execute('EXPLAIN QUERY PLAN ' + q).fetchall())\ndef _gagal(c, sql, args=()):\n    try:\n        c.execute(sql, args)\n        return False\n    except sqlite3.IntegrityError:\n        return True\nc = _db()\nbuat_indeks_unik(c)\nassert _gagal(c, \"INSERT INTO pengguna (email) VALUES ('a@x.com')\")"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "_gagal(c, \"INSERT INTO pengguna (email) VALUE...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert not _gagal(c, \"INSERT INTO pengguna (email) VALUES ('c@x.com')\")"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "_gagal(c, 'INSERT INTO pengguna (email) VALUE...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert not _gagal(c, 'INSERT INTO pengguna (email) VALUES (NULL)')"
+              }
+            ]
+          },
+          "hint": "CREATE UNIQUE INDEX idx_email ON pengguna (email).",
+          "solution": "import sqlite3\n\ndef buat_indeks_unik(c):\n    c.execute('CREATE UNIQUE INDEX idx_email ON pengguna (email)')",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Index mempercepat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pencarian",
+              "description": ""
+            },
+            {
+              "label": "Penulisan",
+              "description": ""
+            },
+            {
+              "label": "Penghapusan tabel",
+              "description": ""
+            },
+            {
+              "label": "Pembuatan kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Cari.",
+          "explanation": "Melompat ke baris."
+        },
+        {
+          "q": "Biaya index?",
+          "code": null,
+          "options": [
+            {
+              "label": "Ruang dan penulisan lebih lambat",
+              "description": ""
+            },
+            {
+              "label": "Hasil query berubah",
+              "description": ""
+            },
+            {
+              "label": "Tabel terkunci",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tulis.",
+          "explanation": "Pembaruan index."
+        },
+        {
+          "q": "SCAN pada rencana berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membaca seluruh tabel",
+              "description": ""
+            },
+            {
+              "label": "Memakai index",
+              "description": ""
+            },
+            {
+              "label": "Query gagal",
+              "description": ""
+            },
+            {
+              "label": "Tabel kosong",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Seluruh.",
+          "explanation": "Tanpa index."
+        },
+        {
+          "q": "Aturan awalan kiri berlaku pada?",
+          "code": null,
+          "options": [
+            {
+              "label": "Index gabungan",
+              "description": ""
+            },
+            {
+              "label": "Tabel kosong",
+              "description": ""
+            },
+            {
+              "label": "Foreign key",
+              "description": ""
+            },
+            {
+              "label": "CHECK",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Gabungan.",
+          "explanation": "Urutan kolom penting."
+        },
+        {
+          "q": "Perintah melihat rencana query?",
+          "code": null,
+          "options": [
+            {
+              "label": "EXPLAIN QUERY PLAN",
+              "description": ""
+            },
+            {
+              "label": "SHOW PLAN",
+              "description": ""
+            },
+            {
+              "label": "DESCRIBE",
+              "description": ""
+            },
+            {
+              "label": "PRAGMA plan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Explain.",
+          "explanation": "Diletakkan di depan query."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memberi index pada setiap kolom. Lebih baik: Beri index pada kolom yang sering dipakai di WHERE dan JOIN.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memberi index pada setiap kolom.",
+          "fix": "Beri index pada kolom yang sering dipakai di WHERE dan JOIN."
+        },
+        {
+          "mistake": "Membungkus kolom ber-index dengan fungsi di WHERE.",
+          "fix": "Bandingkan kolom apa adanya."
+        },
+        {
+          "mistake": "Menebak manfaat index tanpa mengukur.",
+          "fix": "Periksa dengan EXPLAIN QUERY PLAN."
+        }
+      ],
+      "summary": [
+        "Index mempercepat pencarian tetapi menambah biaya penulisan.",
+        "Index gabungan mengikuti aturan awalan kiri.",
+        "EXPLAIN QUERY PLAN menunjukkan apakah index terpakai.",
+        "Beri index secukupnya dan ukur manfaatnya."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Index dan rencana eksekusi"
+          },
+          {
+            "type": "text",
+            "source": "Sebelum index, query memindai tabel. Setelah index, query memakainya dengan hasil tetap sepuluh baris. Pencarian berdasarkan id tidak memakai kata INDEX karena memakai primary key rowid langsung."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('CREATE TABLE log (id INTEGER PRIMARY KEY, user_id INTEGER, aksi TEXT)')\nc.executemany('INSERT INTO log (user_id, aksi) VALUES (?, ?)', [(i % 100, 'a' if i % 2 == 0 else 'b') for i in range(1000)])\n\ndef pakai_indeks(q):\n    return any('INDEX' in r[3] for r in c.execute('EXPLAIN QUERY PLAN ' + q).fetchall())\n\nq = 'SELECT * FROM log WHERE user_id = 5'\nprint(pakai_indeks(q))\nc.execute('CREATE INDEX idx_log_user ON log (user_id)')\nprint(pakai_indeks(q))\nprint(c.execute('SELECT COUNT(*) FROM log WHERE user_id = 5').fetchone())\nprint(pakai_indeks('SELECT * FROM log WHERE id = 5'))"
+          },
+          {
+            "type": "text",
+            "source": "Index gabungan melayani query dengan kedua kolom maupun hanya kolom pertama. Pengguna lima selalu berada pada indeks ganjil sehingga seluruh sepuluh barisnya bertindakan b."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('CREATE TABLE log (id INTEGER PRIMARY KEY, user_id INTEGER, aksi TEXT)')\nc.executemany('INSERT INTO log (user_id, aksi) VALUES (?, ?)', [(i % 100, 'a' if i % 2 == 0 else 'b') for i in range(1000)])\n\ndef pakai_indeks(q):\n    return any('INDEX' in r[3] for r in c.execute('EXPLAIN QUERY PLAN ' + q).fetchall())\n\nc.execute('CREATE INDEX idx_log_user_aksi ON log (user_id, aksi)')\nprint([r[2] for r in c.execute('PRAGMA index_info(idx_log_user_aksi)').fetchall()])\nprint(pakai_indeks(\"SELECT * FROM log WHERE user_id = 5 AND aksi = 'b'\"))\nprint(pakai_indeks('SELECT * FROM log WHERE user_id = 5'))\nprint(c.execute(\"SELECT COUNT(*) FROM log WHERE user_id = 5 AND aksi = 'b'\").fetchone())\nprint(c.execute(\"SELECT COUNT(*) FROM log WHERE user_id = 5 AND aksi = 'a'\").fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Index unik gagal dibuat selama masih ada duplikat. Setelah duplikat dihapus ia berhasil dan menolak duplikat baru."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.execute('CREATE TABLE pengguna (id INTEGER PRIMARY KEY, email TEXT)')\nc.executemany('INSERT INTO pengguna (email) VALUES (?)', [('a@x.com',), ('b@x.com',), ('a@x.com',)])\ntry:\n    c.execute('CREATE UNIQUE INDEX idx_email ON pengguna (email)')\nexcept sqlite3.IntegrityError:\n    print('ada duplikat')\nc.execute(\"DELETE FROM pengguna WHERE id = 3\")\nc.execute('CREATE UNIQUE INDEX idx_email ON pengguna (email)')\ntry:\n    c.execute(\"INSERT INTO pengguna (email) VALUES ('b@x.com')\")\nexcept sqlite3.IntegrityError:\n    print('duplikat baru ditolak')\nprint(c.execute(\"SELECT name FROM sqlite_master WHERE type = 'index'\").fetchall())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

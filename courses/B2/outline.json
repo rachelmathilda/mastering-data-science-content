@@ -28,101 +28,151 @@
       "module_no": 1,
       "title": "Series dan DataFrame",
       "file": "m01.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B2-01-1",
+        "exercise_id": "B2-01-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def frekuensi(daftar):\n    ..."
+      }
     },
     {
       "module_no": 2,
       "title": "Memilih data dengan loc dan iloc",
       "file": "m02.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B2-02-1",
+        "exercise_id": "B2-02-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def selang_kolom(df, kolom):\n    ..."
+      }
     },
     {
       "module_no": 3,
       "title": "Filtering, sorting, dan query",
       "file": "m03.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B2-03-1",
+        "exercise_id": "B2-03-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def top_n(df, kolom, n):\n    ..."
+      }
     },
     {
       "module_no": 4,
       "title": "Kolom turunan, map, dan apply",
       "file": "m04.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B2-04-1",
+        "exercise_id": "B2-04-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def normalisasi_minmax(s):\n    ..."
+      }
     },
     {
       "module_no": 5,
       "title": "Missing value dasar",
       "file": "m05.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B2-05-1",
+        "exercise_id": "B2-05-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def kolom_hilang(df):\n    ..."
+      }
     },
     {
       "module_no": 6,
       "title": "GroupBy dan agregasi",
       "file": "m06.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B2-06-1",
+        "exercise_id": "B2-06-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def wilayah_terbesar(df):\n    ..."
+      }
     },
     {
       "module_no": 7,
       "title": "Merge, join, dan concat",
       "file": "m07.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B2-07-1",
+        "exercise_id": "B2-07-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def id_yatim(pel, pes):\n    ..."
+      }
     },
     {
       "module_no": 8,
       "title": "Pivot, melt, dan reshape",
       "file": "m08.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B2-08-1",
+        "exercise_id": "B2-08-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def pivot_aman(df, agg):\n    ..."
+      }
     },
     {
       "module_no": 9,
       "title": "Time series di pandas",
       "file": "m09.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B2-09-1",
+        "exercise_id": "B2-09-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def daftar_tanggal(awal, n, freq):\n    ..."
+      }
     },
     {
       "module_no": 10,
       "title": "Idiom pandas dan performa",
       "file": "m10.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B2-10-1",
+        "exercise_id": "B2-10-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def filter_query(df, minimal):\n    ..."
+      }
     }
   ]
 }

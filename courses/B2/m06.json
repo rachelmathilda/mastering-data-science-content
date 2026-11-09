@@ -1,0 +1,1612 @@
+{
+  "schema_version": 2,
+  "course_id": "B2",
+  "module_no": 6,
+  "title": "GroupBy dan agregasi",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Mengelompokkan dan mengagregasi dengan groupby",
+    "Memakai named aggregation, banyak kunci, dan unstack",
+    "Memakai transform, filter, dan peringkat per kelompok"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B2-06-1",
+    "exercise_id": "B2-06-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def wilayah_terbesar(df):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B2-06-1",
+      "title": "Dasar groupby",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami pola pisah, terapkan, gabung",
+        "Mengelompokkan dengan groupby dan satu agregasi",
+        "Memakai size, count, dan beberapa fungsi agregasi",
+        "Mengurutkan dan memilih hasil kelompok"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Pertanyaan per kelompok",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pertanyaan per kelompok\n\nHampir setiap analisis bisnis bertanya per kelompok: total penjualan per wilayah, rata-rata nilai per kelas, jumlah pengguna per kota. Pandas menjawabnya dengan `groupby`. Prinsipnya pisah, terapkan, gabung: tabel dipecah menurut nilai kunci, fungsi diterapkan pada tiap potongan, dan hasilnya digabung menjadi satu tabel kecil. Menguasai groupby membuka sebagian besar analisis tabular."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data contoh\n\nPelajaran ini memakai tabel enam transaksi dengan kolom `wilayah`, `produk`, `qty`, `harga`, dan `omzet` yang dihitung sebagai qty dikali harga. Wilayah Barat memiliki tiga transaksi, Timur dua, dan Utara satu. Tabel sekecil ini memungkinkan Anda memeriksa tiap total dengan kalkulator dan memastikan Anda paham apa yang dilakukan groupby sebelum memakainya pada jutaan baris."
+            },
+            {
+              "type": "code_example",
+              "filename": "groupby_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\ng = df.groupby('wilayah')\nprint(g['qty'].sum().to_dict())\nprint(g['qty'].mean().round(2).to_dict())\nprint(g['qty'].max().to_dict())\nprint(g['omzet'].sum().to_dict())\nprint(g.size().to_dict())\nprint(g['qty'].count().to_dict())",
+              "expected_output_note": "{'Barat': 24, 'Timur': 17, 'Utara': 4}\n{'Barat': 8.0, 'Timur': 8.5, 'Utara': 4.0}\n{'Barat': 10, 'Timur': 12, 'Utara': 4}\n{'Barat': 3200, 'Timur': 2900, 'Utara': 800}\n{'Barat': 3, 'Timur': 2, 'Utara': 1}\n{'Barat': 3, 'Timur': 2, 'Utara': 1}",
+              "explanation": "Groupby diikuti pemilihan kolom dan fungsi agregasi menghasilkan satu nilai per kelompok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Anatomi satu perintah\n\nPerintah `df.groupby('wilayah')['qty'].sum()` terdiri dari tiga bagian: kunci pengelompokan, kolom yang dihitung, dan fungsi agregasi. Hasilnya Series dengan nilai kunci sebagai indeks. Objek `groupby` sendiri malas: ia belum menghitung apa pun sampai Anda memanggil agregasi. Karena itu Anda dapat menyimpannya dalam variabel dan memakainya berulang kali."
+            },
+            {
+              "type": "text",
+              "markdown": "## size dan count\n\nMetode `size()` menghitung jumlah baris per kelompok, termasuk baris dengan nilai hilang, sedangkan `count()` menghitung nilai tidak hilang pada kolom tertentu. Pada data bersih keduanya sama, tetapi pada data dengan NaN keduanya berbeda. Pilih `size` untuk pertanyaan berapa transaksi dan `count` untuk pertanyaan berapa nilai yang terisi."
+            }
+          ],
+          "quick_check": {
+            "question": "Pola groupby?",
+            "options": [
+              "Pisah, terapkan, gabung",
+              "Urut, potong, tempel"
+            ],
+            "answer_index": 0,
+            "explanation": "Split apply combine.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Fungsi agregasi umum",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi agregasi umum\n\nFungsi agregasi yang sering dipakai meliputi `sum`, `mean`, `median`, `min`, `max`, `std`, `var`, `count`, `nunique`, `first`, dan `last`. Semuanya melewati nilai hilang secara bawaan. Anda juga dapat memberi beberapa fungsi sekaligus lewat `agg(['sum', 'mean', 'max'])` yang menghasilkan satu kolom per fungsi, sehingga satu perintah menggantikan banyak perintah terpisah."
+            },
+            {
+              "type": "code_example",
+              "filename": "groupby_agg_list.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\ng = df.groupby('wilayah')\nprint(g['qty'].agg(['sum', 'mean', 'max']).values.tolist())\nprint(g['qty'].median().to_dict())\nprint(g['qty'].std().round(2).to_dict())\nprint(g['qty'].nunique().to_dict())\nprint(g['qty'].first().to_dict())\nprint(df.groupby('produk')['omzet'].sum().to_dict(), df['omzet'].sum())",
+              "expected_output_note": "[[24.0, 8.0, 10.0], [17.0, 8.5, 12.0], [4.0, 4.0, 4.0]]\n{'Barat': 8.0, 'Timur': 8.5, 'Utara': 4.0}\n{'Barat': 2.0, 'Timur': 4.95, 'Utara': nan}\n{'Barat': 3, 'Timur': 2, 'Utara': 1}\n{'Barat': 10, 'Timur': 5, 'Utara': 4}\n{'A': 2100, 'B': 4800} 6900",
+              "explanation": "Agg dengan list menghitung beberapa fungsi. Simpangan baku kelompok satu baris adalah NaN."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kelompok satu anggota\n\nSimpangan baku dan varians memerlukan sekurang-kurangnya dua nilai. Kelompok berisi satu baris menghasilkan NaN, seperti wilayah Utara di atas. Ini bukan galat, tetapi tanda bahwa kelompok terlalu kecil untuk statistik yang bermakna. Selalu periksa ukuran kelompok dengan `size()` sebelum menafsirkan rata-rata atau simpangan baku dari kelompok yang sangat kecil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengurutkan hasil\n\nHasil groupby diurutkan menurut kunci secara bawaan. Untuk peringkat, urutkan menurut nilai dengan `sort_values(ascending=False)`. Metode `nlargest(n)` dan `nsmallest(n)` mengambil n teratas atau terbawah langsung, dan `idxmax` memberi kunci dengan nilai terbesar. Peringkat adalah pertanyaan paling umum setelah agregasi, jadi rangkaian groupby, sum, dan sort perlu terasa otomatis."
+            },
+            {
+              "type": "code_example",
+              "filename": "groupby_urut.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\nt = df.groupby('wilayah')['qty'].sum()\nprint(t.sort_values(ascending=False).index.tolist())\nprint(t.idxmax(), t.max())\nprint(t.nlargest(2).to_dict())\nprint(df.groupby('wilayah', as_index=False)['qty'].sum().values.tolist())\nprint(t.reset_index().columns.tolist())\nprint([(k, len(v)) for k, v in df.groupby('wilayah')])",
+              "expected_output_note": "['Barat', 'Timur', 'Utara']\nBarat 24\n{'Barat': 24, 'Timur': 17}\n[['Barat', 24], ['Timur', 17], ['Utara', 4]]\n['wilayah', 'qty']\n[('Barat', 3), ('Timur', 2), ('Utara', 1)]",
+              "explanation": "Sort, idxmax, dan nlargest membuat peringkat. As_index False dan reset_index mengembalikan kunci sebagai kolom. Perulangan atas groupby menghasilkan pasangan kunci dan potongan tabel."
+            }
+          ],
+          "quick_check": {
+            "question": "size menghitung?",
+            "options": [
+              "Kolom",
+              "Baris per kelompok"
+            ],
+            "answer_index": 1,
+            "explanation": "Baris.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kunci sebagai kolom",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kunci sebagai kolom\n\nSecara bawaan kunci pengelompokan menjadi indeks hasil. Pakai `as_index=False` atau `reset_index()` agar kunci menjadi kolom biasa, bentuk yang lebih mudah digabung dengan tabel lain, disimpan ke CSV, atau digambar. Bila Anda sering menulis `reset_index` di akhir, pertimbangkan `as_index=False` di awal agar kode lebih ringkas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Persentase dari total\n\nPertanyaan umum: berapa persen tiap kelompok dari total. Bagi hasil agregasi dengan jumlah seluruhnya lalu kalikan seratus, misalnya `t / t.sum() * 100`. Pada contoh, omzet Barat 3200 dari total 6900 adalah 46,4 persen. Pembulatan sebaiknya dilakukan di akhir, hanya untuk tampilan, agar tidak menumpuk galat pembulatan dalam hitungan lanjutan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kelompok dengan NaN\n\nBaris yang kuncinya NaN dibuang secara bawaan dari groupby. Pada data nyata ini dapat menghilangkan sebagian baris tanpa peringatan. Gunakan `dropna=False` untuk memasukkan NaN sebagai kelompok sendiri. Periksa total hasil agregasi terhadap total tabel asal: bila berbeda, kemungkinan ada baris yang kuncinya hilang dan terbuang diam-diam."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Rekonsiliasi",
+              "markdown": "Bandingkan jumlah hasil groupby dengan jumlah tabel asal. Selisih menandakan baris dengan kunci NaN yang terbuang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa hasil dengan tangan\n\nSebelum mempercayai groupby pada data besar, hitung satu kelompok dengan tangan pada contoh kecil. Wilayah Barat memiliki qty sepuluh, delapan, dan enam yang berjumlah dua puluh empat dan berata-rata delapan. Bila angka tangan sama dengan hasil pandas, Anda yakin memahami perintahnya. Kebiasaan ini mencegah kesalahan seperti salah memilih kolom atau salah memakai fungsi agregasi yang baru terlihat ketika laporan sudah dibaca banyak orang."
+            }
+          ],
+          "quick_check": {
+            "question": "Kelompok satu baris std?",
+            "options": [
+              "NaN",
+              "0"
+            ],
+            "answer_index": 0,
+            "explanation": "Butuh dua nilai.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-06-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `total_per_wilayah(df)` yang mengembalikan dict jumlah `qty` per `wilayah`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef total_per_wilayah(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_per_wilayah(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert total_per_wilayah(df) == {'Barat': 24, 'Timur': 17, 'Utara': 4}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_per_wilayah(df.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_per_wilayah(df.iloc[:2]) == {'Barat': 10, 'Timur': 5}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sum(total_per_wilayah(df).values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(total_per_wilayah(df).values()) == int(df['qty'].sum())"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "total_per_wilayah(df.iloc[[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_per_wilayah(df.iloc[[5]]) == {'Utara': 4}"
+              }
+            ]
+          },
+          "hint": "groupby wilayah lalu sum pada qty.",
+          "solution": "import pandas as pd\n\ndef total_per_wilayah(df):\n    return df.groupby('wilayah')['qty'].sum().to_dict()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-06-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_omzet(df)` yang mengembalikan dict rata-rata `omzet` per `wilayah`, dibulatkan dua desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef rata_omzet(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_omzet(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert rata_omzet(df) == {'Barat': 1066.67, 'Timur': 1450.0, 'Utara': 800.0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_omzet(df.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_omzet(df.iloc[:2]) == {'Barat': 1000.0, 'Timur': 500.0}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_omzet(df.iloc[[2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_omzet(df.iloc[[2, 4]]) == {'Barat': 1100.0}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(rata_omzet(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(rata_omzet(df)) == 3"
+              }
+            ]
+          },
+          "hint": "groupby wilayah, mean pada omzet, lalu round.",
+          "solution": "import pandas as pd\n\ndef rata_omzet(df):\n    return df.groupby('wilayah')['omzet'].mean().round(2).to_dict()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-06-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `jumlah_baris(df, kolom)` yang mengembalikan dict banyaknya baris per nilai pada kolom yang diberikan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef jumlah_baris(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_baris(df, 'wilayah')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert jumlah_baris(df, 'wilayah') == {'Barat': 3, 'Timur': 2, 'Utara': 1}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_baris(df, 'produk')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_baris(df, 'produk') == {'A': 3, 'B': 3}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_baris(df.iloc[:1], 'produk')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_baris(df.iloc[:1], 'produk') == {'A': 1}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(jumlah_baris(df, 'harga').values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(jumlah_baris(df, 'harga').values()) == 6"
+              }
+            ]
+          },
+          "hint": "groupby kolom lalu size.",
+          "solution": "import pandas as pd\n\ndef jumlah_baris(df, kolom):\n    return df.groupby(kolom).size().to_dict()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-06-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `wilayah_terbesar(df)` yang mengembalikan nama wilayah dengan jumlah `qty` terbesar.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef wilayah_terbesar(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "wilayah_terbesar(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert wilayah_terbesar(df) == 'Barat'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "wilayah_terbesar(df.iloc[[1, 3, 5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert wilayah_terbesar(df.iloc[[1, 3, 5]]) == 'Timur'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "wilayah_terbesar(df.iloc[[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert wilayah_terbesar(df.iloc[[5]]) == 'Utara'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "wilayah_terbesar(df[df['produk'] == 'B'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert wilayah_terbesar(df[df['produk'] == 'B']) == 'Timur'"
+              }
+            ]
+          },
+          "hint": "Jumlahkan qty per wilayah lalu idxmax.",
+          "solution": "import pandas as pd\n\ndef wilayah_terbesar(df):\n    return df.groupby('wilayah')['qty'].sum().idxmax()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Pola groupby?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pisah, terapkan, gabung",
+              "description": ""
+            },
+            {
+              "label": "Urut, potong, tempel",
+              "description": ""
+            },
+            {
+              "label": "Baca, tulis, simpan",
+              "description": ""
+            },
+            {
+              "label": "Ubah, hapus, isi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pisah.",
+          "explanation": "Split apply combine."
+        },
+        {
+          "q": "size menghitung?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris per kelompok",
+              "description": ""
+            },
+            {
+              "label": "Kolom",
+              "description": ""
+            },
+            {
+              "label": "Nilai unik",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baris.",
+          "explanation": "Baris."
+        },
+        {
+          "q": "Kelompok satu baris std?",
+          "code": null,
+          "options": [
+            {
+              "label": "NaN",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NaN.",
+          "explanation": "Butuh dua nilai."
+        },
+        {
+          "q": "Kunci jadi kolom dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "as_index False",
+              "description": ""
+            },
+            {
+              "label": "sort",
+              "description": ""
+            },
+            {
+              "label": "drop",
+              "description": ""
+            },
+            {
+              "label": "cut",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "as_index.",
+          "explanation": "Reset."
+        },
+        {
+          "q": "Nilai terbesar kunci dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "idxmax",
+              "description": ""
+            },
+            {
+              "label": "argsort",
+              "description": ""
+            },
+            {
+              "label": "rank",
+              "description": ""
+            },
+            {
+              "label": "cut",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "idxmax.",
+          "explanation": "Indeks maksimum."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menghitung per kelompok dengan perulangan manual. Lebih baik: Pakai groupby dengan agregasi.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menghitung per kelompok dengan perulangan manual.",
+          "fix": "Pakai groupby dengan agregasi."
+        },
+        {
+          "mistake": "Menafsirkan simpangan baku kelompok satu baris.",
+          "fix": "Periksa ukuran kelompok dengan size."
+        },
+        {
+          "mistake": "Lupa baris dengan kunci NaN terbuang.",
+          "fix": "Bandingkan total atau pakai dropna False."
+        }
+      ],
+      "summary": [
+        "Groupby memisahkan, menerapkan fungsi, dan menggabung hasil.",
+        "Pilih kolom dan fungsi agregasi setelah groupby.",
+        "size menghitung baris dan count menghitung nilai terisi.",
+        "Urutkan dengan sort_values atau nlargest untuk peringkat."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Dasar groupby"
+          },
+          {
+            "type": "text",
+            "source": "Groupby diikuti pemilihan kolom dan fungsi agregasi menghasilkan satu nilai per kelompok."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\ng = df.groupby('wilayah')\nprint(g['qty'].sum().to_dict())\nprint(g['qty'].mean().round(2).to_dict())\nprint(g['qty'].max().to_dict())\nprint(g['omzet'].sum().to_dict())\nprint(g.size().to_dict())\nprint(g['qty'].count().to_dict())"
+          },
+          {
+            "type": "text",
+            "source": "Agg dengan list menghitung beberapa fungsi. Simpangan baku kelompok satu baris adalah NaN."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\ng = df.groupby('wilayah')\nprint(g['qty'].agg(['sum', 'mean', 'max']).values.tolist())\nprint(g['qty'].median().to_dict())\nprint(g['qty'].std().round(2).to_dict())\nprint(g['qty'].nunique().to_dict())\nprint(g['qty'].first().to_dict())\nprint(df.groupby('produk')['omzet'].sum().to_dict(), df['omzet'].sum())"
+          },
+          {
+            "type": "text",
+            "source": "Sort, idxmax, dan nlargest membuat peringkat. As_index False dan reset_index mengembalikan kunci sebagai kolom. Perulangan atas groupby menghasilkan pasangan kunci dan potongan tabel."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\nt = df.groupby('wilayah')['qty'].sum()\nprint(t.sort_values(ascending=False).index.tolist())\nprint(t.idxmax(), t.max())\nprint(t.nlargest(2).to_dict())\nprint(df.groupby('wilayah', as_index=False)['qty'].sum().values.tolist())\nprint(t.reset_index().columns.tolist())\nprint([(k, len(v)) for k, v in df.groupby('wilayah')])"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-06-2",
+      "title": "Agregasi bernama dan banyak kunci",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memberi nama pada kolom hasil dengan named aggregation",
+        "Mengelompokkan dengan dua kunci atau lebih",
+        "Mengubah hasil bertingkat dengan unstack",
+        "Memakai fungsi agregasi buatan sendiri"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Lebih dari satu ringkasan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Lebih dari satu ringkasan\n\nLaporan nyata jarang meminta satu angka. Biasanya kita ingin total, rata-rata, dan maksimum sekaligus, dengan nama kolom yang jelas. Named aggregation menjawabnya: `agg(nama_baru=('kolom', 'fungsi'))`. Setiap argumen bernama menjadi satu kolom hasil, sehingga tabel keluaran siap dibaca atau disimpan tanpa mengganti nama kolom lagi."
+            },
+            {
+              "type": "code_example",
+              "filename": "agg_bernama.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\nr = df.groupby('wilayah').agg(total=('qty', 'sum'), rata=('omzet', 'mean'))\nprint(r.columns.tolist())\nprint(r.values.tolist())\nprint(r.index.tolist())\nr2 = df.groupby('produk').agg(n=('qty', 'size'), maks=('qty', 'max'), omzet=('omzet', 'sum'))\nprint(r2.values.tolist())\nprint(r2.columns.tolist())",
+              "expected_output_note": "['total', 'rata']\n[[24.0, 1066.6666666666667], [17.0, 1450.0], [4.0, 800.0]]\n['Barat', 'Timur', 'Utara']\n[[3, 10, 2100], [3, 12, 4800]]\n['n', 'maks', 'omzet']",
+              "explanation": "Named aggregation memberi nama kolom hasil secara langsung."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fungsi dan lambda\n\nFungsi agregasi dapat berupa teks seperti `'sum'`, fungsi pustaka seperti `np.sum`, atau fungsi buatan sendiri yang menerima Series kelompok dan mengembalikan satu nilai. Misalnya rentang nilai, `lambda s: s.max() - s.min()`. Fungsi bawaan dengan nama teks lebih cepat karena dioptimalkan, jadi pakai fungsi buatan sendiri hanya bila tidak ada padanan bawaan."
+            },
+            {
+              "type": "code_example",
+              "filename": "agg_kustom.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\nprint(df.groupby('wilayah')['qty'].apply(lambda s: s.max() - s.min()).to_dict())\nprint(df.groupby('produk')['qty'].agg(lambda s: s.sum() / len(s)).to_dict())\nprint(df.groupby('wilayah').agg(rentang=('qty', lambda s: s.max() - s.min()))['rentang'].to_dict())\nprint(df.groupby('wilayah')['harga'].agg(lambda s: s.mode()[0]).to_dict())",
+              "expected_output_note": "{'Barat': 4, 'Timur': 7, 'Utara': 0}\n{'A': 7.0, 'B': 8.0}\n{'Barat': 4, 'Timur': 7, 'Utara': 0}\n{'Barat': 100, 'Timur': 100, 'Utara': 200}",
+              "explanation": "Fungsi buatan sendiri menerima Series kelompok. Lambda dapat dipakai lewat apply atau agg."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dua kunci\n\nMemberi list ke groupby mengelompokkan menurut kombinasi kunci, misalnya wilayah dan produk. Hasilnya Series dengan indeks bertingkat, satu tingkat per kunci. Ini cocok untuk pertanyaan seperti penjualan tiap produk di tiap wilayah. Kombinasi yang tidak ada di data, seperti produk A di Utara, tidak muncul sama sekali dalam hasil bawaan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Indeks bertingkat\n\nIndeks bertingkat tampak rumit tetapi sebenarnya hanya tuple kunci. Anda dapat mengambil satu tingkat dengan `.loc['Barat']`, atau mengulang pasangan lewat `items()`. Metode `reset_index()` meratakannya menjadi kolom biasa. Untuk laporan, bentuk lebar yang dibuat dengan `unstack` biasanya lebih mudah dibaca daripada bentuk panjang bertingkat."
+            },
+            {
+              "type": "code_example",
+              "filename": "dua_kunci.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\ns = df.groupby(['wilayah', 'produk'])['qty'].sum()\nprint({w + '-' + p: int(v) for (w, p), v in s.items()})\nprint(s.loc['Barat'].to_dict())\nw = s.unstack(fill_value=0)\nprint(w.values.tolist())\nprint(w.columns.tolist(), w.index.tolist())\nprint(w.sum(axis=1).to_dict())\nprint(pd.pivot_table(df, index='wilayah', columns='produk', values='qty', aggfunc='sum', fill_value=0).values.tolist())",
+              "expected_output_note": "{'Barat-A': 16, 'Barat-B': 8, 'Timur-A': 5, 'Timur-B': 12, 'Utara-B': 4}\n{'A': 16, 'B': 8}\n[[16, 8], [5, 12], [0, 4]]\n['A', 'B'] ['Barat', 'Timur', 'Utara']\n{'Barat': 24, 'Timur': 17, 'Utara': 4}\n[[16, 8], [5, 12], [0, 4]]",
+              "explanation": "Unstack memutar satu tingkat indeks menjadi kolom. Pivot_table memberi hasil sama dalam satu perintah."
+            }
+          ],
+          "quick_check": {
+            "question": "Named aggregation ditulis?",
+            "options": [
+              "nama=('kolom','fungsi')",
+              "kolom:fungsi"
+            ],
+            "answer_index": 0,
+            "explanation": "Tuple.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "unstack dan fill_value",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## unstack dan fill_value\n\nMetode `unstack` memutar tingkat terdalam indeks menjadi kolom, menghasilkan tabel silang. Kombinasi yang tidak ada diisi NaN, dan `fill_value=0` menggantinya dengan nol sehingga tipe tetap bilangan bulat. Bentuk ini ideal untuk peta panas dan laporan. Pembahasan lebih lanjut tentang pivot ada di modul reshape nanti."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peringkat teratas\n\nRangkaian groupby, sum, dan nlargest menjawab pertanyaan n teratas. Untuk n teratas di dalam tiap kelompok, gunakan `sort_values` lalu `groupby(...).head(n)`. Dua pola ini mencakup sebagian besar kebutuhan peringkat. Periksa perilaku saat nilai seri: `nlargest` secara bawaan mempertahankan yang pertama muncul, yang dapat diatur lewat argumen `keep`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pitfall urutan kolom\n\nPada named aggregation urutan kolom hasil mengikuti urutan argumen, bukan urutan abjad. Saat menyimpan ke CSV atau menyerahkan ke pihak lain, urutan itu membentuk kontrak. Tulis urutan secara sengaja dan hindari bergantung pada urutan bawaan, karena perubahan kecil pada kode agregasi dapat menggeser kolom diam-diam dan merusak konsumen laporan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Nama jelas",
+              "markdown": "Pakai named aggregation agar kolom hasil bernama jelas dan urutannya sengaja."
+            },
+            {
+              "type": "text",
+              "markdown": "## Banyak kolom sekaligus\n\nNamed aggregation dapat mengagregasi kolom berbeda dengan fungsi berbeda dalam satu perintah, misalnya jumlah qty, rata-rata harga, dan jumlah unik produk. Ini menggantikan beberapa groupby terpisah yang kemudian harus digabung. Hasilnya satu tabel rapi, dihitung dalam satu lintasan data, sehingga lebih cepat dan lebih mudah dirawat daripada rangkaian perintah yang tersebar."
+            }
+          ],
+          "quick_check": {
+            "question": "groupby dua kunci memberi?",
+            "options": [
+              "Dua tabel",
+              "Indeks bertingkat"
+            ],
+            "answer_index": 1,
+            "explanation": "MultiIndex.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memeriksa kelompok kosong",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memeriksa kelompok kosong\n\nDengan dua kunci, ada kombinasi yang tidak terjadi dalam data, seperti produk A di wilayah Utara. Dalam laporan, ketiadaan ini sering perlu ditampilkan sebagai nol, bukan dihilangkan, karena pembaca mungkin mengira data hilang. Gunakan unstack dengan fill_value nol, atau reindex dengan produk lengkap, agar semua kombinasi muncul secara eksplisit dan konsisten di setiap periode laporan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menamai hasil untuk pembaca\n\nNama kolom hasil adalah antarmuka bagi pembaca laporan. Nama seperti total_qty dan rata_omzet lebih jelas daripada sum dan mean. Hindari singkatan yang hanya Anda pahami, dan konsisten memakai satuan dalam nama bila relevan, misalnya omzet_rupiah. Nama baik mengurangi pertanyaan ulang dan kesalahan tafsir ketika tabel berpindah dari notebook ke presentasi atau dasbor orang lain."
+            },
+            {
+              "type": "text",
+              "markdown": "## Agregasi dan penyaringan bersama\n\nSering kita ingin agregasi hanya pada sebagian baris, misalnya total omzet produk B saja. Saring tabel lebih dulu dengan syarat boolean, lalu panggil groupby pada hasil saringan. Urutan ini lebih jelas daripada menaruh syarat di dalam fungsi agregasi. Bila Anda perlu membandingkan beberapa saringan, hitung masing-masing terpisah dengan nama yang menjelaskan isinya agar hasil mudah ditinjau dan diuji ulang oleh rekan kerja."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menggabung hasil agregasi\n\nHasil dua agregasi dengan kunci sama dapat digabung dengan `pd.concat(axis=1)` atau `join`, karena keduanya berindeks kunci. Namun bila kedua ringkasan dapat dihitung dalam satu perintah agg, lakukan itu agar hanya satu lintasan data. Gabung hanya bila ringkasan berasal dari saringan atau tabel yang berbeda, dan periksa bahwa kunci yang tidak ada di salah satu sisi ditangani dengan sengaja."
+            }
+          ],
+          "quick_check": {
+            "question": "unstack?",
+            "options": [
+              "Memutar indeks ke kolom",
+              "Mengurutkan"
+            ],
+            "answer_index": 0,
+            "explanation": "Lebar.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-06-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ringkas_wilayah(df)` yang memakai named aggregation untuk kolom `total` (jumlah qty) dan `maks` (qty terbesar) per wilayah, dan mengembalikan `values.tolist()`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef ringkas_wilayah(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ringkas_wilayah(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert ringkas_wilayah(df) == [[24, 10], [17, 12], [4, 4]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ringkas_wilayah(df.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkas_wilayah(df.iloc[:2]) == [[10, 10], [5, 5]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ringkas_wilayah(df.iloc[[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkas_wilayah(df.iloc[[5]]) == [[4, 4]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(ringkas_wilayah(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(ringkas_wilayah(df)) == 3"
+              }
+            ]
+          },
+          "hint": "groupby wilayah lalu agg dengan dua argumen bernama.",
+          "solution": "import pandas as pd\n\ndef ringkas_wilayah(df):\n    return df.groupby('wilayah').agg(total=('qty', 'sum'), maks=('qty', 'max')).values.tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-06-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tabel_silang(df)` yang menjumlahkan `qty` per `wilayah` (baris) dan `produk` (kolom), mengisi kombinasi kosong dengan nol, dan mengembalikan `values.tolist()`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef tabel_silang(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tabel_silang(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert tabel_silang(df) == [[16, 8], [5, 12], [0, 4]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tabel_silang(df[df['produk'] == 'A'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_silang(df[df['produk'] == 'A']) == [[16], [5]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tabel_silang(df.iloc[[0, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_silang(df.iloc[[0, 2]]) == [[10, 8]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(sum(r) for r in tabel_silang(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(sum(r) for r in tabel_silang(df)) == 45"
+              }
+            ]
+          },
+          "hint": "groupby dua kunci, sum, lalu unstack dengan fill_value nol.",
+          "solution": "import pandas as pd\n\ndef tabel_silang(df):\n    return df.groupby(['wilayah', 'produk'])['qty'].sum().unstack(fill_value=0).values.tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-06-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `total_kunci_ganda(df)` yang mengembalikan dict jumlah `qty` per pasangan, dengan kunci berupa teks `wilayah-produk` (misalnya `Barat-A`).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef total_kunci_ganda(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_kunci_ganda(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert total_kunci_ganda(df) == {'Barat-A': 16, 'Barat-B': 8, 'Timur-A': 5, 'Timur-B': 12, 'Utara-B': 4}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_kunci_ganda(df.iloc[:1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_kunci_ganda(df.iloc[:1]) == {'Barat-A': 10}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_kunci_ganda(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 'Utara-A' not in total_kunci_ganda(df)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(total_kunci_ganda(df).values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(total_kunci_ganda(df).values()) == 45"
+              }
+            ]
+          },
+          "hint": "groupby dua kunci lalu bangun dict dari items.",
+          "solution": "import pandas as pd\n\ndef total_kunci_ganda(df):\n    s = df.groupby(['wilayah', 'produk'])['qty'].sum()\n    return {w + '-' + p: int(v) for (w, p), v in s.items()}",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-06-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `n_teratas(df, n)` yang mengembalikan list `n` wilayah dengan jumlah `omzet` terbesar, dari yang terbesar.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef n_teratas(df, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "n_teratas(df, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert n_teratas(df, 2) == ['Barat', 'Timur']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "n_teratas(df, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert n_teratas(df, 1) == ['Barat']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "n_teratas(df, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert n_teratas(df, 3) == ['Barat', 'Timur', 'Utara']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "n_teratas(df.iloc[[0, 1]], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert n_teratas(df.iloc[[0, 1]], 1) == ['Barat']"
+              }
+            ]
+          },
+          "hint": "Jumlahkan omzet per wilayah lalu nlargest dan ambil indeksnya.",
+          "solution": "import pandas as pd\n\ndef n_teratas(df, n):\n    return df.groupby('wilayah')['omzet'].sum().nlargest(n).index.tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Named aggregation ditulis?",
+          "code": null,
+          "options": [
+            {
+              "label": "nama=('kolom','fungsi')",
+              "description": ""
+            },
+            {
+              "label": "kolom:fungsi",
+              "description": ""
+            },
+            {
+              "label": "fungsi(kolom)",
+              "description": ""
+            },
+            {
+              "label": "kolom->fungsi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Argumen bernama.",
+          "explanation": "Tuple."
+        },
+        {
+          "q": "groupby dua kunci memberi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Indeks bertingkat",
+              "description": ""
+            },
+            {
+              "label": "Dua tabel",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Satu kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bertingkat.",
+          "explanation": "MultiIndex."
+        },
+        {
+          "q": "unstack?",
+          "code": null,
+          "options": [
+            {
+              "label": "Memutar indeks ke kolom",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menghapus",
+              "description": ""
+            },
+            {
+              "label": "Menggabung",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom.",
+          "explanation": "Lebar."
+        },
+        {
+          "q": "fill_value=0 pada unstack mengisi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kombinasi kosong",
+              "description": ""
+            },
+            {
+              "label": "Semua",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            },
+            {
+              "label": "Nama",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kosong.",
+          "explanation": "NaN jadi nol."
+        },
+        {
+          "q": "Fungsi agregasi buatan menerima?",
+          "code": null,
+          "options": [
+            {
+              "label": "Series kelompok",
+              "description": ""
+            },
+            {
+              "label": "Satu angka",
+              "description": ""
+            },
+            {
+              "label": "Tabel penuh",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Series.",
+          "explanation": "Per kelompok."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengganti nama kolom hasil sesudah agregasi. Lebih baik: Pakai named aggregation sejak awal.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengganti nama kolom hasil sesudah agregasi.",
+          "fix": "Pakai named aggregation sejak awal."
+        },
+        {
+          "mistake": "Memakai lambda padahal ada fungsi bawaan.",
+          "fix": "Pakai nama teks seperti sum agar cepat."
+        },
+        {
+          "mistake": "Bingung dengan indeks bertingkat.",
+          "fix": "Pakai reset_index atau unstack."
+        }
+      ],
+      "summary": [
+        "Named aggregation membuat kolom hasil bernama jelas.",
+        "Dua kunci menghasilkan indeks bertingkat.",
+        "unstack dan pivot_table membentuk tabel silang.",
+        "Fungsi bawaan lebih cepat dari lambda."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Agregasi bernama dan banyak kunci"
+          },
+          {
+            "type": "text",
+            "source": "Named aggregation memberi nama kolom hasil secara langsung."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\nr = df.groupby('wilayah').agg(total=('qty', 'sum'), rata=('omzet', 'mean'))\nprint(r.columns.tolist())\nprint(r.values.tolist())\nprint(r.index.tolist())\nr2 = df.groupby('produk').agg(n=('qty', 'size'), maks=('qty', 'max'), omzet=('omzet', 'sum'))\nprint(r2.values.tolist())\nprint(r2.columns.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Fungsi buatan sendiri menerima Series kelompok. Lambda dapat dipakai lewat apply atau agg."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\nprint(df.groupby('wilayah')['qty'].apply(lambda s: s.max() - s.min()).to_dict())\nprint(df.groupby('produk')['qty'].agg(lambda s: s.sum() / len(s)).to_dict())\nprint(df.groupby('wilayah').agg(rentang=('qty', lambda s: s.max() - s.min()))['rentang'].to_dict())\nprint(df.groupby('wilayah')['harga'].agg(lambda s: s.mode()[0]).to_dict())"
+          },
+          {
+            "type": "text",
+            "source": "Unstack memutar satu tingkat indeks menjadi kolom. Pivot_table memberi hasil sama dalam satu perintah."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\ns = df.groupby(['wilayah', 'produk'])['qty'].sum()\nprint({w + '-' + p: int(v) for (w, p), v in s.items()})\nprint(s.loc['Barat'].to_dict())\nw = s.unstack(fill_value=0)\nprint(w.values.tolist())\nprint(w.columns.tolist(), w.index.tolist())\nprint(w.sum(axis=1).to_dict())\nprint(pd.pivot_table(df, index='wilayah', columns='produk', values='qty', aggfunc='sum', fill_value=0).values.tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-06-3",
+      "title": "transform, filter, dan peringkat",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menambah statistik kelompok ke tiap baris dengan transform",
+        "Menghitung kumulatif dan peringkat dalam kelompok",
+        "Menyaring seluruh kelompok dengan filter",
+        "Membedakan agg, transform, dan apply"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Agregasi yang mempertahankan baris",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Agregasi yang mempertahankan baris\n\nAgregasi biasa mengecilkan tabel menjadi satu baris per kelompok. Kadang kita ingin statistik kelompok tetap menempel pada tiap baris asal, misalnya porsi tiap transaksi terhadap total wilayahnya. Itu pekerjaan `transform`: ia menghitung fungsi per kelompok lalu mengembalikan hasil dengan panjang dan indeks yang sama seperti tabel asal."
+            },
+            {
+              "type": "code_example",
+              "filename": "transform.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\nt = df.groupby('wilayah')['qty'].transform('sum')\nprint(t.tolist())\nprint((df['qty'] / t).round(3).tolist())\nprint(df.groupby('wilayah')['qty'].transform('mean').tolist())\nprint(df.groupby('wilayah')['qty'].cumsum().tolist())\nprint(df.groupby('wilayah')['qty'].rank(ascending=False).tolist())\nprint(len(t) == len(df))",
+              "expected_output_note": "[24, 17, 24, 17, 24, 4]\n[0.417, 0.294, 0.333, 0.706, 0.25, 1.0]\n[8.0, 8.5, 8.0, 8.5, 8.0, 4.0]\n[10, 5, 18, 17, 24, 4]\n[1.0, 2.0, 2.0, 1.0, 3.0, 1.0]\nTrue",
+              "explanation": "Transform mengembalikan Series sepanjang tabel. Cumsum dan rank juga bekerja per kelompok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Porsi dalam kelompok\n\nPorsi tiap baris terhadap total kelompoknya dihitung dengan membagi kolom dengan hasil `transform('sum')`. Pola ini muncul di mana-mana: persen penjualan produk dalam kategorinya, kontribusi tiap siswa terhadap nilai kelas, atau selisih terhadap rata-rata kelompok. Karena hasilnya sejajar dengan tabel, ia dapat langsung ditugaskan sebagai kolom baru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kumulatif dan peringkat\n\nFungsi `cumsum`, `cummax`, `rank`, `shift`, dan `diff` bekerja dalam kelompok bila dipanggil setelah groupby, sehingga perhitungan tidak melintasi batas kelompok. `rank(ascending=False)` memberi peringkat satu pada nilai terbesar. Nilai seri mendapat peringkat rata-rata secara bawaan, dan argumen `method='min'` atau `'first'` mengubah perlakuan seri."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih baris teratas per kelompok\n\nUntuk mengambil n baris teratas dalam tiap kelompok, urutkan tabel lebih dulu lalu panggil `groupby('kunci').head(n)`. Alternatifnya, hitung peringkat dengan rank dan saring peringkat sekurang-kurangnya n. Pola ini menjawab pertanyaan seperti transaksi terbesar tiap wilayah atau tiga produk terlaris tiap kategori."
+            },
+            {
+              "type": "code_example",
+              "filename": "filter_head.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\nprint(df.groupby('wilayah').filter(lambda x: x['qty'].sum() > 10)['qty'].tolist())\nprint(df.groupby('wilayah').filter(lambda x: len(x) >= 2)['wilayah'].tolist())\ntop = df.sort_values('qty', ascending=False).groupby('wilayah').head(1)\nprint(top.sort_index()['qty'].tolist())\nprint(df.groupby('wilayah')['qty'].first().to_dict())\nprint(df.groupby('wilayah')['qty'].last().to_dict())",
+              "expected_output_note": "[10, 5, 8, 12, 6]\n['Barat', 'Timur', 'Barat', 'Timur', 'Barat']\n[10, 12, 4]\n{'Barat': 10, 'Timur': 5, 'Utara': 4}\n{'Barat': 6, 'Timur': 12, 'Utara': 4}",
+              "explanation": "Filter menyaring seluruh kelompok. Head setelah sort memilih baris teratas per kelompok."
+            }
+          ],
+          "quick_check": {
+            "question": "transform mengembalikan?",
+            "options": [
+              "Sepanjang tabel asal",
+              "Satu per kelompok"
+            ],
+            "answer_index": 0,
+            "explanation": "Sejajar.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "filter menyaring kelompok",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## filter menyaring kelompok\n\nMetode `filter(fungsi)` membuang seluruh kelompok yang fungsinya mengembalikan False, dan mempertahankan baris asli kelompok yang lolos. Berbeda dari filter boolean biasa yang bekerja per baris, ini bekerja per kelompok, misalnya hanya wilayah dengan total lebih dari sepuluh. Hasilnya tetap berbentuk baris asli, bukan ringkasan."
+            },
+            {
+              "type": "text",
+              "markdown": "## agg, transform, atau apply\n\nRingkasnya: `agg` mengecilkan setiap kelompok menjadi satu nilai, `transform` mengembalikan satu nilai per baris asal, dan `apply` menerima fungsi yang bebas mengembalikan apa saja. Pilih yang paling sempit yang menyelesaikan masalah, karena yang sempit lebih cepat, lebih mudah diprediksi bentuk hasilnya, dan lebih jelas niatnya bagi pembaca kode."
+            },
+            {
+              "type": "text",
+              "markdown": "## Performa groupby\n\nGroupby dengan fungsi bawaan seperti sum dan mean sangat cepat karena berjalan dalam kode terkompilasi. Fungsi lambda dan apply memanggil Python per kelompok sehingga jauh lebih lambat pada ribuan kelompok. Bila banyak kelompok, cari padanan bawaan atau ekspresikan hitungan dengan operasi kolom sebelum atau sesudah groupby dibanding menulis fungsi per kelompok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah belajar groupby dengan agregasi dasar, named aggregation, banyak kunci dengan unstack, serta transform, filter, dan peringkat. Prinsipnya: pikirkan bentuk hasil yang diinginkan lebih dulu, lalu pilih agg, transform, atau filter yang cocok. Modul berikutnya membahas penggabungan tabel dengan merge, join, dan concat."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Pilih bentuk hasil",
+              "markdown": "Pilih agg bila ingin satu baris per kelompok, transform bila ingin menempelkan statistik ke tiap baris."
+            },
+            {
+              "type": "text",
+              "markdown": "## shift dan diff dalam kelompok\n\nFungsi `shift` menggeser nilai satu baris dalam tiap kelompok, dan `diff` menghitung selisih dengan baris sebelumnya. Keduanya menghasilkan NaN pada baris pertama setiap kelompok karena belum ada pendahulu. Ini berguna untuk mengukur perubahan antar transaksi berurutan dalam wilayah yang sama, asalkan data sudah diurutkan menurut waktu sebelum groupby dipanggil."
+            },
+            {
+              "type": "code_example",
+              "filename": "shift_diff.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\ng = df.groupby('wilayah')['qty']\nprint(g.shift().tolist())\nprint(g.diff().tolist())\nprint(g.cummax().tolist())\nprint(g.transform('max').tolist())\nprint((df['qty'] == g.transform('max')).tolist())",
+              "expected_output_note": "[nan, nan, 10.0, 5.0, 8.0, nan]\n[nan, nan, -2.0, 7.0, -2.0, nan]\n[10, 5, 10, 12, 10, 4]\n[10, 12, 10, 12, 10, 4]\n[True, False, False, True, False, True]",
+              "explanation": "Shift dan diff bekerja dalam kelompok. Membandingkan nilai dengan transform max menandai baris terbesar tiap kelompok."
+            }
+          ],
+          "quick_check": {
+            "question": "agg mengembalikan?",
+            "options": [
+              "Per baris",
+              "Satu nilai per kelompok"
+            ],
+            "answer_index": 1,
+            "explanation": "Ringkas.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Menandai baris terbesar",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menandai baris terbesar\n\nMembandingkan kolom dengan `transform('max')` menghasilkan penanda boolean untuk baris terbesar dalam tiap kelompok. Pola ini lebih sederhana daripada mengurutkan lalu memilih, dan mempertahankan urutan baris asal. Hal yang sama berlaku untuk minimum, atau untuk baris yang di atas rata-rata kelompok, yang sering dipakai dalam analisis pencilan per kelompok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Urutan sebelum groupby\n\nFungsi yang bergantung pada urutan seperti `first`, `last`, `shift`, `cumsum`, dan `diff` memakai urutan baris sebagaimana adanya. Bila data belum terurut menurut waktu, hasilnya salah tanpa peringatan. Urutkan dengan `sort_values` pada kolom waktu lebih dulu, lalu panggil groupby. Memeriksa urutan adalah langkah kecil yang menyelamatkan banyak analisis deret waktu per kelompok dari kesimpulan keliru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh analisis lengkap\n\nGabungkan semuanya pada satu pertanyaan: wilayah mana yang berkontribusi paling besar dan transaksi mana yang paling menentukan. Hitung total per wilayah dengan agg, porsi tiap transaksi dengan transform, lalu tandai transaksi terbesar tiap wilayah. Tiga langkah kecil yang masing-masing mudah diperiksa menghasilkan jawaban yang dapat dipertanggungjawabkan, jauh lebih baik daripada satu rumus panjang yang sulit diverifikasi."
+            }
+          ],
+          "quick_check": {
+            "question": "filter groupby membuang?",
+            "options": [
+              "Kelompok utuh",
+              "Baris tunggal"
+            ],
+            "answer_index": 0,
+            "explanation": "Per kelompok.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-06-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `persen_wilayah(df)` yang mengembalikan list porsi `qty` tiap baris terhadap total `qty` wilayahnya, dibulatkan tiga desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef persen_wilayah(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "persen_wilayah(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert persen_wilayah(df) == [0.417, 0.294, 0.333, 0.706, 0.25, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "persen_wilayah(df.iloc[[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_wilayah(df.iloc[[5]]) == [1.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "persen_wilayah(df.iloc[[0, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_wilayah(df.iloc[[0, 2]]) == [0.556, 0.444]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(persen_wilayah(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(persen_wilayah(df)) == 6"
+              }
+            ]
+          },
+          "hint": "Bagi qty dengan transform sum per wilayah.",
+          "solution": "import pandas as pd\n\ndef persen_wilayah(df):\n    return (df['qty'] / df.groupby('wilayah')['qty'].transform('sum')).round(3).tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-06-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kumulatif_wilayah(df)` yang mengembalikan list jumlah kumulatif `qty` dalam tiap `wilayah` mengikuti urutan baris.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef kumulatif_wilayah(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kumulatif_wilayah(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert kumulatif_wilayah(df) == [10, 5, 18, 17, 24, 4]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kumulatif_wilayah(df.iloc[[0, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kumulatif_wilayah(df.iloc[[0, 2]]) == [10, 18]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kumulatif_wilayah(df.iloc[[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kumulatif_wilayah(df.iloc[[5]]) == [4]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kumulatif_wilayah(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kumulatif_wilayah(df)[-1] == 4"
+              }
+            ]
+          },
+          "hint": "groupby wilayah lalu cumsum pada qty.",
+          "solution": "import pandas as pd\n\ndef kumulatif_wilayah(df):\n    return df.groupby('wilayah')['qty'].cumsum().tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-06-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `wilayah_besar(df, batas)` yang mengembalikan list `qty` dari baris-baris wilayah yang total `qty`-nya lebih dari `batas`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef wilayah_besar(df, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "wilayah_besar(df, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert wilayah_besar(df, 10) == [10, 5, 8, 12, 6]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "wilayah_besar(df, 20)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert wilayah_besar(df, 20) == [10, 8, 6]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "wilayah_besar(df, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert wilayah_besar(df, 100) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "wilayah_besar(df, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert wilayah_besar(df, 0) == [10, 5, 8, 12, 6, 4]"
+              }
+            ]
+          },
+          "hint": "groupby lalu filter dengan jumlah qty kelompok.",
+          "solution": "import pandas as pd\n\ndef wilayah_besar(df, batas):\n    return df.groupby('wilayah').filter(lambda x: x['qty'].sum() > batas)['qty'].tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-06-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `peringkat_dalam(df)` yang mengembalikan list peringkat `qty` dalam tiap wilayah, dengan peringkat 1 untuk `qty` terbesar.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef peringkat_dalam(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peringkat_dalam(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\nassert peringkat_dalam(df) == [1.0, 2.0, 2.0, 1.0, 3.0, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peringkat_dalam(df.iloc[[0, 2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat_dalam(df.iloc[[0, 2, 4]]) == [1.0, 2.0, 3.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peringkat_dalam(df.iloc[[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat_dalam(df.iloc[[5]]) == [1.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "max(peringkat_dalam(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert max(peringkat_dalam(df)) == 3.0"
+              }
+            ]
+          },
+          "hint": "groupby wilayah lalu rank menurun pada qty.",
+          "solution": "import pandas as pd\n\ndef peringkat_dalam(df):\n    return df.groupby('wilayah')['qty'].rank(ascending=False).tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "transform mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sepanjang tabel asal",
+              "description": ""
+            },
+            {
+              "label": "Satu per kelompok",
+              "description": ""
+            },
+            {
+              "label": "Dict",
+              "description": ""
+            },
+            {
+              "label": "Tabel kosong",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Panjang sama.",
+          "explanation": "Sejajar."
+        },
+        {
+          "q": "agg mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu nilai per kelompok",
+              "description": ""
+            },
+            {
+              "label": "Per baris",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Per kelompok.",
+          "explanation": "Ringkas."
+        },
+        {
+          "q": "filter groupby membuang?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kelompok utuh",
+              "description": ""
+            },
+            {
+              "label": "Baris tunggal",
+              "description": ""
+            },
+            {
+              "label": "Kolom",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kelompok.",
+          "explanation": "Per kelompok."
+        },
+        {
+          "q": "rank ascending False untuk terbesar?",
+          "code": null,
+          "options": [
+            {
+              "label": "Peringkat 1",
+              "description": ""
+            },
+            {
+              "label": "Peringkat terakhir",
+              "description": ""
+            },
+            {
+              "label": "NaN",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu.",
+          "explanation": "Menurun."
+        },
+        {
+          "q": "Cumsum setelah groupby?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dalam kelompok",
+              "description": ""
+            },
+            {
+              "label": "Melintasi kelompok",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dalam.",
+          "explanation": "Per kelompok."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai agg lalu bingung bentuk hasil mengecil. Lebih baik: Pakai transform bila butuh sepanjang tabel.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai agg lalu bingung bentuk hasil mengecil.",
+          "fix": "Pakai transform bila butuh sepanjang tabel."
+        },
+        {
+          "mistake": "Mengira filter bekerja per baris.",
+          "fix": "Filter groupby bekerja per kelompok."
+        },
+        {
+          "mistake": "Memakai apply untuk hal yang punya padanan bawaan.",
+          "fix": "Pakai agg, transform, atau cumsum."
+        }
+      ],
+      "summary": [
+        "transform menempelkan statistik kelompok pada tiap baris.",
+        "cumsum dan rank bekerja dalam kelompok setelah groupby.",
+        "filter membuang seluruh kelompok yang tidak lolos syarat.",
+        "Pilih agg, transform, atau apply yang paling sempit."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# transform, filter, dan peringkat"
+          },
+          {
+            "type": "text",
+            "source": "Transform mengembalikan Series sepanjang tabel. Cumsum dan rank juga bekerja per kelompok."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\nt = df.groupby('wilayah')['qty'].transform('sum')\nprint(t.tolist())\nprint((df['qty'] / t).round(3).tolist())\nprint(df.groupby('wilayah')['qty'].transform('mean').tolist())\nprint(df.groupby('wilayah')['qty'].cumsum().tolist())\nprint(df.groupby('wilayah')['qty'].rank(ascending=False).tolist())\nprint(len(t) == len(df))"
+          },
+          {
+            "type": "text",
+            "source": "Filter menyaring seluruh kelompok. Head setelah sort memilih baris teratas per kelompok."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\nprint(df.groupby('wilayah').filter(lambda x: x['qty'].sum() > 10)['qty'].tolist())\nprint(df.groupby('wilayah').filter(lambda x: len(x) >= 2)['wilayah'].tolist())\ntop = df.sort_values('qty', ascending=False).groupby('wilayah').head(1)\nprint(top.sort_index()['qty'].tolist())\nprint(df.groupby('wilayah')['qty'].first().to_dict())\nprint(df.groupby('wilayah')['qty'].last().to_dict())"
+          },
+          {
+            "type": "text",
+            "source": "Shift dan diff bekerja dalam kelompok. Membandingkan nilai dengan transform max menandai baris terbesar tiap kelompok."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'wilayah': ['Barat', 'Timur', 'Barat', 'Timur', 'Barat', 'Utara'],\n    'produk': ['A', 'A', 'B', 'B', 'A', 'B'],\n    'qty': [10, 5, 8, 12, 6, 4],\n    'harga': [100, 100, 200, 200, 100, 200],\n})\ndf['omzet'] = df['qty'] * df['harga']\n\ng = df.groupby('wilayah')['qty']\nprint(g.shift().tolist())\nprint(g.diff().tolist())\nprint(g.cummax().tolist())\nprint(g.transform('max').tolist())\nprint((df['qty'] == g.transform('max')).tolist())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

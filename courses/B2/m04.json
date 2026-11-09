@@ -1,0 +1,1620 @@
+{
+  "schema_version": 2,
+  "course_id": "B2",
+  "module_no": 4,
+  "title": "Kolom turunan, map, dan apply",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Membuat kolom turunan dengan operasi vectorized dan pengelompokan",
+    "Memakai map, replace, dan apply dengan sadar akan biayanya",
+    "Mengolah teks dan tanggal dengan atribut str dan dt"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B2-04-1",
+    "exercise_id": "B2-04-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def normalisasi_minmax(s):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B2-04-1",
+      "title": "Kolom turunan yang vectorized",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membuat kolom baru dari operasi antar kolom",
+        "Memberi label bersyarat dengan np.where dan np.select",
+        "Mengelompokkan angka dengan pd.cut dan pd.qcut",
+        "Membatasi, membulatkan, dan mengubah tipe kolom"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa kolom turunan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa kolom turunan\n\nData mentah jarang langsung menjawab pertanyaan. Kita perlu bonus dari gaji, kategori dari skor, atau masa kerja dari tanggal masuk. Kolom turunan adalah kolom baru yang dihitung dari kolom yang sudah ada. Membuatnya dengan benar adalah jantung rekayasa fitur, dan cara terbaik adalah operasi vectorized yang bekerja pada seluruh kolom sekaligus, bukan perulangan baris demi baris."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data contoh\n\nPelajaran ini memakai tabel karyawan kecil dengan kolom `nama`, `divisi`, `gaji`, `masuk` berupa teks tanggal, dan `skor` penilaian kinerja. Empat baris cukup untuk memeriksa hasil dengan tangan. Kebiasaan memeriksa kolom turunan pada contoh kecil sebelum menerapkannya ke jutaan baris menangkap banyak kesalahan rumus dengan biaya hampir nol."
+            },
+            {
+              "type": "code_example",
+              "filename": "kolom_turunan.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nd = df.assign(bonus=df['gaji'] * 0.1, gaji_juta=df['gaji'] / 1e6)\nprint(d['bonus'].tolist())\nprint(d['gaji_juta'].tolist())\nprint(df.columns.tolist())\nprint(d.columns.tolist())\ndf['gaji_k'] = df['gaji'] // 1000\nprint(df['gaji_k'].tolist())",
+              "expected_output_note": "[800000.0, 600000.0, 950000.0, 500000.0]\n[8.0, 6.0, 9.5, 5.0]\n['nama', 'divisi', 'gaji', 'masuk', 'skor']\n['nama', 'divisi', 'gaji', 'masuk', 'skor', 'bonus', 'gaji_juta']\n[8000, 6000, 9500, 5000]",
+              "explanation": "Assign mengembalikan tabel baru, sedangkan penugasan langsung menambah kolom pada tabel itu sendiri."
+            },
+            {
+              "type": "text",
+              "markdown": "## Aritmetika antar kolom\n\nOperator aritmetika antar kolom bekerja per baris dan selaras dengan indeks. Rasio, selisih, persentase, dan rumus gabungan ditulis seperti rumus matematika. Perhatikan pembagian dengan nol yang menghasilkan tak hingga, dan nilai hilang yang menular: bila salah satu operan NaN, hasilnya NaN. Tangani keduanya dengan sengaja sebelum mempercayai kolom turunan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Label bersyarat\n\nUntuk memberi label berdasarkan syarat, `np.where(syarat, nilai_benar, nilai_salah)` memilih antara dua nilai per baris. Untuk lebih dari dua kategori, `np.select(daftar_syarat, daftar_nilai, default=...)` memeriksa syarat berurutan dan memakai nilai syarat pertama yang cocok. Urutan syarat penting: tulis yang paling spesifik lebih dulu karena pemeriksaan berhenti pada kecocokan pertama."
+            },
+            {
+              "type": "code_example",
+              "filename": "label_bersyarat.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nprint(np.where(df['skor'] >= 80, 'baik', 'cukup').tolist())\nprint(np.select([df['skor'] >= 90, df['skor'] >= 70], ['A', 'B'], default='C').tolist())\ndf['kat'] = np.where(df['gaji'] >= 8000000, 'tinggi', 'biasa')\nprint(df['kat'].tolist())\nprint(df.groupby('kat').size().to_dict())",
+              "expected_output_note": "['baik', 'cukup', 'baik', 'cukup']\n['B', 'B', 'A', 'C']\n['tinggi', 'biasa', 'tinggi', 'biasa']\n{'biasa': 2, 'tinggi': 2}",
+              "explanation": "Where memilih dua nilai, select memilih banyak nilai menurut syarat berurutan dengan default untuk sisanya."
+            }
+          ],
+          "quick_check": {
+            "question": "np.select dipakai untuk?",
+            "options": [
+              "Banyak kategori bersyarat",
+              "Mengurutkan"
+            ],
+            "answer_index": 0,
+            "explanation": "Berurutan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mengelompokkan dengan cut",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengelompokkan dengan cut\n\nFungsi `pd.cut(kolom, batas, labels=...)` membagi angka kontinu ke dalam kelompok menurut batas yang Anda tentukan. Batas dengan n elemen menghasilkan n minus satu kelompok. Secara bawaan tiap kelompok tertutup di kanan, ditulis `(70, 90]`, dan argumen `right=False` membaliknya. Nilai di luar semua batas menjadi NaN, jadi pastikan batas mencakup seluruh rentang data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kuantil dengan qcut\n\nFungsi `pd.qcut(kolom, q)` membagi data menurut kuantil sehingga tiap kelompok berisi jumlah baris kira-kira sama. Misalnya `q=4` menghasilkan kuartil. Berbeda dari `cut` yang batasnya tetap, batas `qcut` mengikuti sebaran data. Ia cocok untuk membuat tingkat relatif seperti kelompok pendapatan terendah sampai tertinggi, sedangkan `cut` cocok untuk ambang yang bermakna bisnis seperti rentang usia."
+            },
+            {
+              "type": "code_example",
+              "filename": "cut_qcut.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nprint(pd.cut(df['skor'], [0, 70, 90, 100], labels=['rendah', 'sedang', 'tinggi']).astype(str).tolist())\nprint(pd.cut(df['skor'], [0, 70, 90, 100]).astype(str).tolist())\nprint(pd.cut(df['skor'], [0, 70, 90, 100], right=False, labels=False).tolist())\nprint(pd.qcut(df['gaji'], 2, labels=['bawah', 'atas']).astype(str).tolist())\nprint(pd.qcut(df['gaji'], 4, labels=False).tolist())",
+              "expected_output_note": "['sedang', 'sedang', 'tinggi', 'rendah']\n['(70, 90]', '(70, 90]', '(90, 100]', '(0, 70]']\n[1, 1, 2, 0]\n['atas', 'bawah', 'atas', 'bawah']\n[2, 1, 3, 0]",
+              "explanation": "Cut memakai batas tetap dan qcut memakai kuantil. Labels False mengembalikan nomor kelompok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membatasi dan membulatkan\n\nMetode `clip(bawah, atas)` membatasi nilai ke dalam rentang, `round(n)` membulatkan ke n desimal, dan `astype` mengubah tipe. Ingat bahwa `round` pandas membulatkan setengah ke genap terdekat seperti NumPy, jadi 88,5 menjadi 88 dan 64,5 menjadi 64. Konversi ke bilangan bulat dengan `astype(int)` memotong pecahan dan gagal bila ada nilai hilang, kecuali Anda memakai tipe bilangan bulat yang mendukung hilang seperti `Int64`."
+            },
+            {
+              "type": "code_example",
+              "filename": "clip_round.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nprint(df['skor'].clip(70, 90).tolist())\nprint(df['skor'].round().tolist())\nprint(df['skor'].astype(int).tolist())\nprint(df['gaji'].pct_change().round(3).tolist())\nprint(df['gaji'].diff().tolist())\nprint((df['gaji'] / df['gaji'].sum() * 100).round(1).tolist())",
+              "expected_output_note": "[88.5, 72.0, 90.0, 70.0]\n[88.0, 72.0, 95.0, 64.0]\n[88, 72, 95, 64]\n[nan, -0.25, 0.583, -0.474]\n[nan, -2000000.0, 3500000.0, -4500000.0]\n[28.1, 21.1, 33.3, 17.5]",
+              "explanation": "Clip membatasi rentang, round membulatkan setengah ke genap, dan pct_change serta diff menghasilkan nilai hilang pada baris pertama."
+            }
+          ],
+          "quick_check": {
+            "question": "pd.cut memakai?",
+            "options": [
+              "Kuantil",
+              "Batas tetap"
+            ],
+            "answer_index": 1,
+            "explanation": "Bins.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Normalisasi min-max",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Normalisasi min-max\n\nNormalisasi min-max mengubah kolom ke rentang nol sampai satu dengan rumus nilai dikurangi minimum dibagi rentang. Kolom turunan ini membuat fitur berskala berbeda dapat dibandingkan dan sering diperlukan algoritma pembelajaran mesin berbasis jarak. Tangani kolom konstan yang rentangnya nol agar tidak terjadi pembagian dengan nol, misalnya dengan menggantinya nol sebelum membagi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dummy dan kode kategori\n\nAlgoritma numerik membutuhkan angka, sehingga kategori sering diubah. `pd.get_dummies` membuat satu kolom nol dan satu per kategori, disebut pengkodean one-hot, dan `astype('category').cat.codes` memberi nomor urut tiap kategori. Gunakan one-hot untuk kategori tanpa urutan, dan kode berurutan hanya bila kategori memang memiliki urutan bermakna."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hindari perulangan baris\n\nGodaan terbesar pemula adalah perulangan `for` atas baris untuk menghitung kolom baru. Hampir semuanya dapat ditulis vectorized dengan operasi kolom, `np.where`, `np.select`, atau `cut`. Versi vectorized puluhan hingga ratusan kali lebih cepat dan lebih pendek. Pelajaran berikutnya membahas `map` dan `apply` untuk kasus yang benar-benar membutuhkan fungsi per elemen atau per baris."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Vectorized dulu",
+              "markdown": "Sebelum menulis perulangan atas baris, tanyakan apakah operasi kolom, np.where, np.select, atau cut dapat mengerjakannya sekaligus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa kolom turunan\n\nSetelah membuat kolom baru, periksa tiga hal: tipe datanya, jumlah nilai hilang, dan beberapa baris contoh yang dihitung dengan tangan. Kesalahan umum meliputi urutan syarat yang terbalik, batas cut yang tidak mencakup seluruh data, dan pembagian bilangan bulat yang tidak sesuai harapan. Pemeriksaan singkat ini murah dan menyelamatkan Anda dari kesimpulan yang salah akibat satu rumus keliru di hulu analisis."
+            }
+          ],
+          "quick_check": {
+            "question": "pd.qcut memakai?",
+            "options": [
+              "Kuantil",
+              "Batas tetap"
+            ],
+            "answer_index": 0,
+            "explanation": "Jumlah sama.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-04-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `tambah_bonus(df, persen)` yang menghitung kolom bonus sebesar `persen` persen dari `gaji` dan mengembalikan kolom itu sebagai list, tanpa mengubah tabel asal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef tambah_bonus(df, persen):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tambah_bonus(df, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert tambah_bonus(df, 10) == [800000.0, 600000.0, 950000.0, 500000.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tambah_bonus(df, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_bonus(df, 0) == [0.0, 0.0, 0.0, 0.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tambah_bonus(df, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_bonus(df, 100) == [8000000.0, 6000000.0, 9500000.0, 5000000.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 'bonus' not in df.columns"
+              }
+            ]
+          },
+          "hint": "assign kolom baru dari gaji dikali persen dibagi seratus.",
+          "solution": "import pandas as pd\n\ndef tambah_bonus(df, persen):\n    return df.assign(bonus=df['gaji'] * persen / 100)['bonus'].tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-04-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kategori_skor(df)` yang mengembalikan list kategori: `'A'` bila `skor` sekurang-kurangnya 90, `'B'` bila sekurang-kurangnya 70, dan `'C'` untuk lainnya, memakai `np.select`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nimport pandas as pd\n\ndef kategori_skor(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kategori_skor(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert kategori_skor(df) == ['B', 'B', 'A', 'C']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kategori_skor(df.iloc[[2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kategori_skor(df.iloc[[2]]) == ['A']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kategori_skor(df.iloc[[3, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kategori_skor(df.iloc[[3, 1]]) == ['C', 'B']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kategori_skor(pd.DataFrame({'skor': [90.0, 70...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kategori_skor(pd.DataFrame({'skor': [90.0, 70.0, 69.9]})) == ['A', 'B', 'C']"
+              }
+            ]
+          },
+          "hint": "np.select dengan dua syarat berurutan dan default C.",
+          "solution": "import numpy as np\nimport pandas as pd\n\ndef kategori_skor(df):\n    return np.select([df['skor'] >= 90, df['skor'] >= 70], ['A', 'B'], default='C').tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-04-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kelompok_cut(df)` yang mengelompokkan `skor` dengan `pd.cut` pada batas 0, 70, 90, 100 berlabel `'rendah'`, `'sedang'`, `'tinggi'`, dan mengembalikan labelnya sebagai list string.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef kelompok_cut(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kelompok_cut(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert kelompok_cut(df) == ['sedang', 'sedang', 'tinggi', 'rendah']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kelompok_cut(df.iloc[[0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kelompok_cut(df.iloc[[0]]) == ['sedang']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kelompok_cut(pd.DataFrame({'skor': [70.0, 90....",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kelompok_cut(pd.DataFrame({'skor': [70.0, 90.0, 100.0]})) == ['rendah', 'sedang', 'tinggi']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(kelompok_cut(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(kelompok_cut(df)) == 4"
+              }
+            ]
+          },
+          "hint": "pd.cut dengan bins dan labels lalu ubah ke string.",
+          "solution": "import pandas as pd\n\ndef kelompok_cut(df):\n    return pd.cut(df['skor'], [0, 70, 90, 100], labels=['rendah', 'sedang', 'tinggi']).astype(str).tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-04-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `normalisasi_minmax(s)` yang menerima list atau Series angka dan mengembalikan list nilai ternormalisasi min-max ke rentang 0 sampai 1, dibulatkan ke tiga desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef normalisasi_minmax(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "normalisasi_minmax([2, 4, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert normalisasi_minmax([2, 4, 6]) == [0.0, 0.5, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "normalisasi_minmax(df['gaji'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert normalisasi_minmax(df['gaji']) == [0.667, 0.222, 1.0, 0.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "normalisasi_minmax([10, 20])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert normalisasi_minmax([10, 20]) == [0.0, 1.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "normalisasi_minmax(df['skor'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert normalisasi_minmax(df['skor'])[2] == 1.0"
+              }
+            ]
+          },
+          "hint": "Kurangi minimum lalu bagi dengan rentang dan bulatkan.",
+          "solution": "import pandas as pd\n\ndef normalisasi_minmax(s):\n    s = pd.Series(s, dtype=float)\n    return ((s - s.min()) / (s.max() - s.min())).round(3).tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "np.select dipakai untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Banyak kategori bersyarat",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menggabung",
+              "description": ""
+            },
+            {
+              "label": "Mengacak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Banyak.",
+          "explanation": "Berurutan."
+        },
+        {
+          "q": "pd.cut memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Batas tetap",
+              "description": ""
+            },
+            {
+              "label": "Kuantil",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Batas.",
+          "explanation": "Bins."
+        },
+        {
+          "q": "pd.qcut memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kuantil",
+              "description": ""
+            },
+            {
+              "label": "Batas tetap",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Label",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kuantil.",
+          "explanation": "Jumlah sama."
+        },
+        {
+          "q": "pct_change baris pertama?",
+          "code": null,
+          "options": [
+            {
+              "label": "NaN",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NaN.",
+          "explanation": "Tak ada sebelumnya."
+        },
+        {
+          "q": "One-hot dibuat dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "pd.get_dummies",
+              "description": ""
+            },
+            {
+              "label": "pd.cut",
+              "description": ""
+            },
+            {
+              "label": "pd.rank",
+              "description": ""
+            },
+            {
+              "label": "np.select",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dummies.",
+          "explanation": "Dummies."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai perulangan baris untuk kolom turunan. Lebih baik: Pakai operasi kolom, where, select, atau cut.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai perulangan baris untuk kolom turunan.",
+          "fix": "Pakai operasi kolom, where, select, atau cut."
+        },
+        {
+          "mistake": "Menulis syarat select dari yang paling umum.",
+          "fix": "Tulis yang paling spesifik lebih dulu."
+        },
+        {
+          "mistake": "Batas cut tidak mencakup seluruh data.",
+          "fix": "Pastikan batas melingkupi minimum dan maksimum."
+        }
+      ],
+      "summary": [
+        "Kolom turunan dibuat dengan operasi kolom vectorized.",
+        "np.where dan np.select memberi label bersyarat.",
+        "cut dan qcut mengelompokkan angka kontinu.",
+        "Hindari perulangan baris untuk kolom turunan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Kolom turunan yang vectorized"
+          },
+          {
+            "type": "text",
+            "source": "Assign mengembalikan tabel baru, sedangkan penugasan langsung menambah kolom pada tabel itu sendiri."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nd = df.assign(bonus=df['gaji'] * 0.1, gaji_juta=df['gaji'] / 1e6)\nprint(d['bonus'].tolist())\nprint(d['gaji_juta'].tolist())\nprint(df.columns.tolist())\nprint(d.columns.tolist())\ndf['gaji_k'] = df['gaji'] // 1000\nprint(df['gaji_k'].tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Where memilih dua nilai, select memilih banyak nilai menurut syarat berurutan dengan default untuk sisanya."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nprint(np.where(df['skor'] >= 80, 'baik', 'cukup').tolist())\nprint(np.select([df['skor'] >= 90, df['skor'] >= 70], ['A', 'B'], default='C').tolist())\ndf['kat'] = np.where(df['gaji'] >= 8000000, 'tinggi', 'biasa')\nprint(df['kat'].tolist())\nprint(df.groupby('kat').size().to_dict())"
+          },
+          {
+            "type": "text",
+            "source": "Cut memakai batas tetap dan qcut memakai kuantil. Labels False mengembalikan nomor kelompok."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nprint(pd.cut(df['skor'], [0, 70, 90, 100], labels=['rendah', 'sedang', 'tinggi']).astype(str).tolist())\nprint(pd.cut(df['skor'], [0, 70, 90, 100]).astype(str).tolist())\nprint(pd.cut(df['skor'], [0, 70, 90, 100], right=False, labels=False).tolist())\nprint(pd.qcut(df['gaji'], 2, labels=['bawah', 'atas']).astype(str).tolist())\nprint(pd.qcut(df['gaji'], 4, labels=False).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Clip membatasi rentang, round membulatkan setengah ke genap, dan pct_change serta diff menghasilkan nilai hilang pada baris pertama."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nprint(df['skor'].clip(70, 90).tolist())\nprint(df['skor'].round().tolist())\nprint(df['skor'].astype(int).tolist())\nprint(df['gaji'].pct_change().round(3).tolist())\nprint(df['gaji'].diff().tolist())\nprint((df['gaji'] / df['gaji'].sum() * 100).round(1).tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-04-2",
+      "title": "map, replace, dan apply",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memetakan nilai dengan map dan replace",
+        "Menerapkan fungsi pada kolom dengan apply dan map",
+        "Menerapkan fungsi pada baris dengan apply axis satu",
+        "Mengetahui kapan apply lambat dan bagaimana menghindarinya"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Fungsi per elemen",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi per elemen\n\nTerkadang kita perlu memetakan nilai secara khusus: kode divisi menjadi nama lengkap, atau menerapkan fungsi buatan sendiri yang tidak ada padanan vectorized-nya. Pandas menyediakan `map` untuk Series, `replace` untuk mengganti nilai, dan `apply` untuk menerapkan fungsi pada kolom atau baris. Ketiganya fleksibel tetapi lebih lambat dari operasi vectorized, jadi gunakan hanya bila diperlukan."
+            },
+            {
+              "type": "text",
+              "markdown": "## map dengan dict\n\nMetode `map` pada Series menerima dict, fungsi, atau Series. Dengan dict, setiap nilai diganti menurut pasangannya, dan nilai yang tidak ada pada dict menjadi NaN. Sifat ini penting: `map` tidak mempertahankan nilai asal bila tidak ditemukan. Bila Anda ingin sisanya tetap, pakai `replace`, atau lengkapi hasil `map` dengan `fillna` yang tepat."
+            },
+            {
+              "type": "code_example",
+              "filename": "map_replace.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\npeta = {'IT': 'Teknologi', 'HR': 'SDM'}\nprint(df['divisi'].map(peta).tolist())\nprint(df['divisi'].map(peta).fillna('Lainnya').tolist())\nprint(df['divisi'].replace(peta).tolist())\nprint(df['divisi'].map(str.lower).tolist())\nprint(df['divisi'].map(len).tolist())",
+              "expected_output_note": "['Teknologi', 'SDM', 'Teknologi', nan]\n['Teknologi', 'SDM', 'Teknologi', 'Lainnya']\n['Teknologi', 'SDM', 'Teknologi', 'Ops']\n['it', 'hr', 'it', 'ops']\n[2, 2, 2, 3]",
+              "explanation": "Map mengubah yang tak dikenal menjadi NaN, sedangkan replace mempertahankannya. Map juga menerima fungsi."
+            },
+            {
+              "type": "text",
+              "markdown": "## apply pada Series\n\nMetode `apply(fungsi)` pada Series memanggil fungsi sekali untuk setiap elemen dan mengumpulkan hasilnya. Untuk Series, `map` dan `apply` hampir setara dengan fungsi per elemen. Fungsi dapat berupa lambda atau fungsi bernama. Bila fungsi Anda hanya terdiri dari aritmetika dasar, tulis ulang sebagai operasi vectorized yang jauh lebih cepat dan tidak membutuhkan apply sama sekali."
+            },
+            {
+              "type": "text",
+              "markdown": "## apply pada baris\n\nPada DataFrame, `apply(fungsi, axis=1)` memanggil fungsi sekali per baris dengan baris sebagai Series yang indeksnya nama kolom. Ini berguna ketika hasil bergantung pada beberapa kolom dengan logika yang rumit. Namun biayanya besar karena pandas membuat Series untuk setiap baris, sehingga pada jutaan baris ia sangat lambat. Selalu pertimbangkan versi vectorized dengan `np.where` atau `np.select` lebih dulu."
+            },
+            {
+              "type": "code_example",
+              "filename": "apply_baris.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nprint(df.apply(lambda r: r['nama'].split()[0] + '-' + r['divisi'], axis=1).tolist())\nprint(df['gaji'].apply(lambda g: g // 1000000).tolist())\nprint(df['skor'].map(lambda x: 'lulus' if x >= 70 else 'gagal').tolist())\nprint(df.apply(lambda r: r['gaji'] * (1.1 if r['skor'] >= 80 else 1.0), axis=1).tolist())\nprint(np.where(df['skor'] >= 80, df['gaji'] * 1.1, df['gaji'] * 1.0).tolist())",
+              "expected_output_note": "['Ani-IT', 'Budi-HR', 'Cici-IT', 'Dedi-Ops']\n[8, 6, 9, 5]\n['lulus', 'lulus', 'lulus', 'gagal']\n[8800000.0, 6000000.0, 10450000.0, 5000000.0]\n[8800000.0, 6000000.0, 10450000.0, 5000000.0]",
+              "explanation": "Apply per baris dan versi vectorized dengan np.where memberi hasil sama, tetapi versi kedua jauh lebih cepat."
+            }
+          ],
+          "quick_check": {
+            "question": "map dengan dict untuk kunci tak dikenal menghasilkan?",
+            "options": [
+              "NaN",
+              "Nilai asal"
+            ],
+            "answer_index": 0,
+            "explanation": "Tidak ditemukan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "apply pada kolom",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## apply pada kolom\n\nPada DataFrame, `apply(fungsi)` dengan `axis=0` secara bawaan memanggil fungsi sekali per kolom dengan kolom sebagai Series. Ini cocok untuk menerapkan transformasi yang sama pada banyak kolom, seperti normalisasi atau rentang. Fungsi yang mengembalikan satu nilai menghasilkan Series ringkasan, dan fungsi yang mengembalikan Series berpanjang sama menghasilkan DataFrame transformasi."
+            },
+            {
+              "type": "code_example",
+              "filename": "apply_kolom.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nnum = df[['gaji', 'skor']]\nprint(num.apply(lambda c: c.max() - c.min()).to_dict())\nnorm = num.apply(lambda c: (c - c.min()) / (c.max() - c.min()))\nprint(norm.round(3).values.tolist())\nprint(num.agg(['min', 'max']).values.tolist())\nprint(num.agg({'gaji': 'sum', 'skor': 'mean'}).to_dict())",
+              "expected_output_note": "{'gaji': 4500000.0, 'skor': 30.5}\n[[0.667, 0.787], [0.222, 0.246], [1.0, 1.0], [0.0, 0.0]]\n[[5000000.0, 64.5], [9500000.0, 95.0]]\n{'gaji': 28500000.0, 'skor': 80.0}",
+              "explanation": "Apply per kolom meringkas atau mentransformasi tiap kolom. Agg menjalankan beberapa ringkasan sekaligus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengukur kecepatan\n\nBila ragu memakai apply atau vectorized, ukur dengan `time.perf_counter` atau `%timeit`. Pada puluhan ribu baris, apply per baris sering seratus kali lebih lambat. Pada tabel kecil perbedaannya tak terasa, dan kejelasan kode lebih penting. Aturan pegangan: tulis vectorized bila bisa, pakai apply bila logikanya benar-benar sulit dinyatakan vectorized dan data tidak besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fungsi dengan argumen\n\nArgumen tambahan dapat diteruskan ke fungsi apply lewat `args=(...)` atau `**kwargs`, sehingga fungsi bernama dapat dipakai ulang dengan parameter berbeda. Misalnya `df['skor'].apply(kategori, batas=70)`. Bungkus logika rumit dalam fungsi bernama dengan dokumentasi, bukan lambda panjang, agar mudah diuji terpisah dan dibaca orang lain."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengganti banyak nilai\n\nMetode `replace` menerima dict nilai lama ke nilai baru, atau dua list sejajar. Ia dapat bekerja pada seluruh tabel sekaligus dan juga menerima ekspresi reguler dengan `regex=True`. Untuk mengganti nilai tertentu menjadi NaN, atau sebaliknya, `replace` adalah alat yang tepat. Pada kolom teks, `str.replace` bekerja pada isi tiap teks, bukan pada nilai utuh."
+            }
+          ],
+          "quick_check": {
+            "question": "replace untuk kunci tak dikenal?",
+            "options": [
+              "NaN",
+              "Mempertahankan nilai asal"
+            ],
+            "answer_index": 1,
+            "explanation": "Tidak diganti.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Penanganan nilai hilang saat map",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Penanganan nilai hilang saat map\n\nKarena `map` menghasilkan NaN untuk kunci yang tak dikenal, kolom hasilnya dapat berubah tipe dari bilangan bulat menjadi desimal. Selalu periksa jumlah NaN setelah `map`: `hasil.isna().sum()` memberi tahu berapa nilai tidak terpetakan. Angka itu sering menunjukkan kode baru atau salah ketik pada data yang perlu ditambahkan ke kamus."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Cek hasil map",
+              "markdown": "Map menghasilkan NaN untuk kunci tak dikenal. Hitung NaN setelah map untuk menemukan kode yang belum terpetakan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih alat yang tepat\n\nUrutan pilihan yang sehat adalah operasi vectorized lebih dulu, lalu `np.where` atau `np.select` untuk syarat, lalu `map` untuk kamus nilai, lalu `apply` untuk logika yang rumit. Setiap tingkat lebih fleksibel dan lebih lambat dari sebelumnya. Dengan mengikuti urutan ini, kode Anda tetap cepat pada data besar dan tetap mudah dibaca. Saat memakai apply, tuliskan alasannya dalam nama fungsi agar pembaca tahu mengapa pilihan itu diambil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menguji fungsi terpisah\n\nFungsi bernama yang dipakai dalam apply dapat diuji terpisah pada satu nilai atau satu baris sebelum diterapkan ke seluruh tabel. Ambil satu baris dengan `df.iloc[0]`, panggil fungsi, dan periksa hasilnya. Cara ini jauh lebih mudah ditelusuri dibanding mencari galat di tengah apply atas jutaan baris, dan pesan galat pandas pada apply sering kurang jelas tentang baris mana yang bermasalah."
+            }
+          ],
+          "quick_check": {
+            "question": "apply axis=1 memanggil fungsi per?",
+            "options": [
+              "Baris",
+              "Kolom"
+            ],
+            "answer_index": 0,
+            "explanation": "Baris.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-04-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `petakan_divisi(df, peta)` yang memetakan kolom `divisi` memakai dict `peta` dan mengganti divisi yang tidak ada pada dict dengan `'Lainnya'`, lalu mengembalikan hasilnya sebagai list.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef petakan_divisi(df, peta):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "petakan_divisi(df, {'IT': 'Teknologi', 'HR': ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert petakan_divisi(df, {'IT': 'Teknologi', 'HR': 'SDM'}) == ['Teknologi', 'SDM', 'Teknologi', 'Lainnya']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "petakan_divisi(df, {})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert petakan_divisi(df, {}) == ['Lainnya'] * 4"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "petakan_divisi(df, {'IT': 'A', 'HR': 'B', 'Op...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert petakan_divisi(df, {'IT': 'A', 'HR': 'B', 'Ops': 'C'}) == ['A', 'B', 'A', 'C']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "petakan_divisi(df.iloc[[3]], {'Ops': 'Operasi'})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert petakan_divisi(df.iloc[[3]], {'Ops': 'Operasi'}) == ['Operasi']"
+              }
+            ]
+          },
+          "hint": "map dengan dict lalu fillna.",
+          "solution": "import pandas as pd\n\ndef petakan_divisi(df, peta):\n    return df['divisi'].map(peta).fillna('Lainnya').tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-04-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kode_baris(df)` yang untuk tiap baris menggabungkan kata pertama `nama`, tanda minus, dan `divisi` (misalnya `Ani-IT`), memakai `apply` per baris, dan mengembalikannya sebagai list.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef kode_baris(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kode_baris(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert kode_baris(df) == ['Ani-IT', 'Budi-HR', 'Cici-IT', 'Dedi-Ops']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kode_baris(df.iloc[[1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kode_baris(df.iloc[[1]]) == ['Budi-HR']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kode_baris(df.iloc[::-1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kode_baris(df.iloc[::-1])[0] == 'Dedi-Ops'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(kode_baris(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(kode_baris(df)) == 4"
+              }
+            ]
+          },
+          "hint": "apply dengan axis satu dan lambda yang memecah nama.",
+          "solution": "import pandas as pd\n\ndef kode_baris(df):\n    return df.apply(lambda r: r['nama'].split()[0] + '-' + r['divisi'], axis=1).tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-04-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rentang_kolom(df, kolom)` yang menerapkan `apply` pada kolom-kolom numerik yang disebut dalam list `kolom` dan mengembalikan dict `{kolom: nilai_maks_dikurangi_nilai_min}`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef rentang_kolom(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rentang_kolom(df, ['gaji', 'skor'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert rentang_kolom(df, ['gaji', 'skor']) == {'gaji': 4500000.0, 'skor': 30.5}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rentang_kolom(df, ['skor'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang_kolom(df, ['skor']) == {'skor': 30.5}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rentang_kolom(df, ['gaji'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang_kolom(df, ['gaji']) == {'gaji': 4500000}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rentang_kolom(df.iloc[[0]], ['skor'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang_kolom(df.iloc[[0]], ['skor']) == {'skor': 0.0}"
+              }
+            ]
+          },
+          "hint": "Pilih kolom lalu apply fungsi maksimum dikurangi minimum.",
+          "solution": "import pandas as pd\n\ndef rentang_kolom(df, kolom):\n    return df[kolom].apply(lambda c: c.max() - c.min()).to_dict()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-04-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `gaji_setelah_naik(df, batas, faktor)` yang mengembalikan list gaji setelah dikalikan `faktor` untuk karyawan dengan `skor` sekurang-kurangnya `batas`, dan tetap untuk yang lain (sebagai float), tanpa memakai `apply` per baris.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nimport pandas as pd\n\ndef gaji_setelah_naik(df, batas, faktor):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "np.allclose(r, [8800000.0, 6000000.0, 1045000...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nr = gaji_setelah_naik(df, 80, 1.1)\nassert np.allclose(r, [8800000.0, 6000000.0, 10450000.0, 5000000.0])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "gaji_setelah_naik(df, 100, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gaji_setelah_naik(df, 100, 2) == [8000000.0, 6000000.0, 9500000.0, 5000000.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "gaji_setelah_naik(df, 0, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gaji_setelah_naik(df, 0, 2) == [16000000.0, 12000000.0, 19000000.0, 10000000.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "all(isinstance(x, float) for x in r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert all(isinstance(x, float) for x in r)"
+              }
+            ]
+          },
+          "hint": "np.where dengan syarat skor dan dua perhitungan gaji.",
+          "solution": "import numpy as np\nimport pandas as pd\n\ndef gaji_setelah_naik(df, batas, faktor):\n    return np.where(df['skor'] >= batas, df['gaji'] * faktor, df['gaji'] * 1.0).tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "map dengan dict untuk kunci tak dikenal menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "NaN",
+              "description": ""
+            },
+            {
+              "label": "Nilai asal",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NaN.",
+          "explanation": "Tidak ditemukan."
+        },
+        {
+          "q": "replace untuk kunci tak dikenal?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mempertahankan nilai asal",
+              "description": ""
+            },
+            {
+              "label": "NaN",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tetap.",
+          "explanation": "Tidak diganti."
+        },
+        {
+          "q": "apply axis=1 memanggil fungsi per?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris",
+              "description": ""
+            },
+            {
+              "label": "Kolom",
+              "description": ""
+            },
+            {
+              "label": "Sel",
+              "description": ""
+            },
+            {
+              "label": "Tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baris.",
+          "explanation": "Baris."
+        },
+        {
+          "q": "Operasi mana lebih cepat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Vectorized",
+              "description": ""
+            },
+            {
+              "label": "apply per baris",
+              "description": ""
+            },
+            {
+              "label": "Perulangan for",
+              "description": ""
+            },
+            {
+              "label": "Sama",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Vectorized.",
+          "explanation": "Kode C."
+        },
+        {
+          "q": "agg dipakai untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Beberapa ringkasan sekaligus",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menggabung",
+              "description": ""
+            },
+            {
+              "label": "Mengacak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Agregasi.",
+          "explanation": "Ringkasan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai map lalu heran muncul NaN. Lebih baik: Map tidak mempertahankan nilai tak dikenal, pakai replace atau fillna.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai map lalu heran muncul NaN.",
+          "fix": "Map tidak mempertahankan nilai tak dikenal, pakai replace atau fillna."
+        },
+        {
+          "mistake": "Memakai apply axis=1 pada jutaan baris.",
+          "fix": "Pakai np.where atau np.select."
+        },
+        {
+          "mistake": "Menulis lambda panjang dan rumit.",
+          "fix": "Buat fungsi bernama yang dapat diuji."
+        }
+      ],
+      "summary": [
+        "map memetakan nilai dengan dict atau fungsi dan memberi NaN untuk kunci tak dikenal.",
+        "apply per baris fleksibel tetapi lambat.",
+        "apply per kolom menerapkan transformasi yang sama pada banyak kolom.",
+        "Ukur kecepatan dan pilih vectorized bila memungkinkan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# map, replace, dan apply"
+          },
+          {
+            "type": "text",
+            "source": "Map mengubah yang tak dikenal menjadi NaN, sedangkan replace mempertahankannya. Map juga menerima fungsi."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\npeta = {'IT': 'Teknologi', 'HR': 'SDM'}\nprint(df['divisi'].map(peta).tolist())\nprint(df['divisi'].map(peta).fillna('Lainnya').tolist())\nprint(df['divisi'].replace(peta).tolist())\nprint(df['divisi'].map(str.lower).tolist())\nprint(df['divisi'].map(len).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Apply per baris dan versi vectorized dengan np.where memberi hasil sama, tetapi versi kedua jauh lebih cepat."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nprint(df.apply(lambda r: r['nama'].split()[0] + '-' + r['divisi'], axis=1).tolist())\nprint(df['gaji'].apply(lambda g: g // 1000000).tolist())\nprint(df['skor'].map(lambda x: 'lulus' if x >= 70 else 'gagal').tolist())\nprint(df.apply(lambda r: r['gaji'] * (1.1 if r['skor'] >= 80 else 1.0), axis=1).tolist())\nprint(np.where(df['skor'] >= 80, df['gaji'] * 1.1, df['gaji'] * 1.0).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Apply per kolom meringkas atau mentransformasi tiap kolom. Agg menjalankan beberapa ringkasan sekaligus."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nnum = df[['gaji', 'skor']]\nprint(num.apply(lambda c: c.max() - c.min()).to_dict())\nnorm = num.apply(lambda c: (c - c.min()) / (c.max() - c.min()))\nprint(norm.round(3).values.tolist())\nprint(num.agg(['min', 'max']).values.tolist())\nprint(num.agg({'gaji': 'sum', 'skor': 'mean'}).to_dict())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-04-3",
+      "title": "Kolom teks dan tanggal",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengolah teks dengan atribut str",
+        "Mengubah teks menjadi tanggal dengan to_datetime",
+        "Mengambil tahun, bulan, dan hari dengan atribut dt",
+        "Menghitung selisih tanggal dan memfilter menurut waktu"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dua jenis kolom khusus",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua jenis kolom khusus\n\nTeks dan tanggal adalah dua tipe kolom yang paling sering membutuhkan turunan. Dari nama lengkap kita perlu nama depan, dari alamat kita perlu kota, dari tanggal masuk kita perlu masa kerja. Pandas menyediakan atribut khusus `str` untuk teks dan `dt` untuk tanggal. Keduanya memuat metode vectorized yang bekerja pada seluruh kolom sekaligus tanpa perulangan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Atribut str\n\nAtribut `str` memuat padanan hampir semua metode teks Python: `upper`, `lower`, `strip`, `replace`, `split`, `contains`, `startswith`, `len`. Metode ini mengabaikan nilai hilang dengan menghasilkan NaN, bukan galat. Hasil `split` adalah kolom berisi list, dan `str[indeks]` mengambil elemen tertentu dari list tersebut, sehingga `str.split().str[0]` mengambil kata pertama."
+            },
+            {
+              "type": "code_example",
+              "filename": "atribut_str.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nprint(df['nama'].str.split().str[0].tolist())\nprint(df['nama'].str.split().str[-1].tolist())\nprint(df['nama'].str.extract(r'(\\w+) (\\w+)')[1].tolist())\nprint(df['nama'].str.replace(' ', '_').tolist())\nprint(df['nama'].str.len().tolist())\nprint(df['nama'].str.upper().tolist())",
+              "expected_output_note": "['Ani', 'Budi', 'Cici', 'Dedi']\n['Putri', 'Santoso', 'Lestari', 'Kurnia']\n['Putri', 'Santoso', 'Lestari', 'Kurnia']\n['Ani_Putri', 'Budi_Santoso', 'Cici_Lestari', 'Dedi_Kurnia']\n[9, 12, 12, 11]\n['ANI PUTRI', 'BUDI SANTOSO', 'CICI LESTARI', 'DEDI KURNIA']",
+              "explanation": "Split memecah teks, indeks negatif mengambil kata terakhir, dan extract mengambil bagian dengan ekspresi reguler."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ekstraksi dengan regex\n\nMetode `str.extract(pola)` mengambil bagian teks yang cocok dengan grup dalam ekspresi reguler dan mengembalikan DataFrame satu kolom per grup. Ia berguna untuk menarik kode dari teks berformat, misalnya nomor faktur dari kalimat. Baris yang tidak cocok menghasilkan NaN, jadi periksa jumlah NaN untuk menemukan format yang tak terduga."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dari teks ke tanggal\n\nTanggal yang dibaca dari file biasanya berupa teks. Fungsi `pd.to_datetime` mengubahnya menjadi tipe tanggal sehingga dapat dihitung. Bila format tidak standar, beri argumen `format`, misalnya `format='%d/%m/%Y'`. Argumen `errors='coerce'` mengubah teks yang tidak dapat dibaca menjadi NaT, nilai hilang untuk tanggal, sehingga Anda bisa menghitung berapa yang bermasalah."
+            },
+            {
+              "type": "code_example",
+              "filename": "atribut_dt.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nt = pd.to_datetime(df['masuk'])\nprint(t.dt.year.tolist())\nprint(t.dt.month.tolist())\nprint(t.dt.dayofweek.tolist())\nprint(t.dt.day_name().tolist())\nprint(t.dt.strftime('%d/%m/%Y').tolist())\nprint(t.dt.to_period('M').astype(str).tolist())\nprint(pd.to_datetime('15/03/2020', format='%d/%m/%Y').strftime('%Y-%m-%d'))",
+              "expected_output_note": "[2020, 2019, 2022, 2021]\n[3, 11, 7, 1]\n[6, 4, 2, 6]\n['Sunday', 'Friday', 'Wednesday', 'Sunday']\n['15/03/2020', '01/11/2019', '20/07/2022', '10/01/2021']\n['2020-03', '2019-11', '2022-07', '2021-01']\n2020-03-15",
+              "explanation": "Atribut dt mengambil bagian tanggal, strftime memformat, dan to_period membulatkan ke bulan. Hari dimulai dari nol untuk Senin."
+            }
+          ],
+          "quick_check": {
+            "question": "Atribut metode teks vectorized?",
+            "options": [
+              "str",
+              "txt"
+            ],
+            "answer_index": 0,
+            "explanation": "Str.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Atribut tanggal",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Atribut tanggal\n\nAtribut `dt` menyediakan `year`, `month`, `day`, `dayofweek`, `quarter`, `is_month_start`, dan lainnya, serta `day_name()` dan `month_name()` untuk nama. Nomor hari dalam pekan dimulai dari nol untuk Senin sampai enam untuk Minggu. Metode `strftime` memformat tanggal menjadi teks, dan `to_period` membulatkannya ke bulan atau kuartal untuk pengelompokan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Selisih tanggal\n\nMengurangkan dua kolom tanggal menghasilkan kolom selisih waktu bertipe timedelta. Atribut `dt.days` mengambil jumlah hari sebagai bilangan bulat. Untuk masa kerja dalam tahun, bagi hari dengan 365,25. Mengurangkan satu tanggal tetap dari seluruh kolom bekerja lewat broadcasting. Selalu tetapkan tanggal acuan secara eksplisit, bukan memakai hari ini, agar hasil analisis dapat diulang."
+            },
+            {
+              "type": "code_example",
+              "filename": "selisih_tanggal.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nt = pd.to_datetime(df['masuk'])\nacuan = pd.Timestamp('2024-12-31')\nprint((acuan - t).dt.days.tolist())\nprint(((acuan - t).dt.days / 365.25).round(1).tolist())\nprint((t >= '2021-01-01').tolist())\nprint(df.loc[t >= '2021-01-01', 'nama'].tolist())\nprint(t.min().strftime('%Y-%m-%d'), (t.max() - t.min()).days)",
+              "expected_output_note": "[1752, 1887, 895, 1451]\n[4.8, 5.2, 2.5, 4.0]\n[False, False, True, True]\n['Cici Lestari', 'Dedi Kurnia']\n2019-11-01 992",
+              "explanation": "Selisih dengan tanggal acuan memberi masa kerja dalam hari, dan perbandingan dengan teks tanggal memfilter menurut waktu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tanggal acuan yang tetap\n\nMemakai `pd.Timestamp.today()` di dalam analisis membuat hasilnya berubah setiap hari, sehingga tidak dapat diulang atau diverifikasi. Tetapkan tanggal acuan sebagai parameter atau konstanta yang tercatat, misalnya tanggal pengambilan data. Prinsip yang sama berlaku untuk seed acak: apa pun yang berubah diam-diam antar run merusak reproduksibilitas."
+            }
+          ],
+          "quick_check": {
+            "question": "Atribut bagian tanggal?",
+            "options": [
+              "date",
+              "dt"
+            ],
+            "answer_index": 1,
+            "explanation": "Dt.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Zona waktu dan format",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Zona waktu dan format\n\nTanggal dengan zona waktu menambah kerumitan. Pandas mendukung zona waktu lewat `tz_localize` dan `tz_convert`. Aturan pegangan: simpan waktu dalam UTC, ubah ke zona lokal hanya saat menampilkan. Perhatikan juga format tanggal ambigu seperti 01/02/2024 yang bisa berarti satu Februari atau dua Januari, dan selalu nyatakan format secara eksplisit dengan argumen `format`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah belajar membuat kolom turunan dengan operasi vectorized, memetakan dan menerapkan fungsi dengan map dan apply, serta mengolah teks dan tanggal dengan str dan dt. Aturan utamanya: pilih operasi kolom lebih dulu, gunakan apply hanya bila perlu, dan selalu periksa NaN pada hasil. Modul berikutnya membahas nilai hilang secara dasar."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Acuan tetap",
+              "markdown": "Tetapkan tanggal acuan secara eksplisit. Memakai tanggal hari ini membuat hasil analisis berubah dan tidak dapat diulang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Teks kotor dan konsisten\n\nData teks dari dunia nyata jarang bersih. Spasi di tepi, huruf besar dan kecil bercampur, dan variasi ejaan membuat pengelompokan gagal karena dianggap nilai berbeda. Rangkaian `str.strip().str.lower()` adalah langkah pembersihan paling umum. Lakukan sebelum `groupby`, `merge`, atau `value_counts` agar nilai yang sama benar-benar dihitung sebagai satu kategori yang sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa tanggal bermasalah\n\nSetelah `to_datetime` dengan `errors='coerce'`, hitung `isna().sum()` untuk mengetahui berapa tanggal gagal dibaca, lalu lihat baris asalnya untuk memahami polanya. Tanggal yang salah sering berasal dari format campuran dalam satu kolom, nilai placeholder seperti nol, atau salah ketik. Menemukan pola ini lebih awal mencegah analisis waktu yang diam-diam kehilangan sebagian data."
+            }
+          ],
+          "quick_check": {
+            "question": "dayofweek untuk Senin?",
+            "options": [
+              "0",
+              "1"
+            ],
+            "answer_index": 0,
+            "explanation": "Mulai nol.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-04-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `nama_belakang(df)` yang mengembalikan list kata terakhir dari kolom `nama` pada tiap baris.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef nama_belakang(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_belakang(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert nama_belakang(df) == ['Putri', 'Santoso', 'Lestari', 'Kurnia']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_belakang(df.iloc[[0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_belakang(df.iloc[[0]]) == ['Putri']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_belakang(pd.DataFrame({'nama': ['A B C',...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_belakang(pd.DataFrame({'nama': ['A B C', 'X']})) == ['C', 'X']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(nama_belakang(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(nama_belakang(df)) == 4"
+              }
+            ]
+          },
+          "hint": "str.split lalu str dengan indeks minus satu.",
+          "solution": "import pandas as pd\n\ndef nama_belakang(df):\n    return df['nama'].str.split().str[-1].tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-04-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tahun_masuk(df)` yang mengubah kolom `masuk` menjadi tanggal dan mengembalikan list tahun tiap baris.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef tahun_masuk(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tahun_masuk(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert tahun_masuk(df) == [2020, 2019, 2022, 2021]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tahun_masuk(df.iloc[[2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tahun_masuk(df.iloc[[2]]) == [2022]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tahun_masuk(pd.DataFrame({'masuk': ['2024-12-...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tahun_masuk(pd.DataFrame({'masuk': ['2024-12-31']})) == [2024]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tahun_masuk(df.iloc[::-1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tahun_masuk(df.iloc[::-1])[0] == 2021"
+              }
+            ]
+          },
+          "hint": "to_datetime lalu atribut dt year.",
+          "solution": "import pandas as pd\n\ndef tahun_masuk(df):\n    return pd.to_datetime(df['masuk']).dt.year.tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-04-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `masa_kerja_hari(df, acuan)` yang mengembalikan list jumlah hari dari tanggal `masuk` tiap baris sampai tanggal `acuan` (teks tanggal ISO).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef masa_kerja_hari(df, acuan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "masa_kerja_hari(df, '2024-12-31')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert masa_kerja_hari(df, '2024-12-31') == [1752, 1887, 895, 1451]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "masa_kerja_hari(df, '2020-03-15')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert masa_kerja_hari(df, '2020-03-15')[0] == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "masa_kerja_hari(df.iloc[[1]], '2019-11-02')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert masa_kerja_hari(df.iloc[[1]], '2019-11-02') == [1]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "all(isinstance(x, int) for x in masa_kerja_ha...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert all(isinstance(x, int) for x in masa_kerja_hari(df, '2024-12-31'))"
+              }
+            ]
+          },
+          "hint": "Kurangkan tanggal masuk dari Timestamp acuan lalu ambil dt days.",
+          "solution": "import pandas as pd\n\ndef masa_kerja_hari(df, acuan):\n    return (pd.Timestamp(acuan) - pd.to_datetime(df['masuk'])).dt.days.tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-04-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `masuk_setelah(df, tanggal)` yang mengembalikan list `nama` untuk karyawan yang `masuk`-nya pada atau setelah `tanggal` (teks tanggal ISO).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef masuk_setelah(df, tanggal):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "masuk_setelah(df, '2021-01-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\nassert masuk_setelah(df, '2021-01-01') == ['Cici Lestari', 'Dedi Kurnia']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "masuk_setelah(df, '2023-01-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert masuk_setelah(df, '2023-01-01') == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "masuk_setelah(df, '2019-01-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert masuk_setelah(df, '2019-01-01') == ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "masuk_setelah(df, '2022-07-20')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert masuk_setelah(df, '2022-07-20') == ['Cici Lestari']"
+              }
+            ]
+          },
+          "hint": "Ubah masuk ke tanggal lalu bandingkan dengan Timestamp.",
+          "solution": "import pandas as pd\n\ndef masuk_setelah(df, tanggal):\n    t = pd.to_datetime(df['masuk'])\n    return df.loc[t >= pd.Timestamp(tanggal), 'nama'].tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Atribut metode teks vectorized?",
+          "code": null,
+          "options": [
+            {
+              "label": "str",
+              "description": ""
+            },
+            {
+              "label": "txt",
+              "description": ""
+            },
+            {
+              "label": "text",
+              "description": ""
+            },
+            {
+              "label": "chr",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "str.",
+          "explanation": "Str."
+        },
+        {
+          "q": "Atribut bagian tanggal?",
+          "code": null,
+          "options": [
+            {
+              "label": "dt",
+              "description": ""
+            },
+            {
+              "label": "date",
+              "description": ""
+            },
+            {
+              "label": "time",
+              "description": ""
+            },
+            {
+              "label": "cal",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "dt.",
+          "explanation": "Dt."
+        },
+        {
+          "q": "dayofweek untuk Senin?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "6",
+              "description": ""
+            },
+            {
+              "label": "7",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Nol.",
+          "explanation": "Mulai nol."
+        },
+        {
+          "q": "errors coerce menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "NaT untuk yang gagal",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Hari ini",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NaT.",
+          "explanation": "Nilai hilang."
+        },
+        {
+          "q": "Selisih dua tanggal bertipe?",
+          "code": null,
+          "options": [
+            {
+              "label": "Timedelta",
+              "description": ""
+            },
+            {
+              "label": "Integer",
+              "description": ""
+            },
+            {
+              "label": "String",
+              "description": ""
+            },
+            {
+              "label": "Boolean",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Delta.",
+          "explanation": "Selisih waktu."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai tanggal hari ini sebagai acuan analisis. Lebih baik: Tetapkan tanggal acuan eksplisit.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai tanggal hari ini sebagai acuan analisis.",
+          "fix": "Tetapkan tanggal acuan eksplisit."
+        },
+        {
+          "mistake": "Membiarkan tanggal bertipe teks.",
+          "fix": "Ubah dengan to_datetime."
+        },
+        {
+          "mistake": "Format tanggal ambigu tanpa format eksplisit.",
+          "fix": "Tulis argumen format."
+        }
+      ],
+      "summary": [
+        "Atribut str mengolah teks dan str.extract mengambil bagian dengan regex.",
+        "to_datetime mengubah teks menjadi tanggal dan atribut dt mengambil bagiannya.",
+        "Selisih tanggal menghasilkan timedelta dengan dt.days.",
+        "Tetapkan tanggal acuan eksplisit agar analisis dapat diulang."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Kolom teks dan tanggal"
+          },
+          {
+            "type": "text",
+            "source": "Split memecah teks, indeks negatif mengambil kata terakhir, dan extract mengambil bagian dengan ekspresi reguler."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nprint(df['nama'].str.split().str[0].tolist())\nprint(df['nama'].str.split().str[-1].tolist())\nprint(df['nama'].str.extract(r'(\\w+) (\\w+)')[1].tolist())\nprint(df['nama'].str.replace(' ', '_').tolist())\nprint(df['nama'].str.len().tolist())\nprint(df['nama'].str.upper().tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Atribut dt mengambil bagian tanggal, strftime memformat, dan to_period membulatkan ke bulan. Hari dimulai dari nol untuk Senin."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nt = pd.to_datetime(df['masuk'])\nprint(t.dt.year.tolist())\nprint(t.dt.month.tolist())\nprint(t.dt.dayofweek.tolist())\nprint(t.dt.day_name().tolist())\nprint(t.dt.strftime('%d/%m/%Y').tolist())\nprint(t.dt.to_period('M').astype(str).tolist())\nprint(pd.to_datetime('15/03/2020', format='%d/%m/%Y').strftime('%Y-%m-%d'))"
+          },
+          {
+            "type": "text",
+            "source": "Selisih dengan tanggal acuan memberi masa kerja dalam hari, dan perbandingan dengan teks tanggal memfilter menurut waktu."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani Putri', 'Budi Santoso', 'Cici Lestari', 'Dedi Kurnia'],\n    'divisi': ['IT', 'HR', 'IT', 'Ops'],\n    'gaji': [8000000, 6000000, 9500000, 5000000],\n    'masuk': ['2020-03-15', '2019-11-01', '2022-07-20', '2021-01-10'],\n    'skor': [88.5, 72.0, 95.0, 64.5],\n})\n\nt = pd.to_datetime(df['masuk'])\nacuan = pd.Timestamp('2024-12-31')\nprint((acuan - t).dt.days.tolist())\nprint(((acuan - t).dt.days / 365.25).round(1).tolist())\nprint((t >= '2021-01-01').tolist())\nprint(df.loc[t >= '2021-01-01', 'nama'].tolist())\nprint(t.min().strftime('%Y-%m-%d'), (t.max() - t.min()).days)"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

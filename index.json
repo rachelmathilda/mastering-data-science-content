@@ -108,7 +108,7 @@
         "A3"
       ],
       "lock_policy": "recommended",
-      "modules_ready": 7,
+      "modules_ready": 8,
       "url": "courses/A4/outline.json"
     },
     {
@@ -127,7 +127,7 @@
         "A4"
       ],
       "lock_policy": "recommended",
-      "modules_ready": 0,
+      "modules_ready": 6,
       "url": "courses/A5/outline.json"
     },
     {
@@ -146,7 +146,7 @@
         "A5"
       ],
       "lock_policy": "recommended",
-      "modules_ready": 0,
+      "modules_ready": 9,
       "url": "courses/A6/outline.json"
     },
     {
@@ -165,7 +165,7 @@
         "A6"
       ],
       "lock_policy": "recommended",
-      "modules_ready": 0,
+      "modules_ready": 4,
       "url": "courses/A7/outline.json"
     },
     {
@@ -184,7 +184,7 @@
         "A1"
       ],
       "lock_policy": "recommended",
-      "modules_ready": 0,
+      "modules_ready": 6,
       "url": "courses/B1/outline.json"
     },
     {
@@ -203,7 +203,7 @@
         "B1"
       ],
       "lock_policy": "recommended",
-      "modules_ready": 0,
+      "modules_ready": 10,
       "url": "courses/B2/outline.json"
     },
     {
@@ -222,7 +222,7 @@
         "B2"
       ],
       "lock_policy": "recommended",
-      "modules_ready": 0,
+      "modules_ready": 3,
       "url": "courses/B3/outline.json"
     },
     {

@@ -1,0 +1,1548 @@
+{
+  "schema_version": 2,
+  "course_id": "A6",
+  "module_no": 4,
+  "title": "JOIN antar tabel",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menggabungkan tabel dengan INNER JOIN dan LEFT JOIN",
+    "Menemukan baris tanpa pasangan dengan anti-join",
+    "Menghindari duplikasi baris dan fan-out pada agregasi gabungan"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A6-04-1",
+    "exercise_id": "A6-04-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def nilai_pesanan(c):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A6-04-1",
+      "title": "INNER JOIN dan kunci asing",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menjelaskan mengapa data dipecah ke beberapa tabel dan dihubungkan dengan kunci asing",
+        "Menggabungkan dua dan tiga tabel dengan INNER JOIN",
+        "Memakai alias tabel dan menghindari kolom ambigu",
+        "Menjelaskan baris yatim yang hilang pada INNER JOIN"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa banyak tabel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa banyak tabel\n\nBasis data relasional memecah data ke beberapa tabel agar tidak ada pengulangan. Bayangkan tabel pesanan yang menyimpan nama pelanggan, kota, dan alamatnya di setiap baris: data pelanggan yang sama tertulis berulang, dan mengubah kota satu pelanggan berarti mengubah banyak baris. Proses memecah ini disebut **normalisasi**.\n\nSolusinya, tiap entitas mendapat tabel sendiri. Pesanan hanya menyimpan nomor pelanggan, sedangkan data lengkap pelanggan ada di tabel pelanggan. Untuk melihat data utuh, kita menggabungkan tabel dengan **JOIN**."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kunci asing\n\nKolom `pelanggan_id` di tabel pesanan disebut **kunci asing**: nilainya merujuk kunci primer tabel pelanggan. Kunci asing membangun hubungan antar tabel: satu pelanggan dapat memiliki banyak pesanan, tetapi satu pesanan hanya milik satu pelanggan. Hubungan satu-ke-banyak ini yang paling umum.\n\nDi modul ini kita memakai tiga tabel: pelanggan, produk, dan pesanan. Pesanan memiliki dua kunci asing, ke pelanggan dan ke produk. Satu pesanan sengaja merujuk pelanggan nomor 99 yang tidak ada, untuk mempelajari perilaku JOIN pada data yang tidak konsisten."
+            },
+            {
+              "type": "text",
+              "markdown": "## INNER JOIN\n\n`INNER JOIN` menggabungkan baris dua tabel yang memenuhi kondisi `ON`. Untuk tiap pasangan baris yang kondisinya benar, ia menghasilkan satu baris gabungan. Baris yang tidak memiliki pasangan di tabel lain dibuang dari hasil. Kata `INNER` boleh dihilangkan, sehingga `JOIN` saja berarti `INNER JOIN`.\n\nKondisi `ON p.pelanggan_id = g.id` mencocokkan kunci asing dengan kunci primernya. Pada data kita, tujuh dari delapan pesanan menemukan pelanggan, sedangkan pesanan dengan pelanggan 99 tidak punya pasangan dan hilang."
+            },
+            {
+              "type": "code_example",
+              "filename": "inner_join.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nprint(c.execute('SELECT COUNT(*) FROM pesanan').fetchone())\nq = 'SELECT COUNT(*) FROM pesanan p JOIN pelanggan g ON p.pelanggan_id = g.id'\nprint(c.execute(q).fetchone())",
+              "expected_output_note": "(8,)\n(7,)",
+              "explanation": "Delapan pesanan ada, tetapi hanya tujuh yang cocok dengan pelanggan sehingga INNER JOIN membuang satu."
+            }
+          ],
+          "quick_check": {
+            "question": "Kunci asing adalah?",
+            "options": [
+              "Kolom yang merujuk kunci primer tabel lain",
+              "Kolom teks"
+            ],
+            "answer_index": 0,
+            "explanation": "Hubungan antar tabel.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Alias tabel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Alias tabel\n\nQuery JOIN panjang menjadi mudah dibaca dengan alias tabel: `FROM pesanan p JOIN pelanggan g`. Alias pendek memungkinkan awalan `p.id` dan `g.id` untuk membedakan dua kolom `id`. Tanpa awalan, kolom yang namanya ada di dua tabel menyebabkan galat kolom ambigu.\n\nBiasakan memberi awalan alias pada setiap kolom di query JOIN, bahkan yang tidak ambigu. Query tetap benar bila nanti seseorang menambahkan kolom bernama sama ke salah satu tabel, dan pembaca langsung tahu asal tiap kolom."
+            },
+            {
+              "type": "code_example",
+              "filename": "alias_tabel.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT p.id, g.nama, p.jumlah\nFROM pesanan p JOIN pelanggan g ON p.pelanggan_id = g.id\nORDER BY p.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[(1, 'Ani', 2), (2, 'Ani', 10), (3, 'Budi', 1), (4, 'Citra', 1), (5, 'Citra', 2), (6, 'Dewi', 20), (7, 'Budi', 3)]",
+              "explanation": "Setiap pesanan kini menampilkan nama pelanggannya, dan pesanan delapan tidak muncul."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menggabungkan tiga tabel\n\nJOIN dapat dirantai: hasil gabungan pertama menjadi sumber gabungan kedua. Untuk menampilkan nama pelanggan dan nama produk bersama jumlah pesanan, kita menggabungkan pesanan ke pelanggan, lalu ke produk. Setiap `JOIN` punya klausa `ON` sendiri.\n\nBaca query seperti aliran: mulai dari tabel pusat, yaitu pesanan, lalu tambahkan tabel pelengkap satu per satu. Tabel yang menyimpan kunci asing biasanya menjadi pusat, dan tabel yang dirujuk menjadi pelengkap."
+            },
+            {
+              "type": "code_example",
+              "filename": "tiga_tabel.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT p.id, g.nama, k.nama, p.jumlah\nFROM pesanan p\nJOIN pelanggan g ON p.pelanggan_id = g.id\nJOIN produk k ON p.produk_id = k.id\nORDER BY p.id\n'''\nfor baris in c.execute(q):\n    print(baris)",
+              "expected_output_note": "(1, 'Ani', 'Buku', 2)\n(2, 'Ani', 'Pensil', 10)\n(3, 'Budi', 'Tas', 1)\n(4, 'Citra', 'Buku', 1)\n(5, 'Citra', 'Botol', 2)\n(6, 'Dewi', 'Pensil', 20)\n(7, 'Budi', 'Buku', 3)",
+              "explanation": "Tiga tabel digabung sehingga tiap pesanan menampilkan pelanggan dan produknya sekaligus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menghitung dari kolom gabungan\n\nSetelah tabel digabung, kolom dari semua tabel dapat dipakai bersama dalam ekspresi. Nilai pesanan adalah jumlah dikali harga, di mana jumlah berasal dari pesanan dan harga dari produk. Perhitungan semacam ini mustahil tanpa JOIN karena kedua nilai hidup di tabel berbeda.\n\nIni alasan JOIN begitu mendasar: analisis jarang cukup dengan satu tabel. Pertanyaan bisnis nyata, seperti total belanja per kota, menyentuh pelanggan, pesanan, dan produk sekaligus."
+            },
+            {
+              "type": "code_example",
+              "filename": "nilai_gabungan.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT p.id, p.jumlah * k.harga\nFROM pesanan p\nJOIN pelanggan g ON p.pelanggan_id = g.id\nJOIN produk k ON p.produk_id = k.id\nORDER BY p.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[(1, 24000.0), (2, 25000.0), (3, 150000.0), (4, 12000.0), (5, 70000.0), (6, 50000.0), (7, 36000.0)]",
+              "explanation": "Nilai tiap pesanan dihitung dari jumlah pesanan dan harga produk yang berasal dari tabel berbeda."
+            }
+          ],
+          "quick_check": {
+            "question": "INNER JOIN mempertahankan?",
+            "options": [
+              "Semua baris kiri",
+              "Baris yang punya pasangan"
+            ],
+            "answer_index": 1,
+            "explanation": "Hanya yang cocok.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Integritas referensial",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Integritas referensial\n\nPesanan nomor 8 merujuk pelanggan yang tidak ada. Basis data yang dirancang baik mencegahnya dengan **constraint kunci asing**, yang menolak penyisipan baris dengan referensi tak valid. SQLite mendukung constraint ini bila diaktifkan dengan `PRAGMA foreign_keys = ON`, tetapi tidak aktif secara default.\n\nPada data nyata dari sumber yang tidak terkontrol, baris yatim seperti ini sering muncul. Selalu periksa apakah INNER JOIN menghilangkan baris yang tidak kamu duga, dengan membandingkan jumlah baris sebelum dan sesudah JOIN."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Periksa JOIN",
+              "markdown": "Hitung jumlah baris sebelum dan sesudah JOIN. Selisihnya menunjukkan baris yang tidak punya pasangan dan hilang diam-diam."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih kolom dari tabel gabungan\n\nSetelah JOIN, hindari `SELECT *` karena ia menarik semua kolom dari semua tabel, termasuk kolom bernama sama yang saling menimpa pada pustaka tertentu. Sebutkan kolom yang dibutuhkan dengan awalan alias, dan beri alias baru bila dua kolom bernama sama, misalnya `g.nama AS pelanggan` dan `k.nama AS produk`.\n\nAlias yang jelas membuat hasil query langsung siap dibaca ke pandas dengan nama kolom bermakna, tanpa perlu mengganti nama di kode Python."
+            }
+          ],
+          "quick_check": {
+            "question": "Alias tabel berguna untuk?",
+            "options": [
+              "Membedakan kolom bernama sama",
+              "Mempercepat"
+            ],
+            "answer_index": 0,
+            "explanation": "Menghindari ambigu.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-04-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `nama_pembeli(c)` yang mengembalikan list tuple `(id_pesanan, nama_pelanggan)` untuk pesanan yang punya pelanggan, terurut menurut id pesanan, memakai INNER JOIN.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef nama_pembeli(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nh = nama_pembeli(c)\nassert h == [(1, 'Ani'), (2, 'Ani'), (3, 'Budi'), (4, 'Citra'), (5, 'Citra'), (6, 'Dewi'), (7, 'Budi')]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "all(i != 8 for i, _ in h)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert all(i != 8 for i, _ in h)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_pembeli(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pelanggan VALUES (99, 'Zed', 'Bogor')\")\nassert nama_pembeli(c)[-1] == (8, 'Zed')"
+              }
+            ]
+          },
+          "hint": "Gabungkan pesanan dengan pelanggan lewat pelanggan_id dan id.",
+          "solution": "import sqlite3\n\ndef nama_pembeli(c):\n    q = 'SELECT p.id, g.nama FROM pesanan p JOIN pelanggan g ON p.pelanggan_id = g.id ORDER BY p.id'\n    return c.execute(q).fetchall()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-04-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `detail_pesanan(c)` yang mengembalikan list tuple `(id_pesanan, nama_pelanggan, nama_produk, jumlah)` untuk pesanan yang punya pelanggan dan produk, terurut menurut id pesanan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef detail_pesanan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(h)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nh = detail_pesanan(c)\nassert len(h) == 7"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert h[0] == (1, 'Ani', 'Buku', 2)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert h[-1] == (7, 'Budi', 'Buku', 3)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert h[4] == (5, 'Citra', 'Botol', 2)"
+              }
+            ]
+          },
+          "hint": "Rantai dua JOIN dari pesanan ke pelanggan dan ke produk.",
+          "solution": "import sqlite3\n\ndef detail_pesanan(c):\n    q = '''\n    SELECT p.id, g.nama, k.nama, p.jumlah\n    FROM pesanan p\n    JOIN pelanggan g ON p.pelanggan_id = g.id\n    JOIN produk k ON p.produk_id = k.id\n    ORDER BY p.id\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-04-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pesanan_di_kota(c, kota)` yang mengembalikan list id pesanan milik pelanggan yang tinggal di kota itu, terurut menurut id pesanan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pesanan_di_kota(c, kota):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pesanan_di_kota(c, 'Jakarta')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert pesanan_di_kota(c, 'Jakarta') == [1, 2, 4, 5]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pesanan_di_kota(c, 'Bandung')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pesanan_di_kota(c, 'Bandung') == [3, 7]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pesanan_di_kota(c, 'Medan')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pesanan_di_kota(c, 'Medan') == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pesanan_di_kota(c, 'Surabaya')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pesanan_di_kota(c, 'Surabaya') == [6]"
+              }
+            ]
+          },
+          "hint": "Gabungkan pesanan dengan pelanggan dan saring kota dengan parameter.",
+          "solution": "import sqlite3\n\ndef pesanan_di_kota(c, kota):\n    q = 'SELECT p.id FROM pesanan p JOIN pelanggan g ON p.pelanggan_id = g.id WHERE g.kota = ? ORDER BY p.id'\n    return [r[0] for r in c.execute(q, (kota,)).fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-04-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `nilai_pesanan(c)` yang mengembalikan list tuple `(id_pesanan, nilai)` dengan `nilai = jumlah * harga` untuk pesanan yang punya pelanggan dan produk, terurut menurut id pesanan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef nilai_pesanan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nilai_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert nilai_pesanan(c) == [(1, 24000.0), (2, 25000.0), (3, 150000.0), (4, 12000.0), (5, 70000.0), (6, 50000.0), (7, 36000.0)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nilai_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE produk SET harga = 1000 WHERE id = 1')\nassert nilai_pesanan(c)[1] == (2, 10000.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nilai_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pelanggan VALUES (99, 'Zed', 'Bogor')\")\nassert nilai_pesanan(c)[-1] == (8, 1000.0)"
+              }
+            ]
+          },
+          "hint": "Kalikan jumlah dari pesanan dengan harga dari produk setelah dua JOIN.",
+          "solution": "import sqlite3\n\ndef nilai_pesanan(c):\n    q = '''\n    SELECT p.id, p.jumlah * k.harga\n    FROM pesanan p\n    JOIN pelanggan g ON p.pelanggan_id = g.id\n    JOIN produk k ON p.produk_id = k.id\n    ORDER BY p.id\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Kunci asing adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kolom yang merujuk kunci primer tabel lain",
+              "description": ""
+            },
+            {
+              "label": "Kolom teks",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            },
+            {
+              "label": "Nama tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Rujukan.",
+          "explanation": "Hubungan antar tabel."
+        },
+        {
+          "q": "INNER JOIN mempertahankan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris yang punya pasangan",
+              "description": ""
+            },
+            {
+              "label": "Semua baris kiri",
+              "description": ""
+            },
+            {
+              "label": "Semua baris kanan",
+              "description": ""
+            },
+            {
+              "label": "Semua kombinasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Cocok.",
+          "explanation": "Hanya yang cocok."
+        },
+        {
+          "q": "Alias tabel berguna untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membedakan kolom bernama sama",
+              "description": ""
+            },
+            {
+              "label": "Mempercepat",
+              "description": ""
+            },
+            {
+              "label": "Menghapus data",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Awalan.",
+          "explanation": "Menghindari ambigu."
+        },
+        {
+          "q": "Normalisasi bertujuan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mengurangi pengulangan data",
+              "description": ""
+            },
+            {
+              "label": "Menambah duplikasi",
+              "description": ""
+            },
+            {
+              "label": "Menghapus kunci",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pengulangan.",
+          "explanation": "Satu fakta satu tempat."
+        },
+        {
+          "q": "Pesanan dengan pelanggan 99 yang tak ada?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hilang pada INNER JOIN",
+              "description": ""
+            },
+            {
+              "label": "Tampil dengan NULL",
+              "description": ""
+            },
+            {
+              "label": "Menyebabkan error",
+              "description": ""
+            },
+            {
+              "label": "Menjadi nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Yatim.",
+          "explanation": "Tanpa pasangan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis kolom id tanpa awalan alias pada query JOIN. Lebih baik: Selalu beri awalan alias tabel.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis kolom id tanpa awalan alias pada query JOIN.",
+          "fix": "Selalu beri awalan alias tabel."
+        },
+        {
+          "mistake": "Tidak memeriksa baris yang hilang setelah INNER JOIN.",
+          "fix": "Bandingkan jumlah baris sebelum dan sesudah."
+        },
+        {
+          "mistake": "Lupa kondisi ON sehingga menghasilkan semua kombinasi.",
+          "fix": "Setiap JOIN butuh kondisi ON."
+        }
+      ],
+      "summary": [
+        "Normalisasi memecah data ke tabel terpisah yang dihubungkan kunci asing.",
+        "INNER JOIN hanya mempertahankan baris yang punya pasangan.",
+        "Alias tabel mencegah kolom ambigu dan memperjelas asal kolom.",
+        "Periksa jumlah baris sebelum dan sesudah JOIN."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# INNER JOIN dan kunci asing"
+          },
+          {
+            "type": "text",
+            "source": "Delapan pesanan ada, tetapi hanya tujuh yang cocok dengan pelanggan sehingga INNER JOIN membuang satu."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nprint(c.execute('SELECT COUNT(*) FROM pesanan').fetchone())\nq = 'SELECT COUNT(*) FROM pesanan p JOIN pelanggan g ON p.pelanggan_id = g.id'\nprint(c.execute(q).fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Setiap pesanan kini menampilkan nama pelanggannya, dan pesanan delapan tidak muncul."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT p.id, g.nama, p.jumlah\nFROM pesanan p JOIN pelanggan g ON p.pelanggan_id = g.id\nORDER BY p.id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Tiga tabel digabung sehingga tiap pesanan menampilkan pelanggan dan produknya sekaligus."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT p.id, g.nama, k.nama, p.jumlah\nFROM pesanan p\nJOIN pelanggan g ON p.pelanggan_id = g.id\nJOIN produk k ON p.produk_id = k.id\nORDER BY p.id\n'''\nfor baris in c.execute(q):\n    print(baris)"
+          },
+          {
+            "type": "text",
+            "source": "Nilai tiap pesanan dihitung dari jumlah pesanan dan harga produk yang berasal dari tabel berbeda."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT p.id, p.jumlah * k.harga\nFROM pesanan p\nJOIN pelanggan g ON p.pelanggan_id = g.id\nJOIN produk k ON p.produk_id = k.id\nORDER BY p.id\n'''\nprint(c.execute(q).fetchall())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-04-2",
+      "title": "LEFT JOIN dan baris tanpa pasangan",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memakai LEFT JOIN untuk mempertahankan semua baris tabel kiri",
+        "Menemukan baris tanpa pasangan dengan anti-join",
+        "Menghitung dengan COUNT kolom pada LEFT JOIN",
+        "Membedakan kondisi di ON dan di WHERE pada LEFT JOIN"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mempertahankan semua baris kiri",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mempertahankan semua baris kiri\n\nINNER JOIN membuang baris tanpa pasangan, yang sering bukan yang kita inginkan. Bila kita ingin daftar semua pelanggan termasuk yang belum pernah memesan, kita memakai `LEFT JOIN`. Ia mempertahankan semua baris tabel kiri, dan bila tidak ada pasangan di tabel kanan, kolom dari kanan diisi `NULL`.\n\nDengan begitu pelanggan Eko, yang belum punya pesanan, tetap muncul dengan kolom pesanan berisi `NULL`. LEFT JOIN adalah alat utama untuk menjawab pertanyaan tentang yang tidak ada atau yang hilang."
+            },
+            {
+              "type": "code_example",
+              "filename": "left_join.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT p.id, g.nama\nFROM pesanan p LEFT JOIN pelanggan g ON p.pelanggan_id = g.id\nORDER BY p.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[(1, 'Ani'), (2, 'Ani'), (3, 'Budi'), (4, 'Citra'), (5, 'Citra'), (6, 'Dewi'), (7, 'Budi'), (8, None)]",
+              "explanation": "Pesanan delapan kini tetap muncul, dengan nama pelanggan NULL karena pelanggannya tidak ada."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tabel kiri dan kanan\n\nKiri dan kanan ditentukan oleh urutan penulisan: tabel setelah `FROM` adalah kiri dan tabel setelah `JOIN` adalah kanan. Menukar urutan mengubah hasil `LEFT JOIN`. `A LEFT JOIN B` mempertahankan semua baris A, sedangkan `B LEFT JOIN A` mempertahankan semua baris B.\n\nPilih tabel kiri sebagai tabel yang barisnya ingin kamu pertahankan, yaitu entitas yang menjadi fokus pertanyaan. Untuk pertanyaan tentang pelanggan, taruh pelanggan di kiri. Untuk pertanyaan tentang pesanan, taruh pesanan di kiri."
+            },
+            {
+              "type": "text",
+              "markdown": "## Anti-join: yang tidak punya pasangan\n\nPertanyaan umum: pelanggan mana yang belum pernah memesan? Jawabannya adalah **anti-join**: lakukan `LEFT JOIN`, lalu saring baris yang kolom kuncinya di tabel kanan `NULL` dengan `WHERE p.id IS NULL`. Baris yang tersisa adalah baris kiri tanpa pasangan.\n\nPola ini juga menemukan masalah integritas data, misalnya pesanan yatim: `pesanan LEFT JOIN pelanggan ... WHERE g.id IS NULL`. Alternatif setara memakai `NOT EXISTS`, dibahas pada modul subquery."
+            },
+            {
+              "type": "code_example",
+              "filename": "anti_join.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.nama FROM pelanggan g\nLEFT JOIN pesanan p ON p.pelanggan_id = g.id\nWHERE p.id IS NULL\n'''\nprint(c.execute(q).fetchall())\nq = '''\nSELECT p.id FROM pesanan p\nLEFT JOIN pelanggan g ON p.pelanggan_id = g.id\nWHERE g.id IS NULL\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Eko',)]\n[(8,)]",
+              "explanation": "Eko adalah pelanggan tanpa pesanan, dan pesanan delapan adalah pesanan tanpa pelanggan."
+            }
+          ],
+          "quick_check": {
+            "question": "LEFT JOIN mempertahankan?",
+            "options": [
+              "Semua baris tabel kiri",
+              "Semua baris kanan"
+            ],
+            "answer_index": 0,
+            "explanation": "Kiri.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "COUNT pada LEFT JOIN",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## COUNT pada LEFT JOIN\n\nMenghitung pesanan per pelanggan dengan `LEFT JOIN` menyimpan jebakan klasik. `COUNT(*)` menghitung baris hasil, dan pelanggan Eko yang tidak punya pesanan tetap menghasilkan satu baris gabungan dengan kolom pesanan `NULL`, sehingga `COUNT(*)` menghitung satu, bukan nol.\n\nPakai `COUNT(p.id)`, yang menghitung hanya nilai non-NULL dari tabel kanan, sehingga Eko benar bernilai nol. Aturan: pada LEFT JOIN, hitung kolom dari tabel kanan, jangan pernah `COUNT(*)`."
+            },
+            {
+              "type": "code_example",
+              "filename": "count_left.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.nama, COUNT(p.id), COUNT(*)\nFROM pelanggan g LEFT JOIN pesanan p ON p.pelanggan_id = g.id\nGROUP BY g.id ORDER BY g.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Ani', 2, 2), ('Budi', 2, 2), ('Citra', 2, 2), ('Dewi', 1, 1), ('Eko', 0, 1)]",
+              "explanation": "Untuk Eko, COUNT kolom benar bernilai nol sedangkan COUNT bintang salah bernilai satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## ON atau WHERE\n\nPada `INNER JOIN`, kondisi di `ON` dan di `WHERE` memberi hasil sama. Pada `LEFT JOIN` berbeda tajam. Kondisi di `ON` menentukan baris kanan mana yang dicocokkan, sedangkan baris kiri tetap dipertahankan. Kondisi di `WHERE` menyaring hasil akhir, sehingga baris kiri tanpa pasangan, yang kolom kanannya `NULL`, ikut terbuang.\n\nUntuk menghitung pesanan besar per pelanggan sambil mempertahankan semua pelanggan, taruh kondisi jumlah di `ON`. Menaruhnya di `WHERE` secara diam-diam mengubah LEFT JOIN menjadi INNER JOIN."
+            },
+            {
+              "type": "code_example",
+              "filename": "on_vs_where.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.nama, COUNT(p.id)\nFROM pelanggan g\nLEFT JOIN pesanan p ON p.pelanggan_id = g.id AND p.jumlah >= 10\nGROUP BY g.id ORDER BY g.id\n'''\nprint(c.execute(q).fetchall())\nq = '''\nSELECT g.nama, COUNT(p.id)\nFROM pelanggan g\nLEFT JOIN pesanan p ON p.pelanggan_id = g.id\nWHERE p.jumlah >= 10\nGROUP BY g.id ORDER BY g.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Ani', 1), ('Budi', 0), ('Citra', 0), ('Dewi', 1), ('Eko', 0)]\n[('Ani', 1), ('Dewi', 1)]",
+              "explanation": "Kondisi di ON mempertahankan semua pelanggan dengan hitungan nol, sedangkan di WHERE membuang pelanggan tanpa pesanan besar."
+            }
+          ],
+          "quick_check": {
+            "question": "Anti-join memakai?",
+            "options": [
+              "INNER JOIN",
+              "LEFT JOIN dan IS NULL"
+            ],
+            "answer_index": 1,
+            "explanation": "Menemukan tanpa pasangan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "RIGHT dan FULL JOIN",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## RIGHT dan FULL JOIN\n\n`RIGHT JOIN` adalah cermin `LEFT JOIN` yang mempertahankan semua baris kanan, dan `FULL OUTER JOIN` mempertahankan semua baris kedua sisi. SQLite mendukung keduanya sejak versi 3.39, tetapi di praktik hampir semua kebutuhan dipenuhi `LEFT JOIN` dengan urutan tabel yang tepat.\n\nMenulis hanya `LEFT JOIN` membuat query seragam dan mudah dibaca dari kiri ke kanan. Bila butuh semua baris kedua sisi, `FULL JOIN` menjawabnya, misalnya saat mencocokkan dua daftar untuk mencari yang hanya ada di salah satunya."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "ON bukan WHERE",
+              "markdown": "Pada LEFT JOIN jangan taruh kondisi tabel kanan di WHERE kecuali ingin membuang baris tanpa pasangan. Taruh di ON."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa kualitas lewat JOIN\n\nLEFT JOIN dengan filter NULL adalah alat audit data yang sangat berguna. Dengan satu query kamu dapat menemukan referensi yang rusak, entitas tanpa aktivitas, dan catatan yang tidak cocok antar sistem. Laporan kualitas data sering terdiri dari beberapa anti-join seperti ini.\n\nJalankan pemeriksaan serupa setiap kali memuat data baru ke basis data. Menemukan pesanan yatim saat impor jauh lebih murah daripada menemukannya setelah laporan keuangan salah dan dibaca pimpinan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Beberapa LEFT JOIN berantai\n\nBila beberapa LEFT JOIN dirantai, perhatikan bahwa baris `NULL` dari join pertama akan membuat kondisi join berikutnya yang bergantung padanya juga tidak cocok. Hasilnya kolom berikutnya ikut `NULL`, yang biasanya benar secara logika tetapi bisa membingungkan saat membaca hasilnya.\n\nBangun query bertahap: periksa hasil setelah tiap JOIN sebelum menambah yang berikutnya. Jumlah baris yang tidak berubah setelah LEFT JOIN menandakan hubungan satu-ke-satu, dan lonjakan jumlah baris menandakan hubungan satu-ke-banyak."
+            }
+          ],
+          "quick_check": {
+            "question": "COUNT pada LEFT JOIN sebaiknya?",
+            "options": [
+              "Kolom tabel kanan",
+              "Bintang"
+            ],
+            "answer_index": 0,
+            "explanation": "Agar nol benar.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-04-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pesanan_dengan_nama(c)` yang mengembalikan list tuple `(id_pesanan, nama_pelanggan)` untuk SEMUA pesanan, dengan nama `None` bila pelanggan tidak ada, terurut menurut id pesanan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pesanan_dengan_nama(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(h)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nh = pesanan_dengan_nama(c)\nassert len(h) == 8"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert h[0] == (1, 'Ani')"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert h[-1] == (8, None)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pesanan_dengan_nama(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pelanggan VALUES (99, 'Zed', 'Bogor')\")\nassert pesanan_dengan_nama(c)[-1] == (8, 'Zed')"
+              }
+            ]
+          },
+          "hint": "Mulai dari pesanan lalu LEFT JOIN ke pelanggan.",
+          "solution": "import sqlite3\n\ndef pesanan_dengan_nama(c):\n    q = 'SELECT p.id, g.nama FROM pesanan p LEFT JOIN pelanggan g ON p.pelanggan_id = g.id ORDER BY p.id'\n    return c.execute(q).fetchall()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-04-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pelanggan_tanpa_pesanan(c)` yang mengembalikan list nama pelanggan yang belum memiliki pesanan, terurut menurut id pelanggan, memakai anti-join.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pelanggan_tanpa_pesanan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pelanggan_tanpa_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert pelanggan_tanpa_pesanan(c) == ['Eko']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pelanggan_tanpa_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, 5, 1, 1)')\nassert pelanggan_tanpa_pesanan(c) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pelanggan_tanpa_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pelanggan VALUES (6, 'Fani', 'Bogor')\")\nassert pelanggan_tanpa_pesanan(c) == ['Fani']"
+              }
+            ]
+          },
+          "hint": "LEFT JOIN dari pelanggan lalu saring id pesanan yang NULL.",
+          "solution": "import sqlite3\n\ndef pelanggan_tanpa_pesanan(c):\n    q = '''\n    SELECT g.nama FROM pelanggan g\n    LEFT JOIN pesanan p ON p.pelanggan_id = g.id\n    WHERE p.id IS NULL ORDER BY g.id\n    '''\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-04-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pesanan_yatim(c)` yang mengembalikan list id pesanan yang merujuk pelanggan yang tidak ada, terurut menurut id.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pesanan_yatim(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pesanan_yatim(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert pesanan_yatim(c) == [8]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pesanan_yatim(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, 77, 2, 1)')\nassert pesanan_yatim(c) == [8, 9]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pesanan_yatim(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('DELETE FROM pesanan WHERE id IN (8, 9)')\nassert pesanan_yatim(c) == []"
+              }
+            ]
+          },
+          "hint": "LEFT JOIN dari pesanan ke pelanggan lalu saring id pelanggan yang NULL.",
+          "solution": "import sqlite3\n\ndef pesanan_yatim(c):\n    q = '''\n    SELECT p.id FROM pesanan p\n    LEFT JOIN pelanggan g ON p.pelanggan_id = g.id\n    WHERE g.id IS NULL ORDER BY p.id\n    '''\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-04-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pesanan_per_pelanggan(c)` yang mengembalikan dictionary `{nama: banyak pesanan}` untuk SEMUA pelanggan termasuk yang tanpa pesanan (bernilai 0), memakai `LEFT JOIN` dan `COUNT` kolom kanan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pesanan_per_pelanggan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pesanan_per_pelanggan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert pesanan_per_pelanggan(c) == {'Ani': 2, 'Budi': 2, 'Citra': 2, 'Dewi': 1, 'Eko': 0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pesanan_per_pelanggan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, 5, 1, 1)')\nassert pesanan_per_pelanggan(c)['Eko'] == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pesanan_per_pelanggan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pelanggan VALUES (6, 'Fani', 'Bogor')\")\nassert pesanan_per_pelanggan(c)['Fani'] == 0"
+              }
+            ]
+          },
+          "hint": "Pakai COUNT dari kolom id tabel pesanan, bukan COUNT bintang.",
+          "solution": "import sqlite3\n\ndef pesanan_per_pelanggan(c):\n    q = '''\n    SELECT g.nama, COUNT(p.id)\n    FROM pelanggan g LEFT JOIN pesanan p ON p.pelanggan_id = g.id\n    GROUP BY g.id\n    '''\n    return dict(c.execute(q).fetchall())",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "LEFT JOIN mempertahankan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Semua baris tabel kiri",
+              "description": ""
+            },
+            {
+              "label": "Semua baris kanan",
+              "description": ""
+            },
+            {
+              "label": "Hanya yang cocok",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kiri.",
+          "explanation": "Kiri."
+        },
+        {
+          "q": "Anti-join memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "LEFT JOIN dan IS NULL",
+              "description": ""
+            },
+            {
+              "label": "INNER JOIN",
+              "description": ""
+            },
+            {
+              "label": "DISTINCT",
+              "description": ""
+            },
+            {
+              "label": "LIMIT",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NULL.",
+          "explanation": "Menemukan tanpa pasangan."
+        },
+        {
+          "q": "COUNT pada LEFT JOIN sebaiknya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kolom tabel kanan",
+              "description": ""
+            },
+            {
+              "label": "Bintang",
+              "description": ""
+            },
+            {
+              "label": "Semua",
+              "description": ""
+            },
+            {
+              "label": "Tidak perlu",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kanan.",
+          "explanation": "Agar nol benar."
+        },
+        {
+          "q": "Kondisi tabel kanan yang menjaga baris kiri diletakkan di?",
+          "code": null,
+          "options": [
+            {
+              "label": "ON",
+              "description": ""
+            },
+            {
+              "label": "WHERE",
+              "description": ""
+            },
+            {
+              "label": "HAVING",
+              "description": ""
+            },
+            {
+              "label": "ORDER BY",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pencocokan.",
+          "explanation": "ON."
+        },
+        {
+          "q": "Kolom kanan tanpa pasangan bernilai?",
+          "code": null,
+          "options": [
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "Kosong",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NULL.",
+          "explanation": "NULL."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai COUNT bintang pada LEFT JOIN. Lebih baik: Hitung kolom dari tabel kanan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai COUNT bintang pada LEFT JOIN.",
+          "fix": "Hitung kolom dari tabel kanan."
+        },
+        {
+          "mistake": "Menaruh kondisi tabel kanan di WHERE pada LEFT JOIN.",
+          "fix": "Taruh di ON."
+        },
+        {
+          "mistake": "Menukar urutan tabel tanpa menyadari efeknya.",
+          "fix": "Tabel kiri adalah yang barisnya dipertahankan."
+        }
+      ],
+      "summary": [
+        "LEFT JOIN mempertahankan semua baris kiri dan mengisi NULL untuk yang tanpa pasangan.",
+        "Anti-join dengan IS NULL menemukan baris tanpa pasangan.",
+        "COUNT kolom kanan memberi nol yang benar untuk yang tanpa pasangan.",
+        "Kondisi kanan di ON menjaga baris kiri, di WHERE membuangnya."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# LEFT JOIN dan baris tanpa pasangan"
+          },
+          {
+            "type": "text",
+            "source": "Pesanan delapan kini tetap muncul, dengan nama pelanggan NULL karena pelanggannya tidak ada."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT p.id, g.nama\nFROM pesanan p LEFT JOIN pelanggan g ON p.pelanggan_id = g.id\nORDER BY p.id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Eko adalah pelanggan tanpa pesanan, dan pesanan delapan adalah pesanan tanpa pelanggan."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.nama FROM pelanggan g\nLEFT JOIN pesanan p ON p.pelanggan_id = g.id\nWHERE p.id IS NULL\n'''\nprint(c.execute(q).fetchall())\nq = '''\nSELECT p.id FROM pesanan p\nLEFT JOIN pelanggan g ON p.pelanggan_id = g.id\nWHERE g.id IS NULL\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Untuk Eko, COUNT kolom benar bernilai nol sedangkan COUNT bintang salah bernilai satu."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.nama, COUNT(p.id), COUNT(*)\nFROM pelanggan g LEFT JOIN pesanan p ON p.pelanggan_id = g.id\nGROUP BY g.id ORDER BY g.id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Kondisi di ON mempertahankan semua pelanggan dengan hitungan nol, sedangkan di WHERE membuang pelanggan tanpa pesanan besar."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.nama, COUNT(p.id)\nFROM pelanggan g\nLEFT JOIN pesanan p ON p.pelanggan_id = g.id AND p.jumlah >= 10\nGROUP BY g.id ORDER BY g.id\n'''\nprint(c.execute(q).fetchall())\nq = '''\nSELECT g.nama, COUNT(p.id)\nFROM pelanggan g\nLEFT JOIN pesanan p ON p.pelanggan_id = g.id\nWHERE p.jumlah >= 10\nGROUP BY g.id ORDER BY g.id\n'''\nprint(c.execute(q).fetchall())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-04-3",
+      "title": "JOIN dengan agregasi, self join, dan duplikasi baris",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Meringkas data gabungan per kelompok dari tabel lain",
+        "Mengenali dan menghindari duplikasi baris akibat JOIN satu-ke-banyak",
+        "Memakai self join untuk membandingkan baris satu tabel",
+        "Menjelaskan CROSS JOIN dan EXISTS"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Agregasi setelah JOIN",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Agregasi setelah JOIN\n\nKekuatan sebenarnya muncul saat JOIN digabung dengan `GROUP BY`. Kota ada di tabel pelanggan sedangkan nilai belanja berasal dari pesanan dan produk. Dengan menggabungkan ketiganya kita bisa menghitung total belanja per kota, sesuatu yang tidak mungkin dijawab satu tabel saja.\n\nAlurnya: gabungkan tabel yang dibutuhkan, saring baris, kelompokkan menurut kolom dari tabel mana pun, lalu agregasikan. Karena kolom semua tabel tersedia setelah JOIN, kita bebas mengelompokkan dan menghitung dengan kolom dari tabel berbeda."
+            },
+            {
+              "type": "code_example",
+              "filename": "join_agregasi.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.kota, SUM(p.jumlah * k.harga)\nFROM pesanan p\nJOIN pelanggan g ON p.pelanggan_id = g.id\nJOIN produk k ON p.produk_id = k.id\nGROUP BY g.kota ORDER BY g.kota\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Bandung', 186000.0), ('Jakarta', 131000.0), ('Surabaya', 50000.0)]",
+              "explanation": "Total belanja dijumlahkan per kota dari tiga tabel, dan Medan tidak muncul karena tidak ada pesanan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Duplikasi akibat satu-ke-banyak\n\nHubungan satu-ke-banyak membuat baris sisi satu berlipat ganda setelah JOIN: pelanggan Ani yang memiliki dua pesanan muncul dua kali. Bila kita menghitung pelanggan per kota dengan `COUNT(*)` pada hasil gabungan, kita sebenarnya menghitung pesanan, bukan pelanggan.\n\nIni kesalahan analisis paling umum pada JOIN. Gunakan `COUNT(DISTINCT g.id)` bila ingin menghitung entitas sisi satu. Selalu tanyakan: satu baris hasil gabungan mewakili apa? Jawabannya menentukan apa yang sebenarnya dihitung agregat."
+            },
+            {
+              "type": "code_example",
+              "filename": "duplikasi_join.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.kota, COUNT(DISTINCT g.id), COUNT(*)\nFROM pelanggan g JOIN pesanan p ON p.pelanggan_id = g.id\nGROUP BY g.kota ORDER BY g.kota\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Bandung', 1, 2), ('Jakarta', 2, 4), ('Surabaya', 1, 1)]",
+              "explanation": "Jakarta memiliki dua pelanggan tetapi empat baris gabungan, sehingga COUNT bintang menghitung pesanan, bukan pelanggan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fan-out pada SUM\n\nDuplikasi lebih berbahaya pada `SUM`. Bila kamu menggabungkan tabel pelanggan yang memiliki kolom saldo dengan tabel pesanan lalu menjumlahkan saldo, saldo tiap pelanggan terhitung sebanyak pesanannya. Hasilnya angka membengkak yang tampak sah tetapi salah.\n\nPencegahannya adalah meringkas sisi banyak lebih dulu dalam subquery sehingga satu baris per pelanggan, baru digabung. Selalu periksa total hasil JOIN terhadap total sumber asli sebagai uji kewarasan."
+            }
+          ],
+          "quick_check": {
+            "question": "JOIN satu-ke-banyak menyebabkan?",
+            "options": [
+              "Sisi satu berlipat ganda",
+              "Baris hilang"
+            ],
+            "answer_index": 0,
+            "explanation": "Fan-out.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Self join",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Self join\n\nSebuah tabel dapat digabung dengan dirinya sendiri dengan memberi dua alias berbeda. Ini berguna untuk membandingkan baris dalam tabel yang sama, misalnya mencari pasangan pelanggan sekota. Kondisi `a.kota = b.kota AND a.id < b.id` mencocokkan pasangan sekota dan mencegah pasangan terbalik serta pasangan dengan diri sendiri.\n\nSelf join juga dipakai untuk data hierarkis, misalnya karyawan dan atasannya yang tersimpan di tabel sama dengan kolom `atasan_id` yang merujuk id karyawan lain."
+            },
+            {
+              "type": "code_example",
+              "filename": "self_join.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT a.nama, b.nama\nFROM pelanggan a JOIN pelanggan b ON a.kota = b.kota AND a.id < b.id\nORDER BY a.id, b.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Ani', 'Citra')]",
+              "explanation": "Hanya Ani dan Citra yang sekota, dan syarat id lebih kecil mencegah pasangan ganda."
+            },
+            {
+              "type": "text",
+              "markdown": "## CROSS JOIN\n\n`CROSS JOIN` menghasilkan semua kombinasi baris kedua tabel tanpa kondisi, disebut produk Kartesius. Lima pelanggan dan empat produk menghasilkan dua puluh kombinasi. Berguna untuk membangun semua kombinasi yang mungkin, misalnya semua pasangan pelanggan dan produk untuk mencari yang belum dibeli.\n\nNamun berbahaya bila tidak sengaja. Lupa menulis kondisi `ON` pada JOIN biasa di beberapa basis data menghasilkan produk Kartesius, dan pada tabel jutaan baris itu berarti triliunan baris yang menghabiskan memori. Waspadai lonjakan jumlah baris yang tidak masuk akal."
+            },
+            {
+              "type": "code_example",
+              "filename": "cross_exists.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nprint(c.execute('SELECT COUNT(*) FROM pelanggan CROSS JOIN produk').fetchone())\nq = '''\nSELECT g.nama FROM pelanggan g\nWHERE EXISTS (SELECT 1 FROM pesanan p WHERE p.pelanggan_id = g.id)\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "(20,)\n[('Ani',), ('Budi',), ('Citra',), ('Dewi',)]",
+              "explanation": "CROSS JOIN menghasilkan dua puluh kombinasi, dan EXISTS memilih pelanggan yang punya pesanan tanpa menduplikasi baris."
+            },
+            {
+              "type": "text",
+              "markdown": "## EXISTS sebagai alternatif\n\n`EXISTS` menguji apakah subquery menghasilkan minimal satu baris. Ia ideal untuk pertanyaan ada atau tidaknya, seperti pelanggan yang punya pesanan, tanpa masalah duplikasi karena hasilnya satu baris per pelanggan, tidak peduli berapa pesanannya.\n\nBandingkan dengan JOIN yang menggandakan baris dan memerlukan `DISTINCT`. Untuk pertanyaan keberadaan, `EXISTS` lebih jelas niatnya dan sering lebih cepat. Pelajari ini lebih jauh pada modul subquery."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Waspada fan-out",
+              "markdown": "Tanyakan satu baris hasil JOIN mewakili apa. JOIN satu-ke-banyak menggandakan sisi satu dan membuat COUNT serta SUM membengkak."
+            }
+          ],
+          "quick_check": {
+            "question": "Menghitung entitas unik setelah JOIN?",
+            "options": [
+              "COUNT bintang",
+              "COUNT DISTINCT id"
+            ],
+            "answer_index": 1,
+            "explanation": "Hindari duplikasi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Membangun query JOIN bertahap",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Membangun query JOIN bertahap\n\nQuery JOIN panjang paling mudah dibangun dan dipecahkan bertahap. Mulai dari tabel pusat dengan beberapa kolom, jalankan, dan periksa jumlah baris. Tambahkan satu JOIN, jalankan, dan periksa lagi bahwa jumlahnya sesuai harapan. Baru setelah itu tambahkan pengelompokan dan agregasi.\n\nPendekatan ini membuat setiap kesalahan terlihat tepat saat ia muncul, bukan terkubur di bawah lapisan agregasi. Banyak bug JOIN hanya kentara bila kamu melihat baris mentah sebelum diringkas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih antara JOIN dan subquery\n\nBanyak pertanyaan dapat dijawab dengan JOIN maupun subquery. JOIN unggul bila kamu butuh kolom dari kedua tabel dalam hasil. Subquery atau EXISTS unggul bila kamu hanya butuh menyaring berdasarkan keberadaan data di tabel lain, karena tidak menggandakan baris dan niatnya lebih jelas.\n\nPilih yang membuat maksud query paling mudah dipahami. Mesin basis data modern sering menghasilkan rencana eksekusi yang sama untuk keduanya, sehingga keterbacaan biasanya menjadi pertimbangan utama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kinerja JOIN dan indeks\n\nJOIN pada tabel besar bergantung pada indeks di kolom kunci. Kunci primer otomatis berindeks, tetapi kunci asing seperti `pelanggan_id` sering tidak, sehingga JOIN memindai seluruh tabel untuk tiap baris. Menambah indeks pada kunci asing yang sering dipakai di JOIN dapat mempercepat query berkali lipat.\n\nModul desain tabel dan indeks akan membahas cara membuat dan memeriksa indeks, termasuk `EXPLAIN QUERY PLAN` untuk melihat apakah indeks benar-benar dipakai oleh query."
+            }
+          ],
+          "quick_check": {
+            "question": "Self join memakai?",
+            "options": [
+              "Dua alias tabel sama",
+              "Dua database"
+            ],
+            "answer_index": 0,
+            "explanation": "Alias.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-04-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `belanja_per_kota(c)` yang mengembalikan dictionary `{kota: total jumlah * harga}` dari pesanan yang punya pelanggan dan produk.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef belanja_per_kota(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "belanja_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert belanja_per_kota(c) == {'Bandung': 186000.0, 'Jakarta': 131000.0, 'Surabaya': 50000.0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "belanja_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 'Medan' not in belanja_per_kota(c)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "belanja_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, 5, 3, 1)')\nassert belanja_per_kota(c)['Medan'] == 150000.0"
+              }
+            ]
+          },
+          "hint": "Gabungkan tiga tabel lalu kelompokkan menurut kota dan jumlahkan jumlah kali harga.",
+          "solution": "import sqlite3\n\ndef belanja_per_kota(c):\n    q = '''\n    SELECT g.kota, SUM(p.jumlah * k.harga)\n    FROM pesanan p\n    JOIN pelanggan g ON p.pelanggan_id = g.id\n    JOIN produk k ON p.produk_id = k.id\n    GROUP BY g.kota\n    '''\n    return dict(c.execute(q).fetchall())",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-04-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `produk_terjual(c)` yang mengembalikan list tuple `(nama_produk, total_jumlah)` untuk SEMUA produk, dengan 0 bila belum terjual, terurut menurut id produk.",
+          "note": "Pesanan dengan pelanggan tak dikenal tetap dihitung.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef produk_terjual(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "produk_terjual(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert produk_terjual(c) == [('Pensil', 31), ('Buku', 6), ('Tas', 1), ('Botol', 2)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "produk_terjual(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (5, 'Pulpen', 3000)\")\nassert produk_terjual(c)[-1] == ('Pulpen', 0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "produk_terjual(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, 1, 5, 4)')\nassert produk_terjual(c)[-1] == ('Pulpen', 4)"
+              }
+            ]
+          },
+          "hint": "LEFT JOIN dari produk ke pesanan dan jumlahkan dengan COALESCE.",
+          "solution": "import sqlite3\n\ndef produk_terjual(c):\n    q = '''\n    SELECT k.nama, COALESCE(SUM(p.jumlah), 0)\n    FROM produk k LEFT JOIN pesanan p ON p.produk_id = k.id\n    GROUP BY k.id ORDER BY k.id\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-04-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pelanggan_aktif_per_kota(c)` yang mengembalikan dictionary `{kota: banyak pelanggan berbeda yang punya pesanan}` memakai `COUNT(DISTINCT ...)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pelanggan_aktif_per_kota(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pelanggan_aktif_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert pelanggan_aktif_per_kota(c) == {'Bandung': 1, 'Jakarta': 2, 'Surabaya': 1}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pelanggan_aktif_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (9, 1, 1, 1)')\nassert pelanggan_aktif_per_kota(c)['Jakarta'] == 2"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pelanggan_aktif_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO pesanan VALUES (10, 5, 1, 1)')\nassert pelanggan_aktif_per_kota(c)['Medan'] == 1"
+              }
+            ]
+          },
+          "hint": "Hitung id pelanggan unik setelah JOIN dan kelompokkan menurut kota.",
+          "solution": "import sqlite3\n\ndef pelanggan_aktif_per_kota(c):\n    q = '''\n    SELECT g.kota, COUNT(DISTINCT g.id)\n    FROM pelanggan g JOIN pesanan p ON p.pelanggan_id = g.id\n    GROUP BY g.kota\n    '''\n    return dict(c.execute(q).fetchall())",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-04-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pasangan_sekota(c)` yang mengembalikan list tuple `(nama_a, nama_b)` untuk pasangan pelanggan sekota dengan `a.id < b.id`, terurut menurut `a.id` lalu `b.id`, memakai self join.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pasangan_sekota(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pasangan_sekota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta'),\n    (2, 'Budi', 'Bandung'),\n    (3, 'Citra', 'Jakarta'),\n    (4, 'Dewi', 'Surabaya'),\n    (5, 'Eko', 'Medan');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 2500),\n    (2, 'Buku', 12000),\n    (3, 'Tas', 150000),\n    (4, 'Botol', 35000);\n    INSERT INTO pesanan VALUES\n    (1, 1, 2, 2),\n    (2, 1, 1, 10),\n    (3, 2, 3, 1),\n    (4, 3, 2, 1),\n    (5, 3, 4, 2),\n    (6, 4, 1, 20),\n    (7, 2, 2, 3),\n    (8, 99, 1, 1);\n    ''')\n    return c\nc = _db()\nassert pasangan_sekota(c) == [('Ani', 'Citra')]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pasangan_sekota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pelanggan VALUES (6, 'Fani', 'Bandung')\")\nassert pasangan_sekota(c) == [('Ani', 'Citra'), ('Budi', 'Fani')]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pasangan_sekota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pelanggan VALUES (7, 'Gani', 'Jakarta')\")\nassert pasangan_sekota(c) == [('Ani', 'Citra'), ('Ani', 'Gani'), ('Budi', 'Fani'), ('Citra', 'Gani')]"
+              }
+            ]
+          },
+          "hint": "Gabungkan pelanggan dengan dirinya memakai kota sama dan id a lebih kecil dari id b.",
+          "solution": "import sqlite3\n\ndef pasangan_sekota(c):\n    q = '''\n    SELECT a.nama, b.nama\n    FROM pelanggan a JOIN pelanggan b ON a.kota = b.kota AND a.id < b.id\n    ORDER BY a.id, b.id\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "JOIN satu-ke-banyak menyebabkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sisi satu berlipat ganda",
+              "description": ""
+            },
+            {
+              "label": "Baris hilang",
+              "description": ""
+            },
+            {
+              "label": "Kolom bertambah",
+              "description": ""
+            },
+            {
+              "label": "Tak ada efek",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Gandakan.",
+          "explanation": "Fan-out."
+        },
+        {
+          "q": "Menghitung entitas unik setelah JOIN?",
+          "code": null,
+          "options": [
+            {
+              "label": "COUNT DISTINCT id",
+              "description": ""
+            },
+            {
+              "label": "COUNT bintang",
+              "description": ""
+            },
+            {
+              "label": "SUM",
+              "description": ""
+            },
+            {
+              "label": "MAX",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Distinct.",
+          "explanation": "Hindari duplikasi."
+        },
+        {
+          "q": "Self join memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dua alias tabel sama",
+              "description": ""
+            },
+            {
+              "label": "Dua database",
+              "description": ""
+            },
+            {
+              "label": "CROSS saja",
+              "description": ""
+            },
+            {
+              "label": "Subquery wajib",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Alias.",
+          "explanation": "Alias."
+        },
+        {
+          "q": "CROSS JOIN 5 kali 4 baris?",
+          "code": null,
+          "options": [
+            {
+              "label": "20",
+              "description": ""
+            },
+            {
+              "label": "9",
+              "description": ""
+            },
+            {
+              "label": "5",
+              "description": ""
+            },
+            {
+              "label": "4",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kali.",
+          "explanation": "Produk Kartesius."
+        },
+        {
+          "q": "EXISTS cocok untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menguji keberadaan",
+              "description": ""
+            },
+            {
+              "label": "Menjumlah",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Membuat tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ada.",
+          "explanation": "Ada atau tidak."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai COUNT bintang pada hasil JOIN untuk menghitung entitas sisi satu. Lebih baik: Pakai COUNT DISTINCT pada id entitas.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai COUNT bintang pada hasil JOIN untuk menghitung entitas sisi satu.",
+          "fix": "Pakai COUNT DISTINCT pada id entitas."
+        },
+        {
+          "mistake": "Menjumlahkan kolom sisi satu setelah JOIN satu-ke-banyak.",
+          "fix": "Ringkas sisi banyak dulu dalam subquery."
+        },
+        {
+          "mistake": "Lupa memastikan kondisi ON sehingga produk Kartesius terbentuk.",
+          "fix": "Periksa jumlah baris hasil."
+        }
+      ],
+      "summary": [
+        "JOIN dengan GROUP BY menjawab pertanyaan lintas tabel.",
+        "JOIN satu-ke-banyak menggandakan sisi satu sehingga agregat bisa membengkak.",
+        "Self join membandingkan baris dalam tabel yang sama.",
+        "EXISTS menguji keberadaan tanpa menduplikasi baris."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# JOIN dengan agregasi, self join, dan duplikasi baris"
+          },
+          {
+            "type": "text",
+            "source": "Total belanja dijumlahkan per kota dari tiga tabel, dan Medan tidak muncul karena tidak ada pesanan."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.kota, SUM(p.jumlah * k.harga)\nFROM pesanan p\nJOIN pelanggan g ON p.pelanggan_id = g.id\nJOIN produk k ON p.produk_id = k.id\nGROUP BY g.kota ORDER BY g.kota\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Jakarta memiliki dua pelanggan tetapi empat baris gabungan, sehingga COUNT bintang menghitung pesanan, bukan pelanggan."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT g.kota, COUNT(DISTINCT g.id), COUNT(*)\nFROM pelanggan g JOIN pesanan p ON p.pelanggan_id = g.id\nGROUP BY g.kota ORDER BY g.kota\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Hanya Ani dan Citra yang sekota, dan syarat id lebih kecil mencegah pasangan ganda."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nq = '''\nSELECT a.nama, b.nama\nFROM pelanggan a JOIN pelanggan b ON a.kota = b.kota AND a.id < b.id\nORDER BY a.id, b.id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "CROSS JOIN menghasilkan dua puluh kombinasi, dan EXISTS memilih pelanggan yang punya pesanan tanpa menduplikasi baris."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, harga REAL);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, produk_id INTEGER, jumlah INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta'),\n(2, 'Budi', 'Bandung'),\n(3, 'Citra', 'Jakarta'),\n(4, 'Dewi', 'Surabaya'),\n(5, 'Eko', 'Medan');\nINSERT INTO produk VALUES\n(1, 'Pensil', 2500),\n(2, 'Buku', 12000),\n(3, 'Tas', 150000),\n(4, 'Botol', 35000);\nINSERT INTO pesanan VALUES\n(1, 1, 2, 2),\n(2, 1, 1, 10),\n(3, 2, 3, 1),\n(4, 3, 2, 1),\n(5, 3, 4, 2),\n(6, 4, 1, 20),\n(7, 2, 2, 3),\n(8, 99, 1, 1);\n''')\n\nprint(c.execute('SELECT COUNT(*) FROM pelanggan CROSS JOIN produk').fetchone())\nq = '''\nSELECT g.nama FROM pelanggan g\nWHERE EXISTS (SELECT 1 FROM pesanan p WHERE p.pelanggan_id = g.id)\nORDER BY g.id\n'''\nprint(c.execute(q).fetchall())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

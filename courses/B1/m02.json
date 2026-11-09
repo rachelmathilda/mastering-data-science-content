@@ -1,0 +1,1636 @@
+{
+  "schema_version": 2,
+  "course_id": "B1",
+  "module_no": 2,
+  "title": "Indexing, slicing, dan masking",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Mengambil data dengan indeks dan slice",
+    "Menyaring data dengan mask boolean dan np.where",
+    "Memilih dan mengubah data dengan fancy indexing"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B1-02-1",
+    "exercise_id": "B1-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def ubah_tengah(a, nilai):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B1-02-1",
+      "title": "Indexing dan slicing",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengambil elemen dengan indeks positif dan negatif",
+        "Memotong array satu dan dua dimensi dengan slice",
+        "Memakai langkah dan langkah negatif",
+        "Memahami bahwa slice adalah view"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengakses data array",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengakses data array\n\nSetelah data masuk ke array, pekerjaan sehari-hari adalah mengambil sebagian darinya: satu nilai, satu baris, satu kolom, atau satu blok. NumPy memakai notasi kurung siku yang mirip list, tetapi diperluas untuk banyak dimensi. Menguasai notasi ini membuat Anda dapat memilih data tanpa perulangan, yang lebih singkat dan jauh lebih cepat. Pelajaran ini membahas indeks dan slice, dua pelajaran berikutnya membahas mask dan fancy indexing."
+            },
+            {
+              "type": "text",
+              "markdown": "## Indeks satu dimensi\n\nIndeks dimulai dari nol. Elemen pertama adalah `a[0]` dan indeks negatif menghitung dari belakang, jadi `a[-1]` adalah elemen terakhir dan `a[-2]` yang sebelum terakhir. Mengakses indeks di luar batas menimbulkan `IndexError`. Hasil indeks tunggal pada array satu dimensi adalah skalar NumPy, bukan array, dan dapat diubah ke tipe Python dengan metode `item`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Slice satu dimensi\n\nSlice memakai bentuk `awal:akhir:langkah`. Indeks awal termasuk, indeks akhir tidak termasuk, dan langkah menentukan loncatan. Semua bagian boleh dikosongkan: awal kosong berarti dari depan, akhir kosong berarti sampai belakang, langkah kosong berarti satu. Langkah negatif membalik arah, sehingga `a[::-1]` membalik seluruh array. Slice di luar batas tidak menimbulkan galat, ia hanya memotong secukupnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "slice_1d.py",
+              "runnable": true,
+              "code": "import numpy as np\n\na = np.arange(10)\nprint(a[2], a[-1])\nprint(a[2:7].tolist())\nprint(a[::3].tolist())\nprint(a[::-1].tolist())\nprint(a[-3:].tolist())",
+              "expected_output_note": "2 9\n[2, 3, 4, 5, 6]\n[0, 3, 6, 9]\n[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]\n[7, 8, 9]",
+              "explanation": "Awal termasuk dan akhir tidak. Langkah tiga mengambil tiap elemen ketiga, dan langkah negatif membalik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Indeks dua dimensi\n\nPada matriks, tulis satu indeks per sumbu dipisah koma: `m[1, 2]` adalah baris satu kolom dua. Bentuk `m[1][2]` memberi hasil sama tetapi membuat array sementara, jadi gaya dengan koma lebih disarankan. Bila hanya memberi satu indeks, `m[1]` mengambil seluruh baris satu. Untuk mengambil satu kolom, gunakan titik dua pada sumbu baris: `m[:, 2]`."
+            }
+          ],
+          "quick_check": {
+            "question": "a[-1] adalah?",
+            "options": [
+              "Elemen terakhir",
+              "Elemen pertama"
+            ],
+            "answer_index": 0,
+            "explanation": "Indeks negatif dari belakang.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Slice pada banyak sumbu",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Slice pada banyak sumbu\n\nSlice dapat diterapkan pada tiap sumbu secara terpisah. Ungkapan `m[0:2, 1:3]` mengambil dua baris pertama dan kolom satu sampai dua, menghasilkan blok dua kali dua. Dengan langkah, `m[::2, ::2]` mengambil tiap baris dan kolom kedua. Titik dua tunggal berarti seluruh sumbu. Cara berpikir yang membantu adalah menentukan sumbu satu per satu dari kiri ke kanan."
+            },
+            {
+              "type": "code_example",
+              "filename": "slice_2d.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nm = np.arange(12).reshape(3, 4)\nprint(m[1, 2], m[1][2])\nprint(m[1].tolist())\nprint(m[:, 2].tolist())\nprint(m[0:2, 1:3].tolist())\nprint(m[::2, ::2].tolist())\nprint(m[-1, -1])",
+              "expected_output_note": "6 6\n[4, 5, 6, 7]\n[2, 6, 10]\n[[1, 2], [5, 6]]\n[[0, 2], [8, 10]]\n11",
+              "explanation": "Satu indeks mengambil baris, titik dua mengambil seluruh sumbu, dan slice pada dua sumbu menghasilkan blok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Elips untuk banyak dimensi\n\nPada array dengan banyak sumbu, menulis titik dua untuk tiap sumbu melelahkan. Tanda elips `...` menggantikan sebanyak mungkin titik dua yang diperlukan. Contohnya `x[..., 0]` mengambil indeks nol pada sumbu terakhir, apa pun jumlah sumbu lain. Notasi ini sering ditemui pada data gambar dengan sumbu tinggi, lebar, dan kanal warna, ketika kita ingin mengambil satu kanal saja."
+            },
+            {
+              "type": "text",
+              "markdown": "## Slice adalah view\n\nBerbeda dari list, slice array tidak menyalin data. Hasilnya adalah view yang berbagi memori dengan array asal, sehingga mengubah slice ikut mengubah aslinya. Perilaku ini efisien untuk data besar, tetapi harus diingat. Bila Anda membutuhkan data terpisah, panggil `.copy()` pada hasil slice. Ini mengulang pelajaran view dari modul sebelumnya, dan di sini ia paling sering menjebak."
+            },
+            {
+              "type": "code_example",
+              "filename": "slice_view.py",
+              "runnable": true,
+              "code": "import numpy as np\n\na = np.arange(10)\ns = a[2:5]\ns[0] = 99\nprint(a.tolist())\nc = a[2:5].copy()\nc[1] = -1\nprint(a.tolist())\nprint(np.shares_memory(a, s), np.shares_memory(a, c))",
+              "expected_output_note": "[0, 1, 99, 3, 4, 5, 6, 7, 8, 9]\n[0, 1, 99, 3, 4, 5, 6, 7, 8, 9]\nTrue False",
+              "explanation": "Mengubah slice mengubah array asal, sedangkan salinan eksplisit tidak memengaruhinya."
+            }
+          ],
+          "quick_check": {
+            "question": "a[::-1] melakukan?",
+            "options": [
+              "Menghapus",
+              "Membalik array"
+            ],
+            "answer_index": 1,
+            "explanation": "Langkah negatif.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Penugasan lewat slice",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Penugasan lewat slice\n\nSlice juga dapat berada di sisi kiri tanda sama dengan untuk mengisi sebagian array. Menulis `a[1:-1] = 0` mengisi semua elemen kecuali tepi dengan nol. Nilai di kanan boleh skalar yang disebarkan ke seluruh slice, atau array dengan jumlah elemen yang cocok. Cara ini mengubah array di tempat, jadi pastikan Anda memang ingin mengubah aslinya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pola umum\n\nBeberapa pola slice muncul terus. `a[:n]` mengambil n elemen pertama dan `a[-n:]` n elemen terakhir. `a[::-1]` membalik. `m[:, 0]` mengambil kolom pertama dan `m[0]` baris pertama. `m[1:, :-1]` membuang baris pertama dan kolom terakhir. Menghafal pola ini mempercepat penulisan kode analisis dan membuatnya mudah dibaca oleh orang lain yang akrab dengan NumPy."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Aturan slice",
+              "markdown": "Slice mengikuti aturan awal termasuk dan akhir tidak, sama seperti range. Panjang hasilnya adalah akhir dikurangi awal bila langkah satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Slice di luar batas\n\nBerbeda dari indeks tunggal, slice yang melewati batas tidak menimbulkan galat. Menulis `a[8:100]` pada array sepuluh elemen cukup mengembalikan dua elemen terakhir, dan `a[20:30]` mengembalikan array kosong. Sifat ini nyaman untuk mengambil n elemen pertama tanpa memeriksa panjang, tetapi juga dapat menyembunyikan kesalahan indeks, jadi periksa shape hasil bila jumlah elemen penting."
+            }
+          ],
+          "quick_check": {
+            "question": "m[:, 2] mengambil?",
+            "options": [
+              "Kolom kedua",
+              "Baris kedua"
+            ],
+            "answer_index": 0,
+            "explanation": "Seluruh baris, kolom dua.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ambil_tepi(a)` yang mengembalikan list berisi elemen pertama dan elemen terakhir array satu dimensi `a` sebagai bilangan Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef ambil_tepi(a):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ambil_tepi(np.arange(10))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_tepi(np.arange(10)) == [0, 9]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ambil_tepi(np.array([5, 6, 7]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_tepi(np.array([5, 6, 7])) == [5, 7]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ambil_tepi(np.array([4]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_tepi(np.array([4])) == [4, 4]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ambil_tepi(np.array([1.5, 2.5]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_tepi(np.array([1.5, 2.5])) == [1.5, 2.5]"
+              }
+            ]
+          },
+          "hint": "Indeks nol dan minus satu, ubah dengan item.",
+          "solution": "import numpy as np\n\ndef ambil_tepi(a):\n    return [a[0].item(), a[-1].item()]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-02-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `blok(m, r0, r1, c0, c1)` yang mengembalikan, sebagai list Python, blok matriks `m` dari baris `r0` sampai sebelum `r1` dan kolom `c0` sampai sebelum `c1`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef blok(m, r0, r1, c0, c1):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "blok(m, 0, 2, 1, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "m = np.arange(12).reshape(3, 4)\nassert blok(m, 0, 2, 1, 3) == [[1, 2], [5, 6]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "blok(m, 1, 3, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert blok(m, 1, 3, 0, 1) == [[4], [8]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "blok(m, 0, 3, 0, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert blok(m, 0, 3, 0, 4) == m.tolist()"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "blok(m, 2, 2, 0, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert blok(m, 2, 2, 0, 4) == []"
+              }
+            ]
+          },
+          "hint": "Gunakan dua slice dipisah koma.",
+          "solution": "import numpy as np\n\ndef blok(m, r0, r1, c0, c1):\n    return m[r0:r1, c0:c1].tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `selang_seling(m)` yang mengembalikan, sebagai list Python, elemen matriks `m` pada baris dan kolom berindeks genap saja.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef selang_seling(m):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selang_seling(m)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "m = np.arange(12).reshape(3, 4)\nassert selang_seling(m) == [[0, 2], [8, 10]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selang_seling(np.arange(9).reshape(3, 3))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selang_seling(np.arange(9).reshape(3, 3)) == [[0, 2], [6, 8]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selang_seling(np.arange(4).reshape(2, 2))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selang_seling(np.arange(4).reshape(2, 2)) == [[0]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "selang_seling(np.arange(5).reshape(1, 5))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selang_seling(np.arange(5).reshape(1, 5)) == [[0, 2, 4]]"
+              }
+            ]
+          },
+          "hint": "Langkah dua pada kedua sumbu.",
+          "solution": "import numpy as np\n\ndef selang_seling(m):\n    return m[::2, ::2].tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ubah_tengah(a, nilai)` yang mengembalikan salinan array satu dimensi `a` dengan semua elemen selain yang pertama dan terakhir diganti `nilai`.",
+          "note": "Array asli tidak boleh berubah.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef ubah_tengah(a, nilai):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "r.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = np.arange(10)\nr = ubah_tengah(a, 0)\nassert r.tolist() == [0, 0, 0, 0, 0, 0, 0, 0, 0, 9]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "a.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert a.tolist() == list(range(10))"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ubah_tengah(np.array([1, 2, 3]), 7).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ubah_tengah(np.array([1, 2, 3]), 7).tolist() == [1, 7, 3]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ubah_tengah(np.array([1, 2]), 7).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ubah_tengah(np.array([1, 2]), 7).tolist() == [1, 2]"
+              }
+            ]
+          },
+          "hint": "Salin dulu, lalu isi slice dari indeks satu sampai minus satu.",
+          "solution": "import numpy as np\n\ndef ubah_tengah(a, nilai):\n    c = a.copy()\n    c[1:-1] = nilai\n    return c",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "a[-1] adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Elemen terakhir",
+              "description": ""
+            },
+            {
+              "label": "Elemen pertama",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Panjang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Belakang.",
+          "explanation": "Indeks negatif dari belakang."
+        },
+        {
+          "q": "a[::-1] melakukan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membalik array",
+              "description": ""
+            },
+            {
+              "label": "Menghapus",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menyalin tanpa urutan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Balik.",
+          "explanation": "Langkah negatif."
+        },
+        {
+          "q": "m[:, 2] mengambil?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kolom kedua",
+              "description": ""
+            },
+            {
+              "label": "Baris kedua",
+              "description": ""
+            },
+            {
+              "label": "Elemen kedua",
+              "description": ""
+            },
+            {
+              "label": "Diagonal",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Titik dua.",
+          "explanation": "Seluruh baris, kolom dua."
+        },
+        {
+          "q": "Slice menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "View",
+              "description": ""
+            },
+            {
+              "label": "Salinan",
+              "description": ""
+            },
+            {
+              "label": "List",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bagi.",
+          "explanation": "Berbagi memori."
+        },
+        {
+          "q": "a[2:5] memiliki berapa elemen?",
+          "code": null,
+          "options": [
+            {
+              "label": "3",
+              "description": ""
+            },
+            {
+              "label": "2",
+              "description": ""
+            },
+            {
+              "label": "5",
+              "description": ""
+            },
+            {
+              "label": "4",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kurang.",
+          "explanation": "Akhir dikurangi awal."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira akhir slice termasuk. Lebih baik: Akhir tidak termasuk.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira akhir slice termasuk.",
+          "fix": "Akhir tidak termasuk."
+        },
+        {
+          "mistake": "Mengubah slice lalu heran data asal berubah.",
+          "fix": "Panggil copy bila butuh data terpisah."
+        },
+        {
+          "mistake": "Memakai m[1][2] di perulangan besar.",
+          "fix": "Pakai m[1, 2] agar tanpa array sementara."
+        }
+      ],
+      "summary": [
+        "Indeks mulai dari nol dan indeks negatif menghitung dari belakang.",
+        "Slice berbentuk awal:akhir:langkah dan akhirnya tidak termasuk.",
+        "Pada matriks tulis satu slice per sumbu dipisah koma.",
+        "Slice adalah view, gunakan copy untuk data terpisah."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Indexing dan slicing"
+          },
+          {
+            "type": "text",
+            "source": "Awal termasuk dan akhir tidak. Langkah tiga mengambil tiap elemen ketiga, dan langkah negatif membalik."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\na = np.arange(10)\nprint(a[2], a[-1])\nprint(a[2:7].tolist())\nprint(a[::3].tolist())\nprint(a[::-1].tolist())\nprint(a[-3:].tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Satu indeks mengambil baris, titik dua mengambil seluruh sumbu, dan slice pada dua sumbu menghasilkan blok."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nm = np.arange(12).reshape(3, 4)\nprint(m[1, 2], m[1][2])\nprint(m[1].tolist())\nprint(m[:, 2].tolist())\nprint(m[0:2, 1:3].tolist())\nprint(m[::2, ::2].tolist())\nprint(m[-1, -1])"
+          },
+          {
+            "type": "text",
+            "source": "Mengubah slice mengubah array asal, sedangkan salinan eksplisit tidak memengaruhinya."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\na = np.arange(10)\ns = a[2:5]\ns[0] = 99\nprint(a.tolist())\nc = a[2:5].copy()\nc[1] = -1\nprint(a.tolist())\nprint(np.shares_memory(a, s), np.shares_memory(a, c))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B1-02-2",
+      "title": "Boolean masking dan np.where",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membuat mask boolean dari perbandingan",
+        "Menyaring array dengan mask",
+        "Menggabungkan syarat dengan operator logika elemen",
+        "Memakai np.where untuk memilih nilai dan menemukan posisi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Memilih berdasarkan syarat",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih berdasarkan syarat\n\nSering kali kita tidak memilih data menurut posisi, melainkan menurut isinya: semua suhu di atas 30, semua transaksi yang negatif, semua nilai yang hilang. Untuk itu NumPy memakai **mask boolean**, yaitu array True dan False berbentuk sama dengan datanya. Posisi bernilai True dipilih dan posisi bernilai False dibuang. Ini adalah alat penyaringan data paling penting dalam NumPy dan pandas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membuat mask\n\nMask lahir dari perbandingan. Menulis `x > 6` menghasilkan array boolean, satu nilai untuk tiap elemen, tanpa perulangan. Semua operator perbandingan bekerja: lebih besar, lebih kecil, sama dengan, tidak sama dengan. Mask dapat disimpan dalam variabel dan dipakai berulang, yang membuat kode lebih mudah dibaca daripada menulis syarat panjang di dalam kurung siku."
+            },
+            {
+              "type": "code_example",
+              "filename": "mask_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([5, 12, 7, 20, 3, 15])\nmk = x > 6\nprint(mk.tolist())\nprint(x[mk].tolist())\nprint(int(mk.sum()))\nprint(x[x % 2 == 0].tolist())",
+              "expected_output_note": "[False, True, True, True, False, True]\n[12, 7, 20, 15]\n4\n[12, 20]",
+              "explanation": "Mask berisi satu boolean per elemen. Indeks dengan mask menyaring, dan jumlah mask menghitung berapa yang memenuhi syarat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menghitung dengan mask\n\nKarena True dihitung satu dan False nol, `mask.sum()` memberi jumlah elemen yang memenuhi syarat, dan `mask.mean()` memberi proporsinya. Dua ungkapan ini sangat sering dipakai dalam analisis: berapa persen pelanggan yang membeli, berapa banyak pengukuran yang melewati ambang. Fungsi `np.any` dan `np.all` merangkum mask menjadi satu jawaban: adakah satu yang benar, dan apakah semuanya benar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menggabungkan syarat\n\nUntuk menggabungkan dua mask, pakai operator `&` untuk dan, `|` untuk atau, dan `~` untuk bukan. Kata `and`, `or`, dan `not` Python tidak bekerja pada array karena mencoba menilai seluruh array sebagai satu nilai, dan menghasilkan galat. Pasang kurung di sekeliling tiap perbandingan, karena `&` lebih diutamakan daripada `>`, dan tanpa kurung hasilnya salah atau galat."
+            },
+            {
+              "type": "code_example",
+              "filename": "mask_gabung.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([5, 12, 7, 20, 3, 15])\nprint(((x > 6) & (x < 16)).tolist())\nprint(x[(x < 6) | (x > 14)].tolist())\nprint(x[~(x > 6)].tolist())\nprint(bool(np.any(x > 19)), bool(np.all(x > 2)))",
+              "expected_output_note": "[False, True, True, False, False, True]\n[5, 20, 3, 15]\n[5, 3]\nTrue True",
+              "explanation": "Gunakan ampersand, garis tegak, dan tilde dengan kurung. Any menyatakan ada yang benar dan all menyatakan semuanya benar."
+            }
+          ],
+          "quick_check": {
+            "question": "Mask boolean adalah?",
+            "options": [
+              "Array True dan False",
+              "Array angka"
+            ],
+            "answer_index": 0,
+            "explanation": "Satu boolean per elemen.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mengubah nilai dengan mask",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengubah nilai dengan mask\n\nMask juga dapat berada di sisi kiri penugasan. Menulis `x[x > 10] = 10` membatasi semua nilai di atas sepuluh menjadi sepuluh. Teknik ini dipakai untuk memotong pencilan, mengganti nilai tidak valid, atau menandai kategori. Karena mengubah array di tempat, salin dahulu bila array asal harus tetap utuh. Fungsi `np.clip` melakukan pembatasan dua sisi dengan satu panggilan."
+            },
+            {
+              "type": "text",
+              "markdown": "## np.where tiga argumen\n\nFungsi `np.where(syarat, a, b)` memilih elemen dari `a` bila syarat benar dan dari `b` bila salah, menghasilkan array baru berbentuk sama. Ini versi vectorized dari ungkapan if-else, dan lebih ringkas daripada perulangan. Nilai `a` dan `b` boleh skalar atau array, termasuk teks, sehingga cocok untuk memberi label pada data."
+            },
+            {
+              "type": "code_example",
+              "filename": "where_tiga.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([5, 12, 7, 20, 3, 15])\nprint(np.where(x > 10, x, 0).tolist())\nprint(np.where(x % 2 == 0, 'genap', 'ganjil').tolist())\ny = x.copy()\ny[y > 10] = 10\nprint(y.tolist())\nprint(np.clip(x, 5, 15).tolist())",
+              "expected_output_note": "[0, 12, 0, 20, 0, 15]\n['ganjil', 'genap', 'ganjil', 'genap', 'ganjil', 'ganjil']\n[5, 10, 7, 10, 3, 10]\n[5, 12, 7, 15, 5, 15]",
+              "explanation": "Where memilih antara dua pilihan per elemen, penugasan mask membatasi di tempat, dan clip membatasi dua sisi."
+            },
+            {
+              "type": "text",
+              "markdown": "## np.where satu argumen\n\nDipanggil hanya dengan syarat, `np.where(syarat)` mengembalikan posisi elemen yang benar, dalam bentuk tuple indeks satu per sumbu. Untuk array satu dimensi, ambil elemen nol tuple untuk mendapat array indeks. Fungsi `np.nonzero` melakukan hal yang sama. Posisi berguna ketika kita perlu tahu di mana nilai tertentu berada, bukan hanya nilainya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mask pada matriks\n\nMask bekerja pula pada matriks. Mask dengan shape sama menyaring elemen dan menghasilkan array satu dimensi, karena sisa elemen tidak lagi membentuk persegi panjang. Mask satu dimensi pada satu sumbu memilih seluruh baris atau kolom, misalnya `m[m[:, 0] > 0]` memilih baris yang kolom pertamanya positif. Bentuk hasil bergantung pada bentuk mask, jadi periksa shape setelahnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hasil kosong\n\nBila tidak ada elemen yang memenuhi syarat, hasilnya array kosong berbentuk nol, bukan galat. Itu wajar, tetapi fungsi seperti `max` pada array kosong menimbulkan galat. Periksa `size` atau gunakan `mask.any()` sebelum menghitung ringkasan dari hasil penyaringan agar program tidak gagal karena data yang kebetulan tidak memenuhi syarat."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Operator logika",
+              "markdown": "Gunakan & dan | dengan kurung di sekeliling tiap perbandingan. Kata and dan or tidak bekerja pada array."
+            }
+          ],
+          "quick_check": {
+            "question": "Jumlah mask memberi?",
+            "options": [
+              "Total data",
+              "Banyak elemen True"
+            ],
+            "answer_index": 1,
+            "explanation": "True dihitung satu.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mask sebagai variabel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mask sebagai variabel\n\nMenyimpan mask dalam variabel bernama jelas, misalnya `lulus = nilai >= 60`, membuat kode terbaca seperti kalimat. Mask yang sama dapat dipakai untuk menyaring beberapa array sejajar, seperti nama dan nilai, sehingga data tetap konsisten. Cara ini juga menghindari menghitung ulang syarat yang sama berkali-kali pada data besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Perbandingan dengan nilai hilang\n\nNilai hilang pada array desimal direpresentasikan dengan `np.nan`, dan nilai ini tidak sama dengan apa pun, bahkan dirinya sendiri. Karena itu `x == np.nan` selalu salah. Gunakan `np.isnan(x)` untuk membuat mask nilai hilang dan `~np.isnan(x)` untuk menyaring yang valid. Ini kebiasaan penting sebelum menghitung rata-rata pada data nyata yang tidak bersih."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membandingkan dua array\n\nMask tidak harus dari perbandingan dengan skalar. Membandingkan dua array berbentuk sama menghasilkan mask elemen demi elemen, misalnya prediksi yang sama dengan label asli. Rata-rata mask itu langsung memberi akurasi. Pola `np.mean(prediksi == label)` adalah salah satu baris paling sering muncul dalam evaluasi model klasifikasi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fungsi isin\n\nUntuk memeriksa keanggotaan, `np.isin(x, daftar)` menghasilkan mask yang bernilai True bila elemen termasuk dalam daftar. Ini pengganti ringkas dari rangkaian syarat atau yang panjang, misalnya memilih transaksi dari beberapa kode wilayah. Mask hasilnya dapat digabung dengan operator logika seperti mask lainnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan pelajaran\n\nMask boolean memindahkan logika penyaringan dari perulangan ke ekspresi tunggal. Buat mask dari perbandingan, gabungkan dengan operator elemen, lalu gunakan untuk menyaring, menghitung, atau mengganti nilai. Bersama np.where, mask menjawab hampir semua pertanyaan seleksi data."
+            }
+          ],
+          "quick_check": {
+            "question": "Operator dan pada mask?",
+            "options": [
+              "&",
+              "and"
+            ],
+            "answer_index": 0,
+            "explanation": "Elemen demi elemen.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_di_atas(x, batas)` yang mengembalikan banyaknya elemen array `x` yang lebih besar dari `batas`, sebagai bilangan bulat Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef jumlah_di_atas(x, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_di_atas(x, 6)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "x = np.array([5, 12, 7, 20, 3, 15])\nassert jumlah_di_atas(x, 6) == 4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_di_atas(x, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_di_atas(x, 100) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_di_atas(x, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_di_atas(x, 0) == 6"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "type(jumlah_di_atas(x, 6))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert type(jumlah_di_atas(x, 6)) is int"
+              }
+            ]
+          },
+          "hint": "Jumlahkan mask perbandingan lalu ubah ke int.",
+          "solution": "import numpy as np\n\ndef jumlah_di_atas(x, batas):\n    return int((x > batas).sum())",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-02-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rentang_tertutup(x, lo, hi)` yang mengembalikan list elemen `x` yang nilainya dari `lo` sampai `hi` inklusif, dengan urutan asli.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef rentang_tertutup(x, lo, hi):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rentang_tertutup(x, 6, 15)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "x = np.array([5, 12, 7, 20, 3, 15])\nassert rentang_tertutup(x, 6, 15) == [12, 7, 15]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rentang_tertutup(x, 3, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang_tertutup(x, 3, 5) == [5, 3]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rentang_tertutup(x, 50, 60)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang_tertutup(x, 50, 60) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rentang_tertutup(x, 20, 20)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang_tertutup(x, 20, 20) == [20]"
+              }
+            ]
+          },
+          "hint": "Gabungkan dua perbandingan dengan ampersand dan kurung.",
+          "solution": "import numpy as np\n\ndef rentang_tertutup(x, lo, hi):\n    return x[(x >= lo) & (x <= hi)].tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `batasi_atas(x, batas)` yang mengembalikan salinan `x` dengan semua nilai di atas `batas` diganti `batas`.",
+          "note": "Array asli tidak boleh berubah.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef batasi_atas(x, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "r.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "x = np.array([5, 12, 7, 20, 3, 15])\nr = batasi_atas(x, 10)\nassert r.tolist() == [5, 10, 7, 10, 3, 10]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "x.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert x.tolist() == [5, 12, 7, 20, 3, 15]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "batasi_atas(x, 100).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batasi_atas(x, 100).tolist() == x.tolist()"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "batasi_atas(x, 0).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batasi_atas(x, 0).tolist() == [0, 0, 0, 0, 0, 0]"
+              }
+            ]
+          },
+          "hint": "Salin dulu lalu isi lewat mask.",
+          "solution": "import numpy as np\n\ndef batasi_atas(x, batas):\n    y = x.copy()\n    y[y > batas] = batas\n    return y",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `label_genap_ganjil(x)` yang mengembalikan list string `'genap'` atau `'ganjil'` untuk tiap elemen bilangan bulat `x`, tanpa perulangan Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef label_genap_ganjil(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "label_genap_ganjil(x)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "x = np.array([5, 12, 7, 20, 3, 15])\nassert label_genap_ganjil(x) == ['ganjil', 'genap', 'ganjil', 'genap', 'ganjil', 'ganjil']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "label_genap_ganjil(np.array([0, -2, -3]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert label_genap_ganjil(np.array([0, -2, -3])) == ['genap', 'genap', 'ganjil']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "label_genap_ganjil(np.array([], dtype=int))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert label_genap_ganjil(np.array([], dtype=int)) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "label_genap_ganjil(np.array([[1, 2], [3, 4]])...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert label_genap_ganjil(np.array([[1, 2], [3, 4]]).ravel()) == ['ganjil', 'genap', 'ganjil', 'genap']"
+              }
+            ]
+          },
+          "hint": "np.where dengan syarat sisa bagi dua sama dengan nol.",
+          "solution": "import numpy as np\n\ndef label_genap_ganjil(x):\n    return np.where(x % 2 == 0, 'genap', 'ganjil').tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Mask boolean adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Array True dan False",
+              "description": ""
+            },
+            {
+              "label": "Array angka",
+              "description": ""
+            },
+            {
+              "label": "Daftar indeks",
+              "description": ""
+            },
+            {
+              "label": "Tipe teks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Boolean.",
+          "explanation": "Satu boolean per elemen."
+        },
+        {
+          "q": "Jumlah mask memberi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Banyak elemen True",
+              "description": ""
+            },
+            {
+              "label": "Total data",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata data",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hitung.",
+          "explanation": "True dihitung satu."
+        },
+        {
+          "q": "Operator dan pada mask?",
+          "code": null,
+          "options": [
+            {
+              "label": "&",
+              "description": ""
+            },
+            {
+              "label": "and",
+              "description": ""
+            },
+            {
+              "label": "&&",
+              "description": ""
+            },
+            {
+              "label": "+",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ampersand.",
+          "explanation": "Elemen demi elemen."
+        },
+        {
+          "q": "np.where(c, a, b) memilih?",
+          "code": null,
+          "options": [
+            {
+              "label": "a bila c benar",
+              "description": ""
+            },
+            {
+              "label": "b bila c benar",
+              "description": ""
+            },
+            {
+              "label": "selalu a",
+              "description": ""
+            },
+            {
+              "label": "indeks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Jika benar.",
+          "explanation": "If-else vectorized."
+        },
+        {
+          "q": "np.where(c) satu argumen memberi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Posisi elemen True",
+              "description": ""
+            },
+            {
+              "label": "Nilai elemen",
+              "description": ""
+            },
+            {
+              "label": "Jumlah",
+              "description": ""
+            },
+            {
+              "label": "Mask",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Posisi.",
+          "explanation": "Indeks."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai and atau or untuk menggabungkan mask. Lebih baik: Pakai & dan | dengan kurung.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai and atau or untuk menggabungkan mask.",
+          "fix": "Pakai & dan | dengan kurung."
+        },
+        {
+          "mistake": "Lupa kurung pada perbandingan gabungan.",
+          "fix": "Bungkus tiap perbandingan dengan kurung."
+        },
+        {
+          "mistake": "Menghitung max pada hasil saring kosong.",
+          "fix": "Periksa size lebih dulu."
+        }
+      ],
+      "summary": [
+        "Mask boolean berasal dari perbandingan dan menyaring data.",
+        "Gabungkan syarat dengan &, |, dan ~ berkurung.",
+        "Jumlah dan rata-rata mask menghitung banyak dan proporsi.",
+        "np.where memilih nilai atau menemukan posisi."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Boolean masking dan np.where"
+          },
+          {
+            "type": "text",
+            "source": "Mask berisi satu boolean per elemen. Indeks dengan mask menyaring, dan jumlah mask menghitung berapa yang memenuhi syarat."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([5, 12, 7, 20, 3, 15])\nmk = x > 6\nprint(mk.tolist())\nprint(x[mk].tolist())\nprint(int(mk.sum()))\nprint(x[x % 2 == 0].tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Gunakan ampersand, garis tegak, dan tilde dengan kurung. Any menyatakan ada yang benar dan all menyatakan semuanya benar."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([5, 12, 7, 20, 3, 15])\nprint(((x > 6) & (x < 16)).tolist())\nprint(x[(x < 6) | (x > 14)].tolist())\nprint(x[~(x > 6)].tolist())\nprint(bool(np.any(x > 19)), bool(np.all(x > 2)))"
+          },
+          {
+            "type": "text",
+            "source": "Where memilih antara dua pilihan per elemen, penugasan mask membatasi di tempat, dan clip membatasi dua sisi."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([5, 12, 7, 20, 3, 15])\nprint(np.where(x > 10, x, 0).tolist())\nprint(np.where(x % 2 == 0, 'genap', 'ganjil').tolist())\ny = x.copy()\ny[y > 10] = 10\nprint(y.tolist())\nprint(np.clip(x, 5, 15).tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B1-02-3",
+      "title": "Fancy indexing dan penugasan",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memilih elemen dengan array indeks",
+        "Memakai argsort, argmax, dan argmin untuk mencari posisi",
+        "Memilih sub-matriks dengan np.ix_",
+        "Memahami penugasan dengan indeks berulang"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Memilih dengan daftar indeks",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih dengan daftar indeks\n\nSelain slice dan mask, NumPy mengizinkan indeks berupa list atau array bilangan bulat. Hasilnya memilih elemen pada posisi-posisi itu, dalam urutan yang Anda tulis, dan posisi boleh berulang. Teknik ini disebut **fancy indexing**. Ia berguna untuk mengambil sampel, mengurutkan ulang, atau memilih kolom tertentu dari matriks sesuai daftar yang dihitung program."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hasilnya adalah salinan\n\nBerbeda dari slice, fancy indexing selalu membuat salinan data. Mengubah hasilnya tidak memengaruhi array asal. Perbedaan ini sering membingungkan karena sintaksnya mirip slice. Aturan praktis: slice dengan titik dua menghasilkan view, sedangkan indeks list atau mask boolean menghasilkan salinan. Bila ragu, uji dengan `np.shares_memory`."
+            },
+            {
+              "type": "code_example",
+              "filename": "fancy_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([5, 12, 7, 20, 3, 15])\nprint(x[[0, 2, 2, 5]].tolist())\nprint(x[[-1, 0]].tolist())\nh = x[[1, 3]]\nh[0] = 0\nprint(x.tolist())\nprint(np.take(x, [1, 3]).tolist())",
+              "expected_output_note": "[5, 7, 7, 15]\n[15, 5]\n[5, 12, 7, 20, 3, 15]\n[12, 20]",
+              "explanation": "Posisi boleh berulang dan negatif. Hasil adalah salinan sehingga array asal tidak berubah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pasangan indeks pada matriks\n\nPada matriks, dua list indeks bekerja berpasangan, bukan membentuk blok. Ungkapan `m[[0, 2], [1, 3]]` mengambil elemen pada posisi baris nol kolom satu dan baris dua kolom tiga, menghasilkan dua nilai. Bila yang diinginkan blok berisi semua kombinasi baris dan kolom terpilih, perlu cara lain. Salah paham ini menghasilkan bentuk yang tidak terduga, jadi cetak shape hasilnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Blok dengan np.ix_\n\nFungsi `np.ix_` membangun indeks silang dari beberapa list sehingga `m[np.ix_([0, 2], [1, 3])]` menghasilkan blok dua kali dua berisi semua kombinasi. Alternatifnya, lakukan dua langkah: pilih baris dulu lalu kolom, seperti `m[[0, 2]][:, [1, 3]]`. Keduanya memberi hasil sama, tetapi `np.ix_` lebih ringkas dan dapat dipakai langsung pada penugasan."
+            },
+            {
+              "type": "code_example",
+              "filename": "fancy_matriks.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nm = np.arange(12).reshape(3, 4)\nprint(m[[0, 2], [1, 3]].tolist())\nprint(m[np.ix_([0, 2], [1, 3])].tolist())\nprint(m[[0, 2]][:, [1, 3]].tolist())\nprint(m[:, [0, -1]].tolist())",
+              "expected_output_note": "[1, 11]\n[[1, 3], [9, 11]]\n[[1, 3], [9, 11]]\n[[0, 3], [4, 7], [8, 11]]",
+              "explanation": "Dua list berpasangan menghasilkan dua nilai, sedangkan ix_ menghasilkan blok semua kombinasi."
+            }
+          ],
+          "quick_check": {
+            "question": "Fancy indexing menghasilkan?",
+            "options": [
+              "Salinan",
+              "View"
+            ],
+            "answer_index": 0,
+            "explanation": "Selalu menyalin.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mencari posisi dengan arg",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mencari posisi dengan arg\n\nFungsi berawalan arg mengembalikan posisi, bukan nilai. `np.argmax` dan `np.argmin` memberi indeks nilai terbesar dan terkecil. `np.argsort` memberi urutan indeks yang akan mengurutkan array. Dengan indeks itu, kita dapat mengurutkan array lain mengikuti urutan array pertama, misalnya mengurutkan nama berdasarkan skor. Fancy indexing dan fungsi arg hampir selalu dipakai bersama."
+            },
+            {
+              "type": "code_example",
+              "filename": "arg_posisi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([5, 12, 7, 20, 3, 15])\nprint(np.argsort(x).tolist())\nprint(x[np.argsort(x)[::-1][:3]].tolist())\nprint(int(np.argmax(x)), int(np.argmin(x)))\nnama = np.array(['a', 'b', 'c', 'd', 'e', 'f'])\nprint(nama[np.argsort(x)].tolist())",
+              "expected_output_note": "[4, 0, 2, 1, 5, 3]\n[20, 15, 12]\n3 4\n['e', 'a', 'c', 'b', 'f', 'd']",
+              "explanation": "Argsort memberi urutan indeks. Dibalik dan dipotong, ia memberi tiga terbesar, dan dapat mengurutkan array lain."
+            },
+            {
+              "type": "text",
+              "markdown": "## Penugasan dengan indeks\n\nFancy indexing juga dapat berada di sisi kiri: `z[[1, 3]] = 7` mengisi posisi satu dan tiga. Slice berisi list nilai juga boleh, asalkan jumlahnya cocok. Penugasan ini mengubah array di tempat. Untuk pembaruan berpola seperti mengisi kolom tertentu, gabungan indeks dan penugasan jauh lebih ringkas daripada perulangan dan berjalan di kode C."
+            },
+            {
+              "type": "text",
+              "markdown": "## Indeks berulang saat penugasan\n\nAda jebakan halus: `w[[0, 0, 1]] += 10` tidak menambah posisi nol dua kali. Operasi dibaca sebagai membaca, menambah, lalu menulis, dan penulisan kedua ke posisi nol menimpa yang pertama, sehingga hanya sepuluh yang ditambahkan. Untuk menambah akumulatif pada indeks berulang, pakai `np.add.at(w, idx, n)`, yang memproses tiap indeks satu per satu."
+            },
+            {
+              "type": "code_example",
+              "filename": "penugasan_indeks.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nw = np.array([1, 2, 3, 4])\nw[[0, 0, 1]] += 10\nprint(w.tolist())\nv = np.array([1, 2, 3, 4])\nnp.add.at(v, [0, 0, 1], 10)\nprint(v.tolist())\nz = np.zeros(5, dtype=int)\nz[[1, 3]] = 7\nprint(z.tolist())\nz[1:4] = [1, 2, 3]\nprint(z.tolist())",
+              "expected_output_note": "[11, 12, 3, 4]\n[21, 12, 3, 4]\n[0, 7, 0, 7, 0]\n[0, 1, 2, 3, 0]",
+              "explanation": "Penambahan biasa pada indeks berulang hanya terhitung sekali. Add.at menghitung semuanya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih mana yang tepat\n\nGunakan slice bila posisi membentuk pola teratur, karena cepat dan berupa view. Gunakan mask bila memilih menurut isi. Gunakan fancy indexing bila posisinya acak atau dihitung, atau bila perlu urutan berbeda. Menggabungkan ketiganya, misalnya mask lalu argsort pada hasilnya, adalah cara umum menjawab pertanyaan seperti lima transaksi terbesar yang berstatus selesai."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "View atau salinan",
+              "markdown": "Slice menghasilkan view, sedangkan indeks list dan mask menghasilkan salinan. Ingat perbedaan ini sebelum menugaskan."
+            }
+          ],
+          "quick_check": {
+            "question": "argsort mengembalikan?",
+            "options": [
+              "Array terurut",
+              "Urutan indeks"
+            ],
+            "answer_index": 1,
+            "explanation": "Posisi pengurutan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Fancy indexing pada penugasan matriks",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fancy indexing pada penugasan matriks\n\nPenugasan lewat indeks silang juga mungkin. Menulis `m[np.ix_([0, 2], [1, 3])] = 0` mengisi blok kombinasi dengan nol. Ini berguna untuk menutupi wilayah tertentu pada gambar atau menetapkan nilai awal pada sebagian matriks. Karena penugasan mengubah array asal, salin lebih dulu bila diperlukan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengurutkan baris matriks\n\nArgsort pada satu kolom dapat dipakai untuk mengurutkan seluruh baris matriks mengikuti kolom itu. Tulis `m[np.argsort(m[:, 1])]` untuk mengurutkan baris menurut kolom kedua. Pola ini mengganti pengurutan manual dengan perulangan, dan menjaga setiap baris tetap utuh sehingga data yang berhubungan tidak tercerai."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fungsi take dan put\n\nFungsi `np.take(a, indeks)` setara dengan fancy indexing dan menerima argumen `axis` untuk memilih sepanjang sumbu tertentu. Pasangannya, `np.put`, menulis nilai pada posisi pada array yang diratakan. Keduanya jarang wajib dipakai, tetapi berguna bila indeks dihitung dan Anda ingin menyatakan sumbunya secara eksplisit."
+            },
+            {
+              "type": "text",
+              "markdown": "## Unik dan hitungan\n\nFungsi `np.unique` mengembalikan nilai berbeda dalam urutan terurut, dan dengan `return_counts=True` juga mengembalikan jumlah kemunculan tiap nilai. Hasil indeks balik dapat dipakai untuk memetakan tiap elemen ke kelompoknya. Fungsi ini jembatan alami dari pemilihan data ke penghitungan frekuensi kategori."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan pelajaran\n\nFancy indexing memberi kebebasan memilih posisi apa pun dalam urutan apa pun, dengan harga berupa salinan. Dipadukan dengan fungsi arg, ia mengurutkan dan memberi peringkat, dan dengan np.ix_ ia memilih blok. Hati-hati pada indeks berulang saat penugasan, dan gunakan np.add.at bila perlu akumulasi."
+            }
+          ],
+          "quick_check": {
+            "question": "np.ix_ dipakai untuk?",
+            "options": [
+              "Blok kombinasi baris dan kolom",
+              "Mengurutkan"
+            ],
+            "answer_index": 0,
+            "explanation": "Indeks silang.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ambil_indeks(x, idx)` yang mengembalikan, sebagai list Python, elemen array `x` pada posisi-posisi di list `idx`, sesuai urutan `idx`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef ambil_indeks(x, idx):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ambil_indeks(x, [0, 2, 2, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "x = np.array([5, 12, 7, 20, 3, 15])\nassert ambil_indeks(x, [0, 2, 2, 5]) == [5, 7, 7, 15]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ambil_indeks(x, [-1, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_indeks(x, [-1, 0]) == [15, 5]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ambil_indeks(x, [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_indeks(x, []) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ambil_indeks(x, [3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_indeks(x, [3]) == [20]"
+              }
+            ]
+          },
+          "hint": "Indeks array dengan list lalu tolist.",
+          "solution": "import numpy as np\n\ndef ambil_indeks(x, idx):\n    return x[idx].tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-02-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tiga_terbesar(x)` yang mengembalikan list tiga nilai terbesar array `x`, dari terbesar ke terkecil, memakai `argsort`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef tiga_terbesar(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tiga_terbesar(np.array([5, 12, 7, 20, 3, 15]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tiga_terbesar(np.array([5, 12, 7, 20, 3, 15])) == [20, 15, 12]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tiga_terbesar(np.array([1, 2, 3]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tiga_terbesar(np.array([1, 2, 3])) == [3, 2, 1]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tiga_terbesar(np.array([9, 9, 1, 5]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tiga_terbesar(np.array([9, 9, 1, 5])) == [9, 9, 5]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tiga_terbesar(np.array([4, 8]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tiga_terbesar(np.array([4, 8])) == [8, 4]"
+              }
+            ]
+          },
+          "hint": "Urutkan indeks, balik, ambil tiga pertama, lalu indeks array.",
+          "solution": "import numpy as np\n\ndef tiga_terbesar(x):\n    return x[np.argsort(x)[::-1][:3]].tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `sudut(m, baris, kolom)` yang mengembalikan, sebagai list Python, sub-matriks `m` berisi semua kombinasi baris di list `baris` dan kolom di list `kolom`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef sudut(m, baris, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "sudut(m, [0, 2], [1, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "m = np.arange(12).reshape(3, 4)\nassert sudut(m, [0, 2], [1, 3]) == [[1, 3], [9, 11]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sudut(m, [1], [0, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sudut(m, [1], [0, 3]) == [[4, 7]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sudut(m, [0, 1, 2], [2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sudut(m, [0, 1, 2], [2]) == [[2], [6], [10]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sudut(m, [2, 0], [0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sudut(m, [2, 0], [0]) == [[8], [0]]"
+              }
+            ]
+          },
+          "hint": "np.ix_ membangun indeks silang.",
+          "solution": "import numpy as np\n\ndef sudut(m, baris, kolom):\n    return m[np.ix_(baris, kolom)].tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `tambah_duplikat(w, idx, n)` yang mengembalikan salinan `w` setelah `n` ditambahkan pada tiap posisi di `idx`, termasuk posisi yang muncul berulang (tiap kemunculan menambah `n` lagi).",
+          "note": "Array asli tidak boleh berubah.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef tambah_duplikat(w, idx, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "r.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "w = np.array([1, 2, 3, 4])\nr = tambah_duplikat(w, [0, 0, 1], 10)\nassert r.tolist() == [21, 12, 3, 4]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "w.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert w.tolist() == [1, 2, 3, 4]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tambah_duplikat(w, [3, 3, 3], 1).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_duplikat(w, [3, 3, 3], 1).tolist() == [1, 2, 3, 7]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tambah_duplikat(w, [], 5).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_duplikat(w, [], 5).tolist() == [1, 2, 3, 4]"
+              }
+            ]
+          },
+          "hint": "Salin lalu panggil np.add.at.",
+          "solution": "import numpy as np\n\ndef tambah_duplikat(w, idx, n):\n    r = w.copy()\n    np.add.at(r, idx, n)\n    return r",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Fancy indexing menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Salinan",
+              "description": ""
+            },
+            {
+              "label": "View",
+              "description": ""
+            },
+            {
+              "label": "Skalar",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Salin.",
+          "explanation": "Selalu menyalin."
+        },
+        {
+          "q": "argsort mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Urutan indeks",
+              "description": ""
+            },
+            {
+              "label": "Array terurut",
+              "description": ""
+            },
+            {
+              "label": "Nilai terbesar",
+              "description": ""
+            },
+            {
+              "label": "Jumlah",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Indeks.",
+          "explanation": "Posisi pengurutan."
+        },
+        {
+          "q": "np.ix_ dipakai untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Blok kombinasi baris dan kolom",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menghitung",
+              "description": ""
+            },
+            {
+              "label": "Mengubah tipe",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Silang.",
+          "explanation": "Indeks silang."
+        },
+        {
+          "q": "m[[0,2],[1,3]] menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dua nilai berpasangan",
+              "description": ""
+            },
+            {
+              "label": "Blok dua kali dua",
+              "description": ""
+            },
+            {
+              "label": "Dua baris",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pasangan.",
+          "explanation": "Berpasangan."
+        },
+        {
+          "q": "Penambahan akumulatif pada indeks berulang?",
+          "code": null,
+          "options": [
+            {
+              "label": "np.add.at",
+              "description": ""
+            },
+            {
+              "label": "+=",
+              "description": ""
+            },
+            {
+              "label": "np.sum",
+              "description": ""
+            },
+            {
+              "label": "np.take",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "add.at.",
+          "explanation": "Memproses tiap indeks."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira fancy indexing menghasilkan view. Lebih baik: Hasilnya salinan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira fancy indexing menghasilkan view.",
+          "fix": "Hasilnya salinan."
+        },
+        {
+          "mistake": "Memakai += pada indeks berulang.",
+          "fix": "Pakai np.add.at."
+        },
+        {
+          "mistake": "Mengira dua list indeks membentuk blok.",
+          "fix": "Pakai np.ix_ untuk blok."
+        }
+      ],
+      "summary": [
+        "Fancy indexing memilih elemen dengan array indeks dan menghasilkan salinan.",
+        "argsort, argmax, dan argmin mencari posisi.",
+        "np.ix_ memilih blok kombinasi baris dan kolom.",
+        "Indeks berulang pada penugasan butuh np.add.at."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Fancy indexing dan penugasan"
+          },
+          {
+            "type": "text",
+            "source": "Posisi boleh berulang dan negatif. Hasil adalah salinan sehingga array asal tidak berubah."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([5, 12, 7, 20, 3, 15])\nprint(x[[0, 2, 2, 5]].tolist())\nprint(x[[-1, 0]].tolist())\nh = x[[1, 3]]\nh[0] = 0\nprint(x.tolist())\nprint(np.take(x, [1, 3]).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Dua list berpasangan menghasilkan dua nilai, sedangkan ix_ menghasilkan blok semua kombinasi."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nm = np.arange(12).reshape(3, 4)\nprint(m[[0, 2], [1, 3]].tolist())\nprint(m[np.ix_([0, 2], [1, 3])].tolist())\nprint(m[[0, 2]][:, [1, 3]].tolist())\nprint(m[:, [0, -1]].tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Argsort memberi urutan indeks. Dibalik dan dipotong, ia memberi tiga terbesar, dan dapat mengurutkan array lain."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([5, 12, 7, 20, 3, 15])\nprint(np.argsort(x).tolist())\nprint(x[np.argsort(x)[::-1][:3]].tolist())\nprint(int(np.argmax(x)), int(np.argmin(x)))\nnama = np.array(['a', 'b', 'c', 'd', 'e', 'f'])\nprint(nama[np.argsort(x)].tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Penambahan biasa pada indeks berulang hanya terhitung sekali. Add.at menghitung semuanya."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nw = np.array([1, 2, 3, 4])\nw[[0, 0, 1]] += 10\nprint(w.tolist())\nv = np.array([1, 2, 3, 4])\nnp.add.at(v, [0, 0, 1], 10)\nprint(v.tolist())\nz = np.zeros(5, dtype=int)\nz[[1, 3]] = 7\nprint(z.tolist())\nz[1:4] = [1, 2, 3]\nprint(z.tolist())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

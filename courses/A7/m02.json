@@ -1,0 +1,1632 @@
+{
+  "schema_version": 2,
+  "course_id": "A7",
+  "module_no": 2,
+  "title": "Commit, branch, dan riwayat",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menelusuri dan membandingkan riwayat commit",
+    "Membuat dan memakai cabang dengan memahami HEAD",
+    "Membatalkan perubahan dengan aman memakai revert, reset, dan tag"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A7-02-1",
+    "exercise_id": "A7-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def adalah_leluhur(commits, a, b):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A7-02-1",
+      "title": "Commit dan membaca riwayat",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan commit sebagai simpul dengan penunjuk ke induk",
+        "Menelusuri riwayat dari commit terbaru ke commit pertama",
+        "Menghitung perbedaan antar dua snapshot",
+        "Menentukan hubungan leluhur antar commit"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Commit sebagai simpul",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Commit sebagai simpul\n\nPada modul sebelumnya kita melihat bahwa commit menyimpan snapshot dan penunjuk ke induknya. Bila digambar, commit membentuk rantai dari yang terbaru mundur ke yang pertama. Membaca riwayat berarti berjalan menyusuri penunjuk induk itu satu per satu sampai mencapai commit yang tidak punya induk.\n\nPelajaran ini memodelkan riwayat dengan dict Python: kunci adalah id commit, dan nilainya berisi `parent`, `pesan`, serta `snapshot`. Model sederhana ini cukup untuk meniru perilaku inti Git."
+            },
+            {
+              "type": "text",
+              "markdown": "## Perintah commit dan log\n\nDi Git, `git commit -m \"pesan\"` merekam isi staging area sebagai commit baru yang induknya adalah commit saat ini. `git log` menelusuri riwayat dari commit saat ini mundur, dan `git log --oneline` menampilkan satu baris per commit.\n\n```bash\ngit commit -m \"Tambah fungsi rata-rata\"\ngit log --oneline\ngit log -n 3\ngit show HEAD\n```\n\nPerintah `git show` menampilkan satu commit lengkap dengan perubahannya, sedangkan opsi `-n` membatasi jumlah commit yang ditampilkan."
+            },
+            {
+              "type": "code_example",
+              "filename": "telusuri_riwayat.py",
+              "runnable": true,
+              "code": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\ndef daftar_id(commits, head):\n    hasil = []\n    sekarang = head\n    while sekarang is not None:\n        hasil.append(sekarang)\n        sekarang = commits[sekarang]['parent']\n    return hasil\n\nids = daftar_id(commits, 'c3')\nprint(ids)\nprint([commits[i]['pesan'] for i in ids])\nprint(daftar_id(commits, 'c1'))",
+              "expected_output_note": "['c3', 'c2', 'c1']\n['ubah a', 'tambah b', 'awal']\n['c1']",
+              "explanation": "Penelusuran dimulai dari commit terbaru dan berhenti di commit pertama yang tidak punya induk. Mulai dari commit lama menghasilkan riwayat yang lebih pendek."
+            },
+            {
+              "type": "text",
+              "markdown": "## Riwayat dibaca mundur\n\nPerhatikan arah penunjuk: setiap commit tahu induknya, tetapi tidak tahu anaknya. Karena itu riwayat selalu ditelusuri dari ujung ke pangkal, dan itulah sebabnya `git log` menampilkan commit terbaru di paling atas.\n\nSifat ini membuat commit lama tidak pernah berubah ketika commit baru dibuat. Menambah commit hanya menambah simpul baru yang menunjuk ke belakang, tanpa menyentuh simpul yang sudah ada."
+            }
+          ],
+          "quick_check": {
+            "question": "Riwayat ditelusuri dengan?",
+            "options": [
+              "Mengikuti penunjuk induk",
+              "Mengikuti nama file"
+            ],
+            "answer_index": 0,
+            "explanation": "Dari terbaru mundur.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Diff antar commit",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Diff antar commit\n\nBila setiap commit adalah snapshot, maka perubahan antar commit dihitung dengan membandingkan dua snapshot. File yang hanya ada di snapshot baru adalah **ditambah**, yang hanya ada di snapshot lama adalah **dihapus**, dan yang ada di keduanya dengan isi berbeda adalah **diubah**.\n\nGit tidak menyimpan diff, ia menghitungnya saat diminta lewat `git diff`. Tentukan dua commit, misalnya `git diff c1 c3`, dan Git membandingkan snapshot keduanya."
+            },
+            {
+              "type": "code_example",
+              "filename": "diff_commit.py",
+              "runnable": true,
+              "code": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\ndef diff_snapshot(a, b):\n    ditambah = sorted(n for n in b if n not in a)\n    dihapus = sorted(n for n in a if n not in b)\n    diubah = sorted(n for n in a if n in b and a[n] != b[n])\n    return (ditambah, dihapus, diubah)\n\ns1 = commits['c1']['snapshot']\ns3 = commits['c3']['snapshot']\nprint(diff_snapshot(s1, s3))\nprint(diff_snapshot(s3, s1))\nprint(diff_snapshot(s3, s3))",
+              "expected_output_note": "(['b.py'], [], ['a.py'])\n([], ['b.py'], ['a.py'])\n([], [], [])",
+              "explanation": "Dari commit pertama ke ketiga ada satu file ditambah dan satu diubah. Membalik arah menukar ditambah menjadi dihapus, dan membandingkan snapshot yang sama tidak menghasilkan perubahan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Leluhur dan keturunan\n\nCommit A adalah **leluhur** commit B bila kita bisa mencapai A dengan menelusuri induk dari B. Sebuah commit dianggap leluhur dirinya sendiri dalam penelusuran. Hubungan ini penting karena menentukan apa yang termasuk dalam riwayat sebuah cabang.\n\nBila A leluhur B, seluruh pekerjaan di A sudah ada di B. Pemeriksaan ini dipakai Git untuk memutuskan apakah sebuah penggabungan cukup berupa maju cepat, topik yang kita bahas di pelajaran ketiga."
+            },
+            {
+              "type": "code_example",
+              "filename": "leluhur.py",
+              "runnable": true,
+              "code": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\ndef adalah_leluhur(commits, a, b):\n    sekarang = b\n    while sekarang is not None:\n        if sekarang == a:\n            return True\n        sekarang = commits[sekarang]['parent']\n    return False\n\nprint(adalah_leluhur(commits, 'c1', 'c3'))\nprint(adalah_leluhur(commits, 'c3', 'c1'))\nprint(adalah_leluhur(commits, 'c2', 'c2'))",
+              "expected_output_note": "True\nFalse\nTrue",
+              "explanation": "Commit pertama adalah leluhur commit ketiga tetapi tidak sebaliknya, dan setiap commit dihitung sebagai leluhur dirinya sendiri."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pesan commit dan riwayat yang bermakna\n\nRiwayat yang rapi tersusun dari commit kecil dan fokus. Satu commit sebaiknya satu gagasan: memperbaiki satu bug, menambah satu fungsi, atau memperbarui satu dokumen. Commit raksasa yang mencampur banyak hal sulit diulas dan sulit dibatalkan sebagian.\n\nGunakan kalimat perintah pada baris pertama, misalnya `Perbaiki pembulatan pada laporan`. Bila perlu penjelasan, tambahkan baris kosong lalu paragraf alasan. Kebiasaan ini membuat `git log --oneline` terbaca seperti daftar isi proyek."
+            }
+          ],
+          "quick_check": {
+            "question": "File yang hanya ada di snapshot baru disebut?",
+            "options": [
+              "Dihapus",
+              "Ditambah"
+            ],
+            "answer_index": 1,
+            "explanation": "Muncul baru.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Melihat riwayat dengan cerdas",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Melihat riwayat dengan cerdas\n\nGit menyediakan banyak cara menyaring riwayat. `git log --author=nama` menampilkan commit satu orang, `git log --since=\"2 weeks ago\"` membatasi waktu, dan `git log --follow file.py` hanya menampilkan commit yang menyentuh file itu. Opsi `--graph` menggambar percabangan dengan karakter di terminal.\n\nMenguasai penyaringan ini mempercepat penyelidikan: bukannya menggulir ratusan commit, kita langsung menuju yang relevan dengan pertanyaan kita."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Commit fokus",
+              "markdown": "Satu commit satu gagasan. Commit kecil dan fokus lebih mudah diulas, dilacak, dan dibatalkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hash commit sebagai alamat\n\nSetiap commit punya hash unik yang menjadi alamatnya. Dalam praktik kita jarang mengetik 40 karakter penuh: tujuh sampai delapan karakter pertama biasanya cukup unik di repositori kecil. Perintah seperti `git show 3f2a9c1` menerima awalan itu selama tidak ambigu.\n\nSelain hash, Git mengenal alamat relatif seperti `HEAD~1` untuk induk commit saat ini dan `HEAD~2` untuk leluhur dua langkah ke belakang. Alamat relatif ini cepat dipakai saat menelusuri riwayat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Riwayat sebagai bahan investigasi\n\nRiwayat bukan sekadar arsip, tetapi alat penyelidikan. Ketika angka laporan tiba-tiba berubah, kita dapat menelusuri commit demi commit untuk menemukan perubahan yang memicunya. Kemampuan menjawab kapan dan mengapa sesuatu berubah sering kali lebih berharga daripada kode itu sendiri."
+            }
+          ],
+          "quick_check": {
+            "question": "Git menyimpan diff atau snapshot?",
+            "options": [
+              "Snapshot, diff dihitung saat diminta",
+              "Hanya diff"
+            ],
+            "answer_index": 0,
+            "explanation": "Snapshot.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A7-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pesan_terbaru(commits, head, n)` yang mengembalikan list paling banyak `n` pesan commit dimulai dari `head` menelusuri induk, urut dari terbaru.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pesan_terbaru(commits, head, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pesan_terbaru(commits, 'c3', 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\ncommits = _repo()['commits']\nassert pesan_terbaru(commits, 'c3', 2) == ['ubah a', 'tambah b']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pesan_terbaru(commits, 'c3', 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pesan_terbaru(commits, 'c3', 10) == ['ubah a', 'tambah b', 'awal']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pesan_terbaru(commits, 'c3', 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pesan_terbaru(commits, 'c3', 0) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pesan_terbaru(commits, 'c2', 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pesan_terbaru(commits, 'c2', 1) == ['tambah b']"
+              }
+            ]
+          },
+          "hint": "Telusuri induk sambil menambah pesan sampai n atau commit pertama.",
+          "solution": "def pesan_terbaru(commits, head, n):\n    hasil = []\n    sekarang = head\n    while sekarang is not None and len(hasil) < n:\n        hasil.append(commits[sekarang]['pesan'])\n        sekarang = commits[sekarang]['parent']\n    return hasil",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-02-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `diff_snapshot(a, b)` yang menerima dua dict `{nama: isi}` dan mengembalikan tuple `(ditambah, dihapus, diubah)` berisi list terurut nama file: ditambah ada di `b` saja, dihapus ada di `a` saja, diubah ada di keduanya dengan isi berbeda.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def diff_snapshot(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "diff_snapshot(s1, s3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\ncommits = _repo()['commits']\ns1 = commits['c1']['snapshot']\ns3 = commits['c3']['snapshot']\nassert diff_snapshot(s1, s3) == (['b.py'], [], ['a.py'])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "diff_snapshot(s3, s1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diff_snapshot(s3, s1) == ([], ['b.py'], ['a.py'])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "diff_snapshot(s3, s3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diff_snapshot(s3, s3) == ([], [], [])"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "diff_snapshot({}, {'z': '1', 'y': '2'})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diff_snapshot({}, {'z': '1', 'y': '2'}) == (['y', 'z'], [], [])"
+              }
+            ]
+          },
+          "hint": "Bandingkan kunci dan isi tiap file.",
+          "solution": "def diff_snapshot(a, b):\n    ditambah = sorted(n for n in b if n not in a)\n    dihapus = sorted(n for n in a if n not in b)\n    diubah = sorted(n for n in a if n in b and a[n] != b[n])\n    return (ditambah, dihapus, diubah)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `daftar_id(commits, head)` yang mengembalikan list id commit dari `head` menelusuri induk sampai commit pertama, urut dari terbaru.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def daftar_id(commits, head):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "daftar_id(commits, 'c3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\ncommits = _repo()['commits']\nassert daftar_id(commits, 'c3') == ['c3', 'c2', 'c1']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "daftar_id(commits, 'c1')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert daftar_id(commits, 'c1') == ['c1']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "daftar_id(commits, 'c2')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert daftar_id(commits, 'c2') == ['c2', 'c1']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "daftar_id(commits, 'c4')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "commits['c4'] = {'parent': 'c1', 'pesan': 'x', 'snapshot': {}}\nassert daftar_id(commits, 'c4') == ['c4', 'c1']"
+              }
+            ]
+          },
+          "hint": "Ulangi sampai induk bernilai None.",
+          "solution": "def daftar_id(commits, head):\n    hasil = []\n    sekarang = head\n    while sekarang is not None:\n        hasil.append(sekarang)\n        sekarang = commits[sekarang]['parent']\n    return hasil",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `adalah_leluhur(commits, a, b)` yang mengembalikan `True` bila commit `a` dapat dicapai dari commit `b` dengan menelusuri induk (termasuk bila `a` sama dengan `b`), dan `False` bila tidak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def adalah_leluhur(commits, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "adalah_leluhur(commits, 'c1', 'c3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\ncommits = _repo()['commits']\nassert adalah_leluhur(commits, 'c1', 'c3') is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "adalah_leluhur(commits, 'c3', 'c1')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert adalah_leluhur(commits, 'c3', 'c1') is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "adalah_leluhur(commits, 'c2', 'c2')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert adalah_leluhur(commits, 'c2', 'c2') is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "adalah_leluhur(commits, 'c2', 'c4')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "commits['c4'] = {'parent': 'c1', 'pesan': 'x', 'snapshot': {}}\nassert adalah_leluhur(commits, 'c2', 'c4') is False"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "adalah_leluhur(commits, 'c1', 'c4')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert adalah_leluhur(commits, 'c1', 'c4') is True"
+              }
+            ]
+          },
+          "hint": "Telusuri induk dari b dan periksa kesamaan dengan a.",
+          "solution": "def adalah_leluhur(commits, a, b):\n    sekarang = b\n    while sekarang is not None:\n        if sekarang == a:\n            return True\n        sekarang = commits[sekarang]['parent']\n    return False",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Riwayat ditelusuri dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mengikuti penunjuk induk",
+              "description": ""
+            },
+            {
+              "label": "Mengikuti nama file",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan hash",
+              "description": ""
+            },
+            {
+              "label": "Membaca log server",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Induk.",
+          "explanation": "Dari terbaru mundur."
+        },
+        {
+          "q": "File yang hanya ada di snapshot baru disebut?",
+          "code": null,
+          "options": [
+            {
+              "label": "Ditambah",
+              "description": ""
+            },
+            {
+              "label": "Dihapus",
+              "description": ""
+            },
+            {
+              "label": "Diubah",
+              "description": ""
+            },
+            {
+              "label": "Digabung",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tambah.",
+          "explanation": "Muncul baru."
+        },
+        {
+          "q": "Git menyimpan diff atau snapshot?",
+          "code": null,
+          "options": [
+            {
+              "label": "Snapshot, diff dihitung saat diminta",
+              "description": ""
+            },
+            {
+              "label": "Hanya diff",
+              "description": ""
+            },
+            {
+              "label": "Hanya pesan",
+              "description": ""
+            },
+            {
+              "label": "Tidak keduanya",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Foto.",
+          "explanation": "Snapshot."
+        },
+        {
+          "q": "Commit A leluhur B bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "A dapat dicapai dari B lewat induk",
+              "description": ""
+            },
+            {
+              "label": "A lebih baru",
+              "description": ""
+            },
+            {
+              "label": "A bernama sama",
+              "description": ""
+            },
+            {
+              "label": "A di cabang lain",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Mundur.",
+          "explanation": "Jalur induk."
+        },
+        {
+          "q": "Perintah menampilkan satu baris per commit?",
+          "code": null,
+          "options": [
+            {
+              "label": "git log --oneline",
+              "description": ""
+            },
+            {
+              "label": "git show",
+              "description": ""
+            },
+            {
+              "label": "git diff",
+              "description": ""
+            },
+            {
+              "label": "git add",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Oneline.",
+          "explanation": "Ringkas."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira commit menyimpan penunjuk ke anaknya. Lebih baik: Commit hanya menunjuk induk.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira commit menyimpan penunjuk ke anaknya.",
+          "fix": "Commit hanya menunjuk induk."
+        },
+        {
+          "mistake": "Menumpuk banyak perubahan dalam satu commit.",
+          "fix": "Buat commit kecil dan fokus."
+        },
+        {
+          "mistake": "Menulis pesan commit seperti perbaikan.",
+          "fix": "Tulis kalimat perintah yang spesifik."
+        }
+      ],
+      "summary": [
+        "Riwayat ditelusuri mundur lewat penunjuk induk.",
+        "Diff dihitung dari perbandingan dua snapshot.",
+        "Leluhur ditentukan dengan menelusuri induk.",
+        "Commit kecil dan fokus membuat riwayat bermakna."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Commit dan membaca riwayat"
+          },
+          {
+            "type": "text",
+            "source": "Penelusuran dimulai dari commit terbaru dan berhenti di commit pertama yang tidak punya induk. Mulai dari commit lama menghasilkan riwayat yang lebih pendek."
+          },
+          {
+            "type": "code",
+            "source": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\ndef daftar_id(commits, head):\n    hasil = []\n    sekarang = head\n    while sekarang is not None:\n        hasil.append(sekarang)\n        sekarang = commits[sekarang]['parent']\n    return hasil\n\nids = daftar_id(commits, 'c3')\nprint(ids)\nprint([commits[i]['pesan'] for i in ids])\nprint(daftar_id(commits, 'c1'))"
+          },
+          {
+            "type": "text",
+            "source": "Dari commit pertama ke ketiga ada satu file ditambah dan satu diubah. Membalik arah menukar ditambah menjadi dihapus, dan membandingkan snapshot yang sama tidak menghasilkan perubahan."
+          },
+          {
+            "type": "code",
+            "source": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\ndef diff_snapshot(a, b):\n    ditambah = sorted(n for n in b if n not in a)\n    dihapus = sorted(n for n in a if n not in b)\n    diubah = sorted(n for n in a if n in b and a[n] != b[n])\n    return (ditambah, dihapus, diubah)\n\ns1 = commits['c1']['snapshot']\ns3 = commits['c3']['snapshot']\nprint(diff_snapshot(s1, s3))\nprint(diff_snapshot(s3, s1))\nprint(diff_snapshot(s3, s3))"
+          },
+          {
+            "type": "text",
+            "source": "Commit pertama adalah leluhur commit ketiga tetapi tidak sebaliknya, dan setiap commit dihitung sebagai leluhur dirinya sendiri."
+          },
+          {
+            "type": "code",
+            "source": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\ndef adalah_leluhur(commits, a, b):\n    sekarang = b\n    while sekarang is not None:\n        if sekarang == a:\n            return True\n        sekarang = commits[sekarang]['parent']\n    return False\n\nprint(adalah_leluhur(commits, 'c1', 'c3'))\nprint(adalah_leluhur(commits, 'c3', 'c1'))\nprint(adalah_leluhur(commits, 'c2', 'c2'))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A7-02-2",
+      "title": "Branch dan HEAD",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan cabang sebagai penunjuk bernama ke sebuah commit",
+        "Membuat cabang dan berpindah antar cabang",
+        "Memahami bahwa commit baru menggeser penunjuk cabang aktif",
+        "Menghitung commit yang hanya ada di satu cabang"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Cabang bukan salinan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Cabang bukan salinan\n\nBanyak pemula membayangkan cabang sebagai salinan seluruh proyek. Di Git, cabang hanyalah **penunjuk bernama ke sebuah commit**, yaitu file kecil berisi satu hash. Membuat cabang tidak menyalin file apa pun, sehingga seketika dan murah.\n\nKarena itulah alur kerja Git menganjurkan cabang untuk hampir setiap pekerjaan: fitur baru, perbaikan bug, atau eksperimen analisis. Bila hasilnya buruk, cabang dibuang tanpa mengganggu jalur utama."
+            },
+            {
+              "type": "text",
+              "markdown": "## HEAD: kita sedang di mana\n\n`HEAD` adalah penunjuk khusus yang menandai cabang aktif, yaitu cabang yang akan bertambah ketika kita membuat commit. Ia menunjuk ke nama cabang, dan nama cabang menunjuk ke commit. Dengan dua tingkat penunjuk ini, commit baru cukup memindahkan penunjuk cabang aktif ke commit baru.\n\nBila HEAD menunjuk langsung ke sebuah commit tanpa lewat cabang, keadaan itu disebut **detached HEAD**. Commit yang dibuat dalam keadaan itu mudah hilang, jadi buat cabang sebelum bekerja."
+            },
+            {
+              "type": "text",
+              "markdown": "## Perintah dasar cabang\n\n```bash\ngit branch fitur-laporan\ngit switch fitur-laporan\ngit switch -c eksperimen-baru\ngit branch\ngit branch -d fitur-laporan\n```\n\n`git branch nama` membuat cabang di commit saat ini. `git switch nama` berpindah cabang, dan `git switch -c nama` membuat sekaligus berpindah. `git branch` tanpa argumen mencantumkan semua cabang, dan opsi `-d` menghapus cabang yang sudah digabung."
+            },
+            {
+              "type": "code_example",
+              "filename": "buat_cabang.py",
+              "runnable": true,
+              "code": "repo = {\n    'commits': {'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}}},\n    'cabang': {'main': 'c1'},\n    'head': 'main',\n}\n\ndef buat_cabang(repo, nama):\n    if nama in repo['cabang']:\n        raise ValueError('cabang sudah ada')\n    repo['cabang'][nama] = repo['cabang'][repo['head']]\n\ndef pindah(repo, nama):\n    if nama not in repo['cabang']:\n        raise ValueError('cabang tidak ada')\n    repo['head'] = nama\n\nbuat_cabang(repo, 'fitur')\nprint(repo['cabang'])\npindah(repo, 'fitur')\nprint(repo['head'])\ntry:\n    buat_cabang(repo, 'main')\nexcept ValueError as e:\n    print('gagal', e)",
+              "expected_output_note": "{'main': 'c1', 'fitur': 'c1'}\nfitur\ngagal cabang sudah ada",
+              "explanation": "Cabang baru menunjuk commit yang sama dengan cabang asalnya, tidak ada yang disalin. Nama cabang yang sudah ada ditolak."
+            },
+            {
+              "type": "text",
+              "markdown": "## Commit menggeser penunjuk\n\nKetika kita membuat commit di cabang aktif, commit baru mengambil commit saat ini sebagai induknya, lalu penunjuk cabang aktif berpindah ke commit baru. Cabang lain tidak ikut bergerak. Jadi setelah beberapa commit di cabang `fitur`, cabang `main` masih menunjuk commit lama.\n\nKeadaan itulah yang membuat riwayat bercabang: dua cabang memiliki leluhur bersama, lalu masing-masing menambah commit sendiri."
+            },
+            {
+              "type": "code_example",
+              "filename": "cabang_menyimpang.py",
+              "runnable": true,
+              "code": "repo = {\n    'commits': {'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}}},\n    'cabang': {'main': 'c1'},\n    'head': 'main',\n}\n\ndef buat_cabang(repo, nama):\n    repo['cabang'][nama] = repo['cabang'][repo['head']]\n\ndef pindah(repo, nama):\n    repo['head'] = nama\n\ndef commit_baru(repo, pesan, perubahan):\n    cabang = repo['head']\n    induk = repo['cabang'][cabang]\n    snap = dict(repo['commits'][induk]['snapshot'])\n    for nama, isi in perubahan.items():\n        if isi is None:\n            snap.pop(nama, None)\n        else:\n            snap[nama] = isi\n    baru = 'c%d' % (len(repo['commits']) + 1)\n    repo['commits'][baru] = {'parent': induk, 'pesan': pesan, 'snapshot': snap}\n    repo['cabang'][cabang] = baru\n    return baru\n\nbuat_cabang(repo, 'fitur')\npindah(repo, 'fitur')\nprint(commit_baru(repo, 'tambah fitur', {'f.py': 'x'}))\npindah(repo, 'main')\nprint(commit_baru(repo, 'perbaiki', {'a.py': 'v2'}))\nprint(repo['cabang'])\nprint(repo['commits']['c2']['parent'], repo['commits']['c3']['parent'])",
+              "expected_output_note": "c2\nc3\n{'main': 'c3', 'fitur': 'c2'}\nc1 c1",
+              "explanation": "Kedua cabang bergerak sendiri-sendiri dan sama-sama berinduk commit pertama, sehingga riwayat bercabang."
+            }
+          ],
+          "quick_check": {
+            "question": "Cabang di Git adalah?",
+            "options": [
+              "Penunjuk bernama ke commit",
+              "Salinan proyek"
+            ],
+            "answer_index": 0,
+            "explanation": "Ringan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Melihat percabangan",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Melihat percabangan\n\nSetelah cabang menyimpang, kita sering ingin tahu commit apa yang hanya ada di satu cabang. Itu dihitung dengan mengambil commit yang terjangkau dari cabang pertama lalu membuang yang juga terjangkau dari cabang kedua. Git menyatakannya dengan `git log main..fitur`.\n\nDaftar ini adalah isi pekerjaan yang akan masuk ke `main` bila `fitur` digabung, sehingga berguna sebagai ringkasan sebelum penggabungan."
+            },
+            {
+              "type": "code_example",
+              "filename": "commit_unik.py",
+              "runnable": true,
+              "code": "repo = {\n    'commits': {'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}}},\n    'cabang': {'main': 'c1'},\n    'head': 'main',\n}\n\ndef terjangkau(repo, cabang):\n    hasil = []\n    sekarang = repo['cabang'][cabang]\n    while sekarang is not None:\n        hasil.append(sekarang)\n        sekarang = repo['commits'][sekarang]['parent']\n    return hasil\n\ndef commit_unik(repo, a, b):\n    lain = set(terjangkau(repo, b))\n    return [c for c in terjangkau(repo, a) if c not in lain]\n\nrepo['commits']['c2'] = {'parent': 'c1', 'pesan': 'fitur', 'snapshot': {}}\nrepo['commits']['c3'] = {'parent': 'c1', 'pesan': 'perbaikan', 'snapshot': {}}\nrepo['cabang'] = {'main': 'c3', 'fitur': 'c2'}\nprint(commit_unik(repo, 'fitur', 'main'))\nprint(commit_unik(repo, 'main', 'fitur'))\nprint(commit_unik(repo, 'main', 'main'))",
+              "expected_output_note": "['c2']\n['c3']\n[]",
+              "explanation": "Tiap cabang punya satu commit yang tidak ada di cabang lain, dan membandingkan cabang dengan dirinya sendiri tidak menghasilkan apa-apa."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pola penamaan dan umur cabang\n\nBeri nama cabang yang menjelaskan tujuannya, misalnya `perbaiki-null-laporan` atau `eksperimen-model-baru`. Cabang berumur pendek lebih sehat: semakin lama sebuah cabang menyimpang dari jalur utama, semakin sulit menggabungkannya kembali karena perubahan kedua pihak menumpuk.\n\nKebiasaan yang baik adalah membuat cabang untuk satu tugas, menyelesaikannya dalam hitungan hari, menggabungkannya, lalu menghapusnya."
+            }
+          ],
+          "quick_check": {
+            "question": "HEAD menandai?",
+            "options": [
+              "Commit pertama",
+              "Cabang aktif"
+            ],
+            "answer_index": 1,
+            "explanation": "Tempat kita berada.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Cabang utama",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Cabang utama\n\nHampir setiap repositori punya satu cabang utama, biasanya bernama `main` atau `master`. Cabang ini dijaga agar selalu dalam keadaan layak, misalnya kode yang berjalan dan analisis yang dapat dijalankan ulang. Pekerjaan baru dikerjakan di cabang lain lalu digabung setelah diperiksa.\n\nPembagian ini melindungi hasil kerja bersama: kesalahan eksperimen tidak langsung merusak jalur yang dipakai orang lain."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Detached HEAD",
+              "markdown": "Hindari bekerja dalam keadaan detached HEAD. Buat cabang lebih dulu agar commit baru tidak mudah hilang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menggabungkan pekerjaan\n\nCabang baru berguna bila hasilnya dapat disatukan kembali. Pelajaran berikutnya membahas penggabungan: kapan Git dapat menggabungkan otomatis, kapan terjadi konflik, dan bagaimana menyelesaikannya. Semua itu bertumpu pada pemahaman bahwa cabang hanyalah penunjuk dan commit membentuk graf.\n\nKarena itu penting memahami model ini sekarang. Penggabungan adalah operasi pada graf, bukan penyalinan file."
+            },
+            {
+              "type": "text",
+              "markdown": "## Eksperimen tanpa takut\n\nSalah satu manfaat terbesar cabang bagi analis data adalah keberanian bereksperimen. Mencoba model baru, mengganti fitur, atau menulis ulang pembersihan data dapat dilakukan di cabang tersendiri. Bila hasilnya tidak lebih baik, cabang dibuang dan jalur utama tetap bersih."
+            },
+            {
+              "type": "text",
+              "markdown": "## Cabang jarak jauh\n\nPada kerja tim, cabang juga ada di server, misalnya `origin/main`. Cabang lokal dan cabang jarak jauh adalah penunjuk terpisah yang disinkronkan lewat perintah seperti `fetch`, `pull`, dan `push`. Pelajaran ketiga modul berikutnya membahas alurnya secara lengkap."
+            },
+            {
+              "type": "text",
+              "markdown": "## Cabang untuk satu tujuan\n\nDisiplin sederhana membuat cabang tetap berguna: satu cabang untuk satu tujuan. Bila di tengah jalan kita menemukan masalah lain, buat cabang baru untuknya alih-alih menumpuknya di cabang yang sama."
+            }
+          ],
+          "quick_check": {
+            "question": "Commit baru menggeser?",
+            "options": [
+              "Penunjuk cabang aktif",
+              "Semua cabang"
+            ],
+            "answer_index": 0,
+            "explanation": "Cabang aktif saja.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A7-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `buat_cabang(repo, nama)` yang menambahkan cabang `nama` pada `repo['cabang']` yang menunjuk commit yang sedang ditunjuk cabang aktif (`repo['head']`).",
+          "note": "Bila `nama` sudah ada, lemparkan `ValueError`.",
+          "filename": "solution.py",
+          "starter_code": "def buat_cabang(repo, nama):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\nr = _repo()\nbuat_cabang(r, 'fitur')\nassert r['cabang']['fitur'] == 'c3'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['cabang']['main'] == 'c3' and r['head'] == 'main'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "try:\n    buat_cabang(r, 'main')\n    ditolak = False\nexcept ValueError:\n    ditolak = True\nassert ditolak is True"
+              }
+            ]
+          },
+          "hint": "Salin id commit dari cabang aktif ke nama baru setelah memeriksa duplikat.",
+          "solution": "def buat_cabang(repo, nama):\n    if nama in repo['cabang']:\n        raise ValueError('cabang sudah ada')\n    repo['cabang'][nama] = repo['cabang'][repo['head']]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-02-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pindah(repo, nama)` yang mengubah `repo['head']` menjadi `nama`.",
+          "note": "Bila cabang `nama` tidak ada, lemparkan `ValueError` dan jangan ubah `head`.",
+          "filename": "solution.py",
+          "starter_code": "def pindah(repo, nama):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\nr = _repo()\nr['cabang']['fitur'] = 'c2'\npindah(r, 'fitur')\nassert r['head'] == 'fitur'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "try:\n    pindah(r, 'tidakada')\n    ditolak = False\nexcept ValueError:\n    ditolak = True\nassert ditolak is True and r['head'] == 'fitur'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pindah(r, 'main')\nassert r['head'] == 'main'"
+              }
+            ]
+          },
+          "hint": "Periksa keberadaan cabang sebelum mengubah head.",
+          "solution": "def pindah(repo, nama):\n    if nama not in repo['cabang']:\n        raise ValueError('cabang tidak ada')\n    repo['head'] = nama",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `commit_baru(repo, pesan, perubahan)` yang membuat commit di cabang aktif.",
+          "note": "Snapshot baru adalah salinan snapshot commit ujung cabang aktif yang diperbarui dengan dict `perubahan` (nilai `None` berarti hapus file). Id baru berbentuk `'c'` diikuti jumlah commit setelah penambahan. Geser cabang aktif ke commit baru dan kembalikan id-nya.",
+          "filename": "solution.py",
+          "starter_code": "def commit_baru(repo, pesan, perubahan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "commit_baru(r, 'baru', {'c.py': 'z'})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\nr = _repo()\nassert commit_baru(r, 'baru', {'c.py': 'z'}) == 'c4'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['cabang']['main'] == 'c4'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['commits']['c4']['snapshot'] == {'a.py': 'v2', 'b.py': 'x', 'c.py': 'z'}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['commits']['c4']['parent'] == 'c3'"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "commit_baru(r, 'hapus', {'b.py': None})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert commit_baru(r, 'hapus', {'b.py': None}) == 'c5'"
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 'b.py' not in r['commits']['c5']['snapshot']"
+              },
+              {
+                "id": 7,
+                "name": "Kasus 7",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r2 = _repo()\nr2['cabang']['fitur'] = 'c3'\nr2['head'] = 'fitur'\ncommit_baru(r2, 'x', {'f.py': '1'})\nassert r2['cabang']['main'] == 'c3' and r2['cabang']['fitur'] == 'c4'"
+              }
+            ]
+          },
+          "hint": "Salin snapshot induk, terapkan perubahan, tambahkan commit, geser cabang aktif.",
+          "solution": "def commit_baru(repo, pesan, perubahan):\n    cabang = repo['head']\n    induk = repo['cabang'][cabang]\n    snap = dict(repo['commits'][induk]['snapshot'])\n    for nama, isi in perubahan.items():\n        if isi is None:\n            snap.pop(nama, None)\n        else:\n            snap[nama] = isi\n    baru = 'c%d' % (len(repo['commits']) + 1)\n    repo['commits'][baru] = {'parent': induk, 'pesan': pesan, 'snapshot': snap}\n    repo['cabang'][cabang] = baru\n    return baru",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `commit_unik(repo, a, b)` yang mengembalikan list id commit yang terjangkau dari ujung cabang `a` (menelusuri induk) tetapi tidak terjangkau dari ujung cabang `b`, urut dari terbaru.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def commit_unik(repo, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "commit_unik(r, 'fitur', 'main')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\nr = _repo()\nr['commits']['c4'] = {'parent': 'c2', 'pesan': 'x', 'snapshot': {}}\nr['cabang']['fitur'] = 'c4'\nassert commit_unik(r, 'fitur', 'main') == ['c4']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "commit_unik(r, 'main', 'fitur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert commit_unik(r, 'main', 'fitur') == ['c3']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "commit_unik(r, 'main', 'main')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert commit_unik(r, 'main', 'main') == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "commit_unik(r, 'main', 'lama')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r['cabang']['lama'] = 'c1'\nassert commit_unik(r, 'main', 'lama') == ['c3', 'c2']"
+              }
+            ]
+          },
+          "hint": "Kumpulkan commit terjangkau dari b lalu saring commit terjangkau dari a.",
+          "solution": "def commit_unik(repo, a, b):\n    def terjangkau(cabang):\n        hasil = []\n        sekarang = repo['cabang'][cabang]\n        while sekarang is not None:\n            hasil.append(sekarang)\n            sekarang = repo['commits'][sekarang]['parent']\n        return hasil\n    lain = set(terjangkau(b))\n    return [c for c in terjangkau(a) if c not in lain]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Cabang di Git adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Penunjuk bernama ke commit",
+              "description": ""
+            },
+            {
+              "label": "Salinan proyek",
+              "description": ""
+            },
+            {
+              "label": "File data",
+              "description": ""
+            },
+            {
+              "label": "Pengguna",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Penunjuk.",
+          "explanation": "Ringan."
+        },
+        {
+          "q": "HEAD menandai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Cabang aktif",
+              "description": ""
+            },
+            {
+              "label": "Commit pertama",
+              "description": ""
+            },
+            {
+              "label": "Server",
+              "description": ""
+            },
+            {
+              "label": "File terbesar",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Aktif.",
+          "explanation": "Tempat kita berada."
+        },
+        {
+          "q": "Commit baru menggeser?",
+          "code": null,
+          "options": [
+            {
+              "label": "Penunjuk cabang aktif",
+              "description": ""
+            },
+            {
+              "label": "Semua cabang",
+              "description": ""
+            },
+            {
+              "label": "Hanya tag",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Aktif.",
+          "explanation": "Cabang aktif saja."
+        },
+        {
+          "q": "git switch -c nama?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membuat dan berpindah ke cabang",
+              "description": ""
+            },
+            {
+              "label": "Menghapus cabang",
+              "description": ""
+            },
+            {
+              "label": "Menggabung",
+              "description": ""
+            },
+            {
+              "label": "Mengirim",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "-c.",
+          "explanation": "Buat plus pindah."
+        },
+        {
+          "q": "Detached HEAD berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "HEAD menunjuk commit langsung",
+              "description": ""
+            },
+            {
+              "label": "Cabang terhapus",
+              "description": ""
+            },
+            {
+              "label": "Repo rusak",
+              "description": ""
+            },
+            {
+              "label": "Server mati",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Langsung.",
+          "explanation": "Tanpa cabang."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira cabang menyalin seluruh proyek. Lebih baik: Cabang hanya penunjuk ke commit.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira cabang menyalin seluruh proyek.",
+          "fix": "Cabang hanya penunjuk ke commit."
+        },
+        {
+          "mistake": "Bekerja lama di detached HEAD.",
+          "fix": "Buat cabang sebelum membuat commit."
+        },
+        {
+          "mistake": "Membiarkan cabang fitur berumur sangat panjang.",
+          "fix": "Gabungkan sering agar konflik kecil."
+        }
+      ],
+      "summary": [
+        "Cabang hanyalah penunjuk bernama ke commit.",
+        "HEAD menandai cabang aktif yang bergerak saat commit.",
+        "Cabang yang menyimpang memiliki leluhur bersama.",
+        "Cabang berumur pendek lebih mudah digabungkan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Branch dan HEAD"
+          },
+          {
+            "type": "text",
+            "source": "Cabang baru menunjuk commit yang sama dengan cabang asalnya, tidak ada yang disalin. Nama cabang yang sudah ada ditolak."
+          },
+          {
+            "type": "code",
+            "source": "repo = {\n    'commits': {'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}}},\n    'cabang': {'main': 'c1'},\n    'head': 'main',\n}\n\ndef buat_cabang(repo, nama):\n    if nama in repo['cabang']:\n        raise ValueError('cabang sudah ada')\n    repo['cabang'][nama] = repo['cabang'][repo['head']]\n\ndef pindah(repo, nama):\n    if nama not in repo['cabang']:\n        raise ValueError('cabang tidak ada')\n    repo['head'] = nama\n\nbuat_cabang(repo, 'fitur')\nprint(repo['cabang'])\npindah(repo, 'fitur')\nprint(repo['head'])\ntry:\n    buat_cabang(repo, 'main')\nexcept ValueError as e:\n    print('gagal', e)"
+          },
+          {
+            "type": "text",
+            "source": "Kedua cabang bergerak sendiri-sendiri dan sama-sama berinduk commit pertama, sehingga riwayat bercabang."
+          },
+          {
+            "type": "code",
+            "source": "repo = {\n    'commits': {'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}}},\n    'cabang': {'main': 'c1'},\n    'head': 'main',\n}\n\ndef buat_cabang(repo, nama):\n    repo['cabang'][nama] = repo['cabang'][repo['head']]\n\ndef pindah(repo, nama):\n    repo['head'] = nama\n\ndef commit_baru(repo, pesan, perubahan):\n    cabang = repo['head']\n    induk = repo['cabang'][cabang]\n    snap = dict(repo['commits'][induk]['snapshot'])\n    for nama, isi in perubahan.items():\n        if isi is None:\n            snap.pop(nama, None)\n        else:\n            snap[nama] = isi\n    baru = 'c%d' % (len(repo['commits']) + 1)\n    repo['commits'][baru] = {'parent': induk, 'pesan': pesan, 'snapshot': snap}\n    repo['cabang'][cabang] = baru\n    return baru\n\nbuat_cabang(repo, 'fitur')\npindah(repo, 'fitur')\nprint(commit_baru(repo, 'tambah fitur', {'f.py': 'x'}))\npindah(repo, 'main')\nprint(commit_baru(repo, 'perbaiki', {'a.py': 'v2'}))\nprint(repo['cabang'])\nprint(repo['commits']['c2']['parent'], repo['commits']['c3']['parent'])"
+          },
+          {
+            "type": "text",
+            "source": "Tiap cabang punya satu commit yang tidak ada di cabang lain, dan membandingkan cabang dengan dirinya sendiri tidak menghasilkan apa-apa."
+          },
+          {
+            "type": "code",
+            "source": "repo = {\n    'commits': {'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}}},\n    'cabang': {'main': 'c1'},\n    'head': 'main',\n}\n\ndef terjangkau(repo, cabang):\n    hasil = []\n    sekarang = repo['cabang'][cabang]\n    while sekarang is not None:\n        hasil.append(sekarang)\n        sekarang = repo['commits'][sekarang]['parent']\n    return hasil\n\ndef commit_unik(repo, a, b):\n    lain = set(terjangkau(repo, b))\n    return [c for c in terjangkau(repo, a) if c not in lain]\n\nrepo['commits']['c2'] = {'parent': 'c1', 'pesan': 'fitur', 'snapshot': {}}\nrepo['commits']['c3'] = {'parent': 'c1', 'pesan': 'perbaikan', 'snapshot': {}}\nrepo['cabang'] = {'main': 'c3', 'fitur': 'c2'}\nprint(commit_unik(repo, 'fitur', 'main'))\nprint(commit_unik(repo, 'main', 'fitur'))\nprint(commit_unik(repo, 'main', 'main'))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A7-02-3",
+      "title": "Membatalkan, menandai, dan menelusuri perubahan",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Membedakan revert yang aman dan reset yang menulis ulang riwayat",
+        "Menandai commit penting dengan tag",
+        "Menelusuri riwayat satu file",
+        "Memahami kapan perintah yang merusak riwayat boleh dipakai"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Tiga cara membatalkan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tiga cara membatalkan\n\nKesalahan pasti terjadi, dan Git menyediakan beberapa cara membatalkan dengan konsekuensi berbeda. Mengubah file kembali ke keadaan commit terakhir hanya memengaruhi working directory. Membuat commit baru yang menghapus efek commit lama adalah **revert**. Memindahkan penunjuk cabang mundur ke commit lama adalah **reset**.\n\nPerbedaan ketiganya menentukan apakah riwayat dipertahankan atau ditulis ulang, dan itu menentukan apakah aman dilakukan pada pekerjaan yang sudah dibagikan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Revert: membatalkan dengan menambah\n\n`git revert <commit>` membuat commit baru yang membalikkan perubahan commit yang ditunjuk. Riwayat lama tetap utuh, ditambah satu commit yang berkata bahwa perubahan itu dibatalkan. Karena riwayat hanya bertambah, revert aman dipakai pada cabang yang sudah dibagikan ke orang lain.\n\nPada model kita, `balikkan` menyederhanakan kasus paling umum: membatalkan commit di ujung cabang dengan membuat commit baru yang snapshot-nya sama dengan snapshot induk commit itu."
+            },
+            {
+              "type": "code_example",
+              "filename": "revert.py",
+              "runnable": true,
+              "code": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\nrepo = {'commits': commits, 'cabang': {'main': 'c3'}, 'head': 'main'}\n\ndef balikkan(repo, target):\n    cabang = repo['head']\n    if repo['cabang'][cabang] != target:\n        raise ValueError('target bukan ujung cabang')\n    induk = repo['commits'][target]['parent']\n    baru = 'c%d' % (len(repo['commits']) + 1)\n    repo['commits'][baru] = {\n        'parent': target,\n        'pesan': 'Revert: ' + repo['commits'][target]['pesan'],\n        'snapshot': dict(repo['commits'][induk]['snapshot']),\n    }\n    repo['cabang'][cabang] = baru\n    return baru\n\nprint(balikkan(repo, 'c3'))\nprint(repo['commits']['c4']['pesan'])\nprint(repo['commits']['c4']['snapshot'])\nprint(len(repo['commits']))",
+              "expected_output_note": "c4\nRevert: ubah a\n{'a.py': 'v1', 'b.py': 'x'}\n4",
+              "explanation": "Commit pembatalan menambah satu simpul baru. Isinya kembali ke keadaan sebelum commit ketiga, dan semua commit lama tetap ada."
+            },
+            {
+              "type": "text",
+              "markdown": "## Reset: memundurkan penunjuk\n\n`git reset --hard <commit>` memindahkan penunjuk cabang ke commit lama dan membuang perubahan di staging dan working directory. Commit yang ditinggalkan tidak langsung terhapus, tetapi tidak lagi terjangkau dari cabang, sehingga hilang dari `git log`.\n\nReset menulis ulang riwayat. Karena itu hindari memakainya pada cabang yang sudah dibagikan: rekan Anda masih memegang commit yang Anda buang, dan itu memicu kekacauan saat sinkronisasi."
+            },
+            {
+              "type": "code_example",
+              "filename": "reset_keras.py",
+              "runnable": true,
+              "code": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\nrepo = {'commits': commits, 'cabang': {'main': 'c3'}, 'head': 'main'}\n\ndef reset_keras(repo, id_commit):\n    sekarang = repo['cabang'][repo['head']]\n    while sekarang is not None:\n        if sekarang == id_commit:\n            repo['cabang'][repo['head']] = id_commit\n            return id_commit\n        sekarang = repo['commits'][sekarang]['parent']\n    raise ValueError('commit bukan leluhur')\n\nprint(reset_keras(repo, 'c1'))\nprint(repo['cabang'])\nprint(len(repo['commits']))\ntry:\n    reset_keras(repo, 'c3')\nexcept ValueError as e:\n    print('gagal', e)",
+              "expected_output_note": "c1\n{'main': 'c1'}\n3\ngagal commit bukan leluhur",
+              "explanation": "Penunjuk cabang mundur ke commit pertama sementara ketiga commit masih tersimpan di basis data. Setelah mundur, commit ketiga bukan lagi leluhur sehingga tidak bisa dijadikan sasaran reset."
+            }
+          ],
+          "quick_check": {
+            "question": "Revert bekerja dengan?",
+            "options": [
+              "Menambah commit pembatalan",
+              "Menghapus commit lama"
+            ],
+            "answer_index": 0,
+            "explanation": "Riwayat utuh.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Reflog: jaring pengaman",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Reflog: jaring pengaman\n\nKarena commit yang ditinggalkan tidak langsung dihapus, Git menyimpan catatan pergerakan HEAD di `reflog`. Perintah `git reflog` menampilkan ke mana HEAD pernah menunjuk, sehingga reset yang keliru sering masih dapat dipulihkan dengan berpindah ke hash lama.\n\nReflog bersifat lokal dan sementara, biasanya bertahan sekitar sembilan puluh hari. Anggap ia jaring pengaman terakhir, bukan alasan untuk ceroboh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tag: menandai versi penting\n\n**Tag** adalah nama tetap untuk sebuah commit, berbeda dari cabang yang bergerak. Gunakan tag untuk menandai versi yang penting, misalnya `v1.0` untuk laporan yang dikirim ke klien atau skrip yang menghasilkan angka publikasi. Dengan tag, kita dapat kembali ke versi itu kapan pun dengan satu nama.\n\n```bash\ngit tag v1.0\ngit tag -a v1.1 -m \"Versi untuk laporan Q3\"\ngit tag\ngit switch --detach v1.0\n```\n\nBagi analis, tag adalah cara sederhana mewujudkan reproduksibilitas: laporan menyebut tag, dan siapa pun dapat memulihkan kode yang persis sama."
+            },
+            {
+              "type": "code_example",
+              "filename": "beri_tag.py",
+              "runnable": true,
+              "code": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\nrepo = {'commits': commits, 'cabang': {'main': 'c3'}, 'head': 'main'}\n\ndef beri_tag(repo, nama, id_commit):\n    tag = repo.setdefault('tag', {})\n    if nama in tag:\n        raise ValueError('tag sudah ada')\n    if id_commit not in repo['commits']:\n        raise ValueError('commit tidak ada')\n    tag[nama] = id_commit\n\nberi_tag(repo, 'v1.0', 'c2')\nprint(repo['tag'])\nfor nama, ident in [('v1.0', 'c3'), ('v2.0', 'c9')]:\n    try:\n        beri_tag(repo, nama, ident)\n    except ValueError as e:\n        print('gagal', e)",
+              "expected_output_note": "{'v1.0': 'c2'}\ngagal tag sudah ada\ngagal commit tidak ada",
+              "explanation": "Tag menetapkan nama permanen pada commit tertentu, menolak nama yang sudah dipakai dan commit yang tidak ada."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menelusuri riwayat satu file\n\nSering kita hanya peduli pada satu file: kapan fungsi ini berubah, dan siapa yang mengubahnya. `git log --follow nama_file` menampilkan commit yang menyentuh file itu, dan `git blame nama_file` menunjukkan commit terakhir yang mengubah tiap barisnya.\n\nPrinsipnya sederhana: sebuah commit menyentuh file bila isi file di snapshot-nya berbeda dari di snapshot induknya, termasuk ketika file baru ditambahkan atau dihapus."
+            },
+            {
+              "type": "code_example",
+              "filename": "riwayat_file.py",
+              "runnable": true,
+              "code": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\ndef riwayat_file(commits, head, nama):\n    hasil = []\n    sekarang = head\n    while sekarang is not None:\n        induk = commits[sekarang]['parent']\n        snap = commits[sekarang]['snapshot']\n        snap_induk = commits[induk]['snapshot'] if induk is not None else {}\n        if snap.get(nama) != snap_induk.get(nama):\n            hasil.append(sekarang)\n        sekarang = induk\n    return hasil\n\nprint(riwayat_file(commits, 'c3', 'a.py'))\nprint(riwayat_file(commits, 'c3', 'b.py'))\nprint(riwayat_file(commits, 'c3', 'tidak.py'))",
+              "expected_output_note": "['c3', 'c1']\n['c2']\n[]",
+              "explanation": "File a.py ditambahkan di commit pertama dan diubah di commit ketiga, sedangkan b.py hanya muncul di commit kedua."
+            }
+          ],
+          "quick_check": {
+            "question": "Reset keras?",
+            "options": [
+              "Menambah commit",
+              "Memundurkan penunjuk cabang"
+            ],
+            "answer_index": 1,
+            "explanation": "Menulis ulang riwayat.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih alat yang tepat",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih alat yang tepat\n\nUntuk membatalkan perubahan yang belum dicommit, kembalikan file dengan `git restore`. Untuk membatalkan commit yang sudah dibagikan, pakai `git revert`. Untuk merapikan commit lokal yang belum dibagikan, `git reset` boleh dipakai dengan hati-hati. Bila ragu, pilih revert karena ia tidak menghancurkan apa pun.\n\nAturan emasnya: jangan menulis ulang riwayat yang sudah dilihat orang lain. Riwayat bersama adalah catatan kolektif, dan mengubahnya diam-diam merusak kepercayaan tim."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Riwayat bersama",
+              "markdown": "Jangan memakai reset keras atau menulis ulang riwayat pada cabang yang sudah dibagikan. Pakai revert yang menambah commit pembatalan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membatalkan perubahan yang belum dicommit\n\nTidak semua pembatalan melibatkan riwayat. File yang salah diedit dapat dikembalikan ke versi commit terakhir dengan `git restore nama_file`, dan perubahan yang sudah di-stage dapat dikeluarkan dengan `git restore --staged nama_file`. Kedua perintah itu hanya menyentuh working directory dan staging area.\n\nHati-hati: perubahan yang belum pernah dicommit tidak tercatat di reflog. Sekali dibuang, ia tidak dapat dipulihkan."
+            }
+          ],
+          "quick_check": {
+            "question": "Tag berbeda dari cabang karena?",
+            "options": [
+              "Tetap menunjuk satu commit",
+              "Selalu bergerak"
+            ],
+            "answer_index": 0,
+            "explanation": "Nama permanen.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A7-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `beri_tag(repo, nama, id_commit)` yang menyimpan `id_commit` pada `repo['tag'][nama]` (buat dict `tag` bila belum ada).",
+          "note": "Lemparkan `ValueError` bila nama tag sudah ada atau commit tidak ada di `repo['commits']`.",
+          "filename": "solution.py",
+          "starter_code": "def beri_tag(repo, nama, id_commit):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\nr = _repo()\nberi_tag(r, 'v1', 'c2')\nassert r['tag'] == {'v1': 'c2'}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "beri_tag(r, nama, ident)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "for nama, ident in [('v1', 'c3'), ('v2', 'c9')]:\n    try:\n        beri_tag(r, nama, ident)\n        ditolak = False\n    except ValueError:\n        ditolak = True\n    assert ditolak is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "beri_tag(r, 'v2', 'c3')\nassert r['tag'] == {'v1': 'c2', 'v2': 'c3'}"
+              }
+            ]
+          },
+          "hint": "Periksa duplikat nama dan keberadaan commit sebelum menyimpan.",
+          "solution": "def beri_tag(repo, nama, id_commit):\n    tag = repo.setdefault('tag', {})\n    if nama in tag:\n        raise ValueError('tag sudah ada')\n    if id_commit not in repo['commits']:\n        raise ValueError('commit tidak ada')\n    tag[nama] = id_commit",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-02-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `reset_keras(repo, id_commit)` yang memindahkan penunjuk cabang aktif ke `id_commit` dan mengembalikan `id_commit`.",
+          "note": "`id_commit` harus leluhur (atau sama dengan) ujung cabang aktif, jika tidak lemparkan `ValueError`. Commit di `repo['commits']` tidak boleh dihapus.",
+          "filename": "solution.py",
+          "starter_code": "def reset_keras(repo, id_commit):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "reset_keras(r, 'c1')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\nr = _repo()\nassert reset_keras(r, 'c1') == 'c1'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['cabang']['main'] == 'c1'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(r['commits'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(r['commits']) == 3"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "try:\n    reset_keras(r, 'c3')\n    ditolak = False\nexcept ValueError:\n    ditolak = True\nassert ditolak is True and r['cabang']['main'] == 'c1'"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r2 = _repo()\nr2['commits']['c4'] = {'parent': 'c1', 'pesan': 'x', 'snapshot': {}}\ntry:\n    reset_keras(r2, 'c4')\n    ditolak = False\nexcept ValueError:\n    ditolak = True\nassert ditolak is True"
+              }
+            ]
+          },
+          "hint": "Telusuri induk dari ujung cabang aktif dan geser penunjuk bila ditemukan.",
+          "solution": "def reset_keras(repo, id_commit):\n    sekarang = repo['cabang'][repo['head']]\n    while sekarang is not None:\n        if sekarang == id_commit:\n            repo['cabang'][repo['head']] = id_commit\n            return id_commit\n        sekarang = repo['commits'][sekarang]['parent']\n    raise ValueError('commit bukan leluhur')",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `balikkan(repo, target)` yang membuat commit baru di cabang aktif dengan pesan `'Revert: '` diikuti pesan target, snapshot salinan snapshot induk target, dan induk berupa `target`.",
+          "note": "`target` harus ujung cabang aktif, jika tidak lemparkan `ValueError`. Geser cabang aktif ke commit baru dan kembalikan id-nya (`'c'` diikuti jumlah commit setelah penambahan).",
+          "filename": "solution.py",
+          "starter_code": "def balikkan(repo, target):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "balikkan(r, 'c3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\nr = _repo()\nassert balikkan(r, 'c3') == 'c4'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['commits']['c4']['snapshot'] == {'a.py': 'v1', 'b.py': 'x'}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['commits']['c4']['pesan'] == 'Revert: ubah a'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['commits']['c4']['parent'] == 'c3'"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['cabang']['main'] == 'c4'"
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "len(r['commits'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "try:\n    balikkan(r, 'c2')\n    ditolak = False\nexcept ValueError:\n    ditolak = True\nassert ditolak is True and len(r['commits']) == 4"
+              }
+            ]
+          },
+          "hint": "Salin snapshot induk target ke commit baru yang berinduk target.",
+          "solution": "def balikkan(repo, target):\n    cabang = repo['head']\n    if repo['cabang'][cabang] != target:\n        raise ValueError('target bukan ujung cabang')\n    induk = repo['commits'][target]['parent']\n    if induk is None:\n        raise ValueError('tidak ada induk')\n    baru = 'c%d' % (len(repo['commits']) + 1)\n    repo['commits'][baru] = {\n        'parent': target,\n        'pesan': 'Revert: ' + repo['commits'][target]['pesan'],\n        'snapshot': dict(repo['commits'][induk]['snapshot']),\n    }\n    repo['cabang'][cabang] = baru\n    return baru",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `riwayat_file(commits, head, nama)` yang mengembalikan list id commit, dari `head` menelusuri induk, yang menyentuh file `nama`: yaitu isi file di snapshot commit berbeda dari di snapshot induknya (file baru atau dihapus juga dihitung; commit pertama dibandingkan dengan snapshot kosong).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def riwayat_file(commits, head, nama):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "riwayat_file(commits, 'c3', 'a.py')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _repo():\n    return {\n        'commits': {\n            'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n            'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n            'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n        },\n        'cabang': {'main': 'c3'},\n        'head': 'main',\n    }\ncommits = _repo()['commits']\nassert riwayat_file(commits, 'c3', 'a.py') == ['c3', 'c1']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "riwayat_file(commits, 'c3', 'b.py')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert riwayat_file(commits, 'c3', 'b.py') == ['c2']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "riwayat_file(commits, 'c3', 'tidak.py')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert riwayat_file(commits, 'c3', 'tidak.py') == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "riwayat_file(commits, 'c4', 'b.py')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "commits['c4'] = {'parent': 'c3', 'pesan': 'hapus b', 'snapshot': {'a.py': 'v2'}}\nassert riwayat_file(commits, 'c4', 'b.py') == ['c4', 'c2']"
+              }
+            ]
+          },
+          "hint": "Bandingkan isi file di snapshot dengan snapshot induk, dengan induk kosong untuk commit pertama.",
+          "solution": "def riwayat_file(commits, head, nama):\n    hasil = []\n    sekarang = head\n    while sekarang is not None:\n        induk = commits[sekarang]['parent']\n        snap = commits[sekarang]['snapshot']\n        snap_induk = commits[induk]['snapshot'] if induk is not None else {}\n        if snap.get(nama) != snap_induk.get(nama):\n            hasil.append(sekarang)\n        sekarang = induk\n    return hasil",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Revert bekerja dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menambah commit pembatalan",
+              "description": ""
+            },
+            {
+              "label": "Menghapus commit lama",
+              "description": ""
+            },
+            {
+              "label": "Menulis ulang riwayat",
+              "description": ""
+            },
+            {
+              "label": "Menghapus cabang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tambah.",
+          "explanation": "Riwayat utuh."
+        },
+        {
+          "q": "Reset keras?",
+          "code": null,
+          "options": [
+            {
+              "label": "Memundurkan penunjuk cabang",
+              "description": ""
+            },
+            {
+              "label": "Menambah commit",
+              "description": ""
+            },
+            {
+              "label": "Membuat tag",
+              "description": ""
+            },
+            {
+              "label": "Menggabung",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Mundur.",
+          "explanation": "Menulis ulang riwayat."
+        },
+        {
+          "q": "Tag berbeda dari cabang karena?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tetap menunjuk satu commit",
+              "description": ""
+            },
+            {
+              "label": "Selalu bergerak",
+              "description": ""
+            },
+            {
+              "label": "Menyimpan file",
+              "description": ""
+            },
+            {
+              "label": "Menghapus riwayat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tetap.",
+          "explanation": "Nama permanen."
+        },
+        {
+          "q": "Jaring pengaman setelah reset keliru?",
+          "code": null,
+          "options": [
+            {
+              "label": "reflog",
+              "description": ""
+            },
+            {
+              "label": "tag",
+              "description": ""
+            },
+            {
+              "label": "stash",
+              "description": ""
+            },
+            {
+              "label": "blame",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Reflog.",
+          "explanation": "Catatan gerak HEAD."
+        },
+        {
+          "q": "git blame menunjukkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Commit terakhir tiap baris",
+              "description": ""
+            },
+            {
+              "label": "Daftar cabang",
+              "description": ""
+            },
+            {
+              "label": "Ukuran repo",
+              "description": ""
+            },
+            {
+              "label": "Nama server",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baris.",
+          "explanation": "Siapa mengubah baris."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai reset keras pada cabang yang sudah dibagikan. Lebih baik: Pakai revert.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai reset keras pada cabang yang sudah dibagikan.",
+          "fix": "Pakai revert."
+        },
+        {
+          "mistake": "Mengira commit yang direset langsung hilang selamanya.",
+          "fix": "Cek reflog untuk memulihkannya."
+        },
+        {
+          "mistake": "Menandai versi laporan hanya lewat nama file.",
+          "fix": "Pakai tag agar versi kode dapat dipulihkan."
+        }
+      ],
+      "summary": [
+        "Revert menambah commit pembatalan dan aman untuk riwayat bersama.",
+        "Reset memundurkan penunjuk dan menulis ulang riwayat.",
+        "Tag menandai versi penting dengan nama permanen.",
+        "Riwayat satu file ditelusuri dengan membandingkan snapshot induk."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Membatalkan, menandai, dan menelusuri perubahan"
+          },
+          {
+            "type": "text",
+            "source": "Commit pembatalan menambah satu simpul baru. Isinya kembali ke keadaan sebelum commit ketiga, dan semua commit lama tetap ada."
+          },
+          {
+            "type": "code",
+            "source": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\nrepo = {'commits': commits, 'cabang': {'main': 'c3'}, 'head': 'main'}\n\ndef balikkan(repo, target):\n    cabang = repo['head']\n    if repo['cabang'][cabang] != target:\n        raise ValueError('target bukan ujung cabang')\n    induk = repo['commits'][target]['parent']\n    baru = 'c%d' % (len(repo['commits']) + 1)\n    repo['commits'][baru] = {\n        'parent': target,\n        'pesan': 'Revert: ' + repo['commits'][target]['pesan'],\n        'snapshot': dict(repo['commits'][induk]['snapshot']),\n    }\n    repo['cabang'][cabang] = baru\n    return baru\n\nprint(balikkan(repo, 'c3'))\nprint(repo['commits']['c4']['pesan'])\nprint(repo['commits']['c4']['snapshot'])\nprint(len(repo['commits']))"
+          },
+          {
+            "type": "text",
+            "source": "Penunjuk cabang mundur ke commit pertama sementara ketiga commit masih tersimpan di basis data. Setelah mundur, commit ketiga bukan lagi leluhur sehingga tidak bisa dijadikan sasaran reset."
+          },
+          {
+            "type": "code",
+            "source": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\nrepo = {'commits': commits, 'cabang': {'main': 'c3'}, 'head': 'main'}\n\ndef reset_keras(repo, id_commit):\n    sekarang = repo['cabang'][repo['head']]\n    while sekarang is not None:\n        if sekarang == id_commit:\n            repo['cabang'][repo['head']] = id_commit\n            return id_commit\n        sekarang = repo['commits'][sekarang]['parent']\n    raise ValueError('commit bukan leluhur')\n\nprint(reset_keras(repo, 'c1'))\nprint(repo['cabang'])\nprint(len(repo['commits']))\ntry:\n    reset_keras(repo, 'c3')\nexcept ValueError as e:\n    print('gagal', e)"
+          },
+          {
+            "type": "text",
+            "source": "Tag menetapkan nama permanen pada commit tertentu, menolak nama yang sudah dipakai dan commit yang tidak ada."
+          },
+          {
+            "type": "code",
+            "source": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\nrepo = {'commits': commits, 'cabang': {'main': 'c3'}, 'head': 'main'}\n\ndef beri_tag(repo, nama, id_commit):\n    tag = repo.setdefault('tag', {})\n    if nama in tag:\n        raise ValueError('tag sudah ada')\n    if id_commit not in repo['commits']:\n        raise ValueError('commit tidak ada')\n    tag[nama] = id_commit\n\nberi_tag(repo, 'v1.0', 'c2')\nprint(repo['tag'])\nfor nama, ident in [('v1.0', 'c3'), ('v2.0', 'c9')]:\n    try:\n        beri_tag(repo, nama, ident)\n    except ValueError as e:\n        print('gagal', e)"
+          },
+          {
+            "type": "text",
+            "source": "File a.py ditambahkan di commit pertama dan diubah di commit ketiga, sedangkan b.py hanya muncul di commit kedua."
+          },
+          {
+            "type": "code",
+            "source": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal', 'snapshot': {'a.py': 'v1'}},\n    'c2': {'parent': 'c1', 'pesan': 'tambah b', 'snapshot': {'a.py': 'v1', 'b.py': 'x'}},\n    'c3': {'parent': 'c2', 'pesan': 'ubah a', 'snapshot': {'a.py': 'v2', 'b.py': 'x'}},\n}\n\ndef riwayat_file(commits, head, nama):\n    hasil = []\n    sekarang = head\n    while sekarang is not None:\n        induk = commits[sekarang]['parent']\n        snap = commits[sekarang]['snapshot']\n        snap_induk = commits[induk]['snapshot'] if induk is not None else {}\n        if snap.get(nama) != snap_induk.get(nama):\n            hasil.append(sekarang)\n        sekarang = induk\n    return hasil\n\nprint(riwayat_file(commits, 'c3', 'a.py'))\nprint(riwayat_file(commits, 'c3', 'b.py'))\nprint(riwayat_file(commits, 'c3', 'tidak.py'))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

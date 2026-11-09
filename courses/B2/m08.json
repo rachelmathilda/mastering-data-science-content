@@ -1,0 +1,1616 @@
+{
+  "schema_version": 2,
+  "course_id": "B2",
+  "module_no": 8,
+  "title": "Pivot, melt, dan reshape",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memutar data dengan pivot dan pivot_table",
+    "Melelehkan tabel lebar dengan melt serta memakai stack dan unstack",
+    "Memilih bentuk panjang atau lebar menurut tugas analisis"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B2-08-1",
+    "exercise_id": "B2-08-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def pivot_aman(df, agg):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B2-08-1",
+      "title": "Dari panjang ke lebar dengan pivot",
+      "estimated_minutes": 35,
+      "read_minutes": 8,
+      "objectives": [
+        "Membedakan bentuk data panjang dan lebar",
+        "Memakai pivot untuk memutar baris menjadi kolom",
+        "Memakai pivot_table bila ada nilai ganda dan perlu agregasi",
+        "Menambahkan total baris dan kolom dengan margins"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dua cara menulis tabel yang sama",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua cara menulis tabel yang sama\n\nInformasi yang sama dapat ditulis dalam dua bentuk. Bentuk panjang menaruh satu pengamatan pada satu baris: setiap baris memuat bulan, toko, dan omzet. Bentuk lebar menaruh satu entitas pada satu baris dan membuka kolom untuk tiap kategori: setiap baris adalah satu bulan, dan toko A serta toko B masing-masing punya kolom sendiri. Isi datanya identik, hanya susunannya yang berbeda. Memahami kedua bentuk ini sangat penting karena alat yang berbeda menyukai bentuk yang berbeda, dan sebagian besar kerja pembersihan data sebenarnya adalah memindahkan data dari satu bentuk ke bentuk lain sampai cocok dengan alat yang akan dipakai."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengapa bentuk penting\n\nPustaka visualisasi seperti seaborn dan plotly menyukai bentuk panjang karena satu kolom dapat langsung menjadi warna, panel, atau sumbu. Groupby juga paling nyaman pada bentuk panjang. Sebaliknya, manusia lebih mudah membaca bentuk lebar karena dapat membandingkan toko dengan sekali lirik sepanjang baris, dan banyak operasi antar kolom seperti selisih atau rasio ditulis paling ringkas pada bentuk lebar. Sistem basis data dan log hampir selalu menyimpan data panjang, sedangkan laporan dan spreadsheet biasanya lebar. Karena itu seorang analis sering bolak-balik: simpan panjang, hitung lebar, tampilkan lebar, gambar panjang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data contoh\n\nPelajaran ini memakai tabel enam baris dengan kolom `bulan` berisi satu sampai tiga, `toko` berisi A dan B, `omzet`, dan `unit`. Setiap kombinasi bulan dan toko muncul tepat satu kali, sifat yang akan kita manfaatkan pada `pivot`. Angkanya sengaja kecil agar Anda dapat memeriksa tiap hasil dengan mata. Toko A mencatat 100, 120, dan 130 sepanjang tiga bulan, sedangkan toko B mencatat 80, 90, dan 70. Perhatikan bahwa total bulan satu adalah 180, bulan dua 210, dan bulan tiga 200, angka yang akan kita temui lagi dalam beberapa hasil di bawah."
+            },
+            {
+              "type": "code_example",
+              "filename": "pivot_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nprint(w.values.tolist())\nprint(w.index.tolist())\nprint(w.columns.tolist())\nprint(w.reset_index().columns.tolist())\nprint(w.columns.name, w.index.name)\nprint(df.pivot(index='toko', columns='bulan', values='omzet').values.tolist())",
+              "expected_output_note": "[[100, 80], [120, 90], [130, 70]]\n[1, 2, 3]\n['A', 'B']\n['bulan', 'A', 'B']\ntoko bulan\n[[100, 120, 130], [80, 90, 70]]",
+              "explanation": "Pivot menentukan tiga hal: kolom yang menjadi indeks, kolom yang menjadi nama kolom baru, dan kolom yang mengisi sel. Menukar index dan columns memutar tabel."
+            },
+            {
+              "type": "text",
+              "markdown": "## Anatomi pivot\n\nMetode `pivot(index, columns, values)` membutuhkan tiga keputusan. Argumen `index` menentukan kolom mana yang nilai uniknya menjadi baris, `columns` menentukan kolom yang nilai uniknya menjadi kolom baru, dan `values` menentukan kolom yang isinya mengisi sel. Hasilnya tabel lebar dengan indeks bernama `bulan` dan kolom bernama `toko`. Nama sumbu itu tersimpan sebagai atribut `index.name` dan `columns.name`, dan sering mengejutkan pemula karena tampil sebagai judul kecil di atas tabel. Bila tidak diperlukan, `rename_axis(columns=None)` menghapusnya. Menukar peran `index` dan `columns` hanya memutar tabel, sehingga toko menjadi baris dan bulan menjadi kolom."
+            }
+          ],
+          "quick_check": {
+            "question": "Data panjang menaruh satu pengamatan di?",
+            "options": [
+              "Satu baris",
+              "Satu kolom"
+            ],
+            "answer_index": 0,
+            "explanation": "Panjang.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Indeks menjadi kolom",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Indeks menjadi kolom\n\nHasil pivot menaruh kunci baris di indeks, bukan di kolom biasa. Untuk bekerja dengan kunci itu seperti kolom lain, atau untuk menyimpannya ke CSV, panggil `reset_index()`. Setelah itu kolom `bulan` kembali menjadi kolom biasa dan nama kolom toko tetap A dan B. Langkah ini hampir selalu muncul tepat sesudah pivot, jadi biasakan membaca keduanya sebagai satu kesatuan. Hal sebaliknya juga benar: sebelum pivot, kolom yang akan menjadi baris sudah harus berupa kolom biasa, dan seluruh sisa kolom yang tidak disebut dalam `index`, `columns`, atau `values` diabaikan, sehingga sebaiknya Anda menyaring kolom terlebih dahulu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pivot menuntut keunikan\n\nFungsi `pivot` tidak melakukan agregasi. Ia menganggap setiap pasangan nilai index dan columns muncul paling banyak sekali, dan melempar `ValueError` bila ada pasangan ganda karena tidak tahu harus memilih yang mana. Kegagalan ini justru berguna: ia memberi tahu bahwa data Anda tidak sebersih dugaan, misalnya ada transaksi tercatat dua kali atau ada kategori yang belum digabung. Daripada membungkam galat itu, selidiki dulu mengapa ada duplikat. Bila duplikat memang sah, misalnya beberapa transaksi dalam bulan yang sama, Anda perlu memutuskan cara meringkasnya, dan di situlah `pivot_table` dipakai."
+            },
+            {
+              "type": "text",
+              "markdown": "## pivot_table untuk nilai ganda\n\nFungsi `pd.pivot_table` adalah pivot yang melakukan agregasi. Ia menerima argumen `aggfunc` seperti `'sum'`, `'mean'`, atau `'count'` untuk meringkas semua nilai yang jatuh pada sel yang sama. Argumen `values` boleh berupa beberapa kolom, dan `aggfunc` boleh berupa dict yang memberi fungsi berbeda untuk tiap kolom. Argumen `fill_value` mengisi sel kosong. Seluruh perilakunya setara dengan groupby dengan dua kunci diikuti unstack, tetapi dengan sintaks yang lebih bersahabat bagi orang yang terbiasa dengan tabel pivot di spreadsheet. Bila Anda tidak yakin data unik, selalu pakai pivot_table."
+            },
+            {
+              "type": "code_example",
+              "filename": "pivot_table.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nd2 = pd.concat([df, pd.DataFrame({'bulan': [3], 'toko': ['A'], 'omzet': [10], 'unit': [1]})], ignore_index=True)\ntry:\n    d2.pivot(index='bulan', columns='toko', values='omzet')\nexcept ValueError:\n    print('ValueError')\nprint(pd.pivot_table(d2, index='bulan', columns='toko', values='omzet', aggfunc='sum').values.tolist())\nprint(pd.pivot_table(d2, index='bulan', columns='toko', values='omzet', aggfunc='mean').values.tolist())\nprint(pd.pivot_table(df, index='toko', values='omzet', aggfunc='sum')['omzet'].to_dict())\nprint(pd.pivot_table(df, index='toko', values=['omzet', 'unit'], aggfunc={'omzet': 'sum', 'unit': 'mean'}).round(2).to_dict())",
+              "expected_output_note": "ValueError\n[[100, 80], [120, 90], [140, 70]]\n[[100.0, 80.0], [120.0, 90.0], [70.0, 70.0]]\n{'A': 350, 'B': 240}\n{'omzet': {'A': 350, 'B': 240}, 'unit': {'A': 11.67, 'B': 8.0}}",
+              "explanation": "Pivot gagal pada duplikat, sedangkan pivot_table meringkasnya dengan aggfunc. Hasil berbeda tergantung fungsi yang dipilih, jadi pilihan aggfunc adalah keputusan analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pilihan aggfunc adalah keputusan\n\nPada contoh di atas, bulan tiga toko A punya dua catatan, 130 dan 10. Dengan `sum` selnya 140, dengan `mean` selnya 70. Keduanya benar secara teknis tetapi menjawab pertanyaan berbeda. Omzet harus dijumlahkan, sedangkan harga satuan sebaiknya dirata-ratakan, dan jumlah transaksi dihitung dengan `count`. Memilih fungsi yang salah menghasilkan angka yang tampak wajar tetapi keliru, kesalahan yang paling sulit ditemukan karena tidak ada pesan galat. Karena itu tulis `aggfunc` secara eksplisit, jangan mengandalkan bawaan `mean`, dan pikirkan arti bisnis tiap kolom sebelum meringkasnya."
+            }
+          ],
+          "quick_check": {
+            "question": "pivot pada pasangan ganda?",
+            "options": [
+              "Menjumlah",
+              "ValueError"
+            ],
+            "answer_index": 1,
+            "explanation": "Tak mengagregasi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Margins dan total",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Margins dan total\n\nArgumen `margins=True` menambah baris dan kolom `All` berisi total sesuai `aggfunc`. Total tampil di tepi tabel sehingga pembaca dapat memeriksa kesesuaian dengan angka yang mereka ketahui. Pada contoh di bawah, jumlah seluruh omzet 590 muncul di sudut kanan bawah. Nama label dapat diubah dengan `margins_name`. Perhatikan bahwa margins memakai fungsi agregasi yang sama untuk total, sehingga pada `mean` margin adalah rata-rata keseluruhan, bukan rata-rata dari rata-rata. Untuk laporan akhir, total sering ditambahkan di tahap penyajian saja, bukan dalam data yang akan dihitung lebih lanjut."
+            },
+            {
+              "type": "code_example",
+              "filename": "margins_crosstab.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nt = pd.pivot_table(df, index='toko', columns='bulan', values='omzet', aggfunc='sum', margins=True)\nprint(t.values.tolist())\nprint(t.index.tolist())\nprint(t.columns.tolist())\nprint(pd.crosstab(df['toko'], df['bulan']).values.tolist())\nprint(pd.crosstab(df['toko'], df['bulan'], values=df['omzet'], aggfunc='sum').values.tolist())",
+              "expected_output_note": "[[100, 120, 130, 350], [80, 90, 70, 240], [180, 210, 200, 590]]\n['A', 'B', 'All']\n[1, 2, 3, 'All']\n[[1, 1, 1], [1, 1, 1]]\n[[100, 120, 130], [80, 90, 70]]",
+              "explanation": "Margins menambah total di tepi tabel. Crosstab adalah jalan pintas untuk tabel hitungan atau agregasi antara dua kolom kategori."
+            },
+            {
+              "type": "text",
+              "markdown": "## Crosstab untuk hitungan\n\nFungsi `pd.crosstab(baris, kolom)` menghitung berapa kali tiap kombinasi dua kolom kategori muncul, dan dengan argumen `values` serta `aggfunc` ia bekerja seperti pivot_table. Ia lebih ringkas untuk pertanyaan seperti berapa pelanggan di tiap kota menurut jenis kelamin, dan argumen `normalize` mengubah hitungan menjadi proporsi per baris, per kolom, atau keseluruhan. Pada data ini setiap kombinasi muncul sekali, sehingga semua hitungannya satu. Crosstab sering menjadi langkah pertama sebelum uji kai kuadrat atau sebelum memutuskan apakah dua variabel kategori saling berkaitan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Sel kosong dan fill_value\n\nBila kombinasi tertentu tidak ada dalam data, sel hasil pivot berisi NaN, dan kolom bilangan bulat berubah menjadi desimal karena NaN bertipe desimal. Pakai `fill_value=0` pada `pivot_table` bila ketiadaan memang berarti nol, misalnya tidak ada penjualan. Berhati-hatilah: mengisi nol menyembunyikan perbedaan antara tidak ada penjualan dan data yang belum masuk. Pertimbangkan membiarkan NaN bila perbedaan itu penting, dan dokumentasikan keputusan Anda agar pembaca laporan tidak salah menafsirkan sel nol sebagai kinerja buruk."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Pivot atau pivot_table",
+              "markdown": "Pakai pivot bila pasangan kunci pasti unik, dan pivot_table dengan aggfunc eksplisit bila tidak. Galat pivot adalah informasi tentang data Anda."
+            }
+          ],
+          "quick_check": {
+            "question": "pivot_table memakai?",
+            "options": [
+              "aggfunc",
+              "melt"
+            ],
+            "answer_index": 0,
+            "explanation": "Agregasi.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-08-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `lebar_omzet(df)` yang memutar `omzet` menjadi tabel lebar dengan `bulan` sebagai baris dan `toko` sebagai kolom, dan mengembalikan `values.tolist()`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef lebar_omzet(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "lebar_omzet(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nassert lebar_omzet(df) == [[100, 80], [120, 90], [130, 70]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "lebar_omzet(df.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert lebar_omzet(df.iloc[:2]) == [[100, 80]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "lebar_omzet(df.iloc[[0, 2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert lebar_omzet(df.iloc[[0, 2, 4]]) == [[100], [120], [130]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(lebar_omzet(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(lebar_omzet(df)) == 3"
+              }
+            ]
+          },
+          "hint": "pivot dengan index bulan, columns toko, values omzet.",
+          "solution": "import pandas as pd\n\ndef lebar_omzet(df):\n    return df.pivot(index='bulan', columns='toko', values='omzet').values.tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-08-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `total_toko(df)` yang memakai `pivot_table` dengan `toko` sebagai indeks untuk menjumlahkan `omzet`, dan mengembalikan dict `{toko: total}`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef total_toko(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_toko(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nassert total_toko(df) == {'A': 350, 'B': 240}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_toko(df.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_toko(df.iloc[:2]) == {'A': 100, 'B': 80}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_toko(df[df['bulan'] > 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_toko(df[df['bulan'] > 1]) == {'A': 250, 'B': 160}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(total_toko(df).values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(total_toko(df).values()) == 590"
+              }
+            ]
+          },
+          "hint": "pivot_table dengan aggfunc sum lalu ambil kolom omzet.",
+          "solution": "import pandas as pd\n\ndef total_toko(df):\n    return pd.pivot_table(df, index='toko', values='omzet', aggfunc='sum')['omzet'].to_dict()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-08-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tabel_total(df)` yang membuat pivot_table `omzet` dengan `toko` sebagai baris, `bulan` sebagai kolom, jumlah sebagai agregasi, dan total tepi, lalu mengembalikan `values.tolist()`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef tabel_total(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tabel_total(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nassert tabel_total(df) == [[100, 120, 130, 350], [80, 90, 70, 240], [180, 210, 200, 590]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tabel_total(df.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_total(df.iloc[:2]) == [[100, 100], [80, 80], [180, 180]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tabel_total(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_total(df)[-1][-1] == 590"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(tabel_total(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(tabel_total(df)) == 3"
+              }
+            ]
+          },
+          "hint": "pivot_table dengan margins True.",
+          "solution": "import pandas as pd\n\ndef tabel_total(df):\n    t = pd.pivot_table(df, index='toko', columns='bulan', values='omzet', aggfunc='sum', margins=True)\n    return t.values.tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-08-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pivot_aman(df, agg)` yang membuat tabel lebar `omzet` per `bulan` dan `toko` dengan fungsi agregasi `agg`, sehingga tetap bekerja walau ada pasangan ganda, dan mengembalikan `values.tolist()`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef pivot_aman(df, agg):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pivot_aman(d2, 'sum')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nd2 = pd.concat([df, pd.DataFrame({'bulan': [3], 'toko': ['A'], 'omzet': [10], 'unit': [1]})], ignore_index=True)\nassert pivot_aman(d2, 'sum') == [[100, 80], [120, 90], [140, 70]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pivot_aman(d2, 'mean')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pivot_aman(d2, 'mean') == [[100.0, 80.0], [120.0, 90.0], [70.0, 70.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pivot_aman(d2, 'count')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pivot_aman(d2, 'count')[2] == [2, 1]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pivot_aman(df, 'sum')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pivot_aman(df, 'sum') == [[100, 80], [120, 90], [130, 70]]"
+              }
+            ]
+          },
+          "hint": "pivot_table dengan argumen aggfunc yang diteruskan.",
+          "solution": "import pandas as pd\n\ndef pivot_aman(df, agg):\n    t = pd.pivot_table(df, index='bulan', columns='toko', values='omzet', aggfunc=agg)\n    return t.values.tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Data panjang menaruh satu pengamatan di?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu baris",
+              "description": ""
+            },
+            {
+              "label": "Satu kolom",
+              "description": ""
+            },
+            {
+              "label": "Satu sel",
+              "description": ""
+            },
+            {
+              "label": "Satu tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baris.",
+          "explanation": "Panjang."
+        },
+        {
+          "q": "pivot pada pasangan ganda?",
+          "code": null,
+          "options": [
+            {
+              "label": "ValueError",
+              "description": ""
+            },
+            {
+              "label": "Menjumlah",
+              "description": ""
+            },
+            {
+              "label": "Merata-rata",
+              "description": ""
+            },
+            {
+              "label": "Mengabaikan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Galat.",
+          "explanation": "Tak mengagregasi."
+        },
+        {
+          "q": "pivot_table memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "aggfunc",
+              "description": ""
+            },
+            {
+              "label": "melt",
+              "description": ""
+            },
+            {
+              "label": "merge",
+              "description": ""
+            },
+            {
+              "label": "concat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "aggfunc.",
+          "explanation": "Agregasi."
+        },
+        {
+          "q": "margins True menambah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Total tepi",
+              "description": ""
+            },
+            {
+              "label": "Kolom baru",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            },
+            {
+              "label": "Duplikat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Total.",
+          "explanation": "All."
+        },
+        {
+          "q": "crosstab menghitung?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kombinasi kategori",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Korelasi",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hitungan.",
+          "explanation": "Frekuensi."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai pivot pada data dengan pasangan ganda. Lebih baik: Pakai pivot_table dengan aggfunc eksplisit.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai pivot pada data dengan pasangan ganda.",
+          "fix": "Pakai pivot_table dengan aggfunc eksplisit."
+        },
+        {
+          "mistake": "Membiarkan aggfunc bawaan mean.",
+          "fix": "Tulis aggfunc sesuai arti kolom."
+        },
+        {
+          "mistake": "Mengisi sel kosong dengan nol tanpa berpikir.",
+          "fix": "Bedakan tidak ada dan belum masuk."
+        }
+      ],
+      "summary": [
+        "Data yang sama dapat ditulis panjang atau lebar.",
+        "pivot memutar baris menjadi kolom dan menuntut pasangan unik.",
+        "pivot_table meringkas nilai ganda dengan aggfunc.",
+        "margins menambah total dan fill_value mengisi sel kosong."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Dari panjang ke lebar dengan pivot"
+          },
+          {
+            "type": "text",
+            "source": "Pivot menentukan tiga hal: kolom yang menjadi indeks, kolom yang menjadi nama kolom baru, dan kolom yang mengisi sel. Menukar index dan columns memutar tabel."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nprint(w.values.tolist())\nprint(w.index.tolist())\nprint(w.columns.tolist())\nprint(w.reset_index().columns.tolist())\nprint(w.columns.name, w.index.name)\nprint(df.pivot(index='toko', columns='bulan', values='omzet').values.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Pivot gagal pada duplikat, sedangkan pivot_table meringkasnya dengan aggfunc. Hasil berbeda tergantung fungsi yang dipilih, jadi pilihan aggfunc adalah keputusan analisis."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nd2 = pd.concat([df, pd.DataFrame({'bulan': [3], 'toko': ['A'], 'omzet': [10], 'unit': [1]})], ignore_index=True)\ntry:\n    d2.pivot(index='bulan', columns='toko', values='omzet')\nexcept ValueError:\n    print('ValueError')\nprint(pd.pivot_table(d2, index='bulan', columns='toko', values='omzet', aggfunc='sum').values.tolist())\nprint(pd.pivot_table(d2, index='bulan', columns='toko', values='omzet', aggfunc='mean').values.tolist())\nprint(pd.pivot_table(df, index='toko', values='omzet', aggfunc='sum')['omzet'].to_dict())\nprint(pd.pivot_table(df, index='toko', values=['omzet', 'unit'], aggfunc={'omzet': 'sum', 'unit': 'mean'}).round(2).to_dict())"
+          },
+          {
+            "type": "text",
+            "source": "Margins menambah total di tepi tabel. Crosstab adalah jalan pintas untuk tabel hitungan atau agregasi antara dua kolom kategori."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nt = pd.pivot_table(df, index='toko', columns='bulan', values='omzet', aggfunc='sum', margins=True)\nprint(t.values.tolist())\nprint(t.index.tolist())\nprint(t.columns.tolist())\nprint(pd.crosstab(df['toko'], df['bulan']).values.tolist())\nprint(pd.crosstab(df['toko'], df['bulan'], values=df['omzet'], aggfunc='sum').values.tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-08-2",
+      "title": "Dari lebar ke panjang dengan melt dan stack",
+      "estimated_minutes": 35,
+      "read_minutes": 8,
+      "objectives": [
+        "Mengubah kolom menjadi baris dengan melt",
+        "Memilih id_vars, value_vars, dan nama kolom hasil",
+        "Memakai stack dan unstack pada indeks bertingkat",
+        "Membuktikan bahwa pivot dan melt saling membalik"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Kebalikan dari pivot",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kebalikan dari pivot\n\nBanyak data tiba dalam bentuk lebar, terutama dari spreadsheet: satu kolom untuk tiap bulan, tiap kuartal, atau tiap pertanyaan survei. Bentuk itu enak dibaca tetapi sulit dianalisis, sebab menambah bulan baru berarti menambah kolom, dan mengelompokkan menurut bulan tidak dapat dilakukan karena bulan bukan nilai melainkan nama kolom. Metode `melt` melelehkan kolom-kolom itu menjadi baris sehingga nama kolom menjadi nilai dalam satu kolom baru, dan angkanya masuk ke kolom nilai. Hasilnya bentuk panjang yang cocok untuk groupby, seaborn, dan hampir semua alat analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Prinsip data rapi\n\nKonsep data rapi, atau tidy data, dari Hadley Wickham menyatakan tiga aturan: tiap variabel berada dalam satu kolom, tiap pengamatan berada dalam satu baris, dan tiap jenis satuan pengamatan berada dalam satu tabel. Tabel lebar dengan kolom A dan B melanggar aturan pertama karena toko adalah variabel yang tersebar di dua kolom. Setelah dilelehkan, kolom `toko` memuat variabel itu dan kolom `omzet` memuat nilainya. Data rapi bukan dogma, tetapi titik awal yang baik karena sebagian besar alat pandas dan seaborn dirancang untuknya, dan alasan sebuah pengecualian perlu bisa Anda jelaskan."
+            },
+            {
+              "type": "code_example",
+              "filename": "melt_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nwide = w.reset_index()\nm = wide.melt(id_vars='bulan', var_name='toko', value_name='omzet')\nprint(m.values.tolist())\nprint(m.columns.tolist())\nm2 = wide.melt(id_vars='bulan', value_vars=['A'], var_name='toko', value_name='omzet')\nprint(m2.values.tolist())\nwd = pd.DataFrame({'id': [1, 2], 'q1': [5, 6], 'q2': [7, 8]})\nprint(wd.melt(id_vars='id').values.tolist())",
+              "expected_output_note": "[[1, 'A', 100], [2, 'A', 120], [3, 'A', 130], [1, 'B', 80], [2, 'B', 90], [3, 'B', 70]]\n['bulan', 'toko', 'omzet']\n[[1, 'A', 100], [2, 'A', 120], [3, 'A', 130]]\n[[1, 'q1', 5], [2, 'q1', 6], [1, 'q2', 7], [2, 'q2', 8]]",
+              "explanation": "Id_vars dipertahankan sebagai kolom, kolom lain dilelehkan. Tanpa var_name dan value_name, pandas memakai nama variable dan value."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih id_vars dan value_vars\n\nArgumen `id_vars` menyebut kolom yang dipertahankan apa adanya sebagai pengenal, dan `value_vars` menyebut kolom yang dilelehkan. Bila `value_vars` tidak disebut, semua kolom selain `id_vars` dilelehkan. Hasilnya berisi satu baris untuk setiap pasangan baris asal dan kolom yang dilelehkan, sehingga jumlah baris hasil adalah jumlah baris asal dikali jumlah kolom lelehan. Hitung dulu ukuran ini di kepala: melelehkan seratus kolom pada sejuta baris menghasilkan seratus juta baris, yang dapat menghabiskan memori dengan cepat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menamai hasil\n\nTanpa argumen tambahan, melt menamai kolom hasil `variable` dan `value`, nama generik yang cepat menjadi membingungkan setelah beberapa langkah. Berikan `var_name` untuk kolom yang memuat nama kolom lama dan `value_name` untuk kolom angka, misalnya `toko` dan `omzet`. Kebiasaan menamai sejak awal mencegah kebingungan ketika tabel dipakai lagi tiga langkah kemudian, dan membuat hasil langsung siap untuk groupby atau grafik tanpa `rename` tambahan. Nama yang baik adalah dokumentasi paling murah yang dapat Anda tulis."
+            }
+          ],
+          "quick_check": {
+            "question": "melt mengubah?",
+            "options": [
+              "Kolom menjadi baris",
+              "Baris menjadi kolom"
+            ],
+            "answer_index": 0,
+            "explanation": "Lebar ke panjang.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mengurutkan setelah melt",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengurutkan setelah melt\n\nUrutan baris hasil melt mengikuti kolom: seluruh nilai kolom pertama, lalu seluruh nilai kolom kedua, dan seterusnya. Pada contoh, semua bulan toko A muncul dulu, baru toko B. Bila Anda menginginkan urutan per bulan, urutkan dengan `sort_values(['bulan', 'toko'])` dan, bila perlu, `reset_index(drop=True)`. Jangan bergantung pada urutan bawaan saat membandingkan dua hasil. Bila Anda menguji kode dengan membandingkan tabel, urutkan keduanya lebih dulu agar uji tidak gagal hanya karena perbedaan urutan baris yang tidak bermakna."
+            },
+            {
+              "type": "code_example",
+              "filename": "stack_unstack.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nm = w.reset_index().melt(id_vars='bulan', var_name='toko', value_name='omzet')\nm3 = m.sort_values(['bulan', 'toko']).reset_index(drop=True)\nprint(m3.equals(df[['bulan', 'toko', 'omzet']]))\ns = df.set_index(['bulan', 'toko'])['omzet']\nprint(s.unstack().values.tolist())\nprint(s.unstack(0).values.tolist())\nprint(s.unstack(0).index.tolist())\nprint(w.stack().to_dict())\nprint(w.T.values.tolist(), w.T.index.tolist())",
+              "expected_output_note": "True\n[[100, 80], [120, 90], [130, 70]]\n[[100, 120, 130], [80, 90, 70]]\n['A', 'B']\n{(1, 'A'): 100, (1, 'B'): 80, (2, 'A'): 120, (2, 'B'): 90, (3, 'A'): 130, (3, 'B'): 70}\n[[100, 120, 130], [80, 90, 70]] ['A', 'B']",
+              "explanation": "Pivot lalu melt mengembalikan tabel asal setelah diurutkan. Stack dan unstack memutar tingkat indeks, dan T menukar baris dan kolom."
+            },
+            {
+              "type": "text",
+              "markdown": "## stack dan unstack\n\nMetode `stack` memindahkan kolom ke dalam indeks bertingkat, dan `unstack` memindahkan satu tingkat indeks ke kolom. Keduanya bekerja pada indeks, berbeda dari `melt` dan `pivot` yang bekerja pada kolom. Pada Series dengan indeks ganda, `unstack(0)` memutar tingkat pertama dan `unstack(1)` tingkat kedua, dan hasilnya berbeda orientasi. `stack` secara bawaan membuang NaN. Bila indeks Anda sudah bermakna, keduanya lebih ringkas daripada melt dan pivot, tetapi bila kunci masih berupa kolom, melt dan pivot lebih mudah dibaca."
+            },
+            {
+              "type": "text",
+              "markdown": "## Transpos\n\nAtribut `T` menukar baris dan kolom, dan sering berguna bila tabel lebar terlalu lebar untuk dibaca. Ia berbeda dari pivot karena tidak mengubah isi atau bentuk logis tabel, hanya memutarnya. Waspadai tipe data: transpos tabel bertipe campuran menghasilkan kolom bertipe object sehingga sifat numeriknya hilang. Gunakan transpos untuk tampilan, bukan sebagai langkah dalam alur hitung, dan hindari pada tabel besar karena membuat salinan lengkap yang boros memori."
+            },
+            {
+              "type": "text",
+              "markdown": "## Bolak-balik adalah normal\n\nPivot dan melt adalah operasi yang saling membalik bila datanya unik. Anda dapat melelehkan tabel lebar menjadi panjang, menghitung dengan groupby, lalu memivotkannya kembali untuk tampilan. Pola ini begitu umum sehingga layak dilatih sampai otomatis. Bila hasil bolak-balik tidak sama dengan tabel asal setelah diurutkan, biasanya ada duplikat yang diagregasi, kolom yang tidak disebut dan terbuang, atau nilai hilang yang ikut terbuang oleh stack. Mengujinya dengan `equals` adalah cara cepat untuk memastikan tidak ada informasi yang hilang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kolom bernama berpola\n\nKadang kolom lebar bernama berpola, misalnya `skor_2021`, `skor_2022`, `skor_2023`. Melt saja belum cukup karena nama kolom memuat dua informasi, jenis ukuran dan tahun. Fungsi `pd.wide_to_long` memecah awalan dan akhiran itu menjadi dua kolom sekaligus. Alternatifnya, lelehkan dulu lalu pecah kolom variable dengan `str.split` atau `str.extract`. Pola ini sering muncul pada data survei dan data deret waktu yang diekspor dari spreadsheet, dan menguasainya menghemat banyak jam pembersihan manual."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Beri nama",
+              "markdown": "Setelah melt, beri var_name dan value_name yang bermakna dan urutkan hasilnya bila urutan penting."
+            }
+          ],
+          "quick_check": {
+            "question": "id_vars adalah kolom yang?",
+            "options": [
+              "Dilelehkan",
+              "Dipertahankan"
+            ],
+            "answer_index": 1,
+            "explanation": "Pengenal.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memecah nama kolom berpola",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memecah nama kolom berpola\n\nPada data survei atau keuangan, nama kolom sering memuat dua informasi sekaligus, misalnya `skor_2021` dan `skor_2022`. Setelah melt, kolom `variable` berisi teks gabungan itu, dan langkah berikutnya memecahnya menjadi kolom terpisah dengan `str.split('_').str[1]` atau `str.extract` dengan ekspresi reguler. Kolom tahun yang baru dapat diubah menjadi bilangan bulat dengan `astype(int)` sehingga bisa diurutkan dan dikelompokkan dengan benar. Pola ini mengubah tabel dengan puluhan kolom bernama aneh menjadi tabel rapi dengan satu kolom tahun dan satu kolom nilai."
+            },
+            {
+              "type": "code_example",
+              "filename": "melt_berpola.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nd = pd.DataFrame({'id': [1, 2], 'skor_2021': [5, 6], 'skor_2022': [7, 8]})\nm = d.melt(id_vars='id')\nm['tahun'] = m['variable'].str.split('_').str[1].astype(int)\nprint(m['tahun'].tolist())\nprint(m.groupby('tahun')['value'].sum().to_dict())\nprint(m['variable'].str.extract(r'_(\\d+)')[0].astype(int).tolist())\nwl = pd.wide_to_long(pd.DataFrame({'id': [1, 2], 'v1': [5, 6], 'v2': [7, 8]}), 'v', 'id', 't').reset_index()\nprint(wl.values.tolist())",
+              "expected_output_note": "[2021, 2021, 2022, 2022]\n{2021: 11, 2022: 15}\n[2021, 2021, 2022, 2022]\n[[1, 1, 5], [2, 1, 6], [1, 2, 7], [2, 2, 8]]",
+              "explanation": "Pecah nama kolom hasil melt menjadi kolom baru, atau pakai wide_to_long untuk pola awalan dan akhiran."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa hasil melt\n\nSetelah melt, lakukan tiga pemeriksaan. Pertama, jumlah baris harus sama dengan baris asal dikali jumlah kolom lelehan. Kedua, kolom pengenal tidak boleh kehilangan nilai. Ketiga, jumlah seluruh nilai sebelum dan sesudah harus sama, sehingga `wide[kolom].sum().sum()` sama dengan `m['omzet'].sum()`. Pemeriksaan ketiga menangkap kolom yang tanpa sengaja ikut terlelehkan padahal bukan angka, atau baris yang terbuang. Memasukkan ketiganya sebagai `assert` di akhir fungsi pembersihan menjadikan kesalahan terdeteksi saat terjadi, bukan ketika grafik terlihat aneh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dari spreadsheet ke analisis\n\nSkenario klasik: laporan spreadsheet dengan satu baris per produk dan kolom per bulan, ditambah baris total di bawah dan kolom total di kanan. Sebelum melt, buang baris dan kolom total, karena total adalah turunan, bukan pengamatan. Bila ikut terlelehkan, jumlah akan terhitung ganda dalam agregasi berikutnya. Setelah dilelehkan, ubah teks bulan menjadi tanggal sungguhan dengan `to_datetime`, sehingga deret waktu dapat diurutkan dan digambar. Seluruh alur ini adalah pekerjaan harian seorang analis data."
+            }
+          ],
+          "quick_check": {
+            "question": "unstack memindahkan?",
+            "options": [
+              "Indeks ke kolom",
+              "Kolom ke indeks"
+            ],
+            "answer_index": 0,
+            "explanation": "Putar indeks.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-08-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `melt_panjang(wide)` yang melelehkan tabel lebar dengan `bulan` sebagai pengenal menjadi kolom `toko` dan `omzet`, dan mengembalikan `values.tolist()`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef melt_panjang(wide):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "melt_panjang(wide)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nwide = df.pivot(index='bulan', columns='toko', values='omzet').reset_index()\nassert melt_panjang(wide) == [[1, 'A', 100], [2, 'A', 120], [3, 'A', 130], [1, 'B', 80], [2, 'B', 90], [3, 'B', 70]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "melt_panjang(wide.iloc[:1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert melt_panjang(wide.iloc[:1]) == [[1, 'A', 100], [1, 'B', 80]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(melt_panjang(wide))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(melt_panjang(wide)) == 6"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "melt_panjang(wide[['bulan', 'A']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert melt_panjang(wide[['bulan', 'A']]) == [[1, 'A', 100], [2, 'A', 120], [3, 'A', 130]]"
+              }
+            ]
+          },
+          "hint": "melt dengan id_vars bulan, var_name toko, value_name omzet.",
+          "solution": "import pandas as pd\n\ndef melt_panjang(wide):\n    m = wide.melt(id_vars='bulan', var_name='toko', value_name='omzet')\n    return m.values.tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-08-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `melt_sebagian(wide, kolom)` yang melelehkan hanya kolom dalam list `kolom` dengan `bulan` sebagai pengenal, menamai hasil `toko` dan `omzet`, dan mengembalikan `values.tolist()`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef melt_sebagian(wide, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "melt_sebagian(wide, ['A'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nwide = df.pivot(index='bulan', columns='toko', values='omzet').reset_index()\nassert melt_sebagian(wide, ['A']) == [[1, 'A', 100], [2, 'A', 120], [3, 'A', 130]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "melt_sebagian(wide, ['B'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert melt_sebagian(wide, ['B']) == [[1, 'B', 80], [2, 'B', 90], [3, 'B', 70]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(melt_sebagian(wide, ['A', 'B']))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(melt_sebagian(wide, ['A', 'B'])) == 6"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "melt_sebagian(wide.iloc[[2]], ['B'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert melt_sebagian(wide.iloc[[2]], ['B']) == [[3, 'B', 70]]"
+              }
+            ]
+          },
+          "hint": "melt dengan value_vars.",
+          "solution": "import pandas as pd\n\ndef melt_sebagian(wide, kolom):\n    m = wide.melt(id_vars='bulan', value_vars=kolom, var_name='toko', value_name='omzet')\n    return m.values.tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-08-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tumpuk_dict(w)` yang menerima tabel lebar berindeks `bulan` dan berkolom `toko`, menumpuknya dengan `stack`, dan mengembalikan dict `{(bulan, toko): omzet}`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef tumpuk_dict(w):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tumpuk_dict(w)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nassert tumpuk_dict(w) == {(1, 'A'): 100, (1, 'B'): 80, (2, 'A'): 120, (2, 'B'): 90, (3, 'A'): 130, (3, 'B'): 70}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tumpuk_dict(w.iloc[:1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tumpuk_dict(w.iloc[:1]) == {(1, 'A'): 100, (1, 'B'): 80}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tumpuk_dict(w[['A']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tumpuk_dict(w[['A']]) == {(1, 'A'): 100, (2, 'A'): 120, (3, 'A'): 130}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(tumpuk_dict(w))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(tumpuk_dict(w)) == 6"
+              }
+            ]
+          },
+          "hint": "stack lalu ubah ke dict.",
+          "solution": "import pandas as pd\n\ndef tumpuk_dict(w):\n    return w.stack().to_dict()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-08-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `melt_kuartal(wd)` yang melelehkan tabel dengan pengenal `id` menjadi kolom `kuartal` dan `nilai`, mengurutkan menurut `id` lalu `kuartal`, dan mengembalikan `values.tolist()`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef melt_kuartal(wd):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "melt_kuartal(wd)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nwd = pd.DataFrame({'id': [1, 2], 'q1': [5, 6], 'q2': [7, 8]})\nassert melt_kuartal(wd) == [[1, 'q1', 5], [1, 'q2', 7], [2, 'q1', 6], [2, 'q2', 8]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "melt_kuartal(wd[['id', 'q1']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert melt_kuartal(wd[['id', 'q1']]) == [[1, 'q1', 5], [2, 'q1', 6]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "melt_kuartal(wd.iloc[[1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert melt_kuartal(wd.iloc[[1]]) == [[2, 'q1', 6], [2, 'q2', 8]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(melt_kuartal(wd))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(melt_kuartal(wd)) == 4"
+              }
+            ]
+          },
+          "hint": "melt lalu sort_values pada dua kolom.",
+          "solution": "import pandas as pd\n\ndef melt_kuartal(wd):\n    m = wd.melt(id_vars='id', var_name='kuartal', value_name='nilai')\n    return m.sort_values(['id', 'kuartal']).values.tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "melt mengubah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kolom menjadi baris",
+              "description": ""
+            },
+            {
+              "label": "Baris menjadi kolom",
+              "description": ""
+            },
+            {
+              "label": "Indeks menjadi nama",
+              "description": ""
+            },
+            {
+              "label": "Tipe data",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom.",
+          "explanation": "Lebar ke panjang."
+        },
+        {
+          "q": "id_vars adalah kolom yang?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dipertahankan",
+              "description": ""
+            },
+            {
+              "label": "Dilelehkan",
+              "description": ""
+            },
+            {
+              "label": "Dibuang",
+              "description": ""
+            },
+            {
+              "label": "Diurutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tetap.",
+          "explanation": "Pengenal."
+        },
+        {
+          "q": "unstack memindahkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Indeks ke kolom",
+              "description": ""
+            },
+            {
+              "label": "Kolom ke indeks",
+              "description": ""
+            },
+            {
+              "label": "Baris ke sel",
+              "description": ""
+            },
+            {
+              "label": "Nama ke nilai",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Indeks.",
+          "explanation": "Putar indeks."
+        },
+        {
+          "q": "Hasil melt dari 3 baris dan 2 kolom lelehan?",
+          "code": null,
+          "options": [
+            {
+              "label": "6 baris",
+              "description": ""
+            },
+            {
+              "label": "5 baris",
+              "description": ""
+            },
+            {
+              "label": "3 baris",
+              "description": ""
+            },
+            {
+              "label": "2 baris",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Perkalian.",
+          "explanation": "Kali."
+        },
+        {
+          "q": "Data rapi: tiap variabel dalam?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu kolom",
+              "description": ""
+            },
+            {
+              "label": "Satu baris",
+              "description": ""
+            },
+            {
+              "label": "Satu sel",
+              "description": ""
+            },
+            {
+              "label": "Satu tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom.",
+          "explanation": "Tidy."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Melelehkan tanpa var_name dan value_name. Lebih baik: Beri nama bermakna sejak awal.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Melelehkan tanpa var_name dan value_name.",
+          "fix": "Beri nama bermakna sejak awal."
+        },
+        {
+          "mistake": "Bergantung pada urutan baris hasil melt.",
+          "fix": "Urutkan dengan sort_values sebelum membandingkan."
+        },
+        {
+          "mistake": "Melelehkan seratus kolom pada tabel raksasa.",
+          "fix": "Hitung dulu ukuran hasil dan saring kolom."
+        }
+      ],
+      "summary": [
+        "melt mengubah tabel lebar menjadi panjang.",
+        "id_vars, value_vars, var_name, dan value_name mengatur hasil.",
+        "stack dan unstack bekerja pada indeks.",
+        "Pivot dan melt saling membalik untuk data unik."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Dari lebar ke panjang dengan melt dan stack"
+          },
+          {
+            "type": "text",
+            "source": "Id_vars dipertahankan sebagai kolom, kolom lain dilelehkan. Tanpa var_name dan value_name, pandas memakai nama variable dan value."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nwide = w.reset_index()\nm = wide.melt(id_vars='bulan', var_name='toko', value_name='omzet')\nprint(m.values.tolist())\nprint(m.columns.tolist())\nm2 = wide.melt(id_vars='bulan', value_vars=['A'], var_name='toko', value_name='omzet')\nprint(m2.values.tolist())\nwd = pd.DataFrame({'id': [1, 2], 'q1': [5, 6], 'q2': [7, 8]})\nprint(wd.melt(id_vars='id').values.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Pivot lalu melt mengembalikan tabel asal setelah diurutkan. Stack dan unstack memutar tingkat indeks, dan T menukar baris dan kolom."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nm = w.reset_index().melt(id_vars='bulan', var_name='toko', value_name='omzet')\nm3 = m.sort_values(['bulan', 'toko']).reset_index(drop=True)\nprint(m3.equals(df[['bulan', 'toko', 'omzet']]))\ns = df.set_index(['bulan', 'toko'])['omzet']\nprint(s.unstack().values.tolist())\nprint(s.unstack(0).values.tolist())\nprint(s.unstack(0).index.tolist())\nprint(w.stack().to_dict())\nprint(w.T.values.tolist(), w.T.index.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Pecah nama kolom hasil melt menjadi kolom baru, atau pakai wide_to_long untuk pola awalan dan akhiran."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nd = pd.DataFrame({'id': [1, 2], 'skor_2021': [5, 6], 'skor_2022': [7, 8]})\nm = d.melt(id_vars='id')\nm['tahun'] = m['variable'].str.split('_').str[1].astype(int)\nprint(m['tahun'].tolist())\nprint(m.groupby('tahun')['value'].sum().to_dict())\nprint(m['variable'].str.extract(r'_(\\d+)')[0].astype(int).tolist())\nwl = pd.wide_to_long(pd.DataFrame({'id': [1, 2], 'v1': [5, 6], 'v2': [7, 8]}), 'v', 'id', 't').reset_index()\nprint(wl.values.tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-08-3",
+      "title": "Menganalisis tabel lebar dan memilih bentuk",
+      "estimated_minutes": 35,
+      "read_minutes": 8,
+      "objectives": [
+        "Menghitung total, rata-rata, dan puncak antar kolom pada tabel lebar",
+        "Menghitung porsi dan perubahan dengan operasi sejajar",
+        "Memilih bentuk panjang atau lebar menurut tugas",
+        "Merancang alur analisis yang bolak-balik dengan rapi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Kekuatan bentuk lebar",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kekuatan bentuk lebar\n\nSetelah pivot, banyak pertanyaan berubah menjadi operasi satu baris. Total tiap bulan adalah jumlah sepanjang baris, toko terbaik tiap bulan adalah kolom dengan nilai terbesar pada baris itu, dan selisih antar bulan adalah perbedaan baris berurutan. Operasi seperti ini hanya satu baris kode pada tabel lebar tetapi memerlukan groupby dan transform pada tabel panjang. Itulah alasan analis sering memivotkan data sementara hanya untuk menghitung, lalu kembali ke bentuk panjang bila diperlukan untuk visualisasi atau penyimpanan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Arah operasi dengan axis\n\nHampir semua metode agregasi memiliki argumen `axis`. Nilai nol, bawaan, menghitung sepanjang baris untuk tiap kolom sehingga menghasilkan satu angka per kolom, sedangkan nilai satu menghitung sepanjang kolom untuk tiap baris dan menghasilkan satu angka per baris. Pemula sering terbalik karena `axis=1` berarti hasil per baris, bukan per kolom. Untuk menghafalnya, bayangkan axis sebagai arah yang runtuh: `axis=0` meruntuhkan baris, `axis=1` meruntuhkan kolom. Saat ragu, jalankan pada tabel kecil dan lihat bentuk hasilnya sebelum menerapkan pada data besar."
+            },
+            {
+              "type": "code_example",
+              "filename": "axis_lebar.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nprint(w.sum().to_dict())\nprint(w.sum(axis=1).to_dict())\nprint(w.mean().round(1).to_dict())\nprint(w.idxmax(axis=1).tolist())\nprint(w.idxmax().to_dict())\nprint(w.add_prefix('toko_').columns.tolist())",
+              "expected_output_note": "{'A': 350, 'B': 240}\n{1: 180, 2: 210, 3: 200}\n{'A': 116.7, 'B': 80.0}\n['A', 'A', 'A']\n{'A': 3, 'B': 2}\n['toko_A', 'toko_B']",
+              "explanation": "Axis nol meringkas per kolom dan axis satu per baris. Idxmax memberi label nilai terbesar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Porsi dengan div dan axis\n\nUntuk porsi tiap toko terhadap total bulan, bagi tiap baris dengan jumlah barisnya: `w.div(w.sum(axis=1), axis=0)`. Argumen `axis=0` pada `div` memberi tahu pandas untuk menyejajarkan pembagi menurut indeks, yaitu satu pembagi per baris. Tanpa itu, pandas mencoba menyejajarkan menurut nama kolom dan menghasilkan NaN penuh. Ini jebakan broadcasting yang sama dengan NumPy tetapi lebih berbahaya karena tidak ada pesan galat. Hasilnya, porsi toko A bulan satu 0,556 dan toko B 0,444, dan tiap baris berjumlah satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Perubahan antar periode\n\nMetode `diff` menghitung selisih dengan baris sebelumnya dan `pct_change` menghitung perubahan relatif. Keduanya menghasilkan NaN pada baris pertama karena belum ada pembanding. Pada tabel lebar, keduanya menghitung per kolom sekaligus, sehingga satu perintah memberi pertumbuhan tiap toko. Pastikan baris terurut menurut waktu sebelum memakainya, karena fungsi ini mengandalkan urutan baris. Pada contoh, toko A naik 20 lalu 10, sedangkan toko B naik 10 lalu turun 20, kontras yang langsung terlihat dari tabel selisih."
+            },
+            {
+              "type": "code_example",
+              "filename": "porsi_perubahan.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nprint(w.div(w.sum(axis=1), axis=0).round(3).values.tolist())\nprint(w.diff().values.tolist())\nprint(w.pct_change().round(3).values.tolist())\nprint(w.diff().fillna(0).values.tolist())\nprint(w.loc[2:, :].values.tolist(), w.loc[:, 'A'].tolist())",
+              "expected_output_note": "[[0.556, 0.444], [0.571, 0.429], [0.65, 0.35]]\n[[nan, nan], [20.0, 10.0], [10.0, -20.0]]\n[[nan, nan], [0.2, 0.125], [0.083, -0.222]]\n[[0.0, 0.0], [20.0, 10.0], [10.0, -20.0]]\n[[120, 90], [130, 70]] [100, 120, 130]",
+              "explanation": "Div dengan axis nol menyejajarkan pembagi menurut baris. Diff dan pct_change menghitung perubahan per kolom."
+            }
+          ],
+          "quick_check": {
+            "question": "axis=1 pada sum menghasilkan?",
+            "options": [
+              "Satu angka per baris",
+              "Per kolom"
+            ],
+            "answer_index": 0,
+            "explanation": "Runtuhkan kolom.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Kapan memilih panjang",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kapan memilih panjang\n\nPilih bentuk panjang bila Anda akan memakai groupby, menggambar dengan seaborn atau plotly, menyimpan ke basis data, atau menambah kategori baru tanpa mengubah skema tabel. Satu kolom `toko` dapat menampung seribu toko tanpa mengubah kode, sedangkan bentuk lebar memerlukan seribu kolom. Bentuk panjang juga lebih jarang melibatkan NaN, sebab kombinasi yang tidak ada cukup tidak punya baris. Itu sebabnya sistem pencatatan dan basis data hampir selalu menyimpan data panjang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan memilih lebar\n\nPilih bentuk lebar bila Anda akan menampilkan laporan untuk manusia, menghitung operasi antar kolom, memasukkan data ke algoritma pembelajaran mesin yang mengharapkan satu fitur per kolom, atau membuat peta panas dan korelasi antar kategori. Matriks fitur untuk scikit-learn adalah bentuk lebar, di mana tiap baris adalah sampel dan tiap kolom adalah fitur. Karena itu, pemodelan hampir selalu berakhir dengan pivot, dan rekayasa fitur sering dimulai dengan melt."
+            },
+            {
+              "type": "text",
+              "markdown": "## Alur kerja yang rapi\n\nAlur yang sehat: simpan dan bersihkan data dalam bentuk panjang, putar ke lebar tepat saat butuh operasi antar kolom atau tampilan, lalu putar kembali bila perlu. Beri nama kolom bermakna di setiap putaran, simpan tabel perantara dengan nama yang menjelaskan bentuknya seperti `omzet_panjang` dan `omzet_lebar`, dan periksa jumlah baris dan kolom setelah setiap perubahan bentuk. Kesalahan bentuk menghasilkan angka yang tampak wajar, sehingga pemeriksaan ukuran adalah pengaman termurah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah belajar membedakan data panjang dan lebar, memutar dengan pivot dan pivot_table, melelehkan dengan melt, memutar indeks dengan stack dan unstack, dan memakai tabel lebar untuk operasi antar kolom. Prinsipnya: pilih bentuk menurut tugas, jangan bergantung pada urutan, beri nama jelas, dan periksa ukuran setelah tiap perubahan bentuk. Modul berikutnya membahas data deret waktu di pandas."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Periksa ukuran",
+              "markdown": "Setelah tiap perubahan bentuk, cetak shape dan beberapa baris. Kesalahan bentuk menghasilkan angka yang tampak wajar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peringkat dan kumulatif\n\nPada tabel lebar, `rank(axis=1)` memberi peringkat tiap kolom dalam satu baris, misalnya peringkat toko tiap bulan, dan `cumsum` menjumlahkan kumulatif sepanjang baris untuk tiap kolom, misalnya omzet berjalan tiap toko. Keduanya satu baris kode pada bentuk lebar. Pada bentuk panjang, hal yang sama memerlukan groupby dengan rank dan cumsum. Memilih bentuk yang menyederhanakan kode adalah keterampilan praktis: jangan ragu memutar tabel hanya untuk satu perhitungan, selama Anda memeriksa ukuran dan mengingat bentuk mana yang sedang dipegang."
+            },
+            {
+              "type": "code_example",
+              "filename": "lebar_lanjut.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nprint(w.cumsum().values.tolist())\nprint(w.rank(axis=1, ascending=False).values.tolist())\nprint(w.max().to_dict())\nprint((w['A'] - w['B']).tolist())\nprint((w['A'] > w['B']).all())\nprint(w.agg(['min', 'max']).values.tolist())",
+              "expected_output_note": "[[100, 80], [220, 170], [350, 240]]\n[[1.0, 2.0], [1.0, 2.0], [1.0, 2.0]]\n{'A': 130, 'B': 90}\n[20, 30, 60]\nTrue\n[[100, 70], [130, 90]]",
+              "explanation": "Cumsum, rank, dan selisih antar kolom ditulis ringkas pada tabel lebar. Agg dengan list memberi beberapa ringkasan sekaligus."
+            }
+          ],
+          "quick_check": {
+            "question": "idxmax axis=1 memberi?",
+            "options": [
+              "Nilai terbesar",
+              "Label kolom terbesar per baris"
+            ],
+            "answer_index": 1,
+            "explanation": "Label.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Selisih antar kolom",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Selisih antar kolom\n\nMengurangkan satu kolom dari kolom lain, misalnya `w['A'] - w['B']`, memberi keunggulan toko A terhadap B tiap bulan. Operasi antar kolom sejajar menurut indeks sehingga tidak perlu perulangan. Hasilnya Series yang dapat ditambahkan kembali sebagai kolom turunan, dibandingkan dengan `all` atau `any`, atau digambar sebagai garis. Pada contoh, keunggulan A naik dari 20 menjadi 30 lalu 60, pola yang akan sulit terlihat bila data masih panjang dan tersebar di dua baris per bulan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menggambar dari dua bentuk\n\nMetode `plot` pandas pada tabel lebar menggambar satu garis per kolom secara otomatis, dengan indeks sebagai sumbu x. Itu cara tercepat untuk grafik eksplorasi. Seaborn dan plotly menginginkan bentuk panjang, dengan kolom `toko` untuk argumen `hue`. Jadi pilihan bentuk juga ditentukan oleh pustaka grafik yang Anda pakai. Pengalaman praktis: lakukan perhitungan di bentuk lebar, lalu lelehkan hasilnya sebelum memberikannya ke seaborn untuk gambar akhir yang rapi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kesalahan umum pada reshape\n\nBeberapa kesalahan berulang perlu diwaspadai. Pertama, memakai pivot pada data yang tidak unik. Kedua, lupa reset_index sehingga kunci tersembunyi di indeks dan hilang saat disimpan. Ketiga, salah axis sehingga operasi bekerja pada arah yang keliru. Keempat, mengabaikan NaN yang muncul dari kombinasi yang tidak ada. Kelima, bergantung pada urutan baris atau kolom bawaan. Kelima kesalahan ini jarang menimbulkan galat, hanya angka yang keliru, sehingga pemeriksaan ukuran dan jumlah total adalah kebiasaan yang paling berharga."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengaudit perubahan bentuk\n\nCara audit yang sederhana: bandingkan total keseluruhan sebelum dan sesudah. Jumlah omzet pada tabel panjang adalah 590 dan harus sama dengan jumlah seluruh sel pada tabel lebar. Bandingkan juga jumlah nilai tidak hilang. Bila total berbeda, ada nilai yang terbuang atau terhitung ganda. Satu pernyataan `assert` pada total ini mengunci perilaku yang benar dan menjadi dokumentasi hidup tentang apa yang seharusnya dipertahankan oleh transformasi."
+            }
+          ],
+          "quick_check": {
+            "question": "Matriks fitur scikit-learn berbentuk?",
+            "options": [
+              "Lebar",
+              "Panjang"
+            ],
+            "answer_index": 0,
+            "explanation": "Satu fitur per kolom.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-08-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `total_baris(w)` yang mengembalikan dict jumlah nilai sepanjang baris tabel lebar, dengan indeks sebagai kunci.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef total_baris(w):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_baris(w)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nassert total_baris(w) == {1: 180, 2: 210, 3: 200}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_baris(w.iloc[:1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_baris(w.iloc[:1]) == {1: 180}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_baris(w[['A']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_baris(w[['A']]) == {1: 100, 2: 120, 3: 130}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(total_baris(w).values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(total_baris(w).values()) == 590"
+              }
+            ]
+          },
+          "hint": "sum dengan axis satu.",
+          "solution": "import pandas as pd\n\ndef total_baris(w):\n    return w.sum(axis=1).to_dict()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-08-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `toko_terbaik(w)` yang mengembalikan list nama kolom dengan nilai terbesar pada tiap baris.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef toko_terbaik(w):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "toko_terbaik(w)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nassert toko_terbaik(w) == ['A', 'A', 'A']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "toko_terbaik(w2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "w2 = w.copy()\nw2.loc[3] = [50, 90]\nassert toko_terbaik(w2) == ['A', 'A', 'B']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "toko_terbaik(w.iloc[:1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert toko_terbaik(w.iloc[:1]) == ['A']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "toko_terbaik(w[['B']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert toko_terbaik(w[['B']]) == ['B', 'B', 'B']"
+              }
+            ]
+          },
+          "hint": "idxmax dengan axis satu.",
+          "solution": "import pandas as pd\n\ndef toko_terbaik(w):\n    return w.idxmax(axis=1).tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-08-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `porsi_toko(w)` yang mengembalikan `values.tolist()` porsi tiap sel terhadap jumlah barisnya, dibulatkan tiga desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef porsi_toko(w):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "porsi_toko(w)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nassert porsi_toko(w) == [[0.556, 0.444], [0.571, 0.429], [0.65, 0.35]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "porsi_toko(w.iloc[:1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert porsi_toko(w.iloc[:1]) == [[0.556, 0.444]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "porsi_toko(w[['A']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert porsi_toko(w[['A']]) == [[1.0], [1.0], [1.0]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "all(abs(sum(r) - 1) < 0.01 for r in porsi_tok...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert all(abs(sum(r) - 1) < 0.01 for r in porsi_toko(w))"
+              }
+            ]
+          },
+          "hint": "div dengan jumlah baris dan axis nol.",
+          "solution": "import pandas as pd\n\ndef porsi_toko(w):\n    return w.div(w.sum(axis=1), axis=0).round(3).values.tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-08-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `perubahan_bulanan(w)` yang mengembalikan `values.tolist()` selisih tiap baris terhadap baris sebelumnya, dengan baris pertama diisi nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef perubahan_bulanan(w):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "perubahan_bulanan(w)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nassert perubahan_bulanan(w) == [[0.0, 0.0], [20.0, 10.0], [10.0, -20.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "perubahan_bulanan(w.iloc[:1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert perubahan_bulanan(w.iloc[:1]) == [[0.0, 0.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "perubahan_bulanan(w[['A']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert perubahan_bulanan(w[['A']]) == [[0.0], [20.0], [10.0]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "perubahan_bulanan(w)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert perubahan_bulanan(w)[0] == [0.0, 0.0]"
+              }
+            ]
+          },
+          "hint": "diff lalu fillna nol.",
+          "solution": "import pandas as pd\n\ndef perubahan_bulanan(w):\n    return w.diff().fillna(0).values.tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "axis=1 pada sum menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu angka per baris",
+              "description": ""
+            },
+            {
+              "label": "Per kolom",
+              "description": ""
+            },
+            {
+              "label": "Satu angka",
+              "description": ""
+            },
+            {
+              "label": "Tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baris.",
+          "explanation": "Runtuhkan kolom."
+        },
+        {
+          "q": "idxmax axis=1 memberi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Label kolom terbesar per baris",
+              "description": ""
+            },
+            {
+              "label": "Nilai terbesar",
+              "description": ""
+            },
+            {
+              "label": "Indeks baris",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom.",
+          "explanation": "Label."
+        },
+        {
+          "q": "Matriks fitur scikit-learn berbentuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lebar",
+              "description": ""
+            },
+            {
+              "label": "Panjang",
+              "description": ""
+            },
+            {
+              "label": "Bertingkat",
+              "description": ""
+            },
+            {
+              "label": "Dict",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lebar.",
+          "explanation": "Satu fitur per kolom."
+        },
+        {
+          "q": "Seaborn paling suka bentuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Panjang",
+              "description": ""
+            },
+            {
+              "label": "Lebar",
+              "description": ""
+            },
+            {
+              "label": "Transpos",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Panjang.",
+          "explanation": "Satu kolom per variabel."
+        },
+        {
+          "q": "diff baris pertama?",
+          "code": null,
+          "options": [
+            {
+              "label": "NaN",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NaN.",
+          "explanation": "Tak ada pembanding."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Terbalik memahami axis. Lebih baik: Axis satu menghasilkan satu angka per baris.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Terbalik memahami axis.",
+          "fix": "Axis satu menghasilkan satu angka per baris."
+        },
+        {
+          "mistake": "Memakai div tanpa axis nol.",
+          "fix": "Beri axis nol agar pembagi sejajar menurut baris."
+        },
+        {
+          "mistake": "Mengubah bentuk tanpa memeriksa ukuran.",
+          "fix": "Cetak shape setelah tiap perubahan."
+        }
+      ],
+      "summary": [
+        "Tabel lebar memudahkan operasi antar kolom dan tampilan laporan.",
+        "Axis menentukan arah penghitungan.",
+        "Bentuk panjang cocok untuk groupby dan visualisasi.",
+        "Periksa ukuran setelah tiap perubahan bentuk."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Menganalisis tabel lebar dan memilih bentuk"
+          },
+          {
+            "type": "text",
+            "source": "Axis nol meringkas per kolom dan axis satu per baris. Idxmax memberi label nilai terbesar."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nprint(w.sum().to_dict())\nprint(w.sum(axis=1).to_dict())\nprint(w.mean().round(1).to_dict())\nprint(w.idxmax(axis=1).tolist())\nprint(w.idxmax().to_dict())\nprint(w.add_prefix('toko_').columns.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Div dengan axis nol menyejajarkan pembagi menurut baris. Diff dan pct_change menghitung perubahan per kolom."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nprint(w.div(w.sum(axis=1), axis=0).round(3).values.tolist())\nprint(w.diff().values.tolist())\nprint(w.pct_change().round(3).values.tolist())\nprint(w.diff().fillna(0).values.tolist())\nprint(w.loc[2:, :].values.tolist(), w.loc[:, 'A'].tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Cumsum, rank, dan selisih antar kolom ditulis ringkas pada tabel lebar. Agg dengan list memberi beberapa ringkasan sekaligus."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'bulan': [1, 1, 2, 2, 3, 3],\n    'toko': ['A', 'B', 'A', 'B', 'A', 'B'],\n    'omzet': [100, 80, 120, 90, 130, 70],\n    'unit': [10, 8, 12, 9, 13, 7],\n})\n\nw = df.pivot(index='bulan', columns='toko', values='omzet')\nprint(w.cumsum().values.tolist())\nprint(w.rank(axis=1, ascending=False).values.tolist())\nprint(w.max().to_dict())\nprint((w['A'] - w['B']).tolist())\nprint((w['A'] > w['B']).all())\nprint(w.agg(['min', 'max']).values.tolist())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

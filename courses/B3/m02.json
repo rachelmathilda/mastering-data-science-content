@@ -1,0 +1,1612 @@
+{
+  "schema_version": 2,
+  "course_id": "B3",
+  "module_no": 2,
+  "title": "Strategi missing value",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Membedakan mekanisme hilang dan memeriksanya pada data",
+    "Menerapkan imputasi sederhana yang bebas kebocoran",
+    "Menilai imputasi lanjutan dengan menyembunyikan nilai yang diketahui"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B3-02-1",
+    "exercise_id": "B3-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def hitung_pola(df):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B3-02-1",
+      "title": "Mengapa data hilang: tiga mekanisme",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Membedakan hilang acak penuh, hilang acak bersyarat, dan hilang tidak acak",
+        "Memeriksa apakah hilangnya nilai berkaitan dengan kolom lain",
+        "Membaca pola hilang antar kolom",
+        "Menilai dampak tiap mekanisme pada rata-rata"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Hilang itu punya alasan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Hilang itu punya alasan\n\nPada modul sebelumnya Anda belajar mengisi atau membuang nilai hilang. Namun cara yang benar bergantung pada pertanyaan yang lebih dasar: mengapa nilai itu hilang. Data yang hilang karena sensor kehabisan baterai secara acak berbeda dari gaji yang hilang karena orang berpenghasilan tinggi enggan melaporkannya. Mengisi keduanya dengan rata-rata menghasilkan kesimpulan yang sangat berbeda kualitasnya. Pelajaran ini mengenalkan tiga mekanisme hilang yang diperkenalkan statistikawan Donald Rubin, dan cara memeriksa mekanisme mana yang paling mungkin bekerja pada data Anda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hilang acak penuh\n\nMekanisme pertama adalah hilang acak penuh, disingkat MCAR dari missing completely at random. Probabilitas sebuah nilai hilang tidak bergantung pada apa pun, baik nilai itu sendiri maupun kolom lain. Contohnya tabung sampel yang pecah secara kebetulan atau sambungan jaringan yang putus acak. Pada kondisi ini, data yang tersisa adalah sampel acak dari seluruh data, sehingga membuang baris yang hilang tidak membiaskan hasil, hanya mengurangi jumlah data. MCAR adalah skenario paling ramah, tetapi juga yang paling jarang terjadi dalam data nyata, dan jarang dapat dibuktikan, hanya dapat diuji bahwa tidak ada bukti yang menolaknya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hilang acak bersyarat\n\nMekanisme kedua adalah hilang acak bersyarat, atau MAR dari missing at random. Probabilitas hilang bergantung pada kolom lain yang teramati, tetapi tidak pada nilai yang hilang itu sendiri setelah memperhitungkan kolom lain. Contohnya, pelanggan muda lebih sering melewatkan kolom pendapatan, sehingga hilang berkaitan dengan umur yang kita ketahui. Pada kondisi ini membuang baris dapat membiaskan, tetapi imputasi yang memanfaatkan kolom lain, seperti rata-rata per kelompok umur atau model regresi, dapat memperbaikinya. MAR adalah asumsi kerja yang paling umum dalam metode imputasi modern, walau namanya menyesatkan karena hilangnya tidak benar-benar acak."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hilang tidak acak\n\nMekanisme ketiga adalah hilang tidak acak, atau MNAR dari missing not at random. Probabilitas hilang bergantung pada nilai yang hilang itu sendiri. Orang berpenghasilan sangat tinggi menyembunyikan gajinya, pasien yang sangat sakit tidak datang ke pemeriksaan lanjutan, atau sensor jenuh dan tidak merekam nilai di atas batas tertentu. Ini mekanisme paling berbahaya karena informasi tentang mengapa hilang ada pada nilai yang tidak kita punya. Tidak ada teknik statistik murni yang memperbaikinya tanpa asumsi tambahan, sehingga solusinya biasanya berupa pengetahuan domain, data tambahan, atau analisis sensitivitas yang menguji seberapa goyah kesimpulan terhadap asumsi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data contoh\n\nPelajaran ini memakai tabel delapan orang dengan kolom `umur`, `gaji` dalam juta, `kota`, dan `lulus` bernilai nol atau satu. Umur hilang pada dua orang, gaji pada dua orang, dan kota pada satu orang. Tidak ada yang hilang pada `lulus`, sehingga kolom itu dapat dipakai untuk bertanya apakah hilangnya kolom lain berkaitan dengan hasil. Tabel kecil ini dapat Anda periksa dengan mata, sementara teknik yang sama diterapkan pada tabel besar sehingga pola tidak dapat lagi dilihat langsung dan harus dihitung."
+            },
+            {
+              "type": "code_example",
+              "filename": "periksa_hilang.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\nprint(df.isna().sum().to_dict(), df.isna().sum().sum())\nm = df['gaji'].isna()\nprint(m.tolist())\nprint(df.groupby(m)['umur'].mean().round(2).to_dict())\nprint(df.groupby(m)['lulus'].mean().round(2).to_dict())\nprint(df.groupby(df['umur'].isna())['gaji'].mean().round(2).to_dict())\nprint(df.isna().sum(axis=1).tolist())",
+              "expected_output_note": "{'umur': 2, 'gaji': 2, 'kota': 1, 'lulus': 0} 5\n[False, False, False, True, False, False, True, False]\n{False: 31.75, True: 36.0}\n{False: 0.5, True: 1.0}\n{False: 7.5, True: 7.75}\n[0, 0, 1, 2, 0, 1, 1, 0]",
+              "explanation": "Mengelompokkan menurut penanda hilang membandingkan kolom lain antara baris yang hilang dan yang lengkap. Selisih besar menandakan hilang berkaitan dengan kolom itu."
+            }
+          ],
+          "quick_check": {
+            "question": "MCAR berarti hilang?",
+            "options": [
+              "Tidak bergantung pada apa pun",
+              "Bergantung kolom lain"
+            ],
+            "answer_index": 0,
+            "explanation": "Acak penuh.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Menguji dengan membandingkan kelompok",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menguji dengan membandingkan kelompok\n\nCara praktis menyelidiki mekanisme adalah membandingkan baris yang nilainya hilang dengan yang lengkap pada kolom lain. Buat penanda `df['gaji'].isna()`, lalu hitung rata-rata kolom lain per kelompok penanda. Pada contoh, orang dengan gaji hilang memiliki rata-rata umur tiga puluh enam, lebih tinggi dari tiga puluh satu koma tujuh puluh lima pada yang lengkap, dan semuanya lulus sedangkan yang lengkap hanya separuh. Dengan hanya delapan baris perbedaan ini bisa kebetulan, tetapi pada data besar perbedaan konsisten adalah bukti bahwa hilang bukan MCAR."
+            },
+            {
+              "type": "text",
+              "markdown": "## Batas dari pengujian\n\nPerlu diingat bahwa membandingkan kelompok hanya dapat mendeteksi ketergantungan pada kolom yang teramati, yaitu bukti terhadap MCAR. Pengujian tidak dapat membedakan MAR dari MNAR, karena itu memerlukan nilai yang hilang itu sendiri. Anda tidak pernah dapat membuktikan bahwa hilang adalah MAR, hanya meyakininya berdasarkan pemahaman tentang proses pengumpulan data. Karena itu wawancara dengan orang yang mengumpulkan data sering lebih informatif daripada statistik apa pun: mereka tahu kapan sensor mati, formulir mana yang opsional, dan siapa yang cenderung melewatkan pertanyaan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pola hilang antar kolom\n\nSelain per kolom, lihat pola hilang antar kolom: baris mana yang hilang bersamaan. Ubah tabel hilang menjadi teks nol dan satu per baris, lalu hitung frekuensi tiap pola. Pada contoh, empat baris lengkap, dua baris hanya hilang umur, satu hanya hilang gaji, dan satu hilang gaji dan kota sekaligus. Pola yang sering muncul bersama menandakan penyebab bersama, misalnya satu formulir yang melewatkan beberapa kolom sekaligus. Mengenali pola membantu menemukan akar masalah dan memilih strategi, misalnya membuang kolom yang selalu hilang bersamaan bila memang tidak berguna."
+            },
+            {
+              "type": "code_example",
+              "filename": "pola_hilang.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\npola = df.isna().astype(int).astype(str).agg(''.join, axis=1)\nprint(pola.tolist())\nprint(pola.value_counts().to_dict())\nprint((df['gaji'].isna() & df['kota'].isna()).sum(), (df['umur'].isna() & df['gaji'].isna()).sum())\nprint(df.isna().astype(int).corr().round(2).loc['umur', 'gaji'])\nprint(df['umur'].mean(), df['umur'].median(), df['gaji'].mean(), df['gaji'].median(), df['kota'].mode().tolist())",
+              "expected_output_note": "['0000', '0000', '1000', '0110', '0000', '1000', '0100', '0000']\n{'0000': 4, '1000': 2, '0110': 1, '0100': 1}\n1 0\n-0.33\n33.166666666666664 33.0 7.583333333333333 7.25 ['A']",
+              "explanation": "Pola nol dan satu per baris merangkum hilang antar kolom. Korelasi antar penanda hilang menunjukkan kolom yang cenderung hilang bersama atau saling meniadakan."
+            }
+          ],
+          "quick_check": {
+            "question": "MAR berarti hilang bergantung pada?",
+            "options": [
+              "Nilai hilang itu",
+              "Kolom lain teramati"
+            ],
+            "answer_index": 1,
+            "explanation": "Bersyarat.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Simulasi dampak mekanisme",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Simulasi dampak mekanisme\n\nCara terbaik memahami bahayanya MNAR adalah mensimulasikannya. Ambil sepuluh nilai satu sampai sepuluh dengan rata-rata lima koma lima. Bila tiga nilai dibuang secara acak, rata-rata sisanya sekitar lima koma tujuh dan masih dekat dengan kebenaran. Bila tiga nilai terbesar yang hilang, rata-rata sisanya hanya empat, jauh meleset. Tidak ada teknik pengisian yang dapat memperbaikinya hanya dari nilai sisa, karena nilai yang hilang sistematis lebih besar. Itulah mengapa memahami proses hilang lebih penting daripada memilih algoritma imputasi."
+            },
+            {
+              "type": "code_example",
+              "filename": "simulasi_mekanisme.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nx = pd.Series(np.arange(1, 11.0))\nprint(x.mean())\nprint(round(x.drop([1, 4, 7]).mean(), 3))\nprint(x[x < 8].mean())\nprint(round(x.fillna(x.mean()).mean(), 1))\nprint(x.drop([1, 4, 7]).mean() - x.mean() < 0.0, x[x < 8].mean() - x.mean())",
+              "expected_output_note": "5.5\n5.714\n4.0\n5.5\nFalse -1.5",
+              "explanation": "Membuang tiga nilai acak sedikit menggeser rata-rata, sedangkan membuang tiga nilai terbesar menggesernya jauh. Pola hilang sistematis tidak dapat dipulihkan dari nilai yang tersisa."
+            },
+            {
+              "type": "text",
+              "markdown": "## Konsekuensi untuk keputusan\n\nHasil simulasi menunjukkan alasan memilah mekanisme. Bila Anda menduga MCAR, membuang baris hilang aman dan sederhana. Bila MAR, imputasi yang memakai kolom lain layak dan dapat memperbaiki bias. Bila MNAR, tidak ada jalan pintas: kumpulkan data tambahan, modelkan proses hilang secara eksplisit, atau laporkan hasil dengan peringatan jujur dan analisis sensitivitas. Dokumentasikan asumsi mekanisme dalam laporan agar pembaca dapat menilai kokohnya kesimpulan, dan jangan menyembunyikan ketidakpastian ini di balik angka yang tampak pasti."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pertanyaan untuk pengumpul data\n\nSebelum menyelam ke kode, ajukan pertanyaan sederhana kepada orang yang mengumpulkan data. Apakah kolom ini wajib diisi? Apakah ada kondisi tertentu yang membuatnya sering kosong? Apakah ada perubahan formulir atau sistem pada tanggal tertentu? Apakah kosong berarti tidak ada atau tidak diketahui? Jawaban atas pertanyaan seperti ini sering menyingkap mekanisme dalam lima menit, sesuatu yang tidak dapat dilakukan analisis statistik selama berjam-jam. Catat jawabannya sebagai bagian dari kamus data."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Asumsi, bukan fakta",
+              "markdown": "Anda tidak dapat membuktikan bahwa hilang adalah MAR dari data itu sendiri. Asumsi mekanisme harus didukung pengetahuan tentang proses pengumpulan data."
+            }
+          ],
+          "quick_check": {
+            "question": "MNAR paling berbahaya karena?",
+            "options": [
+              "Bergantung pada nilai yang hilang",
+              "Terlalu banyak"
+            ],
+            "answer_index": 0,
+            "explanation": "Tak terlihat.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B3-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pola_hilang(df)` yang mengembalikan list teks per baris berisi `0` untuk sel terisi dan `1` untuk sel kosong, berurutan menurut kolom.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef pola_hilang(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pola_hilang(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nassert pola_hilang(df) == ['0000', '0000', '1000', '0110', '0000', '1000', '0100', '0000']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pola_hilang(df[['umur']].iloc[:3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pola_hilang(df[['umur']].iloc[:3]) == ['0', '0', '1']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pola_hilang(df[['gaji', 'kota']].iloc[[3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pola_hilang(df[['gaji', 'kota']].iloc[[3]]) == ['11']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pola_hilang(df.dropna())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pola_hilang(df.dropna()) == ['0000'] * 4"
+              }
+            ]
+          },
+          "hint": "isna ke bilangan bulat ke teks lalu gabungkan per baris.",
+          "solution": "import pandas as pd\n\ndef pola_hilang(df):\n    return df.isna().astype(int).astype(str).agg(''.join, axis=1).tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-02-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_menurut_hilang(df, cek, nilai)` yang mengembalikan dict `{hilang: rata_rata_nilai}` dengan kunci `False` dan `True` menurut apakah kolom `cek` kosong, dibulatkan dua desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef rata_menurut_hilang(df, cek, nilai):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_menurut_hilang(df, 'gaji', 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nassert rata_menurut_hilang(df, 'gaji', 'umur') == {False: 31.75, True: 36.0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_menurut_hilang(df, 'umur', 'gaji')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_menurut_hilang(df, 'umur', 'gaji') == {False: 7.5, True: 7.75}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_menurut_hilang(df, 'gaji', 'lulus')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_menurut_hilang(df, 'gaji', 'lulus') == {False: 0.5, True: 1.0}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_menurut_hilang(df, 'lulus', 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_menurut_hilang(df, 'lulus', 'umur') == {False: 33.17}"
+              }
+            ]
+          },
+          "hint": "groupby menurut isna kolom cek lalu rata-rata kolom nilai.",
+          "solution": "import pandas as pd\n\ndef rata_menurut_hilang(df, cek, nilai):\n    return df.groupby(df[cek].isna())[nilai].mean().round(2).to_dict()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `hilang_bersama(df, a, b)` yang mengembalikan bilangan bulat jumlah baris yang kolom `a` dan `b`-nya sama-sama kosong.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef hilang_bersama(df, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hilang_bersama(df, 'gaji', 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nassert hilang_bersama(df, 'gaji', 'kota') == 1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hilang_bersama(df, 'umur', 'gaji')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hilang_bersama(df, 'umur', 'gaji') == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hilang_bersama(df, 'umur', 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hilang_bersama(df, 'umur', 'umur') == 2"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "hilang_bersama(df, 'lulus', 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hilang_bersama(df, 'lulus', 'umur') == 0"
+              }
+            ]
+          },
+          "hint": "Gabungkan dua isna dengan operator dan lalu jumlahkan.",
+          "solution": "import pandas as pd\n\ndef hilang_bersama(df, a, b):\n    return int((df[a].isna() & df[b].isna()).sum())",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `hitung_pola(df)` yang mengembalikan dict `{pola: jumlah_baris}` dengan pola berupa teks nol dan satu per baris seperti pada latihan pertama.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef hitung_pola(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hitung_pola(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nassert hitung_pola(df) == {'0000': 4, '1000': 2, '0110': 1, '0100': 1}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hitung_pola(df.dropna())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_pola(df.dropna()) == {'0000': 4}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hitung_pola(df[['umur']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_pola(df[['umur']]) == {'0': 6, '1': 2}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(hitung_pola(df).values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(hitung_pola(df).values()) == 8"
+              }
+            ]
+          },
+          "hint": "Bangun pola teks per baris lalu value_counts ke dict.",
+          "solution": "import pandas as pd\n\ndef hitung_pola(df):\n    pola = df.isna().astype(int).astype(str).agg(''.join, axis=1)\n    return pola.value_counts().to_dict()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "MCAR berarti hilang?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak bergantung pada apa pun",
+              "description": ""
+            },
+            {
+              "label": "Bergantung kolom lain",
+              "description": ""
+            },
+            {
+              "label": "Bergantung nilai itu sendiri",
+              "description": ""
+            },
+            {
+              "label": "Selalu di akhir",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Acak penuh.",
+          "explanation": "Acak penuh."
+        },
+        {
+          "q": "MAR berarti hilang bergantung pada?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kolom lain teramati",
+              "description": ""
+            },
+            {
+              "label": "Nilai hilang itu",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            },
+            {
+              "label": "Urutan baris",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom lain.",
+          "explanation": "Bersyarat."
+        },
+        {
+          "q": "MNAR paling berbahaya karena?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bergantung pada nilai yang hilang",
+              "description": ""
+            },
+            {
+              "label": "Terlalu banyak",
+              "description": ""
+            },
+            {
+              "label": "Terlalu sedikit",
+              "description": ""
+            },
+            {
+              "label": "Tipe salah",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Nilai sendiri.",
+          "explanation": "Tak terlihat."
+        },
+        {
+          "q": "Membandingkan kelompok hilang dapat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menolak MCAR",
+              "description": ""
+            },
+            {
+              "label": "Membuktikan MAR",
+              "description": ""
+            },
+            {
+              "label": "Membuktikan MNAR",
+              "description": ""
+            },
+            {
+              "label": "Mengisi nilai",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "MCAR.",
+          "explanation": "Hanya indikasi."
+        },
+        {
+          "q": "Pola hilang antar kolom membantu?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menemukan penyebab bersama",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menggabung",
+              "description": ""
+            },
+            {
+              "label": "Menghapus kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Penyebab.",
+          "explanation": "Pola."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menganggap semua hilang itu acak. Lebih baik: Periksa apakah hilang berkaitan dengan kolom lain.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menganggap semua hilang itu acak.",
+          "fix": "Periksa apakah hilang berkaitan dengan kolom lain."
+        },
+        {
+          "mistake": "Mengira statistik dapat membuktikan MAR.",
+          "fix": "Dukung asumsi dengan pengetahuan proses pengumpulan data."
+        },
+        {
+          "mistake": "Mengabaikan pola hilang antar kolom.",
+          "fix": "Hitung frekuensi pola untuk menemukan penyebab bersama."
+        }
+      ],
+      "summary": [
+        "MCAR, MAR, dan MNAR adalah tiga mekanisme hilang dengan implikasi berbeda.",
+        "Membandingkan kelompok hilang dan lengkap menguji ketergantungan pada kolom lain.",
+        "Pola hilang antar kolom menunjukkan penyebab bersama.",
+        "Asumsi mekanisme harus didukung pengetahuan proses data."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Mengapa data hilang: tiga mekanisme"
+          },
+          {
+            "type": "text",
+            "source": "Mengelompokkan menurut penanda hilang membandingkan kolom lain antara baris yang hilang dan yang lengkap. Selisih besar menandakan hilang berkaitan dengan kolom itu."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\nprint(df.isna().sum().to_dict(), df.isna().sum().sum())\nm = df['gaji'].isna()\nprint(m.tolist())\nprint(df.groupby(m)['umur'].mean().round(2).to_dict())\nprint(df.groupby(m)['lulus'].mean().round(2).to_dict())\nprint(df.groupby(df['umur'].isna())['gaji'].mean().round(2).to_dict())\nprint(df.isna().sum(axis=1).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Pola nol dan satu per baris merangkum hilang antar kolom. Korelasi antar penanda hilang menunjukkan kolom yang cenderung hilang bersama atau saling meniadakan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\npola = df.isna().astype(int).astype(str).agg(''.join, axis=1)\nprint(pola.tolist())\nprint(pola.value_counts().to_dict())\nprint((df['gaji'].isna() & df['kota'].isna()).sum(), (df['umur'].isna() & df['gaji'].isna()).sum())\nprint(df.isna().astype(int).corr().round(2).loc['umur', 'gaji'])\nprint(df['umur'].mean(), df['umur'].median(), df['gaji'].mean(), df['gaji'].median(), df['kota'].mode().tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Membuang tiga nilai acak sedikit menggeser rata-rata, sedangkan membuang tiga nilai terbesar menggesernya jauh. Pola hilang sistematis tidak dapat dipulihkan dari nilai yang tersisa."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nx = pd.Series(np.arange(1, 11.0))\nprint(x.mean())\nprint(round(x.drop([1, 4, 7]).mean(), 3))\nprint(x[x < 8].mean())\nprint(round(x.fillna(x.mean()).mean(), 1))\nprint(x.drop([1, 4, 7]).mean() - x.mean() < 0.0, x[x < 8].mean() - x.mean())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B3-02-2",
+      "title": "Imputasi sederhana yang aman",
+      "estimated_minutes": 35,
+      "read_minutes": 8,
+      "objectives": [
+        "Mengisi dengan median, modus, dan statistik per kelompok",
+        "Menghitung statistik pengisi hanya dari data latih",
+        "Memakai SimpleImputer dengan fit dan transform",
+        "Menambah penanda hilang sebagai fitur"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Imputasi sebagai model kecil",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Imputasi sebagai model kecil\n\nMengisi nilai hilang dengan rata-rata tampak sepele, tetapi sebenarnya Anda sedang membangun model prediksi paling sederhana: tebakan satu angka untuk semua. Memahami hal ini mengubah cara berpikir. Seperti model lain, imputasi punya parameter yang dipelajari dari data, yaitu rata-rata atau median, dan ia dapat salah, bias, atau membocorkan informasi. Pelajaran ini membahas imputasi sederhana yang dilakukan dengan benar: pilih statistik yang tepat, hitung dari bagian data yang tepat, dan simpan jejak bahwa nilai itu hasil pengisian."
+            },
+            {
+              "type": "text",
+              "markdown": "## Median, rata-rata, dan modus\n\nUntuk kolom angka, median biasanya lebih aman daripada rata-rata karena tidak tertarik pencilan. Pada kolom gaji dengan satu nilai ekstrem, rata-rata bisa sangat menyesatkan. Untuk kolom kategori, modus, yaitu nilai paling sering, adalah pilihan alami, atau kategori khusus seperti `Tidak diketahui` bila alasan hilang tak jelas. Rata-rata cocok bila sebaran simetris dan Anda memerlukan pengisian yang mempertahankan jumlah total. Pilihan ini kecil tetapi memengaruhi hasil, sehingga catat dan, bila perlu, bandingkan dua pilihan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Imputasi per kelompok\n\nBila ada kolom yang berkaitan dengan nilai hilang, hitung statistik per kelompok kolom itu. Rata-rata umur orang yang lulus berbeda dari yang tidak lulus, sehingga mengisi umur hilang dengan median kelompoknya lebih masuk akal daripada median global. Polanya `fillna(groupby(g)[x].transform('median'))`. Perhatikan dua jebakan: kelompok yang seluruh anggotanya hilang menghasilkan NaN, dan kelompok yang kuncinya sendiri hilang juga tidak terisi. Siapkan pengisi cadangan global untuk sisa yang tidak terisi, dan periksa jumlah hilang setelahnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "isi_sederhana.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\nprint(df['umur'].fillna(df['umur'].median()).tolist())\nprint(df.groupby('lulus')['umur'].transform('median').tolist())\nprint(df['umur'].fillna(df.groupby('lulus')['umur'].transform('median')).tolist())\nprint(df['gaji'].fillna(df.groupby('kota')['gaji'].transform('median')).tolist())\nprint(df['kota'].fillna('?').tolist(), df['kota'].fillna(df['kota'].mode()[0]).tolist())\nprint(df['gaji'].fillna(df.groupby('kota')['gaji'].transform('median')).fillna(df['gaji'].median()).tolist())",
+              "expected_output_note": "[22.0, 25.0, 33.0, 31.0, 35.0, 33.0, 41.0, 45.0]\n[23.5, 23.5, 38.0, 38.0, 38.0, 23.5, 38.0, 38.0]\n[22.0, 25.0, 38.0, 31.0, 35.0, 23.5, 41.0, 45.0]\n[5.0, 6.0, 6.5, nan, 8.0, 9.0, 7.25, 11.0]\n['A', 'A', 'B', '?', 'B', 'A', 'B', 'A'] ['A', 'A', 'B', 'A', 'B', 'A', 'B', 'A']\n[5.0, 6.0, 6.5, 7.25, 8.0, 9.0, 7.25, 11.0]",
+              "explanation": "Median per kelompok memakai kolom penjelas. Baris yang kelompoknya sendiri hilang tetap NaN, sehingga memerlukan pengisi cadangan global."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kebocoran dari data uji\n\nDalam pemodelan, data dibagi menjadi data latih dan data uji. Bila Anda menghitung median dari seluruh data lalu membaginya, median itu sudah memuat informasi dari data uji, kebocoran halus yang membuat skor evaluasi terlalu optimistis. Aturan yang benar: hitung statistik pengisi hanya dari data latih, lalu pakai angka yang sama untuk mengisi data latih dan data uji. Pada penerapan nyata, data baru yang masuk harus diisi dengan statistik yang tersimpan dari pelatihan, bukan dihitung ulang dari data baru itu."
+            }
+          ],
+          "quick_check": {
+            "question": "Median lebih aman dari rata-rata saat?",
+            "options": [
+              "Ada pencilan",
+              "Data simetris"
+            ],
+            "answer_index": 0,
+            "explanation": "Tahan ekstrem.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "fit dan transform",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## fit dan transform\n\nPustaka scikit-learn menerapkan aturan ini lewat pola `fit` dan `transform`. Objek `SimpleImputer` mempelajari statistik pengisi pada `fit` dari data latih dan menyimpannya pada atribut `statistics_`. Metode `transform` kemudian memakai statistik tersimpan itu pada data mana pun. Pemisahan dua langkah ini memastikan data uji tidak memengaruhi statistik. Strategi yang tersedia mencakup `mean`, `median`, `most_frequent`, dan `constant`. Karena imputer dapat disimpan bersama model, data baru di produksi diisi persis seperti saat pelatihan."
+            },
+            {
+              "type": "code_example",
+              "filename": "simple_imputer.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\nfrom sklearn.impute import SimpleImputer\nX = df[['umur', 'gaji']]\nsi = SimpleImputer(strategy='median')\nprint(si.fit_transform(X).tolist())\nprint(si.statistics_.tolist())\ntr, te = X.iloc[:5], X.iloc[5:]\nsi2 = SimpleImputer(strategy='median').fit(tr)\nprint(si2.statistics_.tolist(), si2.transform(te).tolist())\nprint(SimpleImputer(strategy='mean').fit(X).statistics_.round(3).tolist())",
+              "expected_output_note": "[[22.0, 5.0], [25.0, 6.0], [33.0, 6.5], [31.0, 7.25], [35.0, 8.0], [33.0, 9.0], [41.0, 7.25], [45.0, 11.0]]\n[33.0, 7.25]\n[28.0, 6.25] [[28.0, 9.0], [41.0, 6.25], [45.0, 11.0]]\n[33.167, 7.583]",
+              "explanation": "Fit mempelajari statistik dari data latih, dan transform memakainya pada data uji. Statistik data latih berbeda dari statistik seluruh data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Statistik latih berbeda\n\nPada contoh, median seluruh data adalah tiga puluh tiga untuk umur, sedangkan median lima baris pertama hanya dua puluh delapan. Bila baris berikutnya diisi dengan dua puluh delapan, itulah yang akan terjadi di produksi: Anda tidak tahu median masa depan. Memakai tiga puluh tiga berarti secara diam-diam memakai informasi dari baris yang sedang diisi. Perbedaan seperti ini tampak kecil, tetapi pada banyak fitur dan dataset kecil, kebocoran yang menumpuk dapat menggeser skor evaluasi secara berarti dan membuat model tampak lebih baik dari kenyataan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Penanda hilang sebagai fitur\n\nSering kali fakta bahwa nilai hilang itu sendiri informatif. Orang yang tidak mengisi gaji mungkin berbeda dari yang mengisi. Tambahkan kolom penanda nol dan satu sebelum mengisi, sehingga model dapat belajar dari pola ketiadaan. `SimpleImputer(add_indicator=True)` menambahkan penanda otomatis untuk kolom yang memiliki hilang pada data latih. Penanda murah dan sering menolong, terutama pada MNAR di mana ketiadaan berkaitan dengan nilai yang tak teramati. Perhatikan jumlah kolom bertambah, dan penanda tidak berguna bila hilang benar-benar acak."
+            },
+            {
+              "type": "code_example",
+              "filename": "penanda.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\nfrom sklearn.impute import SimpleImputer\nX = df[['umur', 'gaji']]\nsi3 = SimpleImputer(strategy='median', add_indicator=True)\nout = si3.fit_transform(X)\nprint(out.shape, out[:, 2:].tolist()[:3])\nfor c in ['umur', 'gaji']:\n    f = df[c].fillna(df[c].median())\n    i = df[c].isna().astype(int)\n    print(pd.concat([i, f], axis=1).values.tolist()[2:4])\nprint(df.assign(umur_hilang=df['umur'].isna().astype(int))['umur_hilang'].tolist())",
+              "expected_output_note": "(8, 4) [[0.0, 0.0], [0.0, 0.0], [1.0, 0.0]]\n[[1.0, 33.0], [0.0, 31.0]]\n[[0.0, 6.5], [1.0, 7.25]]\n[0, 0, 1, 0, 0, 1, 0, 0]",
+              "explanation": "Penanda hilang disimpan berdampingan dengan nilai terisi. Add_indicator menambah kolom penanda otomatis dan menyimpan jejak hilang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan cukup sederhana\n\nImputasi sederhana sering cukup. Bila hilang di bawah lima persen dan mendekati acak, median atau modus bekerja baik dan hasilnya hampir tidak berbeda dari metode canggih. Imputasi sederhana juga mudah dijelaskan, dapat diaudit, dan cepat. Naiklah ke metode lanjutan hanya bila hilang banyak, bila kolom saling berkaitan kuat sehingga informasinya dapat dimanfaatkan, atau bila evaluasi menunjukkan bahwa imputasi sederhana merusak hasil. Prinsipnya sama seperti pada banyak keputusan pemodelan: mulai dari yang paling sederhana dan naik hanya bila ada bukti perlunya."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Hindari kebocoran",
+              "markdown": "Hitung statistik pengisi hanya dari data latih, lalu pakai angka yang sama untuk data uji dan data baru. Menghitungnya dari seluruh data membocorkan informasi."
+            }
+          ],
+          "quick_check": {
+            "question": "SimpleImputer mempelajari statistik pada?",
+            "options": [
+              "transform",
+              "fit"
+            ],
+            "answer_index": 1,
+            "explanation": "Fit.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Imputasi dan proporsi kategori",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Imputasi dan proporsi kategori\n\nMengisi kategori hilang dengan modus punya efek samping yang perlu disadari: kategori yang paling sering menjadi makin dominan. Pada contoh kota, A muncul empat kali dan B tiga kali, tetapi setelah modus mengisi satu nilai hilang A menjadi lima. Bila hilang banyak, distribusi kategori bergeser dan model dapat belajar bahwa A lebih umum dari kenyataan. Alternatif yang lebih jujur adalah membuat kategori tersendiri bernama Tidak diketahui, sehingga informasi bahwa nilai itu tidak ada tetap terlihat dan tidak mencampuri kategori sungguhan. Pilihan ini sangat bergantung pada makna hilang dalam konteks data Anda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Imputasi pada data berderet waktu\n\nUntuk data yang berurutan menurut waktu, mengisi dengan median seluruh deret sering buruk karena mengabaikan tren. Nilai suhu pukul tiga pagi lebih mirip nilai pukul dua dan empat daripada rata-rata sepanjang hari. Pilihan yang lebih wajar adalah mengisi dengan nilai sebelumnya, nilai sesudahnya, atau interpolasi antara keduanya. Namun hati-hati dengan mengisi dari nilai sesudahnya pada data prediksi, karena itu memakai informasi masa depan yang tidak tersedia saat prediksi sungguhan dilakukan. Aturan kebocoran tetap berlaku: hanya pakai informasi yang ada pada saat keputusan dibuat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mencatat apa yang Anda lakukan\n\nSetiap pengisian adalah keputusan analisis yang memengaruhi hasil, sehingga catat dalam kode dan laporan. Simpan statistik pengisi yang dipakai, jumlah nilai yang diisi per kolom, dan alasan memilih metode. Bila ada orang lain yang mengulang analisis, mereka dapat menghasilkan angka yang sama. Bila hasil berubah drastis ketika metode diganti, itu sinyal bahwa kesimpulan Anda sensitif terhadap imputasi dan perlu dilaporkan sebagai ketidakpastian. Kebiasaan mencatat ini juga memudahkan Anda mendeteksi kesalahan, misalnya kolom yang tanpa sengaja terisi seluruhnya oleh satu nilai."
+            }
+          ],
+          "quick_check": {
+            "question": "Statistik pengisi dihitung dari?",
+            "options": [
+              "Data latih",
+              "Seluruh data"
+            ],
+            "answer_index": 0,
+            "explanation": "Cegah kebocoran.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B3-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `isi_median_grup(df, kolom, grup)` yang mengisi nilai hilang `kolom` dengan median kolom itu pada kelompok `grup` dan mengembalikan list hasilnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef isi_median_grup(df, kolom, grup):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isi_median_grup(df, 'umur', 'lulus')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nassert isi_median_grup(df, 'umur', 'lulus') == [22.0, 25.0, 38.0, 31.0, 35.0, 23.5, 41.0, 45.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "isi_median_grup(df.iloc[[0, 1]], 'umur', 'lul...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_median_grup(df.iloc[[0, 1]], 'umur', 'lulus') == [22.0, 25.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isi_median_grup(df, 'gaji', 'lulus')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_median_grup(df, 'gaji', 'lulus')[3] == 8.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(isi_median_grup(df, 'umur', 'lulus'))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(isi_median_grup(df, 'umur', 'lulus')) == 8"
+              }
+            ]
+          },
+          "hint": "fillna dengan groupby transform median.",
+          "solution": "import pandas as pd\n\ndef isi_median_grup(df, kolom, grup):\n    return df[kolom].fillna(df.groupby(grup)[kolom].transform('median')).tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-02-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `isi_modus(df, kolom)` yang mengisi nilai hilang `kolom` dengan nilai paling sering dan mengembalikan list hasilnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef isi_modus(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isi_modus(df, 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nassert isi_modus(df, 'kota') == ['A', 'A', 'B', 'A', 'B', 'A', 'B', 'A']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "isi_modus(df, 'lulus')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_modus(df, 'lulus') == [0, 0, 1, 1, 1, 0, 1, 1]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isi_modus(df.iloc[[2, 3]], 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_modus(df.iloc[[2, 3]], 'kota') == ['B', 'B']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "isi_modus(df, 'kota').count('A')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_modus(df, 'kota').count('A') == 5"
+              }
+            ]
+          },
+          "hint": "fillna dengan elemen pertama mode.",
+          "solution": "import pandas as pd\n\ndef isi_modus(df, kolom):\n    return df[kolom].fillna(df[kolom].mode()[0]).tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `isi_dengan_statistik_latih(df, n)` yang menghitung median kolom `umur` dan `gaji` dari `n` baris pertama, lalu memakainya mengisi nilai hilang pada baris ke-n dan seterusnya, dan mengembalikan `values.tolist()` baris tersebut.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef isi_dengan_statistik_latih(df, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isi_dengan_statistik_latih(df, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nassert isi_dengan_statistik_latih(df, 5) == [[28.0, 9.0], [41.0, 6.25], [45.0, 11.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "isi_dengan_statistik_latih(df, 7)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_dengan_statistik_latih(df, 7) == [[45.0, 11.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isi_dengan_statistik_latih(df, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_dengan_statistik_latih(df, 4)[0] == [35.0, 8.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(isi_dengan_statistik_latih(df, 2))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(isi_dengan_statistik_latih(df, 2)) == 6"
+              }
+            ]
+          },
+          "hint": "median dari bagian latih lalu fillna pada bagian sisanya.",
+          "solution": "import pandas as pd\n\ndef isi_dengan_statistik_latih(df, n):\n    kolom = ['umur', 'gaji']\n    med = df.iloc[:n][kolom].median()\n    return df.iloc[n:][kolom].fillna(med).values.tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `tandai_dan_isi(df, kolom)` yang mengembalikan `values.tolist()` dari tabel dua kolom: penanda nol atau satu untuk nilai hilang, dan nilai yang diisi dengan median kolom itu.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef tandai_dan_isi(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nr = tandai_dan_isi(df, 'umur')\nassert r[0] == [0.0, 22.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[2] == [1.0, 33.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[5] == [1.0, 33.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tandai_dan_isi(df, 'gaji')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tandai_dan_isi(df, 'gaji')[3] == [1.0, 7.25]"
+              }
+            ]
+          },
+          "hint": "Gabungkan penanda isna dan hasil fillna median dengan concat.",
+          "solution": "import pandas as pd\n\ndef tandai_dan_isi(df, kolom):\n    penanda = df[kolom].isna().astype(int)\n    isi = df[kolom].fillna(df[kolom].median())\n    return pd.concat([penanda, isi], axis=1).values.tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Median lebih aman dari rata-rata saat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Ada pencilan",
+              "description": ""
+            },
+            {
+              "label": "Data simetris",
+              "description": ""
+            },
+            {
+              "label": "Data kategori",
+              "description": ""
+            },
+            {
+              "label": "Data kosong",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pencilan.",
+          "explanation": "Tahan ekstrem."
+        },
+        {
+          "q": "SimpleImputer mempelajari statistik pada?",
+          "code": null,
+          "options": [
+            {
+              "label": "fit",
+              "description": ""
+            },
+            {
+              "label": "transform",
+              "description": ""
+            },
+            {
+              "label": "predict",
+              "description": ""
+            },
+            {
+              "label": "score",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "fit.",
+          "explanation": "Fit."
+        },
+        {
+          "q": "Statistik pengisi dihitung dari?",
+          "code": null,
+          "options": [
+            {
+              "label": "Data latih",
+              "description": ""
+            },
+            {
+              "label": "Seluruh data",
+              "description": ""
+            },
+            {
+              "label": "Data uji",
+              "description": ""
+            },
+            {
+              "label": "Data baru",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Latih.",
+          "explanation": "Cegah kebocoran."
+        },
+        {
+          "q": "add_indicator menambah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kolom penanda hilang",
+              "description": ""
+            },
+            {
+              "label": "Baris baru",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            },
+            {
+              "label": "Label",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Penanda.",
+          "explanation": "Jejak."
+        },
+        {
+          "q": "Imputasi per kelompok memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "groupby transform",
+              "description": ""
+            },
+            {
+              "label": "merge",
+              "description": ""
+            },
+            {
+              "label": "pivot",
+              "description": ""
+            },
+            {
+              "label": "concat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "transform.",
+          "explanation": "Statistik kelompok."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menghitung median dari seluruh data lalu membagi latih dan uji. Lebih baik: Hitung dari data latih saja dan pakai ulang.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menghitung median dari seluruh data lalu membagi latih dan uji.",
+          "fix": "Hitung dari data latih saja dan pakai ulang."
+        },
+        {
+          "mistake": "Mengisi per kelompok tanpa cadangan.",
+          "fix": "Tambahkan pengisi global untuk sisa."
+        },
+        {
+          "mistake": "Membuang jejak bahwa nilai itu hasil pengisian.",
+          "fix": "Tambahkan kolom penanda hilang."
+        }
+      ],
+      "summary": [
+        "Imputasi adalah model kecil yang parameternya dipelajari dari data.",
+        "Hitung statistik pengisi hanya dari data latih.",
+        "SimpleImputer memisahkan fit dan transform.",
+        "Penanda hilang menyimpan jejak ketiadaan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Imputasi sederhana yang aman"
+          },
+          {
+            "type": "text",
+            "source": "Median per kelompok memakai kolom penjelas. Baris yang kelompoknya sendiri hilang tetap NaN, sehingga memerlukan pengisi cadangan global."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\nprint(df['umur'].fillna(df['umur'].median()).tolist())\nprint(df.groupby('lulus')['umur'].transform('median').tolist())\nprint(df['umur'].fillna(df.groupby('lulus')['umur'].transform('median')).tolist())\nprint(df['gaji'].fillna(df.groupby('kota')['gaji'].transform('median')).tolist())\nprint(df['kota'].fillna('?').tolist(), df['kota'].fillna(df['kota'].mode()[0]).tolist())\nprint(df['gaji'].fillna(df.groupby('kota')['gaji'].transform('median')).fillna(df['gaji'].median()).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Fit mempelajari statistik dari data latih, dan transform memakainya pada data uji. Statistik data latih berbeda dari statistik seluruh data."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\nfrom sklearn.impute import SimpleImputer\nX = df[['umur', 'gaji']]\nsi = SimpleImputer(strategy='median')\nprint(si.fit_transform(X).tolist())\nprint(si.statistics_.tolist())\ntr, te = X.iloc[:5], X.iloc[5:]\nsi2 = SimpleImputer(strategy='median').fit(tr)\nprint(si2.statistics_.tolist(), si2.transform(te).tolist())\nprint(SimpleImputer(strategy='mean').fit(X).statistics_.round(3).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Penanda hilang disimpan berdampingan dengan nilai terisi. Add_indicator menambah kolom penanda otomatis dan menyimpan jejak hilang."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\nfrom sklearn.impute import SimpleImputer\nX = df[['umur', 'gaji']]\nsi3 = SimpleImputer(strategy='median', add_indicator=True)\nout = si3.fit_transform(X)\nprint(out.shape, out[:, 2:].tolist()[:3])\nfor c in ['umur', 'gaji']:\n    f = df[c].fillna(df[c].median())\n    i = df[c].isna().astype(int)\n    print(pd.concat([i, f], axis=1).values.tolist()[2:4])\nprint(df.assign(umur_hilang=df['umur'].isna().astype(int))['umur_hilang'].tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B3-02-3",
+      "title": "Imputasi lanjutan dan cara menilainya",
+      "estimated_minutes": 35,
+      "read_minutes": 9,
+      "objectives": [
+        "Memakai KNNImputer dan IterativeImputer",
+        "Menilai metode imputasi dengan menyembunyikan nilai yang diketahui",
+        "Menjelaskan efek imputasi pada simpangan baku dan korelasi",
+        "Memutuskan kapan imputasi lanjutan layak dipakai"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Memanfaatkan kolom lain",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memanfaatkan kolom lain\n\nImputasi sederhana mengisi dengan satu angka yang sama tanpa melihat baris itu sendiri. Padahal bila umur, gaji, dan pengalaman saling berkaitan, kolom yang terisi pada baris itu memberi petunjuk tentang nilai yang hilang. Imputasi lanjutan memanfaatkan petunjuk ini. Dua yang populer adalah imputasi k tetangga terdekat dan imputasi iteratif. Keduanya tersedia di scikit-learn dan memakai antarmuka fit dan transform yang sama dengan SimpleImputer, sehingga mudah ditukar dan dibandingkan dalam satu alur kerja yang konsisten."
+            },
+            {
+              "type": "text",
+              "markdown": "## Imputasi k tetangga\n\nKNNImputer mencari k baris yang paling mirip dengan baris yang memiliki nilai hilang, berdasarkan kolom yang terisi pada keduanya, lalu mengisi dengan rata-rata nilai tetangga itu. Idenya intuitif: orang yang mirip dalam umur dan kota kemungkinan bergaji mirip. Kelebihannya tidak mengasumsikan bentuk hubungan tertentu. Kekurangannya, ia peka terhadap skala kolom karena memakai jarak, sehingga kolom perlu distandarkan lebih dulu bila skalanya berbeda jauh, dan menjadi lambat pada data sangat besar karena harus membandingkan banyak baris."
+            },
+            {
+              "type": "code_example",
+              "filename": "knn_imputer.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\nfrom sklearn.impute import KNNImputer\nX = df[['umur', 'gaji']]\nkn = KNNImputer(n_neighbors=2)\nprint(kn.fit_transform(X).round(2).tolist())\nprint(X.isna().sum().to_dict())\nprint(np.isnan(kn.fit_transform(X)).sum())",
+              "expected_output_note": "[[22.0, 5.0], [25.0, 6.0], [30.0, 6.5], [31.0, 7.0], [35.0, 8.0], [40.0, 9.0], [41.0, 9.5], [45.0, 11.0]]\n{'umur': 2, 'gaji': 2}\n0",
+              "explanation": "Nilai hilang diisi rata-rata dua tetangga terdekat menurut kolom lain yang terisi. Setelah transform tidak ada NaN tersisa."
+            },
+            {
+              "type": "text",
+              "markdown": "## Imputasi iteratif\n\nIterativeImputer memodelkan setiap kolom dengan nilai hilang sebagai fungsi kolom lain, biasanya dengan regresi linear, lalu mengisinya berulang-ulang sampai stabil. Pendekatan ini mirip metode MICE dalam statistik. Ia dapat menangkap hubungan linear antar kolom dan sering memberi hasil akurat bila hubungannya kuat. Di scikit-learn, ia masih berstatus eksperimental dan harus diaktifkan dengan `from sklearn.experimental import enable_iterative_imputer`. Hasilnya bergantung pada model dasar dan jumlah iterasi, sehingga evaluasi tetap diperlukan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menilai dengan menyembunyikan\n\nBagaimana memilih antara metode imputasi? Anda tidak punya jawaban benar untuk nilai yang hilang, sehingga caranya menciptakan jawaban benar buatan: ambil baris yang lengkap, sembunyikan beberapa nilai dengan sengaja, isi dengan tiap metode, lalu bandingkan hasil dengan nilai asli memakai galat akar kuadrat rata-rata. Metode dengan galat terkecil layak dipilih. Teknik ini mengganti perdebatan selera dengan bukti dan dapat dilakukan dengan beberapa baris kode. Untuk hasil yang andal, ulangi dengan beberapa pilihan baris tersembunyi."
+            },
+            {
+              "type": "code_example",
+              "filename": "bandingkan_imputasi.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nfrom sklearn.experimental import enable_iterative_imputer\nfrom sklearn.impute import IterativeImputer, KNNImputer\nfull = pd.DataFrame({'a': [1, 2, 3, 4, 5, 6, 7, 8], 'b': [2, 4, 6, 8, 10, 12, 14, 16]})\nt = full.copy()\nt.loc[[2, 5], 'b'] = np.nan\nfor strat in ['mean', 'median']:\n    f = t['b'].fillna(getattr(t['b'], strat)())\n    err = (f - full['b']).loc[[2, 5]]\n    print(strat, f.loc[[2, 5]].tolist(), round(float(np.sqrt((err ** 2).mean())), 3))\nprint(t['b'].interpolate().tolist())\nprint(IterativeImputer(random_state=0).fit_transform(t).round(2)[[2, 5], 1].tolist())\nprint(KNNImputer(n_neighbors=2).fit_transform(t)[[2, 5], 1].tolist())",
+              "expected_output_note": "mean [9.0, 9.0] 3.0\nmedian [9.0, 9.0] 3.0\n[2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0]\n[6.0, 12.0]\n[6.0, 12.0]",
+              "explanation": "Pada hubungan linear sempurna, imputasi yang memakai kolom lain memulihkan nilai tepat, sedangkan mean dan median meleset tiga satuan."
+            }
+          ],
+          "quick_check": {
+            "question": "KNNImputer mengisi dengan?",
+            "options": [
+              "Rata-rata tetangga terdekat",
+              "Median global"
+            ],
+            "answer_index": 0,
+            "explanation": "Baris mirip.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Hubungan kuat, metode kuat",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Hubungan kuat, metode kuat\n\nHasil contoh jelas: karena b selalu dua kali a, metode yang memakai a memulihkan b dengan tepat, sedangkan mean dan median hanya menebak sembilan. Pada data nyata hubungan tidak sempurna, tetapi prinsipnya berlaku. Semakin kuat hubungan antar kolom, semakin besar keuntungan imputasi lanjutan. Bila kolom nyaris tidak berkorelasi, imputasi lanjutan tidak lebih baik dari median dan hanya menambah kerumitan. Karena itu periksa korelasi antar kolom sebelum menaruh harapan besar pada metode canggih."
+            },
+            {
+              "type": "text",
+              "markdown": "## Imputasi mengerutkan variasi\n\nSetiap pengisi satu angka, terutama rata-rata, mengerutkan variasi data. Nilai pengisi berada tepat di tengah, sehingga simpangan baku turun dan korelasi dengan kolom lain melemah. Pada deret contoh, simpangan baku turun dari 2,39 menjadi 1,95 setelah pengisian rata-rata, rasio sekitar 0,816. Efek ini membuat uji statistik tampak lebih yakin daripada seharusnya karena variasi tampak lebih kecil. Bila hasil akhir berupa inferensi, bukan prediksi, gunakan imputasi berganda yang memasukkan ketidakpastian pengisian, atau metode yang menangani data hilang langsung."
+            },
+            {
+              "type": "code_example",
+              "filename": "efek_variasi.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ns = pd.Series([1, 2, np.nan, 4, 5, np.nan, 7.0])\nprint(round(s.std(), 3), round(s.fillna(s.mean()).std(), 3))\nprint(round(s.fillna(s.mean()).std() / s.std(), 3))\nd2 = pd.DataFrame({'x': [1, 2, 3, 4, 5, 6.0], 'y': [2.1, 3.9, np.nan, 8.2, np.nan, 11.8]})\nprint(round(d2.corr().loc['x', 'y'], 3), round(d2.fillna(d2.mean()).corr().loc['x', 'y'], 3))\nprint(d2.dropna().shape, round(d2['y'].std(), 3), round(d2['y'].fillna(d2['y'].mean()).std(), 3))\nprint(pd.Series([1, np.nan, 3, np.nan, np.nan, 6.0]).interpolate().tolist())",
+              "expected_output_note": "2.387 1.949\n0.816\n0.999 0.917\n(4, 2) 4.363 3.379\n[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]",
+              "explanation": "Pengisian rata-rata menurunkan simpangan baku dan melemahkan korelasi. Interpolasi memulihkan deret yang berubah linear."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pelemahan korelasi\n\nContoh kedua menunjukkan korelasi x dan y turun dari 0,999 menjadi 0,917 setelah pengisian rata-rata, padahal hubungan sebenarnya hampir sempurna. Pengisi rata-rata menaruh titik datar di tengah yang tidak mengikuti garis, sehingga menarik korelasi ke bawah. Bila tujuan Anda mempelajari hubungan antar kolom, imputasi rata-rata adalah pilihan buruk. Imputasi berbasis regresi memperbaikinya, tetapi dapat membuat hubungan tampak lebih kuat dari kenyataan karena nilai pengisi persis di garis. Imputasi berganda adalah jawaban statistik untuk dilema ini."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan membuang lebih baik\n\nImputasi bukan selalu jawaban. Bila hilang di bawah lima persen dan acak, membuang baris sering sah dan paling jujur: Anda tidak mengarang apa pun. Bila nilai yang hilang adalah target prediksi, buang barisnya, karena mengisi target berarti melatih model dengan jawaban karangan. Bila sebuah kolom lebih dari separuh kosong, pertimbangkan membuang kolomnya. Imputasi paling berguna di wilayah tengah: hilang cukup banyak sehingga membuang terlalu mahal, tetapi tidak sebanyak itu sehingga isinya hampir seluruhnya karangan."
+            }
+          ],
+          "quick_check": {
+            "question": "IterativeImputer perlu diaktifkan lewat?",
+            "options": [
+              "fit_all",
+              "enable_iterative_imputer"
+            ],
+            "answer_index": 1,
+            "explanation": "Eksperimental.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Alur keputusan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Alur keputusan\n\nAlur praktis: audit hilang dan mekanismenya, pisahkan data latih dan uji, mulai dengan imputasi sederhana ditambah penanda, ukur apakah hasil model atau analisis berubah bila dibandingkan dengan membuang baris, lalu coba imputasi lanjutan hanya bila ada alasan. Selalu nilai dengan menyembunyikan nilai yang diketahui, dan laporkan metode serta asumsinya. Keputusan yang terdokumentasi dan dapat diuji lebih berharga daripada metode tercanggih yang tidak dapat dibenarkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah belajar tiga mekanisme hilang, cara memeriksa hubungan hilang dengan kolom lain, imputasi sederhana yang bebas kebocoran, serta KNN dan imputasi iteratif beserta cara menilainya dan efek sampingnya pada variasi dan korelasi. Pesan utama: pahami mengapa data hilang, pilih metode sesuai mekanisme, hitung dari data latih, dan nilai dengan bukti. Modul berikutnya membahas duplikat dan inkonsistensi."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Bukti, bukan selera",
+              "markdown": "Nilai metode imputasi dengan menyembunyikan nilai yang diketahui lalu membandingkan galatnya. Bukti mengalahkan selera."
+            },
+            {
+              "type": "text",
+              "markdown": "## Skala dan KNN\n\nKarena KNNImputer memakai jarak, kolom bersatuan besar mendominasi pencarian tetangga. Bila umur berkisar dua puluh sampai enam puluh dan gaji dalam rupiah berkisar jutaan, jarak hampir sepenuhnya ditentukan oleh gaji. Standarkan kolom lebih dulu, misalnya dengan StandardScaler, isi dengan KNN, lalu kembalikan ke skala asal bila diperlukan. Pada contoh kita kedua kolom berskala sebanding sehingga hal ini tidak muncul, tetapi pada data nyata langkah ini hampir selalu perlu. Pilihan k juga memengaruhi hasil: k kecil peka noise, k besar meratakan terlalu banyak."
+            },
+            {
+              "type": "text",
+              "markdown": "## Imputasi berganda\n\nImputasi tunggal memperlakukan nilai pengisi seakan-akan nilai asli, padahal ia hanya tebakan. Imputasi berganda membuat beberapa salinan data dengan pengisian berbeda yang diambil dari sebaran kemungkinan, menganalisis tiap salinan, lalu menggabungkan hasil dengan aturan Rubin sehingga ketidakpastian pengisian ikut terhitung dalam galat baku. Untuk analisis inferensi seperti regresi dengan interval kepercayaan, pendekatan ini jauh lebih jujur. IterativeImputer dengan `sample_posterior=True` dapat dipakai untuk menghasilkan pengisian acak berulang, walau pustaka statsmodels menyediakan alat khusus yang lebih lengkap."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menjaga alur tetap bebas kebocoran\n\nDalam praktik, taruh imputer di dalam Pipeline bersama model sehingga fit hanya terjadi pada data latih di tiap lipatan validasi silang. Bila Anda mengisi seluruh data lebih dulu lalu melakukan validasi silang, setiap lipatan sudah melihat statistik dari lipatan uji. Pipeline menyelesaikan ini secara otomatis dan juga menyederhanakan penerapan, karena satu objek mengurus pengisian sekaligus prediksi. Kebiasaan ini mengurangi kesalahan paling umum dalam proyek pembelajaran mesin yang melibatkan data hilang."
+            }
+          ],
+          "quick_check": {
+            "question": "Menilai imputasi dengan?",
+            "options": [
+              "Menyembunyikan nilai diketahui",
+              "Melihat grafik saja"
+            ],
+            "answer_index": 0,
+            "explanation": "Galat terukur.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B3-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `knn_isi(df)` yang mengisi kolom `umur` dan `gaji` dengan `KNNImputer(n_neighbors=2)` dan mengembalikan `tolist()` hasilnya yang dibulatkan dua desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nimport pandas as pd\nfrom sklearn.impute import KNNImputer\n\ndef knn_isi(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nr = knn_isi(df)\nassert r[2] == [30.0, 6.5]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[3] == [31.0, 7.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[0] == [22.0, 5.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(r) == 8"
+              }
+            ]
+          },
+          "hint": "KNNImputer dengan fit_transform pada dua kolom lalu round.",
+          "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.impute import KNNImputer\n\ndef knn_isi(df):\n    X = df[['umur', 'gaji']]\n    return KNNImputer(n_neighbors=2).fit_transform(X).round(2).tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-02-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rmse_isi(full, idx, strategi)` yang menyembunyikan nilai Series `full` pada indeks `idx`, mengisinya dengan `strategi` (`'mean'` atau `'median'`) dari sisa nilai, dan mengembalikan akar kuadrat rata-rata galat pada posisi tersembunyi, dibulatkan tiga desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nimport pandas as pd\n\ndef rmse_isi(full, idx, strategi):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rmse_isi(full, [7], 'mean')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nfull = pd.Series([1, 2, 3, 10, 20, 5, 6, 7.0])\nassert rmse_isi(full, [7], 'mean') == 0.286"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rmse_isi(full, [7], 'median')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rmse_isi(full, [7], 'median') == 2.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rmse_isi(full, [3], 'mean')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rmse_isi(full, [3], 'mean') == 3.714"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rmse_isi(full, [3], 'median')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rmse_isi(full, [3], 'median') == 5.0"
+              }
+            ]
+          },
+          "hint": "Salin, set NaN, isi dengan statistik, lalu hitung akar rata-rata kuadrat galat.",
+          "solution": "import numpy as np\nimport pandas as pd\n\ndef rmse_isi(full, idx, strategi):\n    t = full.copy()\n    t.loc[idx] = np.nan\n    pengisi = getattr(t, strategi)()\n    galat = pengisi - full.loc[idx]\n    return round(float(np.sqrt((galat ** 2).mean())), 3)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rasio_simpangan(s)` yang mengembalikan rasio simpangan baku deret setelah nilai hilang diisi rata-rata terhadap simpangan baku sebelum diisi, dibulatkan tiga desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nimport pandas as pd\n\ndef rasio_simpangan(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rasio_simpangan([1, np.nan, 3, np.nan, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nassert rasio_simpangan([1, np.nan, 3, np.nan, 5]) < 1.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rasio_simpangan([1, 2, np.nan, 4, 5, np.nan, 7])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rasio_simpangan([1, 2, np.nan, 4, 5, np.nan, 7]) == 0.816"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rasio_simpangan([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rasio_simpangan([1, 2, 3]) == 1.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rasio_simpangan([2, 4, np.nan, 8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rasio_simpangan([2, 4, np.nan, 8]) < 1"
+              }
+            ]
+          },
+          "hint": "std setelah fillna mean dibagi std awal.",
+          "solution": "import numpy as np\nimport pandas as pd\n\ndef rasio_simpangan(s):\n    s = pd.Series(s, dtype=float)\n    return round(float(s.fillna(s.mean()).std() / s.std()), 3)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `isi_interpolasi(s)` yang menerima list angka dengan NaN dan mengembalikan list hasil interpolasi linear.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\nimport pandas as pd\n\ndef isi_interpolasi(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isi_interpolasi([1, np.nan, 3, np.nan, np.nan...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\nassert isi_interpolasi([1, np.nan, 3, np.nan, np.nan, 6]) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "isi_interpolasi([0, np.nan, 10])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_interpolasi([0, np.nan, 10]) == [0.0, 5.0, 10.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isi_interpolasi([4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_interpolasi([4, 5]) == [4.0, 5.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "isi_interpolasi([2, np.nan, np.nan, 8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_interpolasi([2, np.nan, np.nan, 8]) == [2.0, 4.0, 6.0, 8.0]"
+              }
+            ]
+          },
+          "hint": "Series desimal lalu interpolate.",
+          "solution": "import numpy as np\nimport pandas as pd\n\ndef isi_interpolasi(s):\n    return pd.Series(s, dtype=float).interpolate().tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "KNNImputer mengisi dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata tetangga terdekat",
+              "description": ""
+            },
+            {
+              "label": "Median global",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Modus",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tetangga.",
+          "explanation": "Baris mirip."
+        },
+        {
+          "q": "IterativeImputer perlu diaktifkan lewat?",
+          "code": null,
+          "options": [
+            {
+              "label": "enable_iterative_imputer",
+              "description": ""
+            },
+            {
+              "label": "fit_all",
+              "description": ""
+            },
+            {
+              "label": "turn_on",
+              "description": ""
+            },
+            {
+              "label": "dropna",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "enable.",
+          "explanation": "Eksperimental."
+        },
+        {
+          "q": "Menilai imputasi dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menyembunyikan nilai diketahui",
+              "description": ""
+            },
+            {
+              "label": "Melihat grafik saja",
+              "description": ""
+            },
+            {
+              "label": "Menebak",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sembunyikan.",
+          "explanation": "Galat terukur."
+        },
+        {
+          "q": "Pengisian rata-rata terhadap simpangan baku?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menurunkan",
+              "description": ""
+            },
+            {
+              "label": "Menaikkan",
+              "description": ""
+            },
+            {
+              "label": "Tetap",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Turun.",
+          "explanation": "Mengerut."
+        },
+        {
+          "q": "Target yang hilang sebaiknya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dibuang barisnya",
+              "description": ""
+            },
+            {
+              "label": "Diisi rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Diisi nol",
+              "description": ""
+            },
+            {
+              "label": "Diacak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Buang.",
+          "explanation": "Jangan dikarang."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai imputasi rata-rata lalu menganalisis korelasi. Lebih baik: Sadari rata-rata melemahkan korelasi, pakai metode yang memakai kolom lain.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai imputasi rata-rata lalu menganalisis korelasi.",
+          "fix": "Sadari rata-rata melemahkan korelasi, pakai metode yang memakai kolom lain."
+        },
+        {
+          "mistake": "Memilih metode imputasi berdasarkan selera.",
+          "fix": "Sembunyikan nilai diketahui dan bandingkan galat."
+        },
+        {
+          "mistake": "Mengisi kolom target dengan imputasi.",
+          "fix": "Buang baris yang targetnya hilang."
+        }
+      ],
+      "summary": [
+        "KNN dan imputasi iteratif memanfaatkan kolom lain untuk mengisi nilai hilang.",
+        "Sembunyikan nilai yang diketahui untuk membandingkan metode imputasi dengan galat.",
+        "Pengisian satu angka mengerutkan variasi dan melemahkan korelasi.",
+        "Mulai sederhana dan naik hanya bila ada bukti perlunya."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Imputasi lanjutan dan cara menilainya"
+          },
+          {
+            "type": "text",
+            "source": "Nilai hilang diisi rata-rata dua tetangga terdekat menurut kolom lain yang terisi. Setelah transform tidak ada NaN tersisa."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'umur': [22, 25, np.nan, 31, 35, np.nan, 41, 45],\n    'gaji': [5.0, 6.0, 6.5, np.nan, 8.0, 9.0, np.nan, 11.0],\n    'kota': ['A', 'A', 'B', None, 'B', 'A', 'B', 'A'],\n    'lulus': [0, 0, 1, 1, 1, 0, 1, 1],\n})\n\nfrom sklearn.impute import KNNImputer\nX = df[['umur', 'gaji']]\nkn = KNNImputer(n_neighbors=2)\nprint(kn.fit_transform(X).round(2).tolist())\nprint(X.isna().sum().to_dict())\nprint(np.isnan(kn.fit_transform(X)).sum())"
+          },
+          {
+            "type": "text",
+            "source": "Pada hubungan linear sempurna, imputasi yang memakai kolom lain memulihkan nilai tepat, sedangkan mean dan median meleset tiga satuan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nfrom sklearn.experimental import enable_iterative_imputer\nfrom sklearn.impute import IterativeImputer, KNNImputer\nfull = pd.DataFrame({'a': [1, 2, 3, 4, 5, 6, 7, 8], 'b': [2, 4, 6, 8, 10, 12, 14, 16]})\nt = full.copy()\nt.loc[[2, 5], 'b'] = np.nan\nfor strat in ['mean', 'median']:\n    f = t['b'].fillna(getattr(t['b'], strat)())\n    err = (f - full['b']).loc[[2, 5]]\n    print(strat, f.loc[[2, 5]].tolist(), round(float(np.sqrt((err ** 2).mean())), 3))\nprint(t['b'].interpolate().tolist())\nprint(IterativeImputer(random_state=0).fit_transform(t).round(2)[[2, 5], 1].tolist())\nprint(KNNImputer(n_neighbors=2).fit_transform(t)[[2, 5], 1].tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Pengisian rata-rata menurunkan simpangan baku dan melemahkan korelasi. Interpolasi memulihkan deret yang berubah linear."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ns = pd.Series([1, 2, np.nan, 4, 5, np.nan, 7.0])\nprint(round(s.std(), 3), round(s.fillna(s.mean()).std(), 3))\nprint(round(s.fillna(s.mean()).std() / s.std(), 3))\nd2 = pd.DataFrame({'x': [1, 2, 3, 4, 5, 6.0], 'y': [2.1, 3.9, np.nan, 8.2, np.nan, 11.8]})\nprint(round(d2.corr().loc['x', 'y'], 3), round(d2.fillna(d2.mean()).corr().loc['x', 'y'], 3))\nprint(d2.dropna().shape, round(d2['y'].std(), 3), round(d2['y'].fillna(d2['y'].mean()).std(), 3))\nprint(pd.Series([1, np.nan, 3, np.nan, np.nan, 6.0]).interpolate().tolist())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

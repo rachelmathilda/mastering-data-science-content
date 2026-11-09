@@ -1,0 +1,722 @@
+import sys
+import textwrap
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib import T, K, A, C, E, Q, M, lesson, write_module
+
+REF = []
+
+DFX = """
+import numpy as np
+import pandas as pd
+
+df = pd.DataFrame({
+    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka', 'Fani'],
+    'divisi': ['IT', 'HR', 'IT', 'Ops', 'HR', 'IT'],
+    'gaji': [8, 6, 9, 5, 7, 10],
+    'skor': [88, 72, 95, 64, 80, 91],
+})
+"""
+
+
+def tb(h, b):
+    return T("## " + h + "\n\n" + b)
+
+
+def ind(s):
+    return textwrap.indent(s.strip("\n"), "            ")
+
+
+def P(body):
+    return ind(DFX + "\n" + textwrap.dedent(body).strip("\n"))
+
+
+def S(code):
+    return ind("import numpy as np\nimport pandas as pd\nimport io\n\n" + textwrap.dedent(code).strip("\n"))
+
+
+def X(c):
+    return textwrap.dedent(c).strip("\n")
+
+
+F11 = """
+import pandas as pd
+
+def bonus_teratas(df, batas):
+    r = (df.query('skor >= @batas')
+           .assign(bonus=lambda d: d['gaji'] * 0.1)
+           .sort_values('bonus', ascending=False))
+    return r['nama'].tolist()
+"""
+F12 = """
+import pandas as pd
+
+def ringkas_divisi(df):
+    r = (df.groupby('divisi')
+           .agg(n=('nama', 'size'), rata=('skor', 'mean'))
+           .round(1)
+           .sort_values('rata', ascending=False)
+           .reset_index())
+    return r.values.tolist()
+"""
+F13 = """
+import pandas as pd
+
+def ganti_rendah(df, batas, pengganti):
+    return df['skor'].where(df['skor'] >= batas, pengganti).tolist()
+"""
+F14 = """
+import pandas as pd
+
+def filter_query(df, minimal):
+    return df.query('gaji > @minimal and divisi in ["IT", "HR"]')['nama'].tolist()
+"""
+
+l1 = lesson(
+    "B2-10-1",
+    "Method chaining dan kode pandas yang mudah dibaca",
+    35,
+    [
+        "Menulis rantai metode yang terbaca seperti resep",
+        "Memakai assign, pipe, dan query dalam rantai",
+        "Memilih antara where, mask, between, dan isin",
+        "Memahami mengapa penugasan berantai berbahaya",
+    ],
+    [
+        tb("Dari skrip ke resep", "Kode pandas yang baru dipelajari biasanya berupa deretan penugasan: buat variabel sementara, ubah, simpan lagi, ubah lagi. Setelah sebulan, tidak ada yang ingat variabel `df3` berisi apa. Gaya idiomatik pandas menulis alur sebagai satu rantai metode yang dibaca dari atas ke bawah seperti resep: saring, buat kolom, urutkan, rapikan. Tiap baris menjawab satu pertanyaan dan hasilnya mengalir ke baris berikutnya. Kode seperti ini lebih mudah dibaca, diuji, dan diubah, dan hampir tidak menyisakan variabel perantara yang membingungkan."),
+        tb("Anatomi rantai yang baik", "Rantai yang baik dibungkus tanda kurung agar boleh dipecah ke banyak baris tanpa garis miring, dengan satu metode per baris. Awali dengan menyaring baris untuk memperkecil data sedini mungkin, lanjutkan dengan membuat kolom turunan, kemudian agregasi, urutkan, dan terakhir rapikan indeks atau nama kolom. Urutan ini mengikuti logika pertanyaan dan meminimalkan pekerjaan yang dikerjakan di tahap berikutnya. Bila satu rantai melebihi sekitar sepuluh langkah, pecahkan menjadi fungsi bernama yang masing-masing mudah diuji."),
+        tb("Data contoh", "Pelajaran ini memakai tabel enam karyawan dengan kolom `nama`, `divisi` berisi IT, HR, atau Ops, `gaji` dalam juta rupiah, dan `skor` penilaian. Skor tertinggi dimiliki Cici dengan 95, dan skor terendah Dedi dengan 64. Divisi IT beranggota tiga orang, HR dua, dan Ops satu. Angka-angka kecil ini memungkinkan Anda memeriksa tiap langkah rantai dengan mata dan menumbuhkan kebiasaan memverifikasi hasil antara sebelum merangkai langkah berikutnya."),
+        C(
+            P("""
+r = (df.query('skor >= 80')
+       .assign(bonus=lambda d: d['gaji'] * 0.1)
+       .sort_values('bonus', ascending=False)
+       .reset_index(drop=True))
+print(r['nama'].tolist())
+print(r['bonus'].round(1).tolist())
+res = (df.groupby('divisi')
+         .agg(n=('nama', 'size'), rata=('skor', 'mean'))
+         .round(1)
+         .sort_values('rata', ascending=False))
+print(res.index.tolist(), res['rata'].tolist(), res['n'].tolist())
+"""),
+            ind("""
+['Fani', 'Cici', 'Ani', 'Eka']
+[1.0, 0.9, 0.8, 0.7]
+['IT', 'HR', 'Ops'] [91.3, 76.0, 64.0] [3, 2, 1]
+"""),
+            "Satu rantai menyaring, membuat kolom, mengurutkan, dan merapikan indeks. Rantai kedua mengagregasi per divisi lalu mengurutkan hasilnya.",
+            filename="rantai_metode.py",
+        ),
+        tb("assign dengan lambda", "Metode `assign` membuat kolom baru dan mengembalikan tabel baru, cocok dalam rantai. Gunakan lambda yang menerima tabel pada tahap itu, seperti `assign(bonus=lambda d: d['gaji'] * 0.1)`. Lambda penting karena merujuk tabel hasil langkah sebelumnya, bukan variabel awal, sehingga kolom yang baru dibuat atau baris yang sudah disaring terlihat. Tanpa lambda, `df['gaji']` merujuk tabel asli dan mengabaikan penyaringan di langkah sebelumnya, sumber kesalahan yang sangat halus pada rantai panjang."),
+        tb("pipe untuk fungsi sendiri", "Metode `pipe(fungsi, ...)` memasukkan tabel ke fungsi buatan sendiri dan mengembalikan hasilnya, sehingga fungsi tersebut tetap berada di dalam rantai. Ini memungkinkan Anda menulis langkah pembersihan sebagai fungsi bernama yang dapat diuji terpisah lalu merangkainya: `df.pipe(bersihkan).pipe(tambah_fitur, k=2)`. Rantai menjadi seperti daftar isi alur analisis, dan tiap fungsi dapat diuji dengan tabel kecil. Pola ini adalah jembatan antara gaya skrip eksplorasi dan kode produksi yang rapi."),
+        tb("query yang ekspresif", "Metode `query` menyaring dengan ekspresi teks yang terbaca seperti kalimat: `df.query('skor >= 80 and divisi == \"IT\"')`. Variabel Python dirujuk dengan awalan `@`, misalnya `df.query('gaji > @batas')`, sehingga ambang dapat berupa parameter fungsi. Query cocok dalam rantai karena tidak membutuhkan nama variabel tabel di dalam ekspresi, tidak seperti penyaringan boolean yang mengulang `df[...]`. Untuk nama kolom dengan spasi, bungkus dengan tanda kutip terbalik. Untuk logika yang sangat rumit, penyaringan boolean biasa mungkin lebih jelas."),
+        C(
+            P("""
+print(df.query('divisi in ["IT", "HR"] and gaji > 6')['nama'].tolist())
+k = 7
+print(df.query('gaji > @k')['nama'].tolist())
+def tambah(d, f):
+    return d.assign(g2=d['gaji'] * f)
+print(df.pipe(tambah, 2)['g2'].tolist())
+print(df.pipe(lambda d: d[d['divisi'] == 'IT']).shape)
+print(df.eval('total = gaji + skor')['total'].tolist())
+print(df.rename(columns=str.upper).columns.tolist())
+"""),
+            ind("""
+['Ani', 'Cici', 'Eka', 'Fani']
+['Ani', 'Cici', 'Fani']
+[16, 12, 18, 10, 14, 20]
+(3, 4)
+[96, 78, 104, 69, 87, 101]
+['NAMA', 'DIVISI', 'GAJI', 'SKOR']
+"""),
+            "Query memakai ekspresi teks dan variabel dengan @. Pipe meneruskan tabel ke fungsi, dan eval menghitung kolom dari ekspresi.",
+            filename="query_pipe.py",
+        ),
+        tb("where, mask, between, isin", "Beberapa metode kecil menggantikan banyak perulangan. `where(syarat, pengganti)` mempertahankan nilai yang memenuhi syarat dan mengganti sisanya, `mask` kebalikannya. `between(a, b)` menghasilkan boolean untuk nilai dalam rentang tertutup, dan `isin(daftar)` untuk keanggotaan. `nlargest` dan `nsmallest` mengambil n teratas atau terbawah tanpa mengurutkan seluruh tabel. Mengenali padanan ini membuat kode pendek dan jelas, dan menghindarkan Anda menulis `apply` untuk hal yang sudah tersedia sebagai metode bawaan."),
+        C(
+            P("""
+print(df['skor'].where(df['skor'] >= 80, 0).tolist())
+print(df['skor'].mask(df['skor'] >= 90, 90).tolist())
+print(df['gaji'].between(6, 8).tolist())
+print(df['divisi'].isin(['HR']).tolist())
+print(df.nlargest(2, 'skor')['nama'].tolist(), df.nsmallest(2, 'gaji')['nama'].tolist())
+print(df.sort_values(['divisi', 'skor'], ascending=[True, False])['nama'].tolist())
+"""),
+            ind("""
+[88, 0, 95, 0, 80, 91]
+[88, 72, 90, 64, 80, 90]
+[True, True, False, False, True, False]
+[False, True, False, False, True, False]
+['Cici', 'Fani'] ['Dedi', 'Budi']
+['Eka', 'Budi', 'Cici', 'Fani', 'Ani', 'Dedi']
+"""),
+            "Metode kecil seperti where, mask, between, dan isin menggantikan perulangan dan apply. Sort dengan beberapa kolom dapat memakai arah berbeda per kolom.",
+            filename="metode_kecil.py",
+        ),
+        tb("Penugasan berantai", "Menulis `df[df['skor'] < 70]['skor'] = 70` adalah jebakan klasik. Dua indeks berantai bisa mengubah salinan sementara, bukan tabel asli, sehingga penugasan hilang tanpa galat. Pandas versi lama memberi peringatan SettingWithCopy, dan versi baru dengan copy-on-write membuat penugasan semacam itu tidak pernah mengubah tabel asal. Cara yang benar adalah satu operasi `loc`: `df.loc[df['skor'] < 70, 'skor'] = 70`. Biasakan satu penugasan satu `loc`, tanpa indeks berantai."),
+        tb("Copy-on-write", "Pandas versi terbaru menjadikan copy-on-write sebagai perilaku bawaan: hasil operasi yang tampak seperti pandangan atas data lain selalu berperilaku seperti salinan independen, sehingga mengubahnya tidak pernah menimbulkan efek samping tak terduga pada tabel asal. Ini menghapus kelas kesalahan yang dulu menghantui pengguna pandas, dan membuat kode lebih mudah dipahami. Konsekuensinya, jangan mengandalkan perubahan lewat pandangan: jika ingin mengubah tabel, tugaskan hasilnya ke variabel atau gunakan `loc` pada tabel itu sendiri."),
+        K("tip", "Tulis alur sebagai satu rantai yang dibungkus tanda kurung, satu metode per baris, dan beri nama fungsi bila rantai melebihi sekitar sepuluh langkah.", title="Resep, bukan skrip"),
+        tb("Membaca rantai orang lain", "Keuntungan terbesar rantai metode terasa ketika Anda atau rekan membaca kode itu beberapa bulan kemudian. Tiap baris adalah satu langkah dengan satu tujuan, sehingga pembaca dapat berhenti di langkah mana pun dan memeriksa hasil antara dengan memotong rantai di titik itu. Teknik debugging sederhana adalah menambahkan `.pipe(print)` atau `.head()` di tengah rantai, melihat bentuk data, lalu menghapusnya. Karena tidak ada variabel perantara yang berubah diam-diam, urutan langkah menjadi dokumentasi yang selalu sesuai dengan kode yang berjalan."),
+        tb("Kapan tidak memakai rantai", "Rantai bukan dogma. Bila sebuah langkah memerlukan hasil antara untuk dipakai dua kali, simpan dalam variabel bernama jelas agar tidak dihitung ulang. Bila rantai berisi percabangan logika yang rumit, pecahlah menjadi fungsi bernama. Dan bila Anda sedang menjelajah data secara interaktif, variabel perantara justru membantu karena Anda dapat memeriksa tiap tahap. Tujuan akhirnya keterbacaan: rantai yang membuat alur lebih jelas layak dipakai, rantai yang memaksakan semuanya menjadi satu ekspresi panjang tidak."),
+        tb("Konsistensi nama kolom", "Rantai yang rapi bergantung pada nama kolom yang konsisten. Kebiasaan baik adalah merapikan nama kolom di awal alur: huruf kecil semua, spasi diganti garis bawah, tanpa karakter khusus. Dengan `rename(columns=str.lower)` atau `str.replace` pada `columns`, Anda menghindari kesalahan ketik berulang dan memungkinkan akses atribut dan query yang mulus. Nama yang seragam juga memudahkan penggabungan tabel dari sumber berbeda, karena kunci dan kolom yang sama benar-benar bernama sama dan tidak berbeda huruf besar atau spasi tersembunyi."),
+        tb("Latihan membaca", "Cobalah membaca rantai pertama dalam pelajaran ini dengan suara keras sebagai resep: saring skor delapan puluh ke atas, buat kolom bonus, urutkan menurun menurut bonus, lalu rapikan indeks. Bila Anda dapat menceritakannya tanpa melihat kode, rantai itu terbaca baik.", ),
+        E(
+            "B2-10-1-ex1",
+            "mudah",
+            "Tulis fungsi `bonus_teratas(df, batas)` yang dalam satu rantai menyaring karyawan dengan `skor` sekurang-kurangnya `batas`, membuat kolom `bonus` sebesar sepersepuluh `gaji`, mengurutkan menurut bonus terbesar, dan mengembalikan list `nama`.",
+            ind("""
+import pandas as pd
+
+def bonus_teratas(df, batas):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert bonus_teratas(df, 80) == ['Fani', 'Cici', 'Ani', 'Eka']
+assert bonus_teratas(df, 90) == ['Fani', 'Cici']
+assert bonus_teratas(df, 100) == []
+assert bonus_teratas(df, 0)[-1] == 'Dedi'
+"""),
+            "query dengan variabel @batas, assign dengan lambda, lalu sort_values.",
+            X(F11),
+        ),
+        E(
+            "B2-10-1-ex2",
+            "sedang",
+            "Tulis fungsi `ringkas_divisi(df)` yang dalam satu rantai menghitung jumlah anggota `n` dan rata-rata `skor` (dibulatkan satu desimal) per `divisi`, mengurutkan menurut rata-rata terbesar, dan mengembalikan `reset_index().values.tolist()`.",
+            ind("""
+import pandas as pd
+
+def ringkas_divisi(df):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert ringkas_divisi(df) == [['IT', 3, 91.3], ['HR', 2, 76.0], ['Ops', 1, 64.0]]
+assert ringkas_divisi(df.iloc[[1]]) == [['HR', 1, 72.0]]
+assert ringkas_divisi(df)[0][0] == 'IT'
+assert len(ringkas_divisi(df)) == 3
+"""),
+            "groupby, agg bernama, round, sort_values, lalu reset_index.",
+            X(F12),
+        ),
+        E(
+            "B2-10-1-ex3",
+            "sedang",
+            "Tulis fungsi `ganti_rendah(df, batas, pengganti)` yang mengembalikan list `skor` dengan nilai di bawah `batas` diganti `pengganti`, memakai `where`.",
+            ind("""
+import pandas as pd
+
+def ganti_rendah(df, batas, pengganti):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert ganti_rendah(df, 80, 0) == [88, 0, 95, 0, 80, 91]
+assert ganti_rendah(df, 0, 0) == [88, 72, 95, 64, 80, 91]
+assert ganti_rendah(df, 100, -1) == [-1] * 6
+assert ganti_rendah(df, 90, 90) == [90, 90, 95, 90, 90, 91]
+"""),
+            "where mempertahankan yang memenuhi syarat dan mengganti sisanya.",
+            X(F13),
+        ),
+        E(
+            "B2-10-1-ex4",
+            "menantang",
+            "Tulis fungsi `filter_query(df, minimal)` yang memakai `query` untuk mengembalikan list `nama` karyawan divisi IT atau HR dengan `gaji` lebih besar dari `minimal`.",
+            ind("""
+import pandas as pd
+
+def filter_query(df, minimal):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert filter_query(df, 6) == ['Ani', 'Cici', 'Eka', 'Fani']
+assert filter_query(df, 9) == ['Fani']
+assert filter_query(df, 10) == []
+assert filter_query(df, 0) == ['Ani', 'Budi', 'Cici', 'Eka', 'Fani']
+"""),
+            "query dengan in dan variabel @minimal.",
+            X(F14),
+        ),
+    ],
+    [
+        M("Membuat banyak variabel perantara bernama df2, df3.", "Tulis rantai metode dalam tanda kurung."),
+        M("Memakai df asli di dalam rantai setelah penyaringan.", "Pakai lambda atau query agar merujuk tabel tahap itu."),
+        M("Menulis df[syarat]['kolom'] = nilai.", "Pakai satu operasi df.loc[syarat, 'kolom'] = nilai."),
+    ],
+    [
+        Q("assign dalam rantai memakai?", ["lambda", "variabel awal", "print", "global"], 0, "Merujuk tahap itu.", hint="Lambda."),
+        Q("Variabel Python dalam query dirujuk dengan?", ["@", "$", "#", "&"], 0, "Awalan.", hint="@."),
+        Q("where mempertahankan nilai yang?", ["Memenuhi syarat", "Tidak memenuhi", "Terkecil", "Hilang"], 0, "Sisanya diganti.", hint="Memenuhi."),
+        Q("Penugasan aman memakai?", ["loc satu langkah", "Indeks berantai", "apply", "print"], 0, "Satu loc.", hint="loc."),
+        Q("pipe berguna untuk?", ["Fungsi buatan sendiri dalam rantai", "Menggabung", "Menghapus", "Mengurutkan"], 0, "Rantai.", hint="Fungsi."),
+    ],
+    [
+        "Rantai metode membuat alur terbaca seperti resep.",
+        "assign dengan lambda, pipe, dan query cocok dalam rantai.",
+        "where, mask, between, dan isin menggantikan banyak perulangan.",
+        "Gunakan satu loc untuk penugasan dan hindari indeks berantai.",
+    ],
+    [],
+)
+
+G11 = """
+import pandas as pd
+
+def kolom_numerik(df):
+    return df.select_dtypes('number').columns.tolist()
+"""
+G12 = """
+import pandas as pd
+
+def kode_kategori(s):
+    return pd.Series(s).astype('category').cat.codes.tolist()
+"""
+G13 = """
+import pandas as pd
+import io
+
+def total_chunk(teks, ukuran):
+    total = 0
+    for potongan in pd.read_csv(io.StringIO(teks), chunksize=ukuran):
+        total += int(potongan['a'].sum())
+    return total
+"""
+G14 = """
+import pandas as pd
+
+def urut_kategori(nilai, urutan):
+    c = pd.Series(pd.Categorical(nilai, categories=urutan, ordered=True))
+    return c.sort_values().tolist()
+"""
+
+l2 = lesson(
+    "B2-10-2",
+    "Tipe data, memori, dan membaca file besar",
+    35,
+    [
+        "Mengukur pemakaian memori dengan memory_usage",
+        "Menghemat memori dengan category dan tipe numerik kecil",
+        "Membaca sebagian file dengan usecols, dtype, nrows, dan chunksize",
+        "Memakai kategori berurutan untuk perbandingan dan pengurutan",
+    ],
+    [
+        tb("Mengapa memori penting", "Pandas menyimpan seluruh tabel di memori, sehingga ukuran RAM menjadi batas praktis. Tabel dengan sepuluh juta baris dan dua puluh kolom mudah menghabiskan beberapa gigabita bila tipe datanya tidak dipilih dengan baik. Kabar baiknya, sebagian besar pemborosan berasal dari tipe bawaan yang terlalu longgar: bilangan bulat selalu 64 bit walau nilainya kecil, dan teks disimpan sebagai objek Python yang berat. Mengubah tipe sering menurunkan pemakaian memori sampai sepuluh kali lipat tanpa mengubah satu pun angka dalam hasil analisis."),
+        tb("Mengukur dulu", "Jangan mengoptimalkan tanpa mengukur. Metode `memory_usage(deep=True)` melaporkan jumlah byte per kolom, dan argumen `deep=True` menghitung isi teks sungguhan, bukan hanya penunjuknya. `df.info(memory_usage='deep')` memberi ringkasan lengkap. Dengan angka ini Anda tahu kolom mana yang paling boros dan layak diubah. Biasanya hanya dua atau tiga kolom, umumnya kolom teks dengan sedikit nilai unik, yang menyumbang sebagian besar memori, dan mengubahnya saja sudah cukup besar dampaknya."),
+        C(
+            P("""
+big = pd.DataFrame({'k': ['a', 'b', 'c'] * 1000, 'x': np.arange(3000)})
+m1 = big['k'].memory_usage(deep=True)
+m2 = big['k'].astype('category').memory_usage(deep=True)
+print(m2 < m1)
+print(big['x'].memory_usage() > big['x'].astype('int32').memory_usage())
+print(df['gaji'].nbytes, df['gaji'].astype('int8').nbytes)
+print(pd.to_numeric(pd.Series([1, 2, 300]), downcast='integer').dtype.name)
+print(pd.Series([1, 2, 3]).astype('int8').dtype.name, pd.Series([1.5, 2.5]).astype('float32').dtype.name)
+print(df.select_dtypes('number').columns.tolist(), df.select_dtypes(exclude='number').columns.tolist())
+"""),
+            ind("""
+True
+True
+48 6
+int16
+int8 float32
+['gaji', 'skor'] ['nama', 'divisi']
+"""),
+            "Kategori dan tipe numerik kecil menurunkan memori. To_numeric dengan downcast memilih tipe terkecil yang cukup, dan select_dtypes memilih kolom menurut tipe.",
+            filename="memori.py",
+        ),
+        tb("Tipe numerik yang lebih kecil", "Bilangan bulat bawaan adalah 64 bit, delapan byte per nilai. Bila nilainya selalu antara minus 128 dan 127, `int8` cukup dengan satu byte, delapan kali lebih hemat. Untuk rentang lebih besar ada `int16` dan `int32`. Fungsi `pd.to_numeric(kolom, downcast='integer')` memilih otomatis tipe terkecil yang menampung semua nilai. Berhati-hatilah: nilai yang melampaui rentang akan meluap tanpa peringatan pada operasi berikutnya, jadi jangan menurunkan tipe kolom yang akan dijumlahkan menjadi angka besar tanpa memeriksa rentang hasilnya."),
+        tb("Kategori untuk teks berulang", "Kolom teks dengan sedikit nilai unik, seperti divisi, kota, atau status, jauh lebih hemat bila bertipe `category`. Pandas menyimpan satu daftar kategori unik dan kode bilangan bulat kecil untuk tiap baris, bukan salinan teks di tiap baris. Pada seribu baris dengan tiga nilai unik, penghematannya puluhan kali lipat. Kategori juga mempercepat groupby dan pengurutan. Namun bila hampir semua nilai unik, seperti nama atau alamat, kategori tidak membantu dan malah menambah beban, jadi ukur sebelum memakainya."),
+        C(
+            S("""
+s = pd.Series(['a', 'b', 'a']).astype('category')
+print(s.cat.categories.tolist(), s.cat.codes.tolist())
+c = pd.Series(pd.Categorical(['lo', 'hi', 'mid', 'hi'], categories=['lo', 'mid', 'hi'], ordered=True))
+print(c.sort_values().tolist(), (c > 'lo').tolist())
+print(c.value_counts().to_dict())
+print(c.cat.codes.tolist())
+print(c.max(), c.min())
+"""),
+            ind("""
+['a', 'b'] [0, 1, 0]
+['lo', 'mid', 'hi', 'hi'] [False, True, True, True]
+{'hi': 2, 'lo': 1, 'mid': 1}
+[0, 2, 1, 2]
+hi lo
+"""),
+            "Kategori menyimpan kode kecil. Kategori berurutan mendukung perbandingan, pengurutan, minimum, dan maksimum menurut urutan yang Anda tentukan.",
+            filename="kategori.py",
+        ),
+        tb("Kategori berurutan", "Kategori dapat diberi urutan lewat `ordered=True` dan daftar `categories` terurut. Hasilnya, perbandingan seperti `c > 'lo'`, pengurutan, serta `min` dan `max` mengikuti urutan itu, bukan urutan abjad. Ini penting untuk skala ordinal seperti rendah, sedang, tinggi atau tingkat pendidikan, yang urutan abjadnya menyesatkan karena `hi` akan mendahului `lo`. Kategori berurutan juga menjaga urutan sumbu pada grafik dan tabel pivot, sehingga laporan konsisten tanpa penyortiran manual."),
+        tb("Membaca sebagian file", "Bila file terlalu besar atau Anda hanya memerlukan sebagian kolom, minta pandas membaca seperlunya. Argumen `usecols` hanya memuat kolom yang disebut, `dtype` menetapkan tipe sejak awal sehingga tidak perlu konversi sesudahnya, dan `nrows` membaca beberapa baris pertama untuk intip cepat. Menetapkan tipe saat membaca menghindari lonjakan memori sementara akibat tipe bawaan yang boros, dan membuat tipe konsisten antar file bulanan yang dibaca terpisah."),
+        C(
+            S("""
+csv = 'a,b,c\\n1,x,3.5\\n2,y,4.5\\n3,x,5.5\\n'
+print(pd.read_csv(io.StringIO(csv), usecols=['a', 'c']).columns.tolist())
+d = pd.read_csv(io.StringIO(csv), dtype={'a': 'int8', 'b': 'category'})
+print(d['b'].cat.categories.tolist(), d['a'].dtype.name)
+print(pd.read_csv(io.StringIO(csv), nrows=2).shape)
+tot = 0
+for ch in pd.read_csv(io.StringIO(csv), chunksize=2):
+    tot += ch['a'].sum()
+print(int(tot), len(list(pd.read_csv(io.StringIO(csv), chunksize=2))))
+"""),
+            ind("""
+['a', 'c']
+['x', 'y'] int8
+(2, 3)
+6 2
+"""),
+            "Usecols, dtype, dan nrows membatasi apa yang dimuat. Chunksize membaca bertahap sehingga file besar dapat diproses tanpa memuat semuanya sekaligus.",
+            filename="baca_sebagian.py",
+        ),
+        tb("Memproses dalam potongan", "Dengan `chunksize=n`, `read_csv` mengembalikan iterator potongan berisi n baris. Anda memproses tiap potongan lalu menggabungkan hasil ringkasnya, misalnya jumlah per potongan yang dijumlahkan di akhir. Cara ini memungkinkan menganalisis file lebih besar daripada RAM selama hasil yang dikumpulkan kecil. Pola yang cocok: jumlah, hitungan, rata-rata dari jumlah dan hitungan, serta penyaringan. Pola yang tidak cocok: median atau operasi yang memerlukan seluruh data sekaligus, yang membutuhkan alat lain seperti basis data."),
+        tb("Format file dan kecepatan", "CSV adalah format teks yang lambat dibaca dan tidak menyimpan tipe data. Format biner kolumnar seperti Parquet menyimpan tipe, dimampatkan, dan memungkinkan membaca hanya kolom tertentu dengan sangat cepat. Untuk data yang dibaca berulang, ubah sekali dari CSV ke Parquet lalu baca versi itu. Pembacaan bisa sepuluh kali lebih cepat dan ukurannya jauh lebih kecil. Keputusan format penyimpanan sering memberi penghematan lebih besar daripada optimasi kode apa pun."),
+        K("tip", "Ukur memori dengan memory_usage(deep=True), lalu ubah hanya dua atau tiga kolom terboros: teks berulang menjadi category dan angka kecil menjadi tipe lebih kecil.", title="Ukur dulu"),
+        tb("Kapan optimasi memori perlu", "Untuk tabel puluhan ribu baris, mengubah tipe nyaris tidak ada gunanya, dan kejelasan lebih penting. Optimasi memori baru layak ketika tabel mulai mendekati batas RAM, ketika pemrosesan memakan waktu terlalu lama karena salinan besar, atau ketika Anda menyimpan banyak tabel sekaligus. Mulailah dengan mengukur, ubah kolom terboros, ukur lagi, dan berhenti begitu cukup. Jangan menurunkan tipe semua kolom hanya karena bisa, sebab setiap perubahan menambah risiko meluap dan menambah kode yang harus dirawat."),
+        tb("Nilai hilang dan tipe bilangan bulat", "Kolom bilangan bulat yang memiliki NaN otomatis berubah menjadi desimal, karena NaN hanya ada pada tipe desimal. Pandas menyediakan tipe bilangan bulat yang mendukung nilai hilang, ditulis `Int64` dengan huruf kapital, yang menyimpan penanda hilang tersendiri bernama NA. Tipe ini mempertahankan sifat bilangan bulat dan menghindari kejutan seperti nomor identitas yang berubah menjadi 3,0. Gunakan untuk kolom identitas dan hitungan yang boleh kosong, dan perhatikan bahwa sebagian pustaka lain belum mengenalinya."),
+        tb("Tipe teks modern", "Pandas versi baru memiliki tipe teks khusus yang lebih hemat dan lebih cepat daripada kolom objek berisi string Python biasa. Perilakunya hampir sama dengan yang Anda kenal, tetapi memori dan kecepatan membaik, terutama untuk teks panjang. Karena detail tipe ini berubah antar versi, jangan mencetak nama tipe teks dalam pengujian dan jangan membuat asumsi tentangnya. Tulis kode yang bekerja lewat atribut `str`, yang sama pada semua versi, dan biarkan pandas memilih representasi internal terbaik."),
+        tb("Menyimpan hasil antara", "Bila pembersihan data berat, simpan hasilnya sekali ke format biner supaya tidak mengulang pekerjaan. Parquet mempertahankan tipe termasuk kategori dan tanggal, sedangkan CSV kehilangan semuanya dan memaksa Anda menetapkan ulang tipe tiap kali membaca. Simpan versi bersih berdampingan dengan data mentah yang tidak pernah diubah, dan beri nama berversi. Kebiasaan ini mempercepat iterasi dan menjadi bagian dari alur kerja yang dapat diulang seperti yang dibahas pada course Git dan reproduksibilitas."),
+        tb("Ringkasan praktis", "Untuk data yang hampir memenuhi memori, urutan tindakannya: ukur, ubah teks berulang menjadi kategori, turunkan angka, baca hanya kolom yang perlu, dan simpan hasil bersih dalam format biner.", ),
+        E(
+            "B2-10-2-ex1",
+            "mudah",
+            "Tulis fungsi `kolom_numerik(df)` yang mengembalikan list nama kolom bertipe angka memakai `select_dtypes`.",
+            ind("""
+import pandas as pd
+
+def kolom_numerik(df):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert kolom_numerik(df) == ['gaji', 'skor']
+assert kolom_numerik(df[['nama', 'divisi']]) == []
+assert kolom_numerik(df[['nama', 'gaji']]) == ['gaji']
+assert kolom_numerik(df.assign(r=df['gaji'] / 2)) == ['gaji', 'skor', 'r']
+"""),
+            "select_dtypes dengan nilai number.",
+            X(G11),
+        ),
+        E(
+            "B2-10-2-ex2",
+            "sedang",
+            "Tulis fungsi `kode_kategori(s)` yang menerima list teks, mengubahnya menjadi kategori, dan mengembalikan list kode bilangan bulat tiap nilai.",
+            ind("""
+import pandas as pd
+
+def kode_kategori(s):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert kode_kategori(['a', 'b', 'a']) == [0, 1, 0]
+assert kode_kategori(['z', 'a', 'z']) == [1, 0, 1]
+assert kode_kategori(['x']) == [0]
+assert kode_kategori(['b', 'c', 'a', 'b']) == [1, 2, 0, 1]
+"""),
+            "Series, astype category, lalu cat.codes.",
+            X(G12),
+        ),
+        E(
+            "B2-10-2-ex3",
+            "sedang",
+            "Tulis fungsi `total_chunk(teks, ukuran)` yang membaca teks CSV dalam potongan `ukuran` baris dan mengembalikan jumlah kolom `a` sebagai bilangan bulat.",
+            ind("""
+import pandas as pd
+import io
+
+def total_chunk(teks, ukuran):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+import io
+csv = 'a,b\\n1,x\\n2,y\\n3,x\\n4,z\\n'
+assert total_chunk(csv, 2) == 10
+assert total_chunk(csv, 1) == 10
+assert total_chunk(csv, 100) == 10
+assert total_chunk('a\\n5\\n', 3) == 5
+"""),
+            "read_csv dengan chunksize lalu jumlahkan tiap potongan.",
+            X(G13),
+        ),
+        E(
+            "B2-10-2-ex4",
+            "menantang",
+            "Tulis fungsi `urut_kategori(nilai, urutan)` yang mengubah list `nilai` menjadi kategori berurutan menurut list `urutan` dan mengembalikan list nilai yang terurut menurut urutan itu.",
+            ind("""
+import pandas as pd
+
+def urut_kategori(nilai, urutan):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert urut_kategori(['lo', 'hi', 'mid', 'hi'], ['lo', 'mid', 'hi']) == ['lo', 'mid', 'hi', 'hi']
+assert urut_kategori(['b', 'a'], ['b', 'a']) == ['b', 'a']
+assert urut_kategori(['a', 'b'], ['b', 'a']) == ['b', 'a']
+assert urut_kategori(['m'], ['m']) == ['m']
+"""),
+            "Categorical dengan categories dan ordered True lalu sort_values.",
+            X(G14),
+        ),
+    ],
+    [
+        M("Mengoptimalkan memori tanpa mengukur.", "Pakai memory_usage deep True dulu."),
+        M("Menurunkan tipe angka sampai meluap.", "Periksa rentang nilai dan hasil operasi."),
+        M("Memuat seluruh file besar sekaligus.", "Pakai usecols, dtype, atau chunksize."),
+    ],
+    [
+        Q("Teks berulang hemat sebagai?", ["category", "object", "float", "bool"], 0, "Kode kecil.", hint="category."),
+        Q("int8 memakai?", ["1 byte", "8 byte", "4 byte", "2 byte"], 0, "Delapan bit.", hint="Satu."),
+        Q("chunksize menghasilkan?", ["Iterator potongan", "Satu tabel", "Dict", "Angka"], 0, "Bertahap.", hint="Potongan."),
+        Q("Kategori berurutan mengikuti urutan?", ["Yang ditentukan", "Abjad", "Acak", "Frekuensi"], 0, "ordered True.", hint="Ditentukan."),
+        Q("Format biner kolumnar?", ["Parquet", "CSV", "TXT", "JSON"], 0, "Cepat dan kecil.", hint="Parquet."),
+    ],
+    [
+        "memory_usage deep True mengukur pemakaian memori sebenarnya.",
+        "category dan tipe numerik kecil menghemat memori.",
+        "usecols, dtype, dan chunksize membaca file besar dengan hemat.",
+        "Kategori berurutan menjaga urutan bermakna.",
+    ],
+    [],
+)
+
+H11 = """
+import pandas as pd
+
+def bonus_vektor(df, persen):
+    return (df['gaji'] * persen / 100).round(1).tolist()
+"""
+H12 = """
+import pandas as pd
+
+def rata_divisi_baris(df):
+    return df.groupby('divisi')['gaji'].transform('mean').round(2).tolist()
+"""
+H13 = """
+import numpy as np
+import pandas as pd
+
+def label_skor(df, batas):
+    return np.where(df['skor'] >= batas, 'ok', 'low').tolist()
+"""
+H14 = """
+import pandas as pd
+
+def peringkat_skor(df):
+    return df['skor'].rank(ascending=False).astype(int).tolist()
+"""
+
+l3 = lesson(
+    "B2-10-3",
+    "Hindari perulangan dan pahami biaya operasi",
+    35,
+    [
+        "Membedakan operasi vectorized, apply, dan perulangan baris",
+        "Memilih padanan vectorized untuk pola umum",
+        "Menghindari kesalahan performa seperti concat dalam perulangan",
+        "Mengukur sebelum mengoptimalkan",
+    ],
+    [
+        tb("Tiga tingkat kecepatan", "Cara menghitung sesuatu pada kolom pandas dapat dibagi tiga tingkat. Tingkat tercepat adalah operasi vectorized, yang berjalan dalam kode terkompilasi pada seluruh kolom sekaligus. Tingkat tengah adalah `map` dan `apply`, yang memanggil fungsi Python per elemen sehingga puluhan kali lebih lambat. Tingkat terlambat adalah perulangan `for` atas baris, dengan `iterrows` yang paling lambat karena membuat Series untuk setiap baris. Selisih antar tingkat bisa seratus kali lipat atau lebih pada data besar, sehingga memilih tingkat yang tepat sering menentukan apakah analisis selesai dalam detik atau jam."),
+        tb("Data contoh", "Pelajaran ini memakai tabel karyawan yang sama dengan pelajaran pertama. Karena hanya enam baris, perbedaan waktu tidak terasa, tetapi semua pola yang dibahas berlaku sama pada jutaan baris. Fokus kita bukan mengukur waktu pada data mungil, melainkan memastikan bahwa versi vectorized menghasilkan hasil identik dengan versi perulangan, sehingga Anda dapat mengganti keduanya dengan aman ketika data membesar dan waktu mulai menjadi masalah."),
+        C(
+            P("""
+loop = [r.gaji * 0.1 for r in df.itertuples()]
+vek = (df['gaji'] * 0.1).tolist()
+print([round(x, 1) for x in loop] == [round(x, 1) for x in vek])
+print(sum(df['gaji']), df['gaji'].sum(), df['gaji'].values.sum())
+print(df['skor'].apply(lambda x: x // 10).tolist(), (df['skor'] // 10).tolist())
+print(df['nama'].str.len().tolist(), df['nama'].map(len).tolist())
+print(np.where(df['skor'] >= 80, 'ok', 'low').tolist())
+print(df['divisi'].map({'IT': 1, 'HR': 2}).fillna(0).astype(int).tolist())
+"""),
+            ind("""
+True
+45 45 45
+[8, 7, 9, 6, 8, 9] [8, 7, 9, 6, 8, 9]
+[3, 4, 4, 4, 3, 4] [3, 4, 4, 4, 3, 4]
+['ok', 'low', 'ok', 'low', 'ok', 'ok']
+[1, 2, 1, 0, 2, 1]
+"""),
+            "Perulangan, apply, dan operasi vectorized memberi hasil sama. Perbedaannya hanya kecepatan, yang makin besar seiring ukuran data.",
+            filename="tiga_tingkat.py",
+        ),
+        tb("Padanan vectorized pola umum", "Hampir setiap pola perulangan punya padanan vectorized. Aritmetika antar kolom menggantikan perulangan penghitung. `np.where` dan `np.select` menggantikan if dan else per baris. Atribut `str` dan `dt` menggantikan fungsi teks dan tanggal per elemen. `map` dengan dict menggantikan rangkaian if untuk pemetaan. `groupby` dengan `transform` menggantikan perulangan per kelompok. `cumsum`, `shift`, dan `rolling` menggantikan perulangan yang menyimpan keadaan antar baris. Hafalkan daftar ini, karena setiap kali Anda tergoda menulis for, salah satunya hampir pasti berlaku."),
+        tb("iterrows dan itertuples", "Bila perulangan benar-benar tak terhindarkan, pilih `itertuples` yang mengembalikan namedtuple ringan dan jauh lebih cepat daripada `iterrows`. Metode `iterrows` mengubah tiap baris menjadi Series sehingga tipe campuran diseragamkan, misalnya bilangan bulat berubah menjadi desimal bila ada kolom desimal. Perubahan tipe diam-diam ini sering mengejutkan. Jangan pernah mengubah tabel di dalam perulangan baris. Kumpulkan hasil dalam list lalu tugaskan sekaligus sebagai kolom setelah perulangan selesai."),
+        C(
+            P("""
+print(df.groupby('divisi')['gaji'].transform('mean').round(2).tolist())
+print(df.groupby('divisi')['gaji'].agg(['sum', 'mean']).round(2).values.tolist())
+print(df['gaji'].cumsum().tolist(), np.cumsum(df['gaji']).tolist())
+print(df.assign(rank=df['skor'].rank(ascending=False).astype(int))['rank'].tolist())
+print(df.duplicated('divisi').tolist(), df.drop_duplicates('divisi')['nama'].tolist())
+print(df.value_counts('divisi').to_dict(), df['divisi'].value_counts(normalize=True).round(2).to_dict())
+"""),
+            ind("""
+[9.0, 6.5, 9.0, 5.0, 6.5, 9.0]
+[[13.0, 6.5], [27.0, 9.0], [5.0, 5.0]]
+[8, 14, 23, 28, 35, 45] [8, 14, 23, 28, 35, 45]
+[3, 5, 1, 6, 4, 2]
+[False, False, True, False, True, True]
+['Ani', 'Budi', 'Dedi']
+{'IT': 3, 'HR': 2, 'Ops': 1} {'IT': 0.5, 'HR': 0.33, 'Ops': 0.17}
+"""),
+            "Transform, cumsum, rank, duplicated, dan value_counts menggantikan perulangan yang menyimpan keadaan atau menghitung per kelompok.",
+            filename="padanan_vektor.py",
+        ),
+        tb("Kesalahan performa umum", "Beberapa kesalahan berulang. Pertama, memanggil `pd.concat` atau `append` di dalam perulangan, yang menyalin seluruh tabel tiap putaran sehingga waktu membengkak kuadratik. Kumpulkan potongan dalam list lalu satu concat. Kedua, membangun DataFrame baris demi baris. Kumpulkan dict dalam list lalu buat DataFrame sekali. Ketiga, memanggil `df.loc[i, 'x'] = ...` per baris. Keempat, menyalin tabel besar berulang tanpa perlu. Kelima, memakai tipe object untuk angka. Kelimanya mudah dihindari bila dikenali."),
+        tb("Mengukur dengan benar", "Untuk membandingkan dua cara, ukur dengan `time.perf_counter` di sekitar kode, atau `%timeit` di notebook, pada data seukuran yang sebenarnya. Hasil pada tabel enam baris tidak mencerminkan jutaan baris. Ulangi beberapa kali dan ambil yang terkecil, karena variasi sistem menambah derau. Profilkan dulu untuk menemukan bagian yang benar-benar lambat, sering hanya satu baris, sebelum menulis ulang apa pun. Optimasi tanpa pengukuran adalah menebak, dan tebakan tentang performa sering keliru."),
+        tb("Kejelasan versus kecepatan", "Jangan mengorbankan kejelasan demi kecepatan yang tidak dibutuhkan. Pada tabel seribu baris, `apply` yang terbaca jelas lebih baik daripada trik vectorized yang membingungkan. Aturan pegangan: tulis dulu versi paling jelas, ukur, dan optimalkan hanya bila lambat. Namun pilih operasi vectorized secara default bila sama jelasnya, karena kebiasaan itu memberi kinerja baik secara gratis dan membuat kode Anda tetap layak saat data tumbuh sepuluh kali lipat."),
+        tb("Menutup course pandas", "Course Penguasaan Pandas selesai di sini. Anda telah belajar Series dan DataFrame, seleksi dengan loc dan iloc, penyaringan dan pengurutan, kolom turunan, nilai hilang, groupby, penggabungan tabel, reshape, deret waktu, serta idiom dan performa. Kemampuan ini adalah tulang punggung hampir semua pekerjaan data di Python. Course berikutnya, pembersihan dan persiapan data, menerapkannya pada data berantakan yang realistis, tempat kebiasaan memeriksa dan memvalidasi yang Anda latih di sini diuji."),
+        K("tip", "Tulis versi paling jelas lebih dulu, ukur, lalu optimalkan hanya bagian yang benar-benar lambat. Pilih operasi vectorized sebagai kebiasaan default.", title="Jelas, ukur, optimalkan"),
+        C(
+            P("""
+d = pd.DataFrame({'a': [1, 2], 'b': [1.5, 2.5]})
+print([type(r['a']).__name__ for _, r in d.iterrows()], [type(r.a).__name__ for r in d.itertuples()])
+print(d.assign(c=[x * 2 for x in d['a']])['c'].tolist())
+print(pd.concat([pd.DataFrame({'x': [i]}) for i in range(3)], ignore_index=True)['x'].tolist())
+print(pd.DataFrame([{'a': 1, 'b': 2}, {'a': 3, 'b': 4}]).values.tolist())
+"""),
+            ind("""
+['float64', 'float64'] ['int', 'int']
+[2, 4]
+[0, 1, 2]
+[[1, 2], [3, 4]]
+"""),
+            "Iterrows menyeragamkan tipe baris menjadi desimal, sedangkan itertuples mempertahankannya. Kumpulkan potongan dalam list lalu buat tabel sekali.",
+            filename="pola_aman.py",
+        ),
+        tb("Menghindari penugasan baris demi baris", "Membangun tabel dengan menambahkan satu baris tiap putaran sangat lambat karena tiap penambahan menyalin seluruh isi. Pola yang benar: kumpulkan baris sebagai dict dalam sebuah list, lalu panggil `pd.DataFrame(list)` sekali di akhir. Hasilnya identik dan jauh lebih cepat. Hal yang sama berlaku untuk mengisi kolom: hitung seluruh nilainya dalam list atau Series lalu tugaskan sekaligus, bukan memperbarui sel satu per satu dengan `loc` di dalam perulangan."),
+        tb("Alignment indeks yang diam-diam", "Operasi antar Series dan DataFrame menyejajarkan menurut indeks, bukan posisi. Itu kekuatan, tetapi juga jebakan: dua Series dengan indeks berbeda menghasilkan NaN pada label yang tidak cocok, dan penugasan kolom dari Series berindeks lain dapat meletakkan nilai di baris yang salah. Setelah penyaringan atau pengurutan, indeks tidak lagi berurutan, sehingga menjumlahkan hasil dua tabel yang diproses terpisah mungkin menghasilkan angka mengejutkan. Gunakan `reset_index(drop=True)` atau `.values` secara sadar bila memang menginginkan penyejajaran menurut posisi."),
+        tb("Fungsi bawaan lebih cepat", "Fungsi agregasi bawaan seperti `sum`, `mean`, `max`, dan `idxmax` ditulis dalam kode terkompilasi dan memanfaatkan perulangan internal yang efisien. Menggantinya dengan fungsi Python buatan sendiri hampir selalu memperlambat. Hal sama berlaku untuk fungsi bawaan Python seperti `sum` yang dipanggil pada kolom: ia bekerja, tetapi lebih lambat daripada metode `sum` milik kolom itu. Biasakan memanggil metode pada objek pandas atau NumPy dan menyimpan fungsi buatan sendiri untuk logika yang tidak punya padanan."),
+        tb("Mulai dari yang kecil", "Saat mengembangkan alur analisis pada data besar, kerjakan dulu pada contoh kecil, misalnya seribu baris pertama dengan `nrows` atau `sample`. Pastikan logika benar dan hasilnya terverifikasi, baru jalankan pada seluruh data. Cara ini menghemat waktu menunggu, mempercepat siklus coba dan perbaiki, dan mengurangi risiko menemukan kesalahan setelah proses berjam-jam. Setelah logika benar, ukur waktu pada data penuh dan optimalkan hanya bagian yang menjadi penghambat sesungguhnya."),
+        tb("Ringkasan praktis", "Kebiasaan yang membawa Anda jauh: operasi kolom lebih dulu, padanan bawaan sebelum fungsi buatan, kumpulkan lalu bangun sekali, ukur sebelum optimasi, dan periksa hasil identik setelah menulis ulang.", ),
+        tb("Contoh keputusan", "Misalkan Anda menerima tabel lima juta baris dan diminta rata-rata per divisi. Jawaban tercepat adalah satu groupby dengan mean, bukan perulangan atas divisi. Bila ternyata memori tidak cukup, baca hanya dua kolom yang dibutuhkan dengan usecols dan ubah divisi menjadi kategori. Dua keputusan kecil itu biasanya cukup menyelesaikan masalah tanpa alat tambahan.", ),
+        E(
+            "B2-10-3-ex1",
+            "mudah",
+            "Tulis fungsi `bonus_vektor(df, persen)` yang mengembalikan list bonus tiap karyawan sebesar `persen` persen dari `gaji`, dibulatkan satu desimal, tanpa perulangan.",
+            ind("""
+import pandas as pd
+
+def bonus_vektor(df, persen):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert bonus_vektor(df, 10) == [0.8, 0.6, 0.9, 0.5, 0.7, 1.0]
+assert bonus_vektor(df, 0) == [0.0] * 6
+assert bonus_vektor(df, 100) == [8.0, 6.0, 9.0, 5.0, 7.0, 10.0]
+assert len(bonus_vektor(df.iloc[:2], 50)) == 2
+"""),
+            "Kalikan kolom gaji dengan persen dan bagi seratus.",
+            X(H11),
+        ),
+        E(
+            "B2-10-3-ex2",
+            "sedang",
+            "Tulis fungsi `rata_divisi_baris(df)` yang mengembalikan list rata-rata `gaji` divisi masing-masing karyawan, dibulatkan dua desimal, memakai `transform`.",
+            ind("""
+import pandas as pd
+
+def rata_divisi_baris(df):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert rata_divisi_baris(df) == [9.0, 6.5, 9.0, 5.0, 6.5, 9.0]
+assert rata_divisi_baris(df.iloc[[0, 1]]) == [8.0, 6.0]
+assert rata_divisi_baris(df.iloc[[3]]) == [5.0]
+assert len(rata_divisi_baris(df)) == 6
+"""),
+            "groupby divisi lalu transform mean.",
+            X(H12),
+        ),
+        E(
+            "B2-10-3-ex3",
+            "sedang",
+            "Tulis fungsi `label_skor(df, batas)` yang mengembalikan list `'ok'` untuk `skor` sekurang-kurangnya `batas` dan `'low'` untuk lainnya, tanpa perulangan.",
+            ind("""
+import numpy as np
+import pandas as pd
+
+def label_skor(df, batas):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert label_skor(df, 80) == ['ok', 'low', 'ok', 'low', 'ok', 'ok']
+assert label_skor(df, 0) == ['ok'] * 6
+assert label_skor(df, 100) == ['low'] * 6
+assert label_skor(df, 91).count('ok') == 2
+"""),
+            "np.where dengan syarat skor dan dua label.",
+            X(H13),
+        ),
+        E(
+            "B2-10-3-ex4",
+            "menantang",
+            "Tulis fungsi `peringkat_skor(df)` yang mengembalikan list peringkat bilangan bulat `skor` tiap karyawan, dengan peringkat 1 untuk skor terbesar.",
+            ind("""
+import pandas as pd
+
+def peringkat_skor(df):
+    # TODO: implementasikan
+    pass
+"""),
+            P("""
+assert peringkat_skor(df) == [3, 5, 1, 6, 4, 2]
+assert peringkat_skor(df.iloc[[0, 1]]) == [1, 2]
+assert peringkat_skor(df.iloc[[2]]) == [1]
+assert sorted(peringkat_skor(df)) == [1, 2, 3, 4, 5, 6]
+"""),
+            "rank dengan ascending False lalu ubah ke bilangan bulat.",
+            X(H14),
+        ),
+    ],
+    [
+        M("Memakai concat di dalam perulangan.", "Kumpulkan dalam list lalu satu concat."),
+        M("Memakai iterrows lalu heran tipe berubah.", "Pakai itertuples atau operasi vectorized."),
+        M("Mengoptimalkan tanpa mengukur.", "Ukur pada data berukuran sebenarnya dan profilkan."),
+    ],
+    [
+        Q("Tingkat tercepat?", ["Vectorized", "apply", "iterrows", "for biasa"], 0, "Kode terkompilasi.", hint="Vectorized."),
+        Q("Perulangan baris lebih baik dengan?", ["itertuples", "iterrows", "apply", "concat"], 0, "Ringan.", hint="itertuples."),
+        Q("transform menggantikan?", ["Perulangan per kelompok", "Merge", "Sort", "Plot"], 0, "Per kelompok.", hint="Kelompok."),
+        Q("concat dalam loop membuat waktu?", ["Membengkak kuadratik", "Konstan", "Lebih cepat", "Nol"], 0, "Menyalin.", hint="Kuadratik."),
+        Q("Sebelum optimasi lakukan?", ["Ukur dan profilkan", "Tulis ulang", "Hapus data", "Ganti pustaka"], 0, "Jangan menebak.", hint="Ukur."),
+    ],
+    [
+        "Operasi vectorized jauh lebih cepat daripada apply dan perulangan.",
+        "Hampir setiap pola perulangan punya padanan vectorized.",
+        "Hindari concat dalam perulangan dan penugasan baris demi baris.",
+        "Ukur sebelum mengoptimalkan dan utamakan kejelasan.",
+    ],
+    [],
+)
+
+video = {"needed": False, "kind": "none", "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.", "brief": []}
+
+write_module(
+    "B2",
+    10,
+    "Idiom pandas dan performa",
+    105,
+    [
+        "Menulis kode pandas yang terbaca dengan rantai metode",
+        "Menghemat memori dengan tipe data dan membaca file besar bertahap",
+        "Memilih operasi vectorized dan mengukur sebelum mengoptimalkan",
+    ],
+    [l1, l2, l3],
+    video,
+    REF,
+)

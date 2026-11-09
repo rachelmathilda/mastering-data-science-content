@@ -1,0 +1,1608 @@
+{
+  "schema_version": 2,
+  "course_id": "B2",
+  "module_no": 7,
+  "title": "Merge, join, dan concat",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menggabung tabel dengan merge dan memilih jenis join",
+    "Mengelola kunci ganda, sufiks, dan validasi",
+    "Menumpuk tabel dengan concat dan membersihkan duplikat"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B2-07-1",
+    "exercise_id": "B2-07-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def id_yatim(pel, pes):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B2-07-1",
+      "title": "Menggabung tabel dengan merge",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami kunci gabung dan jenis join",
+        "Memakai merge dengan inner, left, right, dan outer",
+        "Menggabung kolom kunci yang namanya berbeda",
+        "Menemukan baris tanpa pasangan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Data tersebar di banyak tabel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Data tersebar di banyak tabel\n\nData nyata jarang tinggal dalam satu tabel. Identitas pelanggan ada di satu tabel, pesanan di tabel lain, dan produk di tabel ketiga. Untuk menjawab pertanyaan seperti total belanja per kota, tabel-tabel itu harus digabung menurut kunci bersama. Fungsi `merge` pandas melakukan hal yang sama seperti JOIN pada SQL, dan memahami jenis join adalah syarat bekerja dengan data relasional."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data contoh\n\nPelajaran ini memakai tabel `pel` berisi empat pelanggan dengan kolom `id`, `nama`, `kota`, dan tabel `pes` berisi empat pesanan dengan kolom `id_pel` dan `total`. Perhatikan bahwa Ani punya dua pesanan, Budi satu, Cici dan Dedi tidak punya, dan satu pesanan atas nama id lima tidak punya pelanggan. Ketidaksempurnaan ini disengaja agar perbedaan jenis join terlihat."
+            },
+            {
+              "type": "code_example",
+              "filename": "jenis_join.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\npel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\n\nfor how in ['inner', 'left', 'right', 'outer']:\n    m = pel.merge(pes, left_on='id', right_on='id_pel', how=how)\n    print(how, len(m), m['nama'].tolist(), m['total'].tolist())\nprint(m.columns.tolist())",
+              "expected_output_note": "inner 3 ['Ani', 'Ani', 'Budi'] [100, 150, 200]\nleft 5 ['Ani', 'Ani', 'Budi', 'Cici', 'Dedi'] [100.0, 150.0, 200.0, nan, nan]\nright 4 ['Ani', 'Ani', 'Budi', nan] [100, 150, 200, 300]\nouter 6 ['Ani', 'Ani', 'Budi', 'Cici', 'Dedi', nan] [100.0, 150.0, 200.0, nan, nan, 300.0]\n['id', 'nama', 'kota', 'id_pel', 'total']",
+              "explanation": "Empat jenis join menghasilkan jumlah baris berbeda dari data yang sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Inner join\n\nInner join hanya mempertahankan baris yang kuncinya ada di kedua tabel. Ini bawaan `merge`. Hasilnya tiga baris: dua pesanan Ani dan satu pesanan Budi. Cici, Dedi, dan pesanan id lima hilang. Inner join cocok bila Anda hanya peduli pada pasangan yang lengkap, tetapi berbahaya bila Anda mengira semua baris asal selamat, sebab baris tanpa pasangan hilang tanpa peringatan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Left, right, dan outer\n\nLeft join mempertahankan semua baris tabel kiri dan mengisi NaN bila tidak ada pasangan, sehingga Cici dan Dedi muncul dengan total NaN. Right join sebaliknya, mempertahankan seluruh tabel kanan. Outer join mempertahankan semuanya dari kedua sisi. Left join adalah pilihan paling umum dalam analisis karena tabel utama Anda tetap utuh dan tabel lain hanya memperkaya."
+            }
+          ],
+          "quick_check": {
+            "question": "Join bawaan merge?",
+            "options": [
+              "inner",
+              "left"
+            ],
+            "answer_index": 0,
+            "explanation": "Inner.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Satu ke banyak",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Satu ke banyak\n\nAni punya dua pesanan, sehingga barisnya muncul dua kali dalam hasil. Inilah hubungan satu ke banyak: satu baris di kiri berpasangan dengan beberapa baris di kanan. Jumlah baris hasil dapat melebihi tabel mana pun. Selalu periksa jumlah baris sebelum dan sesudah merge, karena kenaikan tak terduga adalah tanda kunci tidak unik di sisi yang Anda kira unik."
+            },
+            {
+              "type": "code_example",
+              "filename": "left_join_analisis.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\npel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\n\nm = pel.merge(pes, left_on='id', right_on='id_pel', how='left')\nprint(m['total'].isna().sum(), m[m['total'].isna()]['nama'].tolist())\nprint(m.groupby('nama')['total'].sum().to_dict())\nprint(m.groupby('kota')['total'].sum().to_dict())\nprint(m.drop(columns='id_pel').columns.tolist())\nprint(m['total'].fillna(0).tolist())",
+              "expected_output_note": "2 ['Cici', 'Dedi']\n{'Ani': 250.0, 'Budi': 200.0, 'Cici': 0.0, 'Dedi': 0.0}\n{'Bandung': 200.0, 'Jakarta': 250.0, 'Medan': 0.0}\n['id', 'nama', 'kota', 'total']\n[100.0, 150.0, 200.0, 0.0, 0.0]",
+              "explanation": "Left join lalu groupby menjawab total per pelanggan dan per kota. Kolom kunci kembar dapat dibuang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kunci dengan nama berbeda\n\nBila kolom kunci di dua tabel bernama berbeda, pakai `left_on` dan `right_on`. Hasilnya memuat kedua kolom kunci, sehingga satu di antaranya biasanya dibuang dengan `drop`. Bila nama kunci sama di kedua tabel, cukup `on='id'` dan hasilnya hanya memuat satu kolom kunci. Mengganti nama kolom dengan `rename` sebelum merge adalah alternatif yang membuat kode lebih ringkas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Baris tanpa pasangan\n\nMenemukan baris yang tidak berpasangan sama pentingnya dengan menggabung. Pelanggan tanpa pesanan dapat dicari dengan `~pel['id'].isin(pes['id_pel'])`. Pesanan yatim, yang idnya tidak ada di tabel pelanggan, dicari dengan arah sebaliknya. Kedua pemeriksaan ini menemukan masalah integritas data seperti pesanan atas pelanggan yang dihapus atau kesalahan ketik pada kunci."
+            },
+            {
+              "type": "code_example",
+              "filename": "tanpa_pasangan.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\npel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\n\nprint(pel['id'].isin(pes['id_pel']).tolist())\nprint(pel.loc[~pel['id'].isin(pes['id_pel']), 'nama'].tolist())\nprint(pes.loc[~pes['id_pel'].isin(pel['id']), 'id_pel'].tolist())\nm = pel.merge(pes, left_on='id', right_on='id_pel', how='outer', indicator=True)\nprint(m['_merge'].astype(str).tolist())\nprint(m['_merge'].astype(str).value_counts().to_dict())",
+              "expected_output_note": "[True, True, False, False]\n['Cici', 'Dedi']\n[5]\n['both', 'both', 'both', 'left_only', 'left_only', 'right_only']\n{'both': 3, 'left_only': 2, 'right_only': 1}",
+              "explanation": "Isin menemukan pasangan tanpa merge, dan indicator menandai asal tiap baris hasil."
+            }
+          ],
+          "quick_check": {
+            "question": "Left join mempertahankan?",
+            "options": [
+              "Hanya pasangan",
+              "Semua baris kiri"
+            ],
+            "answer_index": 1,
+            "explanation": "Kiri utuh.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Argumen indicator",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Argumen indicator\n\nArgumen `indicator=True` menambah kolom `_merge` yang berisi both, left_only, atau right_only untuk tiap baris. Ini cara cepat mengaudit hasil gabung: hitung masing-masing nilai dengan `value_counts` dan bandingkan dengan harapan Anda. Bila left_only jauh lebih banyak dari dugaan, kemungkinan kunci tidak cocok karena beda tipe, spasi tersembunyi, atau perbedaan huruf besar dan kecil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tipe kunci harus sama\n\nKunci yang satu bertipe bilangan bulat dan yang lain teks tidak akan cocok, dan pandas dapat menolak atau memberi hasil kosong. Samakan tipe dengan `astype` sebelum merge. Bersihkan juga teks kunci dengan `str.strip()` dan `str.lower()`. Sebagian besar kegagalan merge dalam praktik berasal dari kunci yang tampak sama tetapi berbeda halus, bukan dari kesalahan sintaks."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hitung baris sebelum dan sesudah\n\nBiasakan mencetak jumlah baris sebelum dan sesudah merge dan memikirkan apakah angkanya masuk akal. Left join dengan kunci unik di kanan harus mempertahankan jumlah baris kiri persis. Bila bertambah, ada duplikat kunci. Satu pernyataan `assert len(hasil) == len(kiri)` dapat menangkap kesalahan diam-diam yang akan merusak seluruh analisis hilir."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Awas duplikasi",
+              "markdown": "Setelah left join, jumlah baris yang bertambah menandakan kunci duplikat di tabel kanan. Periksa sebelum melanjutkan analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merge dan SQL\n\nBila Anda mengenal SQL, anggap merge sebagai JOIN. Inner join sama dengan INNER JOIN, left sama dengan LEFT JOIN, dan seterusnya. Perbedaan utamanya, pandas bekerja di memori sehingga cocok untuk data yang muat di RAM, sedangkan basis data cocok untuk data sangat besar."
+            }
+          ],
+          "quick_check": {
+            "question": "Satu ke banyak menyebabkan?",
+            "options": [
+              "Baris kiri berulang",
+              "Baris hilang"
+            ],
+            "answer_index": 0,
+            "explanation": "Duplikasi.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-07-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `nama_inner(pel, pes)` yang menggabung pelanggan dan pesanan dengan inner join pada `id` dan `id_pel`, dan mengembalikan list `nama` hasilnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef nama_inner(pel, pes):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_inner(pel, pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\nassert nama_inner(pel, pes) == ['Ani', 'Ani', 'Budi']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_inner(pel.iloc[[2, 3]], pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_inner(pel.iloc[[2, 3]], pes) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_inner(pel, pes.iloc[[2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_inner(pel, pes.iloc[[2]]) == ['Budi']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(nama_inner(pel, pes))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(nama_inner(pel, pes)) == 3"
+              }
+            ]
+          },
+          "hint": "merge dengan left_on id dan right_on id_pel secara inner.",
+          "solution": "import pandas as pd\n\ndef nama_inner(pel, pes):\n    m = pel.merge(pes, left_on='id', right_on='id_pel', how='inner')\n    return m['nama'].tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-07-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `total_per_nama(pel, pes)` yang melakukan left join, mengisi total hilang dengan nol, dan mengembalikan dict jumlah `total` per `nama`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef total_per_nama(pel, pes):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_per_nama(pel, pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\nassert total_per_nama(pel, pes) == {'Ani': 250.0, 'Budi': 200.0, 'Cici': 0.0, 'Dedi': 0.0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_per_nama(pel.iloc[[0]], pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_per_nama(pel.iloc[[0]], pes) == {'Ani': 250.0}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_per_nama(pel.iloc[[3]], pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_per_nama(pel.iloc[[3]], pes) == {'Dedi': 0.0}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(total_per_nama(pel, pes).values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(total_per_nama(pel, pes).values()) == 450.0"
+              }
+            ]
+          },
+          "hint": "Left merge, fillna nol, lalu groupby nama dan sum.",
+          "solution": "import pandas as pd\n\ndef total_per_nama(pel, pes):\n    m = pel.merge(pes, left_on='id', right_on='id_pel', how='left')\n    m['total'] = m['total'].fillna(0)\n    return m.groupby('nama')['total'].sum().to_dict()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-07-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tanpa_pesanan(pel, pes)` yang mengembalikan list `nama` pelanggan yang tidak punya pesanan, tanpa memakai merge.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef tanpa_pesanan(pel, pes):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tanpa_pesanan(pel, pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\nassert tanpa_pesanan(pel, pes) == ['Cici', 'Dedi']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tanpa_pesanan(pel.iloc[[0, 1]], pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanpa_pesanan(pel.iloc[[0, 1]], pes) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tanpa_pesanan(pel, pes.iloc[[0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanpa_pesanan(pel, pes.iloc[[0]]) == ['Budi', 'Cici', 'Dedi']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tanpa_pesanan(pel.iloc[[3]], pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanpa_pesanan(pel.iloc[[3]], pes) == ['Dedi']"
+              }
+            ]
+          },
+          "hint": "Gunakan isin dengan negasi pada kolom id.",
+          "solution": "import pandas as pd\n\ndef tanpa_pesanan(pel, pes):\n    return pel.loc[~pel['id'].isin(pes['id_pel']), 'nama'].tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-07-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `id_yatim(pel, pes)` yang mengembalikan list `id_pel` pada pesanan yang tidak punya pelanggan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef id_yatim(pel, pes):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "id_yatim(pel, pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\nassert id_yatim(pel, pes) == [5]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "id_yatim(pel.iloc[[0]], pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_yatim(pel.iloc[[0]], pes) == [2, 5]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "id_yatim(pel, pes.iloc[[0, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_yatim(pel, pes.iloc[[0, 1]]) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "id_yatim(pel.iloc[[]], pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_yatim(pel.iloc[[]], pes) == [1, 1, 2, 5]"
+              }
+            ]
+          },
+          "hint": "Cari id_pel yang tidak ada dalam kolom id pelanggan.",
+          "solution": "import pandas as pd\n\ndef id_yatim(pel, pes):\n    return pes.loc[~pes['id_pel'].isin(pel['id']), 'id_pel'].tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Join bawaan merge?",
+          "code": null,
+          "options": [
+            {
+              "label": "inner",
+              "description": ""
+            },
+            {
+              "label": "left",
+              "description": ""
+            },
+            {
+              "label": "outer",
+              "description": ""
+            },
+            {
+              "label": "right",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Irisan.",
+          "explanation": "Inner."
+        },
+        {
+          "q": "Left join mempertahankan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Semua baris kiri",
+              "description": ""
+            },
+            {
+              "label": "Hanya pasangan",
+              "description": ""
+            },
+            {
+              "label": "Semua kanan",
+              "description": ""
+            },
+            {
+              "label": "Tak satu pun",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kiri.",
+          "explanation": "Kiri utuh."
+        },
+        {
+          "q": "Satu ke banyak menyebabkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris kiri berulang",
+              "description": ""
+            },
+            {
+              "label": "Baris hilang",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Kolom hilang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Berulang.",
+          "explanation": "Duplikasi."
+        },
+        {
+          "q": "indicator True menambah kolom?",
+          "code": null,
+          "options": [
+            {
+              "label": "_merge",
+              "description": ""
+            },
+            {
+              "label": "_join",
+              "description": ""
+            },
+            {
+              "label": "_key",
+              "description": ""
+            },
+            {
+              "label": "_side",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "_merge.",
+          "explanation": "Penanda asal."
+        },
+        {
+          "q": "Kunci beda nama memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "left_on dan right_on",
+              "description": ""
+            },
+            {
+              "label": "on saja",
+              "description": ""
+            },
+            {
+              "label": "index",
+              "description": ""
+            },
+            {
+              "label": "drop",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "left_on.",
+          "explanation": "Dua nama."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai inner join lalu heran barisnya berkurang. Lebih baik: Pakai left join dan periksa baris tanpa pasangan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai inner join lalu heran barisnya berkurang.",
+          "fix": "Pakai left join dan periksa baris tanpa pasangan."
+        },
+        {
+          "mistake": "Tidak memeriksa jumlah baris setelah merge.",
+          "fix": "Bandingkan jumlah baris dan beri assert."
+        },
+        {
+          "mistake": "Kunci beda tipe atau berspasi.",
+          "fix": "Samakan tipe dan bersihkan teks kunci."
+        }
+      ],
+      "summary": [
+        "merge menggabung tabel menurut kunci seperti JOIN SQL.",
+        "Inner, left, right, dan outer menghasilkan jumlah baris berbeda.",
+        "Hubungan satu ke banyak menduplikasi baris sisi satu.",
+        "Periksa baris tanpa pasangan dan jumlah baris hasil."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Menggabung tabel dengan merge"
+          },
+          {
+            "type": "text",
+            "source": "Empat jenis join menghasilkan jumlah baris berbeda dari data yang sama."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\npel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\n\nfor how in ['inner', 'left', 'right', 'outer']:\n    m = pel.merge(pes, left_on='id', right_on='id_pel', how=how)\n    print(how, len(m), m['nama'].tolist(), m['total'].tolist())\nprint(m.columns.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Left join lalu groupby menjawab total per pelanggan dan per kota. Kolom kunci kembar dapat dibuang."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\npel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\n\nm = pel.merge(pes, left_on='id', right_on='id_pel', how='left')\nprint(m['total'].isna().sum(), m[m['total'].isna()]['nama'].tolist())\nprint(m.groupby('nama')['total'].sum().to_dict())\nprint(m.groupby('kota')['total'].sum().to_dict())\nprint(m.drop(columns='id_pel').columns.tolist())\nprint(m['total'].fillna(0).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Isin menemukan pasangan tanpa merge, dan indicator menandai asal tiap baris hasil."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\npel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\n\nprint(pel['id'].isin(pes['id_pel']).tolist())\nprint(pel.loc[~pel['id'].isin(pes['id_pel']), 'nama'].tolist())\nprint(pes.loc[~pes['id_pel'].isin(pel['id']), 'id_pel'].tolist())\nm = pel.merge(pes, left_on='id', right_on='id_pel', how='outer', indicator=True)\nprint(m['_merge'].astype(str).tolist())\nprint(m['_merge'].astype(str).value_counts().to_dict())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-07-2",
+      "title": "Kunci ganda, sufiks, dan validasi",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menggabung dengan lebih dari satu kunci",
+        "Mengatasi nama kolom bentrok dengan sufiks",
+        "Memvalidasi jenis hubungan dengan validate",
+        "Memakai join berbasis indeks"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Kunci lebih dari satu kolom",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kunci lebih dari satu kolom\n\nKadang satu kolom tidak cukup untuk mengidentifikasi baris. Penjualan per toko dan bulan memerlukan dua kunci. Berikan list ke `on`, misalnya `on=['toko', 'bulan']`, dan pandas mencocokkan baris yang kedua nilainya sama. Pastikan kombinasi itu memang unik di sisi yang Anda harapkan unik, sebab kombinasi ganda yang tidak unik menggandakan baris seperti pada kunci tunggal."
+            },
+            {
+              "type": "code_example",
+              "filename": "kunci_ganda.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nk = pd.DataFrame({'a': [1, 1, 2], 'b': ['x', 'y', 'x'], 'v': [1, 2, 3]})\nl = pd.DataFrame({'a': [1, 2], 'b': ['x', 'x'], 'w': [9, 8]})\nr = k.merge(l, on=['a', 'b'])\nprint(r['v'].tolist(), r['w'].tolist())\nprint(k.merge(l, on=['a', 'b'], how='left')['w'].tolist())\nprint(len(k.merge(l, on='a')))",
+              "expected_output_note": "[1, 3] [9, 8]\n[9.0, nan, 8.0]\n3",
+              "explanation": "Dua kunci mencocokkan kombinasi. Memakai satu kunci saja menghasilkan lebih banyak pasangan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kolom bentrok dan sufiks\n\nBila kedua tabel memiliki kolom bukan kunci dengan nama sama, pandas menambah sufiks `_x` dan `_y` agar tidak menimpa. Nama itu tidak informatif, jadi beri sufiks bermakna lewat `suffixes=('_lama', '_baru')`. Alternatifnya, ganti nama kolom sebelum merge. Kolom bentrok sering tidak disadari dan menghasilkan kolom ambigu dalam analisis lanjutan."
+            },
+            {
+              "type": "code_example",
+              "filename": "sufiks.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nx1 = pd.DataFrame({'k': [1, 2], 'v': [1, 2]})\nx2 = pd.DataFrame({'k': [1, 2], 'v': [3, 4]})\nprint(x1.merge(x2, on='k').columns.tolist())\nprint(x1.merge(x2, on='k', suffixes=('_a', '_b')).columns.tolist())\nprint(x1.merge(x2, on='k', suffixes=('_a', '_b'))[['v_a', 'v_b']].values.tolist())\nprint(x1.rename(columns={'v': 'lama'}).merge(x2.rename(columns={'v': 'baru'}), on='k').columns.tolist())",
+              "expected_output_note": "['k', 'v_x', 'v_y']\n['k', 'v_a', 'v_b']\n[[1, 3], [2, 4]]\n['k', 'lama', 'baru']",
+              "explanation": "Sufiks bawaan tidak informatif. Beri sufiks sendiri atau ganti nama sebelum merge."
+            },
+            {
+              "type": "text",
+              "markdown": "## Validasi hubungan\n\nArgumen `validate` membuat pandas memeriksa asumsi Anda tentang jenis hubungan: `'one_to_one'`, `'one_to_many'`, `'many_to_one'`, atau `'many_to_many'`. Bila asumsi dilanggar, pandas melempar `MergeError` sehingga masalah tertangkap segera, bukan menghasilkan tabel membengkak diam-diam. Biasakan memakainya pada merge penting di pipeline, karena ia murah dan menyelamatkan dari kesalahan senyap."
+            },
+            {
+              "type": "code_example",
+              "filename": "validate.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nd1 = pd.DataFrame({'k': [1, 1, 2], 'v': [1, 2, 3]})\nd2 = pd.DataFrame({'k': [1, 1, 2], 'w': [10, 20, 30]})\nprint(len(d1.merge(d2, on='k')))\nprint(d1.merge(d2, on='k').values.tolist())\ntry:\n    d1.merge(d2, on='k', validate='one_to_one')\nexcept Exception as e:\n    print(type(e).__name__)\nprint(len(d1.merge(d2.drop_duplicates('k'), on='k', validate='many_to_one')))",
+              "expected_output_note": "5\n[[1, 1, 10], [1, 1, 20], [1, 2, 10], [1, 2, 20], [2, 3, 30]]\nMergeError\n3",
+              "explanation": "Banyak ke banyak melipatgandakan baris. Validate menangkap pelanggaran asumsi dengan MergeError."
+            }
+          ],
+          "quick_check": {
+            "question": "Dua kunci diberikan dengan?",
+            "options": [
+              "on dengan list",
+              "dua merge"
+            ],
+            "answer_index": 0,
+            "explanation": "List.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Banyak ke banyak berbahaya",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Banyak ke banyak berbahaya\n\nBila kunci duplikat di kedua tabel, tiap pasangan baris dicocokkan, sehingga dua baris kiri dan dua baris kanan menghasilkan empat baris. Hasil ini jarang yang Anda inginkan dan dapat membengkak sangat besar pada data nyata. Bila Anda menemukannya, hapus duplikat dengan `drop_duplicates`, agregasi dulu menjadi satu baris per kunci, atau pikirkan ulang model data Anda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Join berbasis indeks\n\nMetode `DataFrame.join` menggabung menurut indeks dan bawaannya left join. Ia ringkas bila kunci sudah menjadi indeks lewat `set_index`. Padanannya dengan merge: `a.join(b)` kira-kira sama dengan `a.merge(b, left_index=True, right_index=True, how='left')`. Pakai merge bila kunci berupa kolom dan join bila kunci sudah indeks, sehingga niat kode jelas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menggabung hasil agregasi\n\nPola yang sering muncul: agregasi dulu menjadi satu baris per kunci, lalu merge kembali ke tabel utama. Misalnya hitung total pesanan per pelanggan dengan groupby, lalu left join ke tabel pelanggan. Pola ini menghindari duplikasi satu ke banyak karena sisi kanan sudah unik, dan hasilnya tetap satu baris per pelanggan yang siap dianalisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Performa merge\n\nMerge pada kolom bertipe teks lebih lambat daripada pada bilangan bulat. Untuk tabel besar, ubah kunci teks menjadi kategori atau kode bilangan bulat, dan pilih hanya kolom yang diperlukan sebelum merge agar memori tidak boros. Urutkan dan hapus duplikat dilakukan sebelum, bukan sesudah, menggabung. Optimasi ini sering mengubah proses menit menjadi detik tanpa mengubah hasil."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Validasi merge",
+              "markdown": "Pakai validate pada merge penting. Ia menangkap asumsi hubungan yang keliru sebelum menjadi kesalahan senyap."
+            }
+          ],
+          "quick_check": {
+            "question": "Kolom bentrok diberi sufiks bawaan?",
+            "options": [
+              "_a dan _b",
+              "_x dan _y"
+            ],
+            "answer_index": 1,
+            "explanation": "x y.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kunci yang tampak sama",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kunci yang tampak sama\n\nDua kunci yang tampak sama di layar bisa berbeda: spasi di ujung teks, huruf besar dan kecil, atau satu bilangan bulat dan satu desimal. Akibatnya merge menghasilkan banyak baris tanpa pasangan. Bersihkan dengan `str.strip()` dan `str.lower()`, samakan tipe dengan `astype`, lalu bandingkan jumlah kunci unik di kedua sisi sebelum merge sehingga masalah terlihat sejak awal."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merge pada indeks dan kolom\n\nMerge dapat memadukan indeks satu tabel dengan kolom tabel lain lewat `left_index=True` dan `right_on='kolom'`. Ini berguna ketika salah satu tabel sudah memakai kuncinya sebagai indeks, misalnya hasil groupby. Pastikan Anda memahami mana yang indeks dan mana yang kolom, sebab hasil merge bisa kehilangan indeks asal dan mengacaukan pengurutan yang Anda andalkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menggabung tiga tabel\n\nUntuk tiga tabel atau lebih, lakukan merge berantai satu per satu, dan periksa jumlah baris pada tiap langkah. Mulailah dari tabel utama lalu perkaya dengan tabel lain secara left join. Rantai merge yang panjang dapat dibaca lebih mudah dengan tanda kurung dan satu langkah per baris, dengan nama perantara yang menjelaskan isi tiap tahap penggabungan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh audit merge\n\nRutinitas audit yang baik terdiri dari empat pemeriksaan: jumlah baris sebelum dan sesudah, jumlah kunci unik di tiap sisi, hitungan kolom indicator, dan apakah ada kolom bentrok. Menjalankannya setiap kali merge penting dilakukan hanya butuh beberapa baris kode, tetapi menghindarkan analisis dari kesimpulan yang bersandar pada tabel gabungan yang salah."
+            }
+          ],
+          "quick_check": {
+            "question": "validate melempar?",
+            "options": [
+              "MergeError",
+              "KeyError"
+            ],
+            "answer_index": 0,
+            "explanation": "MergeError.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-07-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_baris_join(pel, pes, how)` yang menggabung `pel` dan `pes` dengan `id` dan `id_pel` memakai jenis join `how`, dan mengembalikan banyaknya baris hasil.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef jumlah_baris_join(pel, pes, how):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_baris_join(pel, pes, 'inner')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\nassert jumlah_baris_join(pel, pes, 'inner') == 3"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_baris_join(pel, pes, 'left')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_baris_join(pel, pes, 'left') == 5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_baris_join(pel, pes, 'right')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_baris_join(pel, pes, 'right') == 4"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_baris_join(pel, pes, 'outer')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_baris_join(pel, pes, 'outer') == 6"
+              }
+            ]
+          },
+          "hint": "merge dengan argumen how dan hitung panjangnya.",
+          "solution": "import pandas as pd\n\ndef jumlah_baris_join(pel, pes, how):\n    return len(pel.merge(pes, left_on='id', right_on='id_pel', how=how))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-07-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kolom_sufiks(kiri, kanan)` yang menggabung dua tabel pada kolom `k` dengan sufiks `_a` dan `_b` untuk kolom bentrok, dan mengembalikan list nama kolom hasil.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef kolom_sufiks(kiri, kanan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kolom_sufiks(x1, x2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\nx1 = pd.DataFrame({'k': [1, 2], 'v': [1, 2]})\nx2 = pd.DataFrame({'k': [1, 2], 'v': [3, 4]})\nassert kolom_sufiks(x1, x2) == ['k', 'v_a', 'v_b']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kolom_sufiks(x1, y2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "y2 = pd.DataFrame({'k': [1, 2], 'w': [3, 4]})\nassert kolom_sufiks(x1, y2) == ['k', 'v', 'w']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kolom_sufiks(x1, x2.assign(z=0))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolom_sufiks(x1, x2.assign(z=0)) == ['k', 'v_a', 'v_b', 'z']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(kolom_sufiks(x1, x2))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(kolom_sufiks(x1, x2)) == 3"
+              }
+            ]
+          },
+          "hint": "merge dengan argumen suffixes berisi dua teks.",
+          "solution": "import pandas as pd\n\ndef kolom_sufiks(kiri, kanan):\n    return kiri.merge(kanan, on='k', suffixes=('_a', '_b')).columns.tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-07-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `total_kota(pel, pes)` yang melakukan left join pelanggan dan pesanan lalu mengembalikan dict jumlah `total` per `kota`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef total_kota(pel, pes):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_kota(pel, pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\nassert total_kota(pel, pes) == {'Bandung': 200.0, 'Jakarta': 250.0, 'Medan': 0.0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_kota(pel.iloc[[0]], pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_kota(pel.iloc[[0]], pes) == {'Jakarta': 250.0}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_kota(pel.iloc[[1, 2]], pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_kota(pel.iloc[[1, 2]], pes) == {'Bandung': 200.0, 'Medan': 0.0}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(total_kota(pel, pes).values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(total_kota(pel, pes).values()) == 450.0"
+              }
+            ]
+          },
+          "hint": "Left merge lalu groupby kota dan sum.",
+          "solution": "import pandas as pd\n\ndef total_kota(pel, pes):\n    m = pel.merge(pes, left_on='id', right_on='id_pel', how='left')\n    return m.groupby('kota')['total'].sum().to_dict()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-07-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `asal_baris(pel, pes)` yang melakukan outer join dengan `indicator=True` dan mengembalikan list nilai `_merge` sebagai teks.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef asal_baris(pel, pes):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "asal_baris(pel, pes)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pel = pd.DataFrame({\n    'id': [1, 2, 3, 4],\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'kota': ['Jakarta', 'Bandung', 'Medan', 'Jakarta'],\n})\npes = pd.DataFrame({\n    'id_pel': [1, 1, 2, 5],\n    'total': [100, 150, 200, 300],\n})\nassert asal_baris(pel, pes) == ['both', 'both', 'both', 'left_only', 'left_only', 'right_only']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "asal_baris(pel.iloc[[0]], pes.iloc[[0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert asal_baris(pel.iloc[[0]], pes.iloc[[0]]) == ['both']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "asal_baris(pel.iloc[[2]], pes.iloc[[3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert asal_baris(pel.iloc[[2]], pes.iloc[[3]]) == ['left_only', 'right_only']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "asal_baris(pel, pes).count('both')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert asal_baris(pel, pes).count('both') == 3"
+              }
+            ]
+          },
+          "hint": "merge outer dengan indicator lalu ubah _merge ke teks.",
+          "solution": "import pandas as pd\n\ndef asal_baris(pel, pes):\n    m = pel.merge(pes, left_on='id', right_on='id_pel', how='outer', indicator=True)\n    return m['_merge'].astype(str).tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Dua kunci diberikan dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "on dengan list",
+              "description": ""
+            },
+            {
+              "label": "dua merge",
+              "description": ""
+            },
+            {
+              "label": "index",
+              "description": ""
+            },
+            {
+              "label": "drop",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "List.",
+          "explanation": "List."
+        },
+        {
+          "q": "Kolom bentrok diberi sufiks bawaan?",
+          "code": null,
+          "options": [
+            {
+              "label": "_x dan _y",
+              "description": ""
+            },
+            {
+              "label": "_a dan _b",
+              "description": ""
+            },
+            {
+              "label": "_1 dan _2",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "x.",
+          "explanation": "x y."
+        },
+        {
+          "q": "validate melempar?",
+          "code": null,
+          "options": [
+            {
+              "label": "MergeError",
+              "description": ""
+            },
+            {
+              "label": "KeyError",
+              "description": ""
+            },
+            {
+              "label": "ValueError saja",
+              "description": ""
+            },
+            {
+              "label": "Tidak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Merge.",
+          "explanation": "MergeError."
+        },
+        {
+          "q": "Banyak ke banyak menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Perkalian baris",
+              "description": ""
+            },
+            {
+              "label": "Satu baris",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Perkalian.",
+          "explanation": "Silang."
+        },
+        {
+          "q": "join DataFrame menggabung menurut?",
+          "code": null,
+          "options": [
+            {
+              "label": "Indeks",
+              "description": ""
+            },
+            {
+              "label": "Kolom pertama",
+              "description": ""
+            },
+            {
+              "label": "Nama",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Indeks.",
+          "explanation": "Indeks."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Banyak ke banyak tanpa disadari. Lebih baik: Pakai validate dan hapus duplikat.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Banyak ke banyak tanpa disadari.",
+          "fix": "Pakai validate dan hapus duplikat."
+        },
+        {
+          "mistake": "Membiarkan sufiks _x dan _y.",
+          "fix": "Beri sufiks bermakna."
+        },
+        {
+          "mistake": "Merge tabel besar dengan semua kolom.",
+          "fix": "Pilih kolom yang perlu sebelum merge."
+        }
+      ],
+      "summary": [
+        "Kunci ganda dicocokkan lewat list pada on.",
+        "Sufiks mencegah nama kolom bentrok membingungkan.",
+        "validate menangkap hubungan data yang keliru.",
+        "Agregasi dulu lalu merge menghindari duplikasi."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Kunci ganda, sufiks, dan validasi"
+          },
+          {
+            "type": "text",
+            "source": "Dua kunci mencocokkan kombinasi. Memakai satu kunci saja menghasilkan lebih banyak pasangan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nk = pd.DataFrame({'a': [1, 1, 2], 'b': ['x', 'y', 'x'], 'v': [1, 2, 3]})\nl = pd.DataFrame({'a': [1, 2], 'b': ['x', 'x'], 'w': [9, 8]})\nr = k.merge(l, on=['a', 'b'])\nprint(r['v'].tolist(), r['w'].tolist())\nprint(k.merge(l, on=['a', 'b'], how='left')['w'].tolist())\nprint(len(k.merge(l, on='a')))"
+          },
+          {
+            "type": "text",
+            "source": "Sufiks bawaan tidak informatif. Beri sufiks sendiri atau ganti nama sebelum merge."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nx1 = pd.DataFrame({'k': [1, 2], 'v': [1, 2]})\nx2 = pd.DataFrame({'k': [1, 2], 'v': [3, 4]})\nprint(x1.merge(x2, on='k').columns.tolist())\nprint(x1.merge(x2, on='k', suffixes=('_a', '_b')).columns.tolist())\nprint(x1.merge(x2, on='k', suffixes=('_a', '_b'))[['v_a', 'v_b']].values.tolist())\nprint(x1.rename(columns={'v': 'lama'}).merge(x2.rename(columns={'v': 'baru'}), on='k').columns.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Banyak ke banyak melipatgandakan baris. Validate menangkap pelanggaran asumsi dengan MergeError."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nd1 = pd.DataFrame({'k': [1, 1, 2], 'v': [1, 2, 3]})\nd2 = pd.DataFrame({'k': [1, 1, 2], 'w': [10, 20, 30]})\nprint(len(d1.merge(d2, on='k')))\nprint(d1.merge(d2, on='k').values.tolist())\ntry:\n    d1.merge(d2, on='k', validate='one_to_one')\nexcept Exception as e:\n    print(type(e).__name__)\nprint(len(d1.merge(d2.drop_duplicates('k'), on='k', validate='many_to_one')))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-07-3",
+      "title": "Menumpuk tabel dengan concat",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menumpuk tabel vertikal dan horizontal dengan concat",
+        "Mengelola indeks dengan ignore_index dan keys",
+        "Menangani kolom yang tidak sama antar tabel",
+        "Menghapus duplikat setelah menumpuk"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Merge versus concat",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Merge versus concat\n\nMerge menggabung tabel menyamping menurut nilai kunci. Concat menumpuk tabel begitu saja, biasanya ke bawah. Pakai concat bila tabel berbagi kolom yang sama dan Anda hanya ingin menambah baris, misalnya data bulanan dari file terpisah, atau potongan hasil dari beberapa proses. Concat tidak mencocokkan nilai, hanya menyejajarkan menurut indeks atau nama kolom."
+            },
+            {
+              "type": "code_example",
+              "filename": "concat_vertikal.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\np1 = pd.DataFrame({'x': [1, 2], 'y': ['a', 'b']})\np2 = pd.DataFrame({'x': [3], 'y': ['c']})\nprint(pd.concat([p1, p2]).index.tolist())\nprint(pd.concat([p1, p2], ignore_index=True).index.tolist())\nprint(pd.concat([p1, p2], ignore_index=True)['x'].tolist())\nprint(pd.concat({'u': p1, 'v': p2}).index.tolist())\nprint(pd.concat([p1, p2]).reset_index(drop=True).index.tolist())",
+              "expected_output_note": "[0, 1, 0]\n[0, 1, 2]\n[1, 2, 3]\n[('u', 0), ('u', 1), ('v', 0)]\n[0, 1, 2]",
+              "explanation": "Concat mempertahankan indeks asal. Pakai ignore_index untuk nomor baru atau dict untuk menandai asal."
+            },
+            {
+              "type": "text",
+              "markdown": "## Indeks dan ignore_index\n\nConcat mempertahankan indeks tiap tabel, sehingga hasilnya dapat memiliki indeks duplikat seperti nol, satu, nol. Indeks duplikat membingungkan `loc`. Pakai `ignore_index=True` untuk nomor baru berurutan, atau beri dict untuk menandai asal tiap potongan dalam indeks bertingkat. Pilih menurut apakah asal baris perlu diingat setelah penggabungan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menumpuk banyak file\n\nPola umum untuk data bulanan: baca tiap file menjadi DataFrame, kumpulkan dalam list, lalu satu panggilan `pd.concat(daftar, ignore_index=True)`. Jangan menumpuk di dalam perulangan satu per satu, sebab setiap concat menyalin seluruh data dan waktu membengkak kuadratik. Satu concat di akhir jauh lebih cepat dan lebih mudah dibaca."
+            },
+            {
+              "type": "text",
+              "markdown": "## Concat menyamping\n\nDengan `axis=1`, concat menempelkan tabel berdampingan menurut indeks. Baris dengan indeks yang sama disejajarkan, dan indeks yang hanya ada di satu tabel menghasilkan NaN di tabel lain. Pastikan indeks kedua tabel memang berkorespondensi, sebab bila tidak, baris akan tersejajar salah tanpa peringatan dan menghasilkan kolom yang tampak masuk akal tetapi keliru."
+            },
+            {
+              "type": "code_example",
+              "filename": "concat_kolom.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\np1 = pd.DataFrame({'x': [1, 2], 'y': ['a', 'b']})\np3 = pd.DataFrame({'z': [10, 20]})\nprint(pd.concat([p1, p3], axis=1).values.tolist())\np4 = pd.DataFrame({'x': [5], 'w': [1.5]})\nprint(pd.concat([p1, p4], ignore_index=True).columns.tolist())\nprint(pd.concat([p1, p4], ignore_index=True)['w'].isna().sum())\nprint(pd.concat([p1, p4], join='inner', ignore_index=True).columns.tolist())",
+              "expected_output_note": "[[1, 'a', 10], [2, 'b', 20]]\n['x', 'y', 'w']\n2\n['x']",
+              "explanation": "Kolom yang tidak sama diisi NaN pada join outer bawaan, dan hanya kolom bersama dipertahankan pada inner."
+            }
+          ],
+          "quick_check": {
+            "question": "concat bawaan menumpuk ke?",
+            "options": [
+              "Bawah",
+              "Samping"
+            ],
+            "answer_index": 0,
+            "explanation": "axis 0.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Kolom tidak sama",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kolom tidak sama\n\nBila tabel yang ditumpuk memiliki kolom berbeda, concat mengambil gabungan kolom dan mengisi NaN di tempat kosong, setara outer join. Dengan `join='inner'`, hanya kolom yang ada di semua tabel dipertahankan. Periksa kolom hasil setelah menumpuk. Kolom baru yang muncul sering menandakan kesalahan nama seperti `Umur` pada satu file dan `umur` pada file lain."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hapus duplikat\n\nMenumpuk potongan yang tumpang tindih menghasilkan baris ganda. Hapus dengan `drop_duplicates()`, dan atur `subset` bila hanya beberapa kolom yang menentukan keunikan, serta `keep` untuk memilih yang dipertahankan. Metode `duplicated()` menandai duplikat tanpa membuangnya, sehingga Anda dapat memeriksa lebih dulu apa yang akan hilang sebelum benar-benar membuangnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "drop_dup.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\np1 = pd.DataFrame({'x': [1, 2], 'y': ['a', 'b']})\np2 = pd.DataFrame({'x': [3], 'y': ['c']})\nt = pd.concat([p1, p1, p2])\nprint(t.duplicated().tolist())\nprint(t.drop_duplicates().shape)\nprint(t.drop_duplicates(subset='x', keep='last').index.tolist())\nprint(len(pd.concat([p1, p1], ignore_index=True).drop_duplicates()))",
+              "expected_output_note": "[False, False, True, True, False]\n(3, 2)\n[0, 1, 0]\n2",
+              "explanation": "Duplicated menandai, dan drop_duplicates membuang duplikat. Subset dan keep mengatur perilakunya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa hasil tumpukan\n\nSetelah menumpuk, periksa jumlah baris yang harus sama dengan jumlah semua potongan, periksa kolom, dan periksa tipe data. Jika satu file membaca angka sebagai teks karena ada karakter aneh, kolom hasil menjadi bertipe objek dan perhitungan diam-diam gagal. Pemeriksaan tiga hal ini cukup untuk menangkap sebagian besar masalah penumpukan data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah belajar merge dengan berbagai jenis join, kunci ganda, sufiks, validasi, serta concat vertikal dan horizontal dengan pengelolaan indeks dan duplikat. Prinsipnya: pilih merge untuk mencocokkan nilai dan concat untuk menumpuk, selalu periksa jumlah baris, dan validasi asumsi hubungan. Modul berikutnya membahas pivot, melt, dan reshape."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Satu concat",
+              "markdown": "Kumpulkan semua potongan dalam list lalu panggil concat sekali, bukan menumpuk di dalam perulangan."
+            }
+          ],
+          "quick_check": {
+            "question": "ignore_index True?",
+            "options": [
+              "Hapus indeks",
+              "Nomor baris baru"
+            ],
+            "answer_index": 1,
+            "explanation": "Indeks baru.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Concat dan merge bersama",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Concat dan merge bersama\n\nDalam praktik, kedua alat dipakai bersama. Tumpuk dulu data bulanan dengan concat menjadi satu tabel besar, lalu perkaya dengan merge terhadap tabel acuan seperti daftar produk atau wilayah. Urutan ini menjaga setiap langkah sederhana: tumpuk untuk menambah baris, gabung untuk menambah kolom. Memisahkan peran keduanya membuat alur data mudah diaudit."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menandai sumber data\n\nSaat menumpuk beberapa file, tambahkan kolom penanda sumber sebelum concat, misalnya nama file atau bulan, dengan `assign(sumber='jan')`. Tanpa penanda, setelah menumpuk Anda tidak dapat lagi membedakan asal baris, padahal perbedaan antar bulan atau antar sumber sering menjadi inti analisis. Penanda murah ditambahkan di awal dan sulit direkonstruksi bila terlambat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Concat dan tipe data\n\nBila satu potongan memiliki kolom bilangan bulat dan potongan lain memiliki kolom yang sama berisi teks, hasil concat memiliki tipe objek campuran dan perhitungan menjadi aneh atau lambat. Setelah menumpuk, periksa tipe dengan `dtypes` dan ubah dengan `astype` atau `to_numeric`. Kebiasaan ini mencegah kejutan ketika agregasi pertama gagal pada kolom yang kelihatannya numerik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menumpuk dengan keys\n\nArgumen `keys` memberi label tiap potongan dalam indeks bertingkat, misalnya bulan atau sumber. Anda kemudian dapat memilih satu potongan dengan `loc['jan']` atau meratakannya dengan `reset_index(level=0)` sehingga label menjadi kolom. Teknik ini praktis bila asal baris perlu dilacak, dan menggantikan kolom penanda manual dengan cara yang lebih ringkas."
+            }
+          ],
+          "quick_check": {
+            "question": "join inner pada concat?",
+            "options": [
+              "Kolom bersama saja",
+              "Semua kolom"
+            ],
+            "answer_index": 0,
+            "explanation": "Irisan kolom.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-07-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `tumpuk_x(p1, p2)` yang menumpuk dua tabel ke bawah dengan nomor baris baru dan mengembalikan list kolom `x`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef tumpuk_x(p1, p2):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tumpuk_x(p1, p2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "p1 = pd.DataFrame({'x': [1, 2], 'y': ['a', 'b']})\np2 = pd.DataFrame({'x': [3], 'y': ['c']})\nassert tumpuk_x(p1, p2) == [1, 2, 3]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tumpuk_x(p2, p1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tumpuk_x(p2, p1) == [3, 1, 2]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tumpuk_x(p1, p1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tumpuk_x(p1, p1) == [1, 2, 1, 2]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(tumpuk_x(p1, p2))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(tumpuk_x(p1, p2)) == 3"
+              }
+            ]
+          },
+          "hint": "concat dengan ignore_index lalu ambil kolom x.",
+          "solution": "import pandas as pd\n\ndef tumpuk_x(p1, p2):\n    return pd.concat([p1, p2], ignore_index=True)['x'].tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-07-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `sisi_samping(p1, p2)` yang menempelkan dua tabel berdampingan dan mengembalikan `values.tolist()`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef sisi_samping(p1, p2):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "sisi_samping(p1, p3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "p1 = pd.DataFrame({'x': [1, 2], 'y': ['a', 'b']})\np3 = pd.DataFrame({'z': [10, 20]})\nassert sisi_samping(p1, p3) == [[1, 'a', 10], [2, 'b', 20]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sisi_samping(p3, p3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sisi_samping(p3, p3) == [[10, 10], [20, 20]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sisi_samping(p3, p1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sisi_samping(p3, p1) == [[10, 1, 'a'], [20, 2, 'b']]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(sisi_samping(p1, p3))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(sisi_samping(p1, p3)) == 2"
+              }
+            ]
+          },
+          "hint": "concat dengan axis satu.",
+          "solution": "import pandas as pd\n\ndef sisi_samping(p1, p2):\n    return pd.concat([p1, p2], axis=1).values.tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-07-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `baris_unik(p1, p2)` yang menumpuk dua tabel, membuang baris duplikat, dan mengembalikan banyaknya baris yang tersisa.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef baris_unik(p1, p2):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "baris_unik(p1, p1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "p1 = pd.DataFrame({'x': [1, 2], 'y': ['a', 'b']})\np2 = pd.DataFrame({'x': [3], 'y': ['c']})\nassert baris_unik(p1, p1) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "baris_unik(p1, p2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_unik(p1, p2) == 3"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "baris_unik(p2, p2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_unik(p2, p2) == 1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "baris_unik(p1, pd.concat([p1, p2]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_unik(p1, pd.concat([p1, p2])) == 3"
+              }
+            ]
+          },
+          "hint": "concat lalu drop_duplicates dan hitung panjang.",
+          "solution": "import pandas as pd\n\ndef baris_unik(p1, p2):\n    return len(pd.concat([p1, p2], ignore_index=True).drop_duplicates())",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-07-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `kolom_gabungan(p1, p2, join)` yang menumpuk dua tabel dengan jenis `join` (`'outer'` atau `'inner'`) dan mengembalikan list nama kolom hasil.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef kolom_gabungan(p1, p2, join):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kolom_gabungan(p1, p4, 'outer')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "p1 = pd.DataFrame({'x': [1, 2], 'y': ['a', 'b']})\np4 = pd.DataFrame({'x': [5], 'w': [1.5]})\nassert kolom_gabungan(p1, p4, 'outer') == ['x', 'y', 'w']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kolom_gabungan(p1, p4, 'inner')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolom_gabungan(p1, p4, 'inner') == ['x']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kolom_gabungan(p1, p1, 'outer')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolom_gabungan(p1, p1, 'outer') == ['x', 'y']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kolom_gabungan(p4, p1, 'inner')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolom_gabungan(p4, p1, 'inner') == ['x']"
+              }
+            ]
+          },
+          "hint": "concat dengan argumen join dan ignore_index.",
+          "solution": "import pandas as pd\n\ndef kolom_gabungan(p1, p2, join):\n    return pd.concat([p1, p2], join=join, ignore_index=True).columns.tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "concat bawaan menumpuk ke?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bawah",
+              "description": ""
+            },
+            {
+              "label": "Samping",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Atas saja",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bawah.",
+          "explanation": "axis 0."
+        },
+        {
+          "q": "ignore_index True?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nomor baris baru",
+              "description": ""
+            },
+            {
+              "label": "Hapus indeks",
+              "description": ""
+            },
+            {
+              "label": "Hapus kolom",
+              "description": ""
+            },
+            {
+              "label": "Urutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baru.",
+          "explanation": "Indeks baru."
+        },
+        {
+          "q": "join inner pada concat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kolom bersama saja",
+              "description": ""
+            },
+            {
+              "label": "Semua kolom",
+              "description": ""
+            },
+            {
+              "label": "Tak ada",
+              "description": ""
+            },
+            {
+              "label": "Baris saja",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bersama.",
+          "explanation": "Irisan kolom."
+        },
+        {
+          "q": "drop_duplicates?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membuang baris ganda",
+              "description": ""
+            },
+            {
+              "label": "Menambah",
+              "description": ""
+            },
+            {
+              "label": "Menggabung",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ganda.",
+          "explanation": "Duplikat."
+        },
+        {
+          "q": "Menumpuk banyak file efisien dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu concat atas list",
+              "description": ""
+            },
+            {
+              "label": "Concat dalam loop",
+              "description": ""
+            },
+            {
+              "label": "Merge",
+              "description": ""
+            },
+            {
+              "label": "Join",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "List.",
+          "explanation": "Sekali."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menumpuk di dalam perulangan. Lebih baik: Kumpulkan dalam list lalu satu concat.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menumpuk di dalam perulangan.",
+          "fix": "Kumpulkan dalam list lalu satu concat."
+        },
+        {
+          "mistake": "Indeks duplikat setelah concat.",
+          "fix": "Pakai ignore_index atau reset_index."
+        },
+        {
+          "mistake": "Nama kolom beda huruf besar kecil antar file.",
+          "fix": "Samakan nama kolom sebelum menumpuk."
+        }
+      ],
+      "summary": [
+        "concat menumpuk tabel vertikal atau horizontal tanpa mencocokkan nilai.",
+        "ignore_index dan keys mengelola indeks hasil.",
+        "Kolom tak sama diisi NaN pada outer dan dibuang pada inner.",
+        "drop_duplicates membersihkan baris ganda."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Menumpuk tabel dengan concat"
+          },
+          {
+            "type": "text",
+            "source": "Concat mempertahankan indeks asal. Pakai ignore_index untuk nomor baru atau dict untuk menandai asal."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\np1 = pd.DataFrame({'x': [1, 2], 'y': ['a', 'b']})\np2 = pd.DataFrame({'x': [3], 'y': ['c']})\nprint(pd.concat([p1, p2]).index.tolist())\nprint(pd.concat([p1, p2], ignore_index=True).index.tolist())\nprint(pd.concat([p1, p2], ignore_index=True)['x'].tolist())\nprint(pd.concat({'u': p1, 'v': p2}).index.tolist())\nprint(pd.concat([p1, p2]).reset_index(drop=True).index.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Kolom yang tidak sama diisi NaN pada join outer bawaan, dan hanya kolom bersama dipertahankan pada inner."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\np1 = pd.DataFrame({'x': [1, 2], 'y': ['a', 'b']})\np3 = pd.DataFrame({'z': [10, 20]})\nprint(pd.concat([p1, p3], axis=1).values.tolist())\np4 = pd.DataFrame({'x': [5], 'w': [1.5]})\nprint(pd.concat([p1, p4], ignore_index=True).columns.tolist())\nprint(pd.concat([p1, p4], ignore_index=True)['w'].isna().sum())\nprint(pd.concat([p1, p4], join='inner', ignore_index=True).columns.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Duplicated menandai, dan drop_duplicates membuang duplikat. Subset dan keep mengatur perilakunya."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\np1 = pd.DataFrame({'x': [1, 2], 'y': ['a', 'b']})\np2 = pd.DataFrame({'x': [3], 'y': ['c']})\nt = pd.concat([p1, p1, p2])\nprint(t.duplicated().tolist())\nprint(t.drop_duplicates().shape)\nprint(t.drop_duplicates(subset='x', keep='last').index.tolist())\nprint(len(pd.concat([p1, p1], ignore_index=True).drop_duplicates()))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

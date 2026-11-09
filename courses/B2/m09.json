@@ -1,0 +1,1624 @@
+{
+  "schema_version": 2,
+  "course_id": "B2",
+  "module_no": 9,
+  "title": "Time series di pandas",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memakai indeks tanggal, pemotongan label, dan date_range",
+    "Mengubah resolusi dengan resample dan menghaluskan dengan rolling",
+    "Menghitung perubahan dengan shift dan diff serta menangani celah"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B2-09-1",
+    "exercise_id": "B2-09-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def daftar_tanggal(awal, n, freq):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B2-09-1",
+      "title": "Indeks waktu dan pemotongan tanggal",
+      "estimated_minutes": 35,
+      "read_minutes": 8,
+      "objectives": [
+        "Mengubah teks menjadi tanggal dan menjadikannya indeks",
+        "Membuat rentang tanggal dengan date_range dan frekuensi",
+        "Memotong deret waktu dengan label tanggal",
+        "Menghitung dengan Timedelta dan DateOffset"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa waktu istimewa",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa waktu istimewa\n\nData deret waktu berbeda dari data tabel biasa karena urutan barisnya bermakna. Penjualan hari ini bergantung pada hari kemarin, suhu jam tiga mirip suhu jam dua, dan harga saham tidak dapat diacak tanpa merusak artinya. Karena itu pandas memberi tanggal dan waktu perlakuan khusus: tipe data tersendiri, indeks khusus, pemotongan berbasis label, dan operasi seperti resample dan rolling yang tidak ada untuk tipe lain. Mempelajari perangkat ini membuka seluruh keluarga analisis seperti tren, musiman, dan peramalan yang dibahas lebih dalam pada course deret waktu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dari teks ke tanggal\n\nTanggal yang dibaca dari file hampir selalu berupa teks. Fungsi `pd.to_datetime` mengubahnya menjadi tipe `datetime64`, dan pada kolom ia menghasilkan akses `dt` yang sudah Anda kenal. Setelah menjadi tanggal sungguhan, Anda dapat mengurutkan, mengurangkan, memotong, dan mengelompokkan menurut waktu. Bila format tidak standar, beri argumen `format`, misalnya `'%d/%m/%Y'`. Format ambigu seperti `03/05/2024` bisa berarti tiga Mei atau lima Maret, dan pandas tidak dapat menebaknya dengan aman, sehingga Anda harus menyatakan formatnya secara eksplisit atau memakai `dayfirst=True` dengan penuh kesadaran."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data contoh\n\nPelajaran ini memakai deret harian delapan hari yang dimulai Senin 29 Januari 2024 sampai Senin 5 Februari 2024, dengan nilai 10, 12, 9, 15, 14, 20, 18, dan 22. Rentang ini sengaja melintasi pergantian bulan agar Anda melihat bagaimana pemotongan dan pengelompokan bulan bekerja, dan melintasi satu pekan penuh agar resample mingguan di pelajaran berikutnya bermakna. Indeksnya bertipe `DatetimeIndex`, jenis indeks yang membuka semua kemampuan waktu pandas."
+            },
+            {
+              "type": "code_example",
+              "filename": "indeks_waktu.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(idx[0].day_name(), idx[-1].strftime('%Y-%m-%d'), len(idx))\nprint(s['2024-01-30'])\nprint(s['2024-01-30':'2024-02-01'].tolist())\nprint(s['2024-02'].tolist())\nprint(s.loc['2024-01'].tolist())\nprint(s.index.dayofweek.tolist())\nprint(s.index.day_name().tolist()[:3])\nprint(s.index.month.tolist())",
+              "expected_output_note": "Monday 2024-02-05 8\n12\n[12, 9, 15]\n[15, 14, 20, 18, 22]\n[10, 12, 9]\n[0, 1, 2, 3, 4, 5, 6, 0]\n['Monday', 'Tuesday', 'Wednesday']\n[1, 1, 1, 2, 2, 2, 2, 2]",
+              "explanation": "Indeks tanggal memungkinkan pemotongan dengan teks tanggal sebagian seperti 2024-02, dan atribut seperti dayofweek dan month tersedia langsung pada indeks."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pemotongan dengan label\n\nDengan indeks tanggal, Anda memotong memakai teks tanggal. `s['2024-01-30']` mengambil satu hari, `s['2024-02']` mengambil seluruh bulan Februari, dan `s['2024-01-30':'2024-02-01']` mengambil rentang. Berbeda dari pemotongan posisi biasa, pemotongan label menyertakan kedua ujungnya. Tulis tanggal dalam format ISO tahun, bulan, hari agar tidak ambigu. Fitur teks tanggal sebagian ini sangat berguna: mengambil satu tahun atau satu bulan cukup dengan menulis `'2024'` atau `'2024-02'` tanpa menghitung batas akhirnya sendiri."
+            }
+          ],
+          "quick_check": {
+            "question": "Pemotongan label tanggal menyertakan?",
+            "options": [
+              "Kedua ujung",
+              "Hanya awal"
+            ],
+            "answer_index": 0,
+            "explanation": "Label inklusif.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mengapa harus terurut",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa harus terurut\n\nPemotongan rentang pada indeks tanggal mengandalkan keterurutan. Bila indeks tidak terurut, pandas dapat melempar galat atau memberi hasil yang membingungkan. Urutkan dengan `sort_index()` setelah memuat data, dan periksa dengan `s.index.is_monotonic_increasing`. Kebiasaan ini menghindari kejutan, terutama ketika data digabung dari beberapa file yang masing-masing terurut tetapi urutan antar file tidak terjamin. Sebuah alur analisis deret waktu yang baik hampir selalu memiliki langkah eksplisit memastikan indeks bertipe tanggal, terurut, dan tanpa duplikat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Atribut dari indeks\n\nIndeks tanggal menyediakan atribut `year`, `month`, `day`, `dayofweek`, `quarter`, `is_month_end`, serta `day_name()` dan `month_name()`, sama seperti `dt` pada kolom. Atribut ini adalah bahan baku pengelompokan: rata-rata per bulan dengan `groupby(s.index.month)`, jumlah per hari dalam pekan dengan `groupby(s.index.dayofweek)`. Perhatikan bahwa pengelompokan per bulan saja menggabungkan Januari semua tahun bila data mencakup banyak tahun, jadi untuk data multi-tahun kelompokkan menurut tahun dan bulan sekaligus atau pakai `to_period('M')`."
+            },
+            {
+              "type": "code_example",
+              "filename": "atribut_indeks.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(s.groupby(s.index.dayofweek).sum().to_dict())\nprint(s.groupby(s.index.month).mean().to_dict())\nprint(s.index.is_month_end.tolist()[:3])\nprint(s.index.to_period('M').astype(str).tolist()[:2])\nprint(s.idxmax().strftime('%Y-%m-%d'), s.nlargest(2).index.strftime('%d').tolist())\nprint(s.index.is_monotonic_increasing)",
+              "expected_output_note": "{0: 32, 1: 12, 2: 9, 3: 15, 4: 14, 5: 20, 6: 18}\n{1: 10.333333333333334, 2: 17.8}\n[False, False, True]\n['2024-01', '2024-01']\n2024-02-05 ['05', '03']\nTrue",
+              "explanation": "Atribut indeks menjadi kunci groupby. Idxmax mengembalikan tanggal dengan nilai tertinggi, dan hari Senin muncul dua kali sehingga jumlahnya 32."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membuat rentang tanggal\n\nFungsi `pd.date_range` membuat rangkaian tanggal teratur dari titik awal. Anda dapat menyebut awal dan akhir, atau awal dan jumlah periode `periods`. Argumen `freq` menentukan jarak: `'D'` harian, `'2D'` dua harian, `'W'` mingguan berakhir Minggu, `'B'` hari kerja Senin sampai Jumat. Alias frekuensi bulanan dan tahunan berubah antar versi pandas, sehingga bila Anda memerlukannya, periksa dokumentasi versi yang Anda pakai. Rentang yang dibuat sendiri berguna sebagai kerangka lengkap untuk menemukan tanggal yang hilang dari data."
+            },
+            {
+              "type": "code_example",
+              "filename": "date_range.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(pd.date_range('2024-01-01', periods=4, freq='W').strftime('%Y-%m-%d').tolist())\nprint(pd.date_range('2024-01-01', periods=5, freq='B').strftime('%a').tolist())\nprint(pd.date_range('2024-01-01', '2024-01-10', freq='3D').strftime('%d').tolist())\nprint(pd.Timestamp('2024-03-05').to_period('M'))\nprint((pd.Timestamp('2024-03-05') + pd.Timedelta(days=30)).strftime('%Y-%m-%d'))\nprint((pd.Timestamp('2024-01-31') + pd.DateOffset(months=1)).strftime('%Y-%m-%d'))\nprint(s.index.max() - s.index.min())",
+              "expected_output_note": "['2024-01-07', '2024-01-14', '2024-01-21', '2024-01-28']\n['Mon', 'Tue', 'Wed', 'Thu', 'Fri']\n['01', '04', '07', '10']\n2024-03\n2024-04-04\n2024-02-29\n7 days 00:00:00",
+              "explanation": "Date_range membuat kerangka tanggal. Timedelta menambah durasi tetap, sedangkan DateOffset menambah satuan kalender seperti bulan dengan penyesuaian akhir bulan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Timedelta dan DateOffset\n\nSelisih dua tanggal bertipe `Timedelta`, durasi dengan atribut seperti `days` dan `total_seconds()`. Menambahkan `Timedelta(days=30)` menggeser tepat tiga puluh hari, sedangkan `DateOffset(months=1)` menggeser satu bulan kalender dan menyesuaikan bila bulan tujuan lebih pendek, sehingga 31 Januari ditambah satu bulan menjadi 29 Februari pada tahun kabisat. Pilih menurut maksud: durasi tetap untuk jarak waktu fisik, offset kalender untuk aturan bisnis seperti jatuh tempo tiap bulan atau akhir kuartal."
+            }
+          ],
+          "quick_check": {
+            "question": "freq 'B' berarti?",
+            "options": [
+              "Bulanan",
+              "Hari kerja"
+            ],
+            "answer_index": 1,
+            "explanation": "Business day.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Zona waktu",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Zona waktu\n\nTanggal tanpa zona waktu disebut naif, dan tanggal dengan zona waktu disebut sadar zona. Pandas mendukung keduanya dengan `tz_localize` untuk menempelkan zona pada waktu naif dan `tz_convert` untuk memindahkan waktu sadar zona ke zona lain. Aturan emasnya: simpan dan hitung dalam UTC, ubah ke zona lokal hanya saat menampilkan. Mencampur waktu naif dan sadar zona menghasilkan galat, yang sebenarnya melindungi Anda dari kesalahan senyap berselisih tujuh jam antara Jakarta dan UTC."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tiga pemeriksaan",
+              "markdown": "Pastikan indeks bertipe tanggal, terurut, dan tanpa duplikat sebelum analisis. Tiga pemeriksaan ini menyelesaikan banyak galat deret waktu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh kerja: bulan dalam data\n\nMisalkan Anda diminta rata-rata penjualan tiap bulan dari data harian. Langkahnya: pastikan kolom tanggal bertipe tanggal, jadikan indeks dan urutkan, lalu kelompokkan menurut bulan. Pada contoh ini Januari hanya punya tiga hari dengan rata-rata 10,33 sedangkan Februari punya lima hari dengan rata-rata 17,8. Membandingkan keduanya langsung menyesatkan karena Januari parsial. Catat jumlah hari tiap bulan bersama rata-ratanya, dan pertimbangkan membandingkan hanya bulan dengan data penuh agar kesimpulan tidak dipengaruhi cakupan yang tidak sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pola kerja yang disarankan\n\nUrutan kerja yang andal untuk deret waktu: baca data, ubah kolom tanggal dengan format eksplisit, jadikan indeks, urutkan, buang atau tangani duplikat tanggal, periksa jarak antar tanggal, baru kemudian analisis. Setiap langkah mudah ditulis sebagai satu baris dan mudah diperiksa. Mengabaikan salah satunya menimbulkan kesalahan halus yang baru terlihat jauh di hilir, misalnya rata-rata bulanan yang menghitung satu hari dua kali karena ada duplikat tanggal pada data hasil gabungan dua sumber."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kesalahan umum dengan tanggal\n\nTiga kesalahan paling sering: format ambigu yang terbaca terbalik antara hari dan bulan, tanggal yang dibiarkan bertipe teks sehingga terurut menurut huruf, dan indeks yang tidak terurut sehingga pemotongan memberi hasil aneh. Ketiganya dapat dicegah dengan satu baris pemeriksaan di awal alur. Periksa `dtypes`, cetak nilai minimum dan maksimum tanggal, dan bandingkan dengan rentang yang Anda harapkan dari sumber data."
+            }
+          ],
+          "quick_check": {
+            "question": "Timedelta menambah?",
+            "options": [
+              "Durasi tetap",
+              "Bulan kalender"
+            ],
+            "answer_index": 0,
+            "explanation": "Durasi.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-09-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `irisan_tanggal(s, awal, akhir)` yang mengembalikan list nilai deret `s` dari tanggal `awal` sampai `akhir` (teks ISO, kedua ujung disertakan).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef irisan_tanggal(s, awal, akhir):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "irisan_tanggal(s, '2024-01-30', '2024-02-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert irisan_tanggal(s, '2024-01-30', '2024-02-01') == [12, 9, 15]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "irisan_tanggal(s, '2024-02-01', '2024-02-05')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert irisan_tanggal(s, '2024-02-01', '2024-02-05') == [15, 14, 20, 18, 22]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "irisan_tanggal(s, '2024-01-29', '2024-01-29')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert irisan_tanggal(s, '2024-01-29', '2024-01-29') == [10]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "irisan_tanggal(s, '2024-01', '2024-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert irisan_tanggal(s, '2024-01', '2024-01') == [10, 12, 9]"
+              }
+            ]
+          },
+          "hint": "Pemotongan label dengan titik dua pada indeks tanggal.",
+          "solution": "import pandas as pd\n\ndef irisan_tanggal(s, awal, akhir):\n    return s[awal:akhir].tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-09-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_per_bulan(s)` yang mengembalikan dict rata-rata nilai per nomor bulan, dibulatkan dua desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef rata_per_bulan(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_per_bulan(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert rata_per_bulan(s) == {1: 10.33, 2: 17.8}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_per_bulan(s['2024-02'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_per_bulan(s['2024-02']) == {2: 17.8}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_per_bulan(s['2024-01'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_per_bulan(s['2024-01']) == {1: 10.33}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(rata_per_bulan(s))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(rata_per_bulan(s)) == 2"
+              }
+            ]
+          },
+          "hint": "groupby pada s.index.month lalu mean dan round.",
+          "solution": "import pandas as pd\n\ndef rata_per_bulan(s):\n    return s.groupby(s.index.month).mean().round(2).to_dict()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-09-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `jumlah_per_hari_pekan(s)` yang mengembalikan dict jumlah nilai per hari dalam pekan, dengan Senin bernomor 0.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef jumlah_per_hari_pekan(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_per_hari_pekan(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert jumlah_per_hari_pekan(s) == {0: 32, 1: 12, 2: 9, 3: 15, 4: 14, 5: 20, 6: 18}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_per_hari_pekan(s.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_per_hari_pekan(s.iloc[:2]) == {0: 10, 1: 12}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_per_hari_pekan(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_per_hari_pekan(s)[0] == 32"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(jumlah_per_hari_pekan(s).values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(jumlah_per_hari_pekan(s).values()) == 120"
+              }
+            ]
+          },
+          "hint": "groupby pada s.index.dayofweek lalu sum.",
+          "solution": "import pandas as pd\n\ndef jumlah_per_hari_pekan(s):\n    return s.groupby(s.index.dayofweek).sum().to_dict()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-09-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `daftar_tanggal(awal, n, freq)` yang mengembalikan list `n` tanggal berformat `YYYY-MM-DD` mulai dari `awal` dengan frekuensi `freq`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef daftar_tanggal(awal, n, freq):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "daftar_tanggal('2024-01-01', 3, 'D')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert daftar_tanggal('2024-01-01', 3, 'D') == ['2024-01-01', '2024-01-02', '2024-01-03']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "daftar_tanggal('2024-01-01', 3, '2D')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert daftar_tanggal('2024-01-01', 3, '2D') == ['2024-01-01', '2024-01-03', '2024-01-05']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "daftar_tanggal('2024-01-01', 5, 'B')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert daftar_tanggal('2024-01-01', 5, 'B')[-1] == '2024-01-05'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "daftar_tanggal('2024-01-01', 2, 'W')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert daftar_tanggal('2024-01-01', 2, 'W') == ['2024-01-07', '2024-01-14']"
+              }
+            ]
+          },
+          "hint": "date_range dengan periods dan freq lalu strftime.",
+          "solution": "import pandas as pd\n\ndef daftar_tanggal(awal, n, freq):\n    return pd.date_range(awal, periods=n, freq=freq).strftime('%Y-%m-%d').tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Pemotongan label tanggal menyertakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kedua ujung",
+              "description": ""
+            },
+            {
+              "label": "Hanya awal",
+              "description": ""
+            },
+            {
+              "label": "Hanya akhir",
+              "description": ""
+            },
+            {
+              "label": "Tak satu pun",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kedua.",
+          "explanation": "Label inklusif."
+        },
+        {
+          "q": "freq 'B' berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hari kerja",
+              "description": ""
+            },
+            {
+              "label": "Bulanan",
+              "description": ""
+            },
+            {
+              "label": "Mingguan",
+              "description": ""
+            },
+            {
+              "label": "Per jam",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kerja.",
+          "explanation": "Business day."
+        },
+        {
+          "q": "Timedelta menambah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Durasi tetap",
+              "description": ""
+            },
+            {
+              "label": "Bulan kalender",
+              "description": ""
+            },
+            {
+              "label": "Zona",
+              "description": ""
+            },
+            {
+              "label": "Format",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tetap.",
+          "explanation": "Durasi."
+        },
+        {
+          "q": "DateOffset months=1 pada 31 Jan 2024?",
+          "code": null,
+          "options": [
+            {
+              "label": "29 Feb 2024",
+              "description": ""
+            },
+            {
+              "label": "31 Feb",
+              "description": ""
+            },
+            {
+              "label": "1 Mar",
+              "description": ""
+            },
+            {
+              "label": "30 Jan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Akhir bulan.",
+          "explanation": "Sesuaikan akhir bulan."
+        },
+        {
+          "q": "Zona waktu simpan dalam?",
+          "code": null,
+          "options": [
+            {
+              "label": "UTC",
+              "description": ""
+            },
+            {
+              "label": "Lokal",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Tanpa zona",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "UTC.",
+          "explanation": "Aturan emas."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membiarkan tanggal bertipe teks. Lebih baik: Ubah dengan to_datetime dan jadikan indeks.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membiarkan tanggal bertipe teks.",
+          "fix": "Ubah dengan to_datetime dan jadikan indeks."
+        },
+        {
+          "mistake": "Memotong pada indeks yang belum terurut.",
+          "fix": "Panggil sort_index lebih dulu."
+        },
+        {
+          "mistake": "Mencampur waktu naif dan sadar zona.",
+          "fix": "Simpan dalam UTC dan konversi saat tampil."
+        }
+      ],
+      "summary": [
+        "to_datetime dan DatetimeIndex membuka kemampuan waktu pandas.",
+        "Pemotongan label memakai teks tanggal dan inklusif.",
+        "date_range membuat kerangka tanggal teratur.",
+        "Pilih Timedelta atau DateOffset menurut maksud."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Indeks waktu dan pemotongan tanggal"
+          },
+          {
+            "type": "text",
+            "source": "Indeks tanggal memungkinkan pemotongan dengan teks tanggal sebagian seperti 2024-02, dan atribut seperti dayofweek dan month tersedia langsung pada indeks."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(idx[0].day_name(), idx[-1].strftime('%Y-%m-%d'), len(idx))\nprint(s['2024-01-30'])\nprint(s['2024-01-30':'2024-02-01'].tolist())\nprint(s['2024-02'].tolist())\nprint(s.loc['2024-01'].tolist())\nprint(s.index.dayofweek.tolist())\nprint(s.index.day_name().tolist()[:3])\nprint(s.index.month.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Atribut indeks menjadi kunci groupby. Idxmax mengembalikan tanggal dengan nilai tertinggi, dan hari Senin muncul dua kali sehingga jumlahnya 32."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(s.groupby(s.index.dayofweek).sum().to_dict())\nprint(s.groupby(s.index.month).mean().to_dict())\nprint(s.index.is_month_end.tolist()[:3])\nprint(s.index.to_period('M').astype(str).tolist()[:2])\nprint(s.idxmax().strftime('%Y-%m-%d'), s.nlargest(2).index.strftime('%d').tolist())\nprint(s.index.is_monotonic_increasing)"
+          },
+          {
+            "type": "text",
+            "source": "Date_range membuat kerangka tanggal. Timedelta menambah durasi tetap, sedangkan DateOffset menambah satuan kalender seperti bulan dengan penyesuaian akhir bulan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(pd.date_range('2024-01-01', periods=4, freq='W').strftime('%Y-%m-%d').tolist())\nprint(pd.date_range('2024-01-01', periods=5, freq='B').strftime('%a').tolist())\nprint(pd.date_range('2024-01-01', '2024-01-10', freq='3D').strftime('%d').tolist())\nprint(pd.Timestamp('2024-03-05').to_period('M'))\nprint((pd.Timestamp('2024-03-05') + pd.Timedelta(days=30)).strftime('%Y-%m-%d'))\nprint((pd.Timestamp('2024-01-31') + pd.DateOffset(months=1)).strftime('%Y-%m-%d'))\nprint(s.index.max() - s.index.min())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-09-2",
+      "title": "Resample, rolling, dan expanding",
+      "estimated_minutes": 35,
+      "read_minutes": 8,
+      "objectives": [
+        "Mengubah frekuensi deret dengan resample",
+        "Menghitung rata-rata bergulir dengan rolling",
+        "Memakai expanding dan ewm untuk statistik kumulatif",
+        "Menjelaskan nilai hilang di awal jendela"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengubah resolusi waktu",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengubah resolusi waktu\n\nData sering datang pada resolusi yang tidak sesuai pertanyaan. Sensor merekam tiap detik padahal Anda ingin rata-rata per jam, transaksi dicatat per menit padahal laporan bulanan. Metode `resample` mengelompokkan deret berindeks tanggal ke dalam jendela waktu teratur lalu menerapkan agregasi pada tiap jendela. Ia seperti groupby tetapi kuncinya adalah potongan waktu yang dibuat otomatis dari indeks, dan jendela kosong tetap muncul dalam hasil sehingga tidak ada celah tersembunyi dalam deret yang dihasilkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Aturan jendela\n\nResample mingguan dengan `'W'` menggunakan pekan yang berakhir pada hari Minggu, dan label hasilnya adalah tanggal akhir pekan itu. Pada data contoh, pekan pertama berakhir Minggu 4 Februari dan berisi enam hari pertama, jumlahnya 98, sedangkan Senin 5 Februari jatuh ke pekan kedua yang berjumlah 22. Memahami kapan jendela dimulai dan berakhir sangat penting, sebab angka yang tampak aneh biasanya hanya akibat batas jendela yang tidak sesuai dugaan. Argumen `label` dan `closed` mengatur sisi mana yang menjadi batas dan label."
+            },
+            {
+              "type": "code_example",
+              "filename": "resample.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(s.resample('W').sum().tolist())\nprint(s.resample('W').sum().index.strftime('%m-%d').tolist())\nprint(s.resample('2D').mean().tolist())\nprint(s.resample('W').agg(['min', 'max']).values.tolist())\nprint(s.resample('W').last().tolist(), s.resample('W').count().tolist())\nprint(s.resample('W').sum().pct_change().round(3).tolist())",
+              "expected_output_note": "[98, 22]\n['02-04', '02-11']\n[11.0, 12.0, 17.0, 20.0]\n[[9, 20], [22, 22]]\n[18, 22] [7, 1]\n[nan, -0.776]",
+              "explanation": "Resample mengelompokkan menurut jendela waktu, lalu agregasi biasa diterapkan. Pekan pertama berisi tujuh hari dari Senin 29 Januari sampai Minggu 4 Februari."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pekan parsial\n\nPekan terakhir pada contoh hanya berisi satu hari, Senin 5 Februari, tetapi muncul sebagai satu baris jumlah 22 di samping pekan penuh berjumlah 98. Membandingkan keduanya, atau menghitung pertumbuhan, menyesatkan karena ukuran jendelanya berbeda. Pertumbuhan minus 77,6 persen pada hasil di atas bukan penurunan nyata. Bersikaplah curiga pada jendela pertama dan terakhir, yang sering parsial, dan buang atau tandai dengan `count` bila membandingkan antar periode."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rolling untuk menghaluskan\n\nMetode `rolling(k)` membentuk jendela bergeser sepanjang k observasi, dan agregasi seperti `mean`, `sum`, `max`, atau `std` dihitung pada tiap posisi. Rata-rata bergulir menghaluskan fluktuasi harian sehingga tren terlihat. Berbeda dari resample yang mengurangi jumlah baris, rolling mempertahankan jumlah baris dan menghasilkan satu nilai per posisi. Jendela bertumpang tindih, sehingga nilai berdekatan saling berkorelasi, sebuah sifat yang perlu diingat ketika menafsirkan hasilnya sebagai observasi independen."
+            },
+            {
+              "type": "code_example",
+              "filename": "rolling.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(s.rolling(3).mean().round(2).tolist())\nprint(s.rolling(3, min_periods=1).sum().tolist())\nprint(s.rolling(3).max().tolist())\nprint(s.rolling('3D').sum().tolist())\nprint(s.expanding().max().tolist(), s.cumsum().tolist())\nprint(s.ewm(span=3, adjust=False).mean().round(2).tolist())",
+              "expected_output_note": "[nan, nan, 10.33, 12.0, 12.67, 16.33, 17.33, 20.0]\n[10.0, 22.0, 31.0, 36.0, 38.0, 49.0, 52.0, 60.0]\n[nan, nan, 12.0, 15.0, 15.0, 20.0, 20.0, 22.0]\n[10.0, 22.0, 31.0, 36.0, 38.0, 49.0, 52.0, 60.0]\n[10.0, 12.0, 12.0, 15.0, 15.0, 20.0, 20.0, 22.0] [10, 22, 31, 46, 60, 80, 98, 120]\n[10.0, 11.0, 10.0, 12.5, 13.25, 16.62, 17.31, 19.66]",
+              "explanation": "Rolling menghasilkan NaN sampai jendela penuh kecuali min_periods diatur. Jendela berbasis waktu seperti 3D menghitung menurut jarak tanggal, bukan jumlah baris."
+            }
+          ],
+          "quick_check": {
+            "question": "resample menghasilkan?",
+            "options": [
+              "Satu baris per jendela waktu",
+              "Satu per baris asal"
+            ],
+            "answer_index": 0,
+            "explanation": "Per jendela.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "NaN di awal jendela",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## NaN di awal jendela\n\nRata-rata bergulir tiga hari baru dapat dihitung pada hari ketiga, sehingga dua nilai pertama NaN. Ini perilaku yang benar karena belum ada tiga observasi. Argumen `min_periods` menurunkan syarat itu, misalnya `min_periods=1` menghitung dengan data yang ada. Pilih dengan sadar: jendela yang belum penuh memberi angka yang lebih berisik dan tidak sebanding dengan jendela penuh. Pada pemodelan, NaN awal ini biasanya dibuang atau diisi dengan metode yang Anda dokumentasikan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Jendela berbasis waktu\n\nArgumen jendela dapat berupa teks durasi seperti `'3D'` untuk tiga hari, bukan jumlah baris. Bedanya terasa pada data yang tidak teratur: tiga baris bisa mencakup satu hari atau satu bulan, sedangkan `'3D'` selalu tiga hari kalender. Jendela berbasis waktu mensyaratkan indeks tanggal terurut. Pada data harian teratur keduanya identik, seperti pada contoh, tetapi pada data transaksi dengan jarak waktu acak, jendela berbasis waktu jauh lebih bermakna secara analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Expanding dan ewm\n\nMetode `expanding()` memakai semua observasi dari awal sampai posisi saat ini, sehingga `expanding().max()` adalah rekor tertinggi sampai hari itu dan `expanding().mean()` adalah rata-rata berjalan. Metode `ewm` menghitung rata-rata dengan bobot yang meluruh eksponensial, memberi bobot lebih pada observasi baru. Parameter `span` mengatur kecepatan peluruhan. Rata-rata eksponensial bereaksi lebih cepat terhadap perubahan daripada rata-rata bergulir biasa, sehingga populer pada pemantauan dan peramalan sederhana."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih lebar jendela\n\nJendela pendek mengikuti data dengan setia tetapi masih berisik, jendela panjang halus tetapi terlambat bereaksi. Tidak ada angka ajaib, jadi pilih menurut siklus data: tujuh hari menghilangkan efek hari dalam pekan, dua belas bulan menghilangkan musiman tahunan. Gambarlah deret asli bersama beberapa lebar jendela dan pilih yang menghilangkan derau tanpa menyembunyikan perubahan yang ingin Anda deteksi. Keputusan ini adalah penilaian analis, bukan perhitungan."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Pekan parsial",
+              "markdown": "Jendela pertama dan terakhir pada resample sering parsial. Jangan membandingkan pertumbuhannya dengan jendela penuh tanpa memeriksa count."
+            },
+            {
+              "type": "code_example",
+              "filename": "resolusi_ganda.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(s.resample('3D').sum().tolist())\nprint(s.resample('3D').agg(['sum', 'max']).values.tolist())\nprint(s.resample('W').mean().round(2).tolist())\nprint(s.resample('2D').sum().tolist())\nprint(s.resample('2D').max().tolist())\nprint(s.rolling(2).sum().tolist())",
+              "expected_output_note": "[31, 49, 40]\n[[31, 12], [49, 20], [40, 22]]\n[14.0, 22.0]\n[22, 24, 34, 40]\n[12, 15, 20, 22]\n[nan, 22.0, 21.0, 24.0, 29.0, 34.0, 38.0, 40.0]",
+              "explanation": "Satu deret dapat diringkas pada beberapa resolusi. Resample mengurangi baris menjadi satu per jendela, sedangkan rolling mempertahankan jumlah baris."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih agregasi saat resample\n\nAgregasi yang dipilih harus sesuai arti data. Jumlah cocok untuk besaran yang menumpuk seperti penjualan atau kunjungan, rata-rata cocok untuk besaran tingkat seperti suhu atau harga, nilai terakhir cocok untuk status seperti stok akhir periode, dan maksimum cocok untuk puncak seperti beban tertinggi. Memakai jumlah pada harga atau rata-rata pada penjualan harian menghasilkan angka yang tidak punya arti. Satu panggilan `agg` dengan beberapa fungsi memberi gambaran lengkap sebelum Anda memutuskan ringkasan mana yang dipublikasikan dalam laporan."
+            }
+          ],
+          "quick_check": {
+            "question": "rolling(3) dua nilai pertama?",
+            "options": [
+              "0",
+              "NaN"
+            ],
+            "answer_index": 1,
+            "explanation": "Jendela belum penuh.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Resample dan nilai hilang",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Resample dan nilai hilang\n\nJendela tanpa data muncul dalam hasil resample sebagai nol untuk `sum` dan NaN untuk `mean`, perbedaan yang halus. Nol dari jumlah kosong dapat menyesatkan: tidak ada transaksi pekan itu atau data pekan itu hilang. Gunakan `count` bersama agregasi untuk membedakannya, atau `min_count=1` pada sum agar jendela kosong menghasilkan NaN. Perlakukan jendela kosong sebagai informasi yang perlu dijelaskan, bukan sebagai nol yang aman, terutama ketika hasilnya dipakai menghitung pertumbuhan antar pekan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hubungan resample dan groupby\n\nResample mirip groupby dengan kunci waktu, dan keduanya dapat dipertukarkan pada banyak kasus. Perbedaannya, resample otomatis menyertakan jendela kosong dan menjaga urutan waktu, sedangkan groupby dengan `Grouper` atau atribut tanggal hanya menampilkan kelompok yang ada. Pakai resample untuk deret bersambung dan groupby bila Anda mengelompokkan menurut sifat kalender seperti hari dalam pekan yang tidak membentuk jendela berurutan. Memilih alat yang tepat membuat kode lebih ringkas dan hasil lebih mudah ditafsirkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rolling pada data banyak kelompok\n\nBila data berisi banyak entitas, misalnya banyak toko dalam satu tabel panjang, rolling harus dijalankan per entitas, bukan pada seluruh kolom. Pola yang benar adalah `groupby('toko')['omzet'].rolling(3).mean()` atau `transform` dengan lambda. Menjalankan rolling langsung pada tabel campuran menghitung rata-rata lintas toko di perbatasan data, kesalahan halus yang menghasilkan angka masuk akal tetapi keliru. Kebiasaan ini juga berlaku untuk shift, diff, dan cumsum pada tabel panjang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh kerja: laporan mingguan\n\nUntuk laporan mingguan, resample deret harian dengan jumlah, hitung juga count agar jendela parsial terlihat, lalu bandingkan pekan penuh saja. Tambahkan rata-rata bergulir empat pekan untuk menunjukkan tren tanpa gejolak pekanan. Tiga kolom ini, jumlah, count, dan rata-rata bergulir, sudah memberi gambaran jujur yang mudah dipahami pembaca non-teknis dan tidak menyembunyikan keterbatasan data."
+            }
+          ],
+          "quick_check": {
+            "question": "min_periods=1?",
+            "options": [
+              "Hitung dengan data yang ada",
+              "Hapus awal"
+            ],
+            "answer_index": 0,
+            "explanation": "Turunkan syarat.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-09-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_mingguan(s)` yang mengembalikan list jumlah nilai per pekan (berakhir Minggu) memakai `resample`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef jumlah_mingguan(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_mingguan(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert jumlah_mingguan(s) == [98, 22]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_mingguan(s.iloc[:3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_mingguan(s.iloc[:3]) == [31]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_mingguan(s.iloc[6:])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_mingguan(s.iloc[6:]) == [18, 22]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(jumlah_mingguan(s))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(jumlah_mingguan(s)) == 120"
+              }
+            ]
+          },
+          "hint": "resample dengan W lalu sum.",
+          "solution": "import pandas as pd\n\ndef jumlah_mingguan(s):\n    return s.resample('W').sum().tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-09-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_dua_hari(s)` yang mengembalikan list rata-rata per jendela dua hari memakai `resample`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef rata_dua_hari(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_dua_hari(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert rata_dua_hari(s) == [11.0, 12.0, 17.0, 20.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_dua_hari(s.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_dua_hari(s.iloc[:2]) == [11.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_dua_hari(s.iloc[:3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_dua_hari(s.iloc[:3]) == [11.0, 9.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(rata_dua_hari(s))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(rata_dua_hari(s)) == 4"
+              }
+            ]
+          },
+          "hint": "resample dengan 2D lalu mean.",
+          "solution": "import pandas as pd\n\ndef rata_dua_hari(s):\n    return s.resample('2D').mean().tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-09-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_bergulir(s, k)` yang mengembalikan list rata-rata bergulir jendela `k`, dibulatkan dua desimal, dengan nilai yang belum bisa dihitung diisi nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef rata_bergulir(s, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_bergulir(s, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert rata_bergulir(s, 3) == [0.0, 0.0, 10.33, 12.0, 12.67, 16.33, 17.33, 20.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_bergulir(s, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_bergulir(s, 2) == [0.0, 11.0, 10.5, 12.0, 14.5, 17.0, 19.0, 20.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_bergulir(s, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_bergulir(s, 1) == [10.0, 12.0, 9.0, 15.0, 14.0, 20.0, 18.0, 22.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_bergulir(s, 8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_bergulir(s, 8)[-1] == 15.0"
+              }
+            ]
+          },
+          "hint": "rolling lalu mean, round, dan fillna nol.",
+          "solution": "import pandas as pd\n\ndef rata_bergulir(s, k):\n    return s.rolling(k).mean().round(2).fillna(0).tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-09-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `maks_berjalan(s)` yang mengembalikan list nilai tertinggi yang pernah dicapai sampai tiap hari.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef maks_berjalan(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "maks_berjalan(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert maks_berjalan(s) == [10, 12, 12, 15, 15, 20, 20, 22]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "maks_berjalan(s.iloc[:3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maks_berjalan(s.iloc[:3]) == [10, 12, 12]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "maks_berjalan(s.iloc[[2, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maks_berjalan(s.iloc[[2, 0]]) == [9, 10]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "maks_berjalan(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maks_berjalan(s)[-1] == 22"
+              }
+            ]
+          },
+          "hint": "expanding lalu max.",
+          "solution": "import pandas as pd\n\ndef maks_berjalan(s):\n    return s.expanding().max().tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "resample menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu baris per jendela waktu",
+              "description": ""
+            },
+            {
+              "label": "Satu per baris asal",
+              "description": ""
+            },
+            {
+              "label": "Dict",
+              "description": ""
+            },
+            {
+              "label": "Kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Jendela.",
+          "explanation": "Per jendela."
+        },
+        {
+          "q": "rolling(3) dua nilai pertama?",
+          "code": null,
+          "options": [
+            {
+              "label": "NaN",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NaN.",
+          "explanation": "Jendela belum penuh."
+        },
+        {
+          "q": "min_periods=1?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hitung dengan data yang ada",
+              "description": ""
+            },
+            {
+              "label": "Hapus awal",
+              "description": ""
+            },
+            {
+              "label": "Isi nol",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu.",
+          "explanation": "Turunkan syarat."
+        },
+        {
+          "q": "expanding max adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rekor sejauh ini",
+              "description": ""
+            },
+            {
+              "label": "Maks jendela tetap",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Rekor.",
+          "explanation": "Kumulatif."
+        },
+        {
+          "q": "ewm memberi bobot lebih pada?",
+          "code": null,
+          "options": [
+            {
+              "label": "Data terbaru",
+              "description": ""
+            },
+            {
+              "label": "Data lama",
+              "description": ""
+            },
+            {
+              "label": "Rata",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baru.",
+          "explanation": "Eksponensial."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membandingkan jendela parsial dengan jendela penuh. Lebih baik: Periksa count tiap jendela.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membandingkan jendela parsial dengan jendela penuh.",
+          "fix": "Periksa count tiap jendela."
+        },
+        {
+          "mistake": "Mengira rolling mengurangi jumlah baris.",
+          "fix": "Rolling mempertahankan jumlah baris, resample menguranginya."
+        },
+        {
+          "mistake": "Memakai jendela berbasis baris pada data tak teratur.",
+          "fix": "Pakai jendela berbasis waktu seperti 3D."
+        }
+      ],
+      "summary": [
+        "resample mengubah resolusi waktu dengan agregasi per jendela.",
+        "rolling menghaluskan tanpa mengurangi jumlah baris.",
+        "expanding dan ewm menghitung statistik kumulatif dan berbobot.",
+        "Waspadai jendela parsial dan NaN di awal."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Resample, rolling, dan expanding"
+          },
+          {
+            "type": "text",
+            "source": "Resample mengelompokkan menurut jendela waktu, lalu agregasi biasa diterapkan. Pekan pertama berisi tujuh hari dari Senin 29 Januari sampai Minggu 4 Februari."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(s.resample('W').sum().tolist())\nprint(s.resample('W').sum().index.strftime('%m-%d').tolist())\nprint(s.resample('2D').mean().tolist())\nprint(s.resample('W').agg(['min', 'max']).values.tolist())\nprint(s.resample('W').last().tolist(), s.resample('W').count().tolist())\nprint(s.resample('W').sum().pct_change().round(3).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Rolling menghasilkan NaN sampai jendela penuh kecuali min_periods diatur. Jendela berbasis waktu seperti 3D menghitung menurut jarak tanggal, bukan jumlah baris."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(s.rolling(3).mean().round(2).tolist())\nprint(s.rolling(3, min_periods=1).sum().tolist())\nprint(s.rolling(3).max().tolist())\nprint(s.rolling('3D').sum().tolist())\nprint(s.expanding().max().tolist(), s.cumsum().tolist())\nprint(s.ewm(span=3, adjust=False).mean().round(2).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Satu deret dapat diringkas pada beberapa resolusi. Resample mengurangi baris menjadi satu per jendela, sedangkan rolling mempertahankan jumlah baris."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(s.resample('3D').sum().tolist())\nprint(s.resample('3D').agg(['sum', 'max']).values.tolist())\nprint(s.resample('W').mean().round(2).tolist())\nprint(s.resample('2D').sum().tolist())\nprint(s.resample('2D').max().tolist())\nprint(s.rolling(2).sum().tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-09-3",
+      "title": "Shift, selisih, dan celah dalam deret",
+      "estimated_minutes": 35,
+      "read_minutes": 9,
+      "objectives": [
+        "Menggeser deret dengan shift untuk membuat nilai sebelumnya",
+        "Menghitung selisih dan pertumbuhan dengan diff dan pct_change",
+        "Menemukan dan mengisi tanggal yang hilang dengan asfreq dan reindex",
+        "Menghindari kebocoran informasi dari masa depan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Melihat ke belakang",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Melihat ke belakang\n\nHampir semua analisis deret waktu membandingkan nilai sekarang dengan nilai sebelumnya. Metode `shift(1)` menggeser deret satu posisi ke bawah sehingga tiap baris memuat nilai hari kemarin, dan `shift(-1)` menggeser ke atas sehingga memuat nilai besok. Posisi yang kosong akibat pergeseran diisi NaN. Dari dasar ini lahir fitur lag untuk pemodelan, selisih, pertumbuhan, dan pemeriksaan apakah nilai hari ini lebih tinggi daripada kemarin. Satu operasi sederhana membuka banyak jenis analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## diff dan pct_change\n\nMetode `diff()` menghitung selisih dengan baris sebelumnya, setara `s - s.shift(1)`, dan `pct_change()` menghitung perubahan relatif, setara `s / s.shift(1) - 1`. Keduanya menghasilkan NaN pada baris pertama. Selisih menjawab berapa naik, pertumbuhan menjawab berapa persen naik. Pada deret contoh, hari kedua naik dua poin atau dua puluh persen, hari ketiga turun tiga poin atau dua puluh lima persen. Pilih sesuai skala: pertumbuhan baik untuk membandingkan deret berskala berbeda, selisih baik untuk besaran yang bisa nol."
+            },
+            {
+              "type": "code_example",
+              "filename": "shift_diff_ts.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(s.shift(1).tolist())\nprint(s.shift(-1).tolist())\nprint(s.diff().tolist())\nprint(s.pct_change().round(3).tolist())\nprint((s - s.shift(1)).dropna().tolist())\nprint(s.index.to_series().diff().dt.days.tolist())",
+              "expected_output_note": "[nan, 10.0, 12.0, 9.0, 15.0, 14.0, 20.0, 18.0]\n[12.0, 9.0, 15.0, 14.0, 20.0, 18.0, 22.0, nan]\n[nan, 2.0, -3.0, 6.0, -1.0, 6.0, -2.0, 4.0]\n[nan, 0.2, -0.25, 0.667, -0.067, 0.429, -0.1, 0.222]\n[2.0, -3.0, 6.0, -1.0, 6.0, -2.0, 4.0]\n[nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]",
+              "explanation": "Shift menggeser, diff menghitung selisih, dan pct_change menghitung pertumbuhan relatif. Selisih tanggal pada indeks memeriksa keteraturan jarak."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa keteraturan\n\nSebelum memakai shift atau rolling berbasis baris, pastikan jarak antar tanggal teratur. Selisih indeks `s.index.to_series().diff()` menunjukkan celah: bila semuanya satu hari, deret teratur. Celah berarti shift satu posisi tidak lagi berarti satu hari, dan rata-rata bergulir berbasis baris mencampur rentang waktu berbeda. Banyak kesalahan analisis deret waktu berasal dari asumsi teratur yang tidak pernah diperiksa, jadi jadikan pemeriksaan jarak langkah rutin pertama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Celah dengan asfreq\n\nMetode `asfreq('D')` memaksa deret ke frekuensi harian teratur, menyisipkan baris NaN untuk tanggal yang hilang. Argumen `method='ffill'` mengisinya dengan nilai sebelumnya. Metode `reindex` dengan `date_range` lengkap melakukan hal serupa dengan kontrol penuh atas rentang. Setelah celah muncul sebagai NaN, Anda dapat mengisinya dengan `interpolate` untuk besaran mulus atau ffill untuk status yang bertahan, seperti harga atau stok. Memilih pengisi adalah keputusan analisis yang harus dicatat."
+            },
+            {
+              "type": "code_example",
+              "filename": "celah_deret.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\ng = s.drop(idx[[2, 3]])\nprint(len(g), g.asfreq('D').isna().sum())\nprint(g.asfreq('D').interpolate().round(2).tolist())\nprint(g.asfreq('D', method='ffill').tolist())\nprint(g.reindex(idx).tolist())\nprint(s.asfreq('2D').tolist())\nprint(s.truncate(before='2024-02-01').tolist())",
+              "expected_output_note": "6 2\n[10.0, 12.0, 12.67, 13.33, 14.0, 20.0, 18.0, 22.0]\n[10, 12, 12, 12, 14, 20, 18, 22]\n[10.0, 12.0, nan, nan, 14.0, 20.0, 18.0, 22.0]\n[10, 9, 14, 18]\n[15, 14, 20, 18, 22]",
+              "explanation": "Asfreq dan reindex membuat tanggal hilang tampak sebagai NaN. Interpolate dan ffill mengisinya dengan asumsi berbeda."
+            }
+          ],
+          "quick_check": {
+            "question": "shift(1) memberi tiap baris nilai?",
+            "options": [
+              "Sebelumnya",
+              "Berikutnya"
+            ],
+            "answer_index": 0,
+            "explanation": "Lag.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Bandingkan dengan rata-rata bergulir",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bandingkan dengan rata-rata bergulir\n\nPola analisis umum adalah membandingkan nilai dengan rata-rata bergulirnya. Nilai di atas rata-rata bergulir menunjukkan lonjakan relatif terhadap kondisi terbaru, dasar sederhana untuk deteksi anomali dan sinyal tren. Pada contoh, mulai hari keempat nilai selalu di atas rata-rata tiga hari terakhir, tanda tren naik. Hasilnya Series boolean yang dapat dipakai menyaring baris atau dihitung proporsinya. Dua nilai pertama False karena rata-rata belum dapat dihitung, dan perbandingan dengan NaN selalu salah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kebocoran dari masa depan\n\nKesalahan paling berbahaya pada deret waktu adalah membocorkan informasi masa depan ke dalam fitur. `shift(-1)` memberi nilai besok, yang sah sebagai target tetapi fatal sebagai fitur. Rolling yang terpusat, expanding dari seluruh data, atau standarisasi dengan rata-rata keseluruhan semuanya memakai data yang belum tersedia pada waktu prediksi. Model yang dilatih dengan kebocoran tampak sangat akurat dalam evaluasi lalu gagal di produksi. Untuk setiap fitur tanyakan: apakah nilainya sudah diketahui pada saat prediksi dibuat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pemisahan latih dan uji berurutan\n\nKarena urutan bermakna, jangan mengacak data deret waktu saat memisahkan latih dan uji. Potong menurut waktu: data lama untuk melatih dan data baru untuk menguji, sehingga evaluasi meniru situasi nyata memprediksi masa depan dari masa lalu. Pemotongan label tanggal membuatnya ringkas, misalnya `s[:'2024-01-31']` untuk latih dan `s['2024-02':]` untuk uji. Pengacakan acak membocorkan pola waktu dari uji ke latih dan membuat skor terlalu optimistis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah belajar mengubah teks menjadi tanggal, memotong deret dengan label, membuat rentang tanggal, mengubah resolusi dengan resample, menghaluskan dengan rolling dan expanding, serta memakai shift, diff, dan asfreq untuk analisis perubahan dan celah. Pesan utama: periksa keteraturan, waspadai jendela parsial, dan hindari kebocoran masa depan. Modul terakhir pandas membahas idiom dan performa."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Kebocoran masa depan",
+              "markdown": "Setiap fitur deret waktu harus sudah diketahui pada saat prediksi. Shift negatif dan statistik dari seluruh data adalah sumber kebocoran umum."
+            },
+            {
+              "type": "code_example",
+              "filename": "fitur_lag.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nlag = pd.DataFrame({'v': s, 'lag1': s.shift(1), 'lag2': s.shift(2)}).dropna()\nprint(lag.values.tolist())\nprint(lag.shape)\nprint(s[:'2024-02-01'].tolist())\nprint(s['2024-02-02':].tolist())\nprint(s.index[s > s.mean()].strftime('%d').tolist())",
+              "expected_output_note": "[[9.0, 12.0, 10.0], [15.0, 9.0, 12.0], [14.0, 15.0, 9.0], [20.0, 14.0, 15.0], [18.0, 20.0, 14.0], [22.0, 18.0, 20.0]]\n(6, 3)\n[10, 12, 9, 15]\n[14, 20, 18, 22]\n['03', '04', '05']",
+              "explanation": "Fitur lag dibuat dengan shift, dan pemisahan latih dan uji dilakukan menurut tanggal, bukan acak."
+            }
+          ],
+          "quick_check": {
+            "question": "pct_change baris pertama?",
+            "options": [
+              "0",
+              "NaN"
+            ],
+            "answer_index": 1,
+            "explanation": "Tak ada pembanding.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Fitur lag untuk pemodelan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fitur lag untuk pemodelan\n\nUntuk meramalkan nilai besok dari beberapa hari terakhir, bangun tabel fitur dengan beberapa kolom `shift`: nilai kemarin, dua hari lalu, dan seterusnya. Baris pertama akan memiliki NaN dan dibuang. Tabel ini dapat langsung dipakai model regresi biasa. Pada contoh, enam baris tersisa dengan tiga kolom. Semakin banyak lag, semakin banyak baris awal terbuang, sehingga jumlah lag adalah kompromi antara informasi dan ukuran data latih. Pada data kecil, pilih sedikit lag yang paling bermakna."
+            },
+            {
+              "type": "text",
+              "markdown": "## Musiman dan hari dalam pekan\n\nBanyak deret memiliki pola berulang: penjualan lebih tinggi akhir pekan, lalu lintas lebih padat jam sibuk. Fitur kalender seperti hari dalam pekan, bulan, dan penanda hari libur sering lebih berguna daripada lag mentah. Ambil dari indeks tanggal dengan `index.dayofweek` dan `index.month`, lalu ubah menjadi dummy atau ambil rata-rata per hari dalam pekan sebagai fitur tambahan. Menggabungkan lag dan fitur kalender memberi model dasar yang kuat untuk banyak masalah peramalan harian."
+            },
+            {
+              "type": "text",
+              "markdown": "## Nilai hilang pada deret waktu\n\nMenangani nilai hilang pada deret waktu berbeda dari tabel biasa karena urutan dan kedekatan bermakna. Interpolasi linear cocok untuk besaran yang berubah mulus seperti suhu, ffill cocok untuk status yang bertahan seperti harga, dan pengisian dengan rata-rata keseluruhan jarang tepat karena mengabaikan tren. Untuk celah panjang, pertimbangkan membiarkan NaN atau menandainya, sebab mengarang puluhan nilai berurutan menghasilkan deret yang tampak mulus tetapi tidak berdasarkan data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mendeteksi lonjakan\n\nSetelah punya selisih dan rata-rata bergulir, lonjakan dapat dideteksi sederhana: tandai hari ketika perubahan melebihi beberapa kali simpangan baku bergulir. Metode ini bukan model canggih tetapi sering cukup untuk pemantauan awal dan menjadi pembanding yang baik bagi metode yang lebih rumit. Course deteksi anomali kelak membahas pendekatan yang lebih kuat. Yang penting sekarang: Anda sudah memiliki bahan dasarnya, yaitu shift, diff, dan rolling yang diterapkan dengan benar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh kerja: menilai tren\n\nUntuk menilai tren, hitung rata-rata bergulir tujuh hari, bandingkan nilai terakhir dengan rata-rata itu, dan lihat selisih terhadap tujuh hari sebelumnya dengan `diff(7)`. Dua angka sederhana ini menjawab apakah kondisi sedang membaik atau memburuk tanpa model rumit. Catat selalu panjang data yang dipakai dan apakah ada celah, agar pembaca tahu seberapa kokoh kesimpulan tersebut."
+            }
+          ],
+          "quick_check": {
+            "question": "asfreq D menyisipkan?",
+            "options": [
+              "NaN untuk tanggal hilang",
+              "Nol"
+            ],
+            "answer_index": 0,
+            "explanation": "Baris kosong.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-09-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `selisih_harian(s)` yang mengembalikan list selisih tiap hari terhadap hari sebelumnya, dengan hari pertama diisi nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef selisih_harian(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selisih_harian(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert selisih_harian(s) == [0.0, 2.0, -3.0, 6.0, -1.0, 6.0, -2.0, 4.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selisih_harian(s.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_harian(s.iloc[:2]) == [0.0, 2.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selisih_harian(s.iloc[:1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_harian(s.iloc[:1]) == [0.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(selisih_harian(s))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(selisih_harian(s)) == 12.0"
+              }
+            ]
+          },
+          "hint": "diff lalu fillna nol.",
+          "solution": "import pandas as pd\n\ndef selisih_harian(s):\n    return s.diff().fillna(0).tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-09-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pertumbuhan_harian(s)` yang mengembalikan list pertumbuhan relatif tiap hari terhadap hari sebelumnya, dibulatkan tiga desimal, dengan hari pertama diisi nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef pertumbuhan_harian(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pertumbuhan_harian(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert pertumbuhan_harian(s) == [0.0, 0.2, -0.25, 0.667, -0.067, 0.429, -0.1, 0.222]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pertumbuhan_harian(s.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pertumbuhan_harian(s.iloc[:2]) == [0.0, 0.2]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pertumbuhan_harian(s.iloc[1:3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pertumbuhan_harian(s.iloc[1:3]) == [0.0, -0.25]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pertumbuhan_harian(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pertumbuhan_harian(s)[0] == 0.0"
+              }
+            ]
+          },
+          "hint": "pct_change, round, lalu fillna nol.",
+          "solution": "import pandas as pd\n\ndef pertumbuhan_harian(s):\n    return s.pct_change().round(3).fillna(0).tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-09-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `isi_celah(s)` yang memaksa deret ke frekuensi harian, mengisi tanggal yang hilang dengan interpolasi linear, membulatkan dua desimal, dan mengembalikan list.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef isi_celah(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isi_celah(g)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\ng = s.drop(idx[[2, 3]])\nassert isi_celah(g) == [10.0, 12.0, 12.67, 13.33, 14.0, 20.0, 18.0, 22.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "isi_celah(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_celah(s) == [10.0, 12.0, 9.0, 15.0, 14.0, 20.0, 18.0, 22.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isi_celah(s.drop(idx[[1]]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_celah(s.drop(idx[[1]]))[1] == 9.5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(isi_celah(g))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(isi_celah(g)) == 8"
+              }
+            ]
+          },
+          "hint": "asfreq D lalu interpolate dan round.",
+          "solution": "import pandas as pd\n\ndef isi_celah(s):\n    return s.asfreq('D').interpolate().round(2).tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-09-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `di_atas_rata(s, k)` yang mengembalikan list boolean apakah nilai tiap hari lebih besar daripada rata-rata bergulir `k` hari yang berakhir pada hari itu.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef di_atas_rata(s, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "di_atas_rata(s, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "idx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\nassert di_atas_rata(s, 3) == [False, False, False, True, True, True, True, True]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "di_atas_rata(s, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert di_atas_rata(s, 1) == [False] * 8"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "di_atas_rata(s, 8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert di_atas_rata(s, 8) == [False] * 7 + [True]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(di_atas_rata(s, 3))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(di_atas_rata(s, 3)) == 5"
+              }
+            ]
+          },
+          "hint": "Bandingkan s dengan rolling mean.",
+          "solution": "import pandas as pd\n\ndef di_atas_rata(s, k):\n    return (s > s.rolling(k).mean()).tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "shift(1) memberi tiap baris nilai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sebelumnya",
+              "description": ""
+            },
+            {
+              "label": "Berikutnya",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Maksimum",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sebelum.",
+          "explanation": "Lag."
+        },
+        {
+          "q": "pct_change baris pertama?",
+          "code": null,
+          "options": [
+            {
+              "label": "NaN",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NaN.",
+          "explanation": "Tak ada pembanding."
+        },
+        {
+          "q": "asfreq D menyisipkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "NaN untuk tanggal hilang",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Duplikat",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NaN.",
+          "explanation": "Baris kosong."
+        },
+        {
+          "q": "Kebocoran berarti fitur memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Info masa depan",
+              "description": ""
+            },
+            {
+              "label": "Info masa lalu",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Masa depan.",
+          "explanation": "Belum diketahui."
+        },
+        {
+          "q": "Pemisahan latih dan uji deret waktu?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menurut waktu",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Per kolom",
+              "description": ""
+            },
+            {
+              "label": "Per baris ganjil",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Waktu.",
+          "explanation": "Berurutan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengabaikan celah tanggal. Lebih baik: Periksa selisih indeks dan pakai asfreq.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengabaikan celah tanggal.",
+          "fix": "Periksa selisih indeks dan pakai asfreq."
+        },
+        {
+          "mistake": "Memakai shift negatif sebagai fitur.",
+          "fix": "Shift negatif hanya untuk target."
+        },
+        {
+          "mistake": "Mengacak data deret waktu saat membagi.",
+          "fix": "Potong menurut waktu."
+        }
+      ],
+      "summary": [
+        "shift, diff, dan pct_change menghitung perubahan antar waktu.",
+        "asfreq dan reindex membuat celah tanggal terlihat.",
+        "Isi celah dengan interpolate atau ffill sesuai sifat besaran.",
+        "Jaga fitur bebas kebocoran dan pisahkan data menurut waktu."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Shift, selisih, dan celah dalam deret"
+          },
+          {
+            "type": "text",
+            "source": "Shift menggeser, diff menghitung selisih, dan pct_change menghitung pertumbuhan relatif. Selisih tanggal pada indeks memeriksa keteraturan jarak."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nprint(s.shift(1).tolist())\nprint(s.shift(-1).tolist())\nprint(s.diff().tolist())\nprint(s.pct_change().round(3).tolist())\nprint((s - s.shift(1)).dropna().tolist())\nprint(s.index.to_series().diff().dt.days.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Asfreq dan reindex membuat tanggal hilang tampak sebagai NaN. Interpolate dan ffill mengisinya dengan asumsi berbeda."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\ng = s.drop(idx[[2, 3]])\nprint(len(g), g.asfreq('D').isna().sum())\nprint(g.asfreq('D').interpolate().round(2).tolist())\nprint(g.asfreq('D', method='ffill').tolist())\nprint(g.reindex(idx).tolist())\nprint(s.asfreq('2D').tolist())\nprint(s.truncate(before='2024-02-01').tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Fitur lag dibuat dengan shift, dan pemisahan latih dan uji dilakukan menurut tanggal, bukan acak."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nidx = pd.date_range('2024-01-29', periods=8, freq='D')\ns = pd.Series([10, 12, 9, 15, 14, 20, 18, 22], index=idx, name='v')\n\nlag = pd.DataFrame({'v': s, 'lag1': s.shift(1), 'lag2': s.shift(2)}).dropna()\nprint(lag.values.tolist())\nprint(lag.shape)\nprint(s[:'2024-02-01'].tolist())\nprint(s['2024-02-02':].tolist())\nprint(s.index[s > s.mean()].strftime('%d').tolist())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

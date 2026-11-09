@@ -28,61 +28,91 @@
       "module_no": 1,
       "title": "ndarray, dtype, dan shape",
       "file": "m01.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B1-01-1",
+        "exercise_id": "B1-01-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def jenis_hasil(daftar):\n    ..."
+      }
     },
     {
       "module_no": 2,
       "title": "Indexing, slicing, dan masking",
       "file": "m02.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B1-02-1",
+        "exercise_id": "B1-02-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def ubah_tengah(a, nilai):\n    ..."
+      }
     },
     {
       "module_no": 3,
       "title": "Broadcasting",
       "file": "m03.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B1-03-1",
+        "exercise_id": "B1-03-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def ulang_baris(v, n):\n    ..."
+      }
     },
     {
       "module_no": 4,
       "title": "Operasi vectorized dan ufunc",
       "file": "m04.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B1-04-1",
+        "exercise_id": "B1-04-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def hitung_tak_hingga(x):\n    ..."
+      }
     },
     {
       "module_no": 5,
       "title": "Aljabar linear dengan NumPy",
       "file": "m05.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B1-05-1",
+        "exercise_id": "B1-05-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def kovarians_manual(X):\n    ..."
+      }
     },
     {
       "module_no": 6,
       "title": "Random, reproducibility, dan performa",
       "file": "m06.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "B1-06-1",
+        "exercise_id": "B1-06-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def rata_normal(seed, n, mu, sigma):\n    ..."
+      }
     }
   ]
 }

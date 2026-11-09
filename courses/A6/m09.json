@@ -1,0 +1,1512 @@
+{
+  "schema_version": 2,
+  "course_id": "A6",
+  "module_no": 9,
+  "title": "Query analitik end-to-end",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menjawab pertanyaan bisnis nyata dengan query yang benar dan terverifikasi",
+    "Menganalisis pelanggan dengan peringkat, pembelian ulang, recency, dan kohort",
+    "Menyusun laporan tren, kontribusi, dan pivot"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A6-09-1",
+    "exercise_id": "A6-09-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def rata_nilai_pesanan(c):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A6-09-1",
+      "title": "Memahami data dan metrik dasar penjualan",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memetakan tabel dan relasi sebelum menulis query analitik",
+        "Menghitung pendapatan dengan JOIN dan menyaring pesanan batal",
+        "Menghindari kesalahan hitung akibat fan-out",
+        "Menyusun metrik per bulan dan per kategori serta nilai rata-rata pesanan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Analisis sungguhan dimulai dari pertanyaan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Analisis sungguhan dimulai dari pertanyaan\n\nModul penutup ini menyatukan semua yang sudah dipelajari: SELECT, filter, agregasi, JOIN, subquery, CTE, window function, dan fungsi tanggal. Kita memakai satu kasus utuh, yaitu toko daring kecil, dan menjawab pertanyaan bisnis seperti seorang analis: berapa pendapatan, siapa pelanggan terbaik, dan bagaimana tren bulanan.\n\nKunci analisis yang baik adalah memulai dari pertanyaan, bukan dari query. Tulis dulu apa yang ingin diketahui dan keputusan apa yang akan diambil dari jawabannya, baru pilih tabel dan rumusnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memetakan skema\n\nAda empat tabel. `pelanggan` memuat nama, kota, dan tanggal daftar. `produk` memuat nama, kategori, dan harga. `pesanan` memuat pelanggan, tanggal, dan status, yaitu `selesai` atau `batal`. `item` memuat rincian: pesanan mana, produk apa, dan berapa `qty`.\n\nPerhatikan bahwa nilai uang tidak tersimpan langsung. Nilai sebuah baris item adalah `qty * harga`, dihitung dengan menggabungkan `item` dan `produk`. Memahami di mana tiap fakta tinggal adalah langkah pertama sebelum menulis JOIN."
+            },
+            {
+              "type": "text",
+              "markdown": "## Definisikan metrik dengan jelas\n\nSebelum menghitung, sepakati definisi. **Pendapatan** di sini adalah jumlah `qty * harga` dari pesanan berstatus `selesai`. Pesanan `batal` tidak dihitung. Satu pesanan dapat berisi banyak item, jadi **nilai pesanan** adalah jumlah semua itemnya.\n\nDefinisi yang tidak jelas melahirkan angka yang saling bertentangan antar laporan. Tuliskan definisi sebagai komentar di dekat query atau di dokumentasi tim agar semua orang menghitung dengan cara yang sama."
+            },
+            {
+              "type": "code_example",
+              "filename": "pendapatan_total.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT COUNT(DISTINCT o.id), SUM(i.qty * k.harga)\nFROM pesanan o\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\n'''\nprint(c.execute(q).fetchone())\nq = '''\nSELECT COUNT(*) FROM pesanan o JOIN item i ON i.pesanan_id = o.id\nWHERE o.status = 'selesai'\n'''\nprint(c.execute(q).fetchone())\nprint(c.execute(\"SELECT COUNT(*) FROM pesanan WHERE status = 'selesai'\").fetchone())",
+              "expected_output_note": "(8, 692000)\n(13,)\n(8,)",
+              "explanation": "Ada delapan pesanan selesai dengan pendapatan 692.000. Menghitung baris setelah JOIN ke item memberi tiga belas, bukan delapan, karena satu pesanan punya banyak item."
+            }
+          ],
+          "quick_check": {
+            "question": "Fan-out terjadi karena?",
+            "options": [
+              "JOIN satu-ke-banyak menggandakan baris",
+              "NULL"
+            ],
+            "answer_index": 0,
+            "explanation": "Baris sisi satu berulang.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Fan-out",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fan-out\n\nPeristiwa tadi disebut **fan-out**: JOIN satu-ke-banyak menggandakan baris sisi satu. Bila kita menghitung `COUNT(*)` setelah JOIN ke item, hasilnya jumlah item, bukan jumlah pesanan. Menjumlahkan kolom milik pesanan, seperti ongkos kirim, setelah JOIN seperti itu akan menghitung ganda.\n\nPertahanannya: hitung banyak pesanan dengan `COUNT(DISTINCT o.id)`, dan jumlahkan hanya kolom milik sisi banyak, seperti `qty * harga`. Atau agregasi dulu di tingkat item sebelum digabung dengan pesanan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pendapatan per bulan\n\nLaporan paling umum adalah pendapatan per bulan. Kelompokkan menurut `strftime('%Y-%m', o.tanggal)` dan jumlahkan nilai item. Karena format tahun-bulan terurut kronologis secara alfabet, `ORDER BY` langsung benar.\n\nJangan lupa menyaring status. Memasukkan pesanan batal akan menggelembungkan pendapatan, dan kesalahan semacam ini sering baru terlihat setelah laporan beredar. Biasakan menuliskan filter status sebagai syarat pertama di setiap query penjualan."
+            },
+            {
+              "type": "code_example",
+              "filename": "pendapatan_bulan.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT strftime('%Y-%m', o.tanggal) AS bulan, SUM(i.qty * k.harga)\nFROM pesanan o\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\nGROUP BY bulan ORDER BY bulan\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('2026-01', 199000), ('2026-02', 121000), ('2026-03', 372000)]",
+              "explanation": "Pendapatan per bulan: Januari 199.000, Februari 121.000 yang turun, dan Maret 372.000 yang melonjak."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pendapatan per kategori\n\nPertanyaan berikutnya: kategori mana yang paling menyumbang? Kelompokkan menurut `k.kategori`. Urutkan dari terbesar dan tambahkan nama kategori sebagai pemutus seri agar hasil deterministik.\n\nPerhatikan satu pola yang sering muncul di analisis: setiap pertanyaan baru hanyalah mengganti kunci `GROUP BY`, sedangkan fondasi JOIN dan filter tetap sama. Menyiapkan fondasi itu sekali lalu memakainya ulang menghemat banyak waktu."
+            },
+            {
+              "type": "code_example",
+              "filename": "kategori_aov.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT k.kategori, SUM(i.qty * k.harga) AS total\nFROM pesanan o\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\nGROUP BY k.kategori ORDER BY total DESC, k.kategori\n'''\nprint(c.execute(q).fetchall())\nq = '''\nSELECT ROUND(SUM(i.qty * k.harga) * 1.0 / COUNT(DISTINCT o.id), 1)\nFROM pesanan o\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\n'''\nprint(c.execute(q).fetchone())",
+              "expected_output_note": "[('Fashion', 300000), ('Rumah', 280000), ('ATK', 112000)]\n(86500.0,)",
+              "explanation": "Kategori fashion terbesar dengan 300.000, dan nilai rata-rata pesanan 86.500 diperoleh dari total dibagi jumlah pesanan unik."
+            }
+          ],
+          "quick_check": {
+            "question": "Jumlah pesanan setelah JOIN item dihitung dengan?",
+            "options": [
+              "COUNT(*)",
+              "COUNT(DISTINCT o.id)"
+            ],
+            "answer_index": 1,
+            "explanation": "Pesanan unik.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Nilai rata-rata pesanan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Nilai rata-rata pesanan\n\n**Nilai rata-rata pesanan**, atau AOV, adalah pendapatan dibagi jumlah pesanan. Ini metrik standar toko daring karena menunjukkan seberapa besar rata-rata belanja sekali transaksi. Perhatikan penyebutnya: harus jumlah pesanan unik, bukan jumlah baris item.\n\nDengan fan-out, `AVG` atas baris item memberi rata-rata nilai item, bukan rata-rata pesanan. Dua angka itu berbeda jauh dan menjawab pertanyaan yang berbeda, jadi pilih dengan sadar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memverifikasi hasil\n\nSetelah menulis query, periksa kewajarannya. Jumlahkan pendapatan per bulan: apakah sama dengan total keseluruhan? Hitung jumlah pesanan dari dua jalur berbeda: apakah cocok? Perbandingan silang seperti ini menangkap kesalahan JOIN dan filter dengan cepat.\n\nKebiasaan **rekonsiliasi** ini membedakan analis yang dapat dipercaya. Angka yang cocok dari dua jalur memberi keyakinan, sedangkan angka yang tidak cocok adalah petunjuk bahwa ada yang perlu diperiksa."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Rekonsiliasi",
+              "markdown": "Setelah JOIN satu-ke-banyak, hitung entitas sisi satu dengan COUNT(DISTINCT id) dan rekonsiliasi total dari dua jalur."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca data sebelum menganalisis\n\nLuangkan waktu menjelajahi tabel sebelum menulis query analitik. Lihat beberapa baris, hitung jumlah baris tiap tabel, dan periksa nilai unik pada kolom status. Langkah singkat ini sering mengungkap kejutan, misalnya status tak terduga atau pelanggan tanpa pesanan.\n\nPengenalan data yang baik mencegah asumsi keliru. Analisis yang dibangun di atas asumsi yang belum diperiksa mudah runtuh saat seseorang bertanya dari mana angkanya berasal."
+            }
+          ],
+          "quick_check": {
+            "question": "Nilai baris item dihitung?",
+            "options": [
+              "qty dikali harga",
+              "qty ditambah harga"
+            ],
+            "answer_index": 0,
+            "explanation": "Kuantitas kali harga.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-09-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `total_pendapatan(c)` yang mengembalikan total `qty * harga` seluruh item pada pesanan berstatus `selesai`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef total_pendapatan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_pendapatan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert total_pendapatan(c) == 692000"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_pendapatan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO item VALUES (9, 3, 1)')\nassert total_pendapatan(c) == 842000"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_pendapatan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO item VALUES (4, 3, 5)')\nassert total_pendapatan(c) == 842000"
+              }
+            ]
+          },
+          "hint": "Gabungkan pesanan, item, dan produk lalu saring status selesai.",
+          "solution": "import sqlite3\n\ndef total_pendapatan(c):\n    q = '''\n    SELECT SUM(i.qty * k.harga)\n    FROM pesanan o\n    JOIN item i ON i.pesanan_id = o.id\n    JOIN produk k ON k.id = i.produk_id\n    WHERE o.status = 'selesai'\n    '''\n    return c.execute(q).fetchone()[0]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-09-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pendapatan_per_bulan(c)` yang mengembalikan list tuple `(bulan, total)` dengan bulan berformat `YYYY-MM`, terurut kronologis, hanya untuk pesanan `selesai`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pendapatan_per_bulan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pendapatan_per_bulan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert pendapatan_per_bulan(c) == [('2026-01', 199000), ('2026-02', 121000), ('2026-03', 372000)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pendapatan_per_bulan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (10, 1, '2026-04-02', 'selesai')\")\nc.execute('INSERT INTO item VALUES (10, 3, 1)')\nassert pendapatan_per_bulan(c)[-1] == ('2026-04', 150000)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(pendapatan_per_bulan(c))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (11, 1, '2026-05-02', 'batal')\")\nc.execute('INSERT INTO item VALUES (11, 3, 1)')\nassert len(pendapatan_per_bulan(c)) == 4"
+              }
+            ]
+          },
+          "hint": "GROUP BY strftime tahun dan bulan lalu jumlahkan qty kali harga.",
+          "solution": "import sqlite3\n\ndef pendapatan_per_bulan(c):\n    q = '''\n    SELECT strftime('%Y-%m', o.tanggal) AS bulan, SUM(i.qty * k.harga)\n    FROM pesanan o\n    JOIN item i ON i.pesanan_id = o.id\n    JOIN produk k ON k.id = i.produk_id\n    WHERE o.status = 'selesai'\n    GROUP BY bulan ORDER BY bulan\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-09-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pendapatan_per_kategori(c)` yang mengembalikan list tuple `(kategori, total)` untuk pesanan `selesai`, terurut dari total terbesar lalu nama kategori.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pendapatan_per_kategori(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pendapatan_per_kategori(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert pendapatan_per_kategori(c) == [('Fashion', 300000), ('Rumah', 280000), ('ATK', 112000)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pendapatan_per_kategori(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO item VALUES (9, 2, 100)')\nassert pendapatan_per_kategori(c)[0] == ('ATK', 1312000)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pendapatan_per_kategori(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (6, 'Kursi', 'Rumah', 500000)\")\nc.execute('INSERT INTO item VALUES (9, 6, 1)')\nassert pendapatan_per_kategori(c)[0] == ('ATK', 1312000)"
+              }
+            ]
+          },
+          "hint": "GROUP BY kategori produk dengan filter status.",
+          "solution": "import sqlite3\n\ndef pendapatan_per_kategori(c):\n    q = '''\n    SELECT k.kategori, SUM(i.qty * k.harga) AS total\n    FROM pesanan o\n    JOIN item i ON i.pesanan_id = o.id\n    JOIN produk k ON k.id = i.produk_id\n    WHERE o.status = 'selesai'\n    GROUP BY k.kategori ORDER BY total DESC, k.kategori\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-09-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `rata_nilai_pesanan(c)` yang mengembalikan nilai rata-rata pesanan `selesai` (total pendapatan dibagi jumlah pesanan unik), dibulatkan 1 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef rata_nilai_pesanan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_nilai_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert rata_nilai_pesanan(c) == 86500.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_nilai_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO item VALUES (9, 3, 1)')\nassert rata_nilai_pesanan(c) == 105250.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_nilai_pesanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (10, 1, '2026-04-02', 'batal')\")\nc.execute('INSERT INTO item VALUES (10, 3, 9)')\nassert rata_nilai_pesanan(c) == 105250.0"
+              }
+            ]
+          },
+          "hint": "Bagi total dengan COUNT(DISTINCT o.id) dan kalikan 1.0.",
+          "solution": "import sqlite3\n\ndef rata_nilai_pesanan(c):\n    q = '''\n    SELECT ROUND(SUM(i.qty * k.harga) * 1.0 / COUNT(DISTINCT o.id), 1)\n    FROM pesanan o\n    JOIN item i ON i.pesanan_id = o.id\n    JOIN produk k ON k.id = i.produk_id\n    WHERE o.status = 'selesai'\n    '''\n    return c.execute(q).fetchone()[0]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Fan-out terjadi karena?",
+          "code": null,
+          "options": [
+            {
+              "label": "JOIN satu-ke-banyak menggandakan baris",
+              "description": ""
+            },
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "ORDER BY",
+              "description": ""
+            },
+            {
+              "label": "LIMIT",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Gandakan.",
+          "explanation": "Baris sisi satu berulang."
+        },
+        {
+          "q": "Jumlah pesanan setelah JOIN item dihitung dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "COUNT(DISTINCT o.id)",
+              "description": ""
+            },
+            {
+              "label": "COUNT(*)",
+              "description": ""
+            },
+            {
+              "label": "SUM(qty)",
+              "description": ""
+            },
+            {
+              "label": "MAX(id)",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Distinct.",
+          "explanation": "Pesanan unik."
+        },
+        {
+          "q": "Nilai baris item dihitung?",
+          "code": null,
+          "options": [
+            {
+              "label": "qty dikali harga",
+              "description": ""
+            },
+            {
+              "label": "qty ditambah harga",
+              "description": ""
+            },
+            {
+              "label": "harga saja",
+              "description": ""
+            },
+            {
+              "label": "qty saja",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kali.",
+          "explanation": "Kuantitas kali harga."
+        },
+        {
+          "q": "Rekonsiliasi berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membandingkan angka dari dua jalur",
+              "description": ""
+            },
+            {
+              "label": "Menghapus data",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Membuat index",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Silang.",
+          "explanation": "Pemeriksaan silang."
+        },
+        {
+          "q": "Status yang tidak dihitung sebagai pendapatan?",
+          "code": null,
+          "options": [
+            {
+              "label": "batal",
+              "description": ""
+            },
+            {
+              "label": "selesai",
+              "description": ""
+            },
+            {
+              "label": "semua",
+              "description": ""
+            },
+            {
+              "label": "tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Batal.",
+          "explanation": "Pesanan batal."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menghitung COUNT(*) setelah JOIN ke item sebagai jumlah pesanan. Lebih baik: Gunakan COUNT(DISTINCT o.id).",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menghitung COUNT(*) setelah JOIN ke item sebagai jumlah pesanan.",
+          "fix": "Gunakan COUNT(DISTINCT o.id)."
+        },
+        {
+          "mistake": "Lupa menyaring pesanan batal.",
+          "fix": "Tulis filter status di setiap query penjualan."
+        },
+        {
+          "mistake": "Memakai AVG atas baris item untuk rata-rata pesanan.",
+          "fix": "Bagi total dengan jumlah pesanan unik."
+        }
+      ],
+      "summary": [
+        "Mulai dari pertanyaan dan definisi metrik yang jelas.",
+        "Waspadai fan-out saat JOIN satu-ke-banyak.",
+        "Setiap pertanyaan baru sering hanya mengganti kunci GROUP BY.",
+        "Rekonsiliasi angka dari dua jalur untuk menangkap kesalahan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Memahami data dan metrik dasar penjualan"
+          },
+          {
+            "type": "text",
+            "source": "Ada delapan pesanan selesai dengan pendapatan 692.000. Menghitung baris setelah JOIN ke item memberi tiga belas, bukan delapan, karena satu pesanan punya banyak item."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT COUNT(DISTINCT o.id), SUM(i.qty * k.harga)\nFROM pesanan o\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\n'''\nprint(c.execute(q).fetchone())\nq = '''\nSELECT COUNT(*) FROM pesanan o JOIN item i ON i.pesanan_id = o.id\nWHERE o.status = 'selesai'\n'''\nprint(c.execute(q).fetchone())\nprint(c.execute(\"SELECT COUNT(*) FROM pesanan WHERE status = 'selesai'\").fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Pendapatan per bulan: Januari 199.000, Februari 121.000 yang turun, dan Maret 372.000 yang melonjak."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT strftime('%Y-%m', o.tanggal) AS bulan, SUM(i.qty * k.harga)\nFROM pesanan o\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\nGROUP BY bulan ORDER BY bulan\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Kategori fashion terbesar dengan 300.000, dan nilai rata-rata pesanan 86.500 diperoleh dari total dibagi jumlah pesanan unik."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT k.kategori, SUM(i.qty * k.harga) AS total\nFROM pesanan o\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\nGROUP BY k.kategori ORDER BY total DESC, k.kategori\n'''\nprint(c.execute(q).fetchall())\nq = '''\nSELECT ROUND(SUM(i.qty * k.harga) * 1.0 / COUNT(DISTINCT o.id), 1)\nFROM pesanan o\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\n'''\nprint(c.execute(q).fetchone())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-09-2",
+      "title": "Analisis pelanggan",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memeringkat pelanggan berdasarkan total belanja",
+        "Mengidentifikasi pelanggan berulang dan menghitung tingkat pembelian ulang",
+        "Menghitung recency dengan selisih hari",
+        "Mengambil pelanggan teratas per kota dengan window function"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari produk ke pelanggan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari produk ke pelanggan\n\nPelajaran sebelumnya melihat toko dari sisi uang. Sekarang kita melihatnya dari sisi manusia: siapa yang membeli, seberapa sering, dan seberapa baru. Pemahaman pelanggan mendasari keputusan seperti siapa yang diberi promo, siapa yang perlu diingatkan, dan kota mana yang layak digarap.\n\nFondasi query tetap sama, yaitu pesanan selesai digabung ke item dan produk. Perbedaannya hanya pada kunci pengelompokan, yang kini berupa pelanggan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peringkat belanja\n\nTotal belanja per pelanggan diperoleh dengan menggabungkan `pelanggan` ke `pesanan`, `item`, dan `produk`, lalu mengelompokkan menurut pelanggan. Urutkan menurun dan beri nama pelanggan sebagai pemutus seri agar hasil stabil.\n\nSaat mengelompokkan menurut `g.id`, pilih juga `g.nama` yang bergantung penuh pada id itu. SQLite mengizinkannya, tetapi kebiasaan baik adalah menyertakan semua kolom non-agregat di `GROUP BY` bila basis data lain dipakai."
+            },
+            {
+              "type": "code_example",
+              "filename": "belanja_pelanggan.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT g.nama, SUM(i.qty * k.harga) AS total\nFROM pelanggan g\nJOIN pesanan o ON o.pelanggan_id = g.id\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\nGROUP BY g.id, g.nama ORDER BY total DESC, g.nama\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "('Budi', 220000)\n('Ani', 194000)\n('Dewi', 155000)\n('Citra', 76000)\n('Eko', 47000)",
+              "explanation": "Budi menjadi pelanggan terbesar dengan 220.000, diikuti Ani, Dewi, Citra, dan Eko."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pelanggan berulang\n\n**Pelanggan berulang** adalah yang membeli lebih dari satu kali. Hitung pesanan selesai per pelanggan lalu saring dengan `HAVING COUNT(*) >= 2`. Di sini kita menghitung baris pesanan, bukan item, sehingga tidak perlu `DISTINCT` selama tidak ada JOIN ke item.\n\n**Tingkat pembelian ulang** adalah persentase pelanggan berulang di antara semua pelanggan yang pernah membeli. Ini indikator loyalitas yang murah dihitung namun sangat informatif."
+            },
+            {
+              "type": "code_example",
+              "filename": "pelanggan_berulang.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT g.nama, COUNT(*) FROM pelanggan g\nJOIN pesanan o ON o.pelanggan_id = g.id\nWHERE o.status = 'selesai'\nGROUP BY g.id, g.nama HAVING COUNT(*) >= 2 ORDER BY g.id\n'''\nprint(c.execute(q).fetchall())\nq = '''\nWITH n AS (\n    SELECT pelanggan_id, COUNT(*) AS banyak FROM pesanan\n    WHERE status = 'selesai' GROUP BY pelanggan_id\n)\nSELECT COUNT(*), SUM(banyak >= 2), ROUND(100.0 * SUM(banyak >= 2) / COUNT(*), 1) FROM n\n'''\nprint(c.execute(q).fetchone())",
+              "expected_output_note": "[('Ani', 3), ('Budi', 2)]\n(5, 2, 40.0)",
+              "explanation": "Ani dan Budi membeli berulang, sehingga dari lima pelanggan pembeli tingkat pembelian ulang adalah empat puluh persen."
+            }
+          ],
+          "quick_check": {
+            "question": "Pelanggan berulang adalah?",
+            "options": [
+              "Membeli lebih dari satu kali",
+              "Membeli sekali"
+            ],
+            "answer_index": 0,
+            "explanation": "Dua pesanan atau lebih.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Recency",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Recency\n\n**Recency** menghitung sudah berapa hari sejak pembelian terakhir. Ambil `MAX(o.tanggal)` per pelanggan, lalu kurangkan dari tanggal acuan memakai `julianday`. Kirim tanggal acuan sebagai konstanta atau parameter, bukan `'now'`, agar laporan dapat diulang dengan hasil sama.\n\nPelanggan dengan recency besar adalah calon yang mulai menghilang, dan sasaran kampanye pemulihan. Recency bersama frekuensi dan nilai belanja membentuk kerangka RFM yang terkenal di pemasaran."
+            },
+            {
+              "type": "code_example",
+              "filename": "recency.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT g.nama, MAX(o.tanggal),\n       CAST(julianday('2026-03-31') - julianday(MAX(o.tanggal)) AS INTEGER)\nFROM pelanggan g JOIN pesanan o ON o.pelanggan_id = g.id\nWHERE o.status = 'selesai'\nGROUP BY g.id, g.nama ORDER BY g.id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "('Ani', '2026-03-10', 21)\n('Budi', '2026-03-15', 16)\n('Citra', '2026-02-20', 39)\n('Dewi', '2026-03-02', 29)\n('Eko', '2026-03-20', 11)",
+              "explanation": "Citra paling lama tidak membeli, yaitu tiga puluh sembilan hari sebelum tanggal acuan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kohort pendaftaran\n\n**Kohort** mengelompokkan pelanggan menurut bulan pendaftaran lalu melihat kapan mereka membeli. Gabungkan `strftime('%Y-%m', g.daftar)` sebagai kohort dengan `strftime('%Y-%m', o.tanggal)` sebagai bulan beli, lalu hitung pelanggan unik per pasangan.\n\nTabel kohort menjawab pertanyaan penting: apakah pelanggan yang mendaftar Januari masih membeli di Maret? Penghitungan memakai `COUNT(DISTINCT g.id)` karena satu pelanggan bisa membeli beberapa kali dalam sebulan."
+            },
+            {
+              "type": "code_example",
+              "filename": "kohort.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT strftime('%Y-%m', g.daftar) AS kohort, strftime('%Y-%m', o.tanggal) AS bulan,\n       COUNT(DISTINCT g.id)\nFROM pelanggan g JOIN pesanan o ON o.pelanggan_id = g.id\nWHERE o.status = 'selesai'\nGROUP BY kohort, bulan ORDER BY kohort, bulan\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "('2026-01', '2026-01', 2)\n('2026-01', '2026-02', 1)\n('2026-01', '2026-03', 2)\n('2026-02', '2026-02', 1)\n('2026-02', '2026-03', 1)\n('2026-03', '2026-03', 1)",
+              "explanation": "Kohort Januari punya dua pelanggan aktif di Januari dan tetap dua di Maret, tanda retensi yang baik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pelanggan teratas per kota\n\nUntuk menemukan pelanggan terbesar di tiap kota, gabungkan agregasi dengan window function. Hitung total belanja per pelanggan lalu beri nomor urut dalam kota memakai `ROW_NUMBER() OVER (PARTITION BY kota ORDER BY total DESC, nama)`. Saring nomor satu di lapisan luar.\n\nAgregat boleh dipakai di dalam `ORDER BY` window function karena window dievaluasi setelah `GROUP BY`. Ini contoh bagaimana dua alat yang dipelajari terpisah bekerja bersama."
+            }
+          ],
+          "quick_check": {
+            "question": "Recency mengukur?",
+            "options": [
+              "Total belanja",
+              "Hari sejak pembelian terakhir"
+            ],
+            "answer_index": 1,
+            "explanation": "Seberapa baru.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Menafsirkan hasil dengan hati-hati",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menafsirkan hasil dengan hati-hati\n\nAngka pada contoh kecil ini hanya untuk latihan. Dengan lima pelanggan, satu pembelian besar mengubah seluruh gambaran. Pada data sungguhan, perhatikan ukuran sampel sebelum menarik kesimpulan, dan pertimbangkan apakah perbedaan antar kelompok benar-benar berarti.\n\nQuery yang benar belum tentu analisis yang benar. Keduanya berbeda: yang pertama soal sintaks dan logika, yang kedua soal memilih pertanyaan yang tepat dan menafsirkan jawabannya dengan jujur."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tanggal acuan",
+              "markdown": "Gunakan tanggal acuan tetap untuk recency agar laporan dapat diulang dan diuji."
+            },
+            {
+              "type": "text",
+              "markdown": "## Segmentasi sederhana\n\nDari peringkat belanja dan frekuensi, kita dapat membentuk segmen praktis. Pelanggan dengan belanja tinggi dan pembelian berulang adalah yang paling bernilai dan layak dijaga. Pelanggan belanja tinggi tetapi sekali beli adalah peluang untuk didorong kembali. Pelanggan belanja kecil dan jarang adalah yang paling rendah prioritasnya.\n\nSegmentasi tidak harus rumit. Aturan sederhana yang dipahami semua orang sering lebih berguna daripada model canggih yang tidak dipercaya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pelanggan tanpa pembelian\n\nTidak semua pelanggan yang terdaftar pernah membeli. Untuk menemukan mereka, gunakan `NOT EXISTS` terhadap pesanan selesai, atau `LEFT JOIN` dengan penyaringan `IS NULL`. Hasilnya adalah daftar calon sasaran aktivasi.\n\nPerhatikan bahwa JOIN biasa dari pelanggan ke pesanan membuang pelanggan tanpa pesanan secara diam-diam. Itu sebabnya perhitungan seperti tingkat pembelian ulang harus menetapkan penyebut dengan jelas: semua pelanggan terdaftar atau hanya yang pernah membeli."
+            }
+          ],
+          "quick_check": {
+            "question": "Kohort mengelompokkan menurut?",
+            "options": [
+              "Bulan pendaftaran",
+              "Harga"
+            ],
+            "answer_index": 0,
+            "explanation": "Waktu masuk.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-09-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `belanja_pelanggan(c)` yang mengembalikan list tuple `(nama, total)` total belanja pelanggan pada pesanan `selesai`, terurut dari total terbesar lalu nama.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef belanja_pelanggan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nr = belanja_pelanggan(c)\nassert r[0] == ('Budi', 220000)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r == [('Budi', 220000), ('Ani', 194000), ('Dewi', 155000), ('Citra', 76000), ('Eko', 47000)]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "belanja_pelanggan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO item VALUES (9, 3, 2)')\nassert belanja_pelanggan(c)[0] == ('Eko', 347000)"
+              }
+            ]
+          },
+          "hint": "Gabungkan empat tabel, saring selesai, GROUP BY pelanggan.",
+          "solution": "import sqlite3\n\ndef belanja_pelanggan(c):\n    q = '''\n    SELECT g.nama, SUM(i.qty * k.harga) AS total\n    FROM pelanggan g\n    JOIN pesanan o ON o.pelanggan_id = g.id\n    JOIN item i ON i.pesanan_id = o.id\n    JOIN produk k ON k.id = i.produk_id\n    WHERE o.status = 'selesai'\n    GROUP BY g.id, g.nama ORDER BY total DESC, g.nama\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-09-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pelanggan_berulang(c, minimal)` yang mengembalikan list nama pelanggan dengan paling sedikit `minimal` pesanan `selesai`, terurut menurut id pelanggan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pelanggan_berulang(c, minimal):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pelanggan_berulang(c, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert pelanggan_berulang(c, 2) == ['Ani', 'Budi']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pelanggan_berulang(c, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pelanggan_berulang(c, 3) == ['Ani']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pelanggan_berulang(c, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pelanggan_berulang(c, 4) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pelanggan_berulang(c, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pelanggan_berulang(c, 1) == ['Ani', 'Budi', 'Citra', 'Dewi', 'Eko']"
+              }
+            ]
+          },
+          "hint": "GROUP BY pelanggan lalu HAVING COUNT(*) >= minimal.",
+          "solution": "import sqlite3\n\ndef pelanggan_berulang(c, minimal):\n    q = '''\n    SELECT g.nama FROM pelanggan g\n    JOIN pesanan o ON o.pelanggan_id = g.id\n    WHERE o.status = 'selesai'\n    GROUP BY g.id, g.nama HAVING COUNT(*) >= ? ORDER BY g.id\n    '''\n    return [r[0] for r in c.execute(q, (minimal,)).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-09-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `recency(c, acuan)` yang mengembalikan list tuple `(nama, hari)` berisi jumlah hari dari pembelian `selesai` terakhir tiap pelanggan sampai tanggal `acuan` (teks `YYYY-MM-DD`), terurut menurut id pelanggan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef recency(c, acuan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "recency(c, '2026-03-31')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert recency(c, '2026-03-31') == [('Ani', 21), ('Budi', 16), ('Citra', 39), ('Dewi', 29), ('Eko', 11)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "recency(c, '2026-04-10')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert recency(c, '2026-04-10')[0] == ('Ani', 31)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "recency(c, '2026-03-20')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert recency(c, '2026-03-20')[-1] == ('Eko', 0)"
+              }
+            ]
+          },
+          "hint": "Ambil MAX tanggal per pelanggan dan kurangkan dengan julianday.",
+          "solution": "import sqlite3\n\ndef recency(c, acuan):\n    q = '''\n    SELECT g.nama, CAST(ROUND(julianday(?) - julianday(MAX(o.tanggal))) AS INTEGER)\n    FROM pelanggan g JOIN pesanan o ON o.pelanggan_id = g.id\n    WHERE o.status = 'selesai'\n    GROUP BY g.id, g.nama ORDER BY g.id\n    '''\n    return c.execute(q, (acuan,)).fetchall()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-09-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `teratas_per_kota(c)` yang mengembalikan list tuple `(kota, nama)` berisi pelanggan dengan total belanja `selesai` terbesar di tiap kota, terurut menurut kota.",
+          "note": "Bila seri, pilih nama yang lebih awal secara alfabet.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef teratas_per_kota(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "teratas_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert teratas_per_kota(c) == [('Bandung', 'Budi'), ('Jakarta', 'Ani'), ('Medan', 'Eko'), ('Surabaya', 'Dewi')]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "teratas_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (10, 3, '2026-03-25', 'selesai')\")\nc.execute('INSERT INTO item VALUES (10, 3, 2)')\nassert teratas_per_kota(c)[1] == ('Jakarta', 'Citra')"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "teratas_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"DELETE FROM item WHERE pesanan_id = 10\")\nassert teratas_per_kota(c)[1] == ('Jakarta', 'Ani')"
+              }
+            ]
+          },
+          "hint": "ROW_NUMBER dengan PARTITION BY kota dan ORDER BY agregat menurun lalu nama.",
+          "solution": "import sqlite3\n\ndef teratas_per_kota(c):\n    q = '''\n    SELECT kota, nama FROM (\n        SELECT g.kota AS kota, g.nama AS nama,\n               ROW_NUMBER() OVER (\n                   PARTITION BY g.kota\n                   ORDER BY SUM(i.qty * k.harga) DESC, g.nama\n               ) AS rn\n        FROM pelanggan g\n        JOIN pesanan o ON o.pelanggan_id = g.id\n        JOIN item i ON i.pesanan_id = o.id\n        JOIN produk k ON k.id = i.produk_id\n        WHERE o.status = 'selesai'\n        GROUP BY g.id, g.kota, g.nama\n    )\n    WHERE rn = 1 ORDER BY kota\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Pelanggan berulang adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membeli lebih dari satu kali",
+              "description": ""
+            },
+            {
+              "label": "Membeli sekali",
+              "description": ""
+            },
+            {
+              "label": "Belum membeli",
+              "description": ""
+            },
+            {
+              "label": "Membatalkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ulang.",
+          "explanation": "Dua pesanan atau lebih."
+        },
+        {
+          "q": "Recency mengukur?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hari sejak pembelian terakhir",
+              "description": ""
+            },
+            {
+              "label": "Total belanja",
+              "description": ""
+            },
+            {
+              "label": "Jumlah pesanan",
+              "description": ""
+            },
+            {
+              "label": "Harga rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baru.",
+          "explanation": "Seberapa baru."
+        },
+        {
+          "q": "Kohort mengelompokkan menurut?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bulan pendaftaran",
+              "description": ""
+            },
+            {
+              "label": "Harga",
+              "description": ""
+            },
+            {
+              "label": "Kota saja",
+              "description": ""
+            },
+            {
+              "label": "Kategori",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Daftar.",
+          "explanation": "Waktu masuk."
+        },
+        {
+          "q": "Pelanggan teratas per kota memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "ROW_NUMBER dengan PARTITION BY kota",
+              "description": ""
+            },
+            {
+              "label": "LIMIT 1",
+              "description": ""
+            },
+            {
+              "label": "DISTINCT",
+              "description": ""
+            },
+            {
+              "label": "UNION",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Partisi.",
+          "explanation": "Top N per kelompok."
+        },
+        {
+          "q": "Tingkat pembelian ulang adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Persen pelanggan berulang",
+              "description": ""
+            },
+            {
+              "label": "Total pendapatan",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata harga",
+              "description": ""
+            },
+            {
+              "label": "Jumlah kota",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Persen.",
+          "explanation": "Berulang dibanding semua."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menghitung pesanan setelah JOIN ke item tanpa DISTINCT. Lebih baik: Hitung dari tabel pesanan atau pakai COUNT(DISTINCT).",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menghitung pesanan setelah JOIN ke item tanpa DISTINCT.",
+          "fix": "Hitung dari tabel pesanan atau pakai COUNT(DISTINCT)."
+        },
+        {
+          "mistake": "Memakai 'now' untuk recency di laporan yang harus diulang.",
+          "fix": "Pakai tanggal acuan tetap."
+        },
+        {
+          "mistake": "Menarik kesimpulan dari sampel sangat kecil.",
+          "fix": "Periksa ukuran sampel dan kewajaran."
+        }
+      ],
+      "summary": [
+        "Pelanggan diperingkat dari total belanja yang digabung empat tabel.",
+        "Pelanggan berulang dan tingkat pembelian ulang mengukur loyalitas.",
+        "Recency dihitung dengan selisih hari dari tanggal acuan tetap.",
+        "Window function mengambil pelanggan teratas per kota."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Analisis pelanggan"
+          },
+          {
+            "type": "text",
+            "source": "Budi menjadi pelanggan terbesar dengan 220.000, diikuti Ani, Dewi, Citra, dan Eko."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT g.nama, SUM(i.qty * k.harga) AS total\nFROM pelanggan g\nJOIN pesanan o ON o.pelanggan_id = g.id\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\nGROUP BY g.id, g.nama ORDER BY total DESC, g.nama\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          },
+          {
+            "type": "text",
+            "source": "Ani dan Budi membeli berulang, sehingga dari lima pelanggan pembeli tingkat pembelian ulang adalah empat puluh persen."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT g.nama, COUNT(*) FROM pelanggan g\nJOIN pesanan o ON o.pelanggan_id = g.id\nWHERE o.status = 'selesai'\nGROUP BY g.id, g.nama HAVING COUNT(*) >= 2 ORDER BY g.id\n'''\nprint(c.execute(q).fetchall())\nq = '''\nWITH n AS (\n    SELECT pelanggan_id, COUNT(*) AS banyak FROM pesanan\n    WHERE status = 'selesai' GROUP BY pelanggan_id\n)\nSELECT COUNT(*), SUM(banyak >= 2), ROUND(100.0 * SUM(banyak >= 2) / COUNT(*), 1) FROM n\n'''\nprint(c.execute(q).fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Citra paling lama tidak membeli, yaitu tiga puluh sembilan hari sebelum tanggal acuan."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT g.nama, MAX(o.tanggal),\n       CAST(julianday('2026-03-31') - julianday(MAX(o.tanggal)) AS INTEGER)\nFROM pelanggan g JOIN pesanan o ON o.pelanggan_id = g.id\nWHERE o.status = 'selesai'\nGROUP BY g.id, g.nama ORDER BY g.id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          },
+          {
+            "type": "text",
+            "source": "Kohort Januari punya dua pelanggan aktif di Januari dan tetap dua di Maret, tanda retensi yang baik."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT strftime('%Y-%m', g.daftar) AS kohort, strftime('%Y-%m', o.tanggal) AS bulan,\n       COUNT(DISTINCT g.id)\nFROM pelanggan g JOIN pesanan o ON o.pelanggan_id = g.id\nWHERE o.status = 'selesai'\nGROUP BY kohort, bulan ORDER BY kohort, bulan\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-09-3",
+      "title": "Laporan akhir: tren, kontribusi, dan pivot",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung pertumbuhan bulanan dan total kumulatif",
+        "Menghitung kontribusi produk terhadap total",
+        "Membuat tabel pivot dengan agregasi bersyarat",
+        "Menyusun laporan berlapis dengan CTE dan memverifikasinya"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Menyusun laporan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menyusun laporan\n\nBagian akhir ini merangkai potongan analisis menjadi laporan yang dapat dibaca pemangku kepentingan: tren pendapatan, kontribusi produk, dan tabel ringkas per kategori dan bulan. Alat yang dipakai adalah CTE untuk menyusun langkah, window function untuk perbandingan, dan agregasi bersyarat untuk pivot.\n\nLaporan yang baik menjawab satu pertanyaan jelas per bagian, memakai definisi yang konsisten, dan bisa direkonsiliasi dengan angka lain."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pertumbuhan bulanan\n\nPertumbuhan bulan ke bulan dihitung dengan `LAG` atas total bulanan: selisih dibagi nilai bulan sebelumnya, dikali seratus. Bulan pertama tidak punya pembanding sehingga hasilnya `NULL`, yang memang jujur menyatakan tidak ada data pembanding.\n\nSusun dalam dua langkah: CTE pertama menghitung total per bulan, query utama menambahkan `LAG`. Memisahkan langkah membuat tiap bagian mudah diperiksa terpisah."
+            },
+            {
+              "type": "code_example",
+              "filename": "pertumbuhan_kumulatif.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nWITH b AS (\n    SELECT strftime('%Y-%m', o.tanggal) AS bulan, SUM(i.qty * k.harga) AS total\n    FROM pesanan o\n    JOIN item i ON i.pesanan_id = o.id\n    JOIN produk k ON k.id = i.produk_id\n    WHERE o.status = 'selesai'\n    GROUP BY bulan\n)\nSELECT bulan, total,\n       ROUND(100.0 * (total - LAG(total) OVER (ORDER BY bulan)) / LAG(total) OVER (ORDER BY bulan), 1),\n       SUM(total) OVER (ORDER BY bulan ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)\nFROM b ORDER BY bulan\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "('2026-01', 199000, None, 199000)\n('2026-02', 121000, -39.2, 320000)\n('2026-03', 372000, 207.4, 692000)",
+              "explanation": "Pendapatan turun tiga puluh sembilan koma dua persen di Februari lalu melonjak dua ratus tujuh koma empat persen di Maret, dan total kumulatif berakhir di 692.000."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kontribusi dan Pareto\n\n**Kontribusi** adalah persentase tiap produk terhadap total pendapatan, dihitung dengan `100.0 * nilai / SUM(nilai) OVER ()`. Kontribusi kumulatif, setelah produk diurutkan dari terbesar, menunjukkan seberapa terkonsentrasi pendapatan, gagasan di balik prinsip Pareto: sedikit produk sering menyumbang sebagian besar hasil.\n\nPada contoh kita, satu produk menyumbang lebih dari empat puluh persen. Informasi ini membantu memutuskan produk mana yang layak dijaga stoknya dan diprioritaskan promosinya."
+            },
+            {
+              "type": "code_example",
+              "filename": "kontribusi_pareto.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nWITH t AS (\n    SELECT k.nama AS nama, SUM(i.qty * k.harga) AS v\n    FROM pesanan o\n    JOIN item i ON i.pesanan_id = o.id\n    JOIN produk k ON k.id = i.produk_id\n    WHERE o.status = 'selesai'\n    GROUP BY k.id, k.nama\n)\nSELECT nama, v, ROUND(100.0 * v / SUM(v) OVER (), 1),\n       ROUND(100.0 * SUM(v) OVER (ORDER BY v DESC, nama) / SUM(v) OVER (), 1)\nFROM t ORDER BY v DESC, nama\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "('Tas', 300000, 43.4, 43.4)\n('Botol', 140000, 20.2, 63.6)\n('Lampu', 140000, 20.2, 83.8)\n('Buku', 72000, 10.4, 94.2)\n('Pensil', 40000, 5.8, 100.0)",
+              "explanation": "Tas menyumbang 43,4 persen, dan tiga produk teratas sudah mencapai 83,8 persen dari total pendapatan."
+            }
+          ],
+          "quick_check": {
+            "question": "Pertumbuhan bulanan memakai?",
+            "options": [
+              "LAG",
+              "NTILE"
+            ],
+            "answer_index": 0,
+            "explanation": "Bandingkan bulan sebelumnya.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tabel pivot dengan agregasi bersyarat",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tabel pivot dengan agregasi bersyarat\n\nSQL tidak punya perintah pivot bawaan, tetapi hasilnya dapat ditiru dengan agregasi bersyarat: `SUM(CASE WHEN bulan = '01' THEN nilai ELSE 0 END)` untuk tiap kolom bulan. Setiap kolom pivot adalah satu ekspresi seperti itu, dan baris adalah kunci pengelompokan, misalnya kategori.\n\nHasilnya tabel silang yang mudah dibaca manusia: kategori di baris, bulan di kolom. Kelemahannya, daftar kolom harus ditulis tetap, sehingga bulan baru berarti menambah ekspresi."
+            },
+            {
+              "type": "code_example",
+              "filename": "pivot_kategori.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT k.kategori,\n       SUM(CASE WHEN strftime('%m', o.tanggal) = '01' THEN i.qty * k.harga ELSE 0 END),\n       SUM(CASE WHEN strftime('%m', o.tanggal) = '02' THEN i.qty * k.harga ELSE 0 END),\n       SUM(CASE WHEN strftime('%m', o.tanggal) = '03' THEN i.qty * k.harga ELSE 0 END)\nFROM pesanan o\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\nGROUP BY k.kategori ORDER BY k.kategori\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "('ATK', 49000, 46000, 17000)\n('Fashion', 150000, 0, 150000)\n('Rumah', 0, 75000, 205000)",
+              "explanation": "Tabel silang kategori dan bulan: fashion tidak laku di Februari dan kategori rumah baru mulai di Februari."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rekonsiliasi akhir\n\nSebelum laporan dibagikan, cocokkan angkanya. Jumlah pendapatan per bulan harus sama dengan total keseluruhan, jumlah baris pivot harus sama, dan kontribusi produk harus berjumlah seratus persen. Tiga pemeriksaan sederhana ini menangkap sebagian besar kesalahan JOIN dan filter.\n\nDalam praktik, simpan pemeriksaan itu sebagai query uji yang dijalankan bersama laporan. Bila ada angka yang tidak cocok, laporan ditahan sampai penyebabnya jelas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menceritakan hasilnya\n\nAngka tanpa narasi jarang menggerakkan keputusan. Dari laporan ini kita bisa menyimpulkan: pendapatan sempat turun di Februari lalu melonjak di Maret, didorong kategori fashion dan rumah. Dua pelanggan membeli berulang, sedangkan Citra paling lama tidak kembali.\n\nTutup setiap analisis dengan ringkasan satu paragraf yang menyebut temuan utama, batasannya, dan langkah berikutnya. Itulah bagian yang paling dibaca oleh orang yang tidak membaca query."
+            }
+          ],
+          "quick_check": {
+            "question": "Kontribusi produk dihitung dengan?",
+            "options": [
+              "COUNT",
+              "Nilai dibagi SUM OVER ()"
+            ],
+            "answer_index": 1,
+            "explanation": "Persen dari total.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Melangkah ke tahap berikutnya",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Melangkah ke tahap berikutnya\n\nAnda kini menguasai SQL untuk analisis: dari SELECT dasar sampai window function dan perancangan skema. Langkah selanjutnya adalah memadukannya dengan Python dan pandas untuk visualisasi, pemodelan, dan otomatisasi, di mana SQL menyiapkan data dan Python mengolahnya lebih jauh.\n\nBiasakan menulis query yang rapi, diuji, dan direkonsiliasi. Keterampilan itu akan terpakai di hampir setiap pekerjaan data."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Rekonsiliasi laporan",
+              "markdown": "Cocokkan jumlah per bulan, baris pivot, dan kontribusi dengan total keseluruhan sebelum membagikan laporan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Struktur laporan yang baik\n\nMulailah laporan dengan ringkasan: angka utama dan temuan paling penting dalam beberapa kalimat. Lanjutkan dengan rincian per bagian, dan akhiri dengan catatan metodologi yang menyebut definisi metrik dan filter yang dipakai. Pembaca yang sibuk dapat berhenti setelah ringkasan tanpa kehilangan inti.\n\nSusunan ini meniru cara orang membaca laporan: pertama ingin tahu kesimpulannya, baru bila perlu memeriksa dasarnya. Query yang rapi mendukung rincian itu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dari query ke dashboard\n\nQuery yang sudah teruji dapat menjadi dasar dashboard yang diperbarui otomatis. Simpan sebagai view atau skrip terjadwal, beri nama jelas, dan dokumentasikan definisinya. Dengan begitu pemangku kepentingan mendapat angka yang konsisten tanpa meminta analis menjalankan ulang setiap kali.\n\nKonsistensi inilah nilai terbesar dari pekerjaan analitik yang rapi: semua orang bicara dengan angka yang sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Batas dan asumsi\n\nSetiap laporan memiliki asumsi: periode data yang dicakup, definisi pendapatan, dan perlakuan pesanan batal. Catat semuanya di bagian akhir laporan. Pembaca yang mengetahui asumsi dapat menilai sendiri seberapa jauh angka itu boleh dipercaya."
+            }
+          ],
+          "quick_check": {
+            "question": "Pivot di SQL ditiru dengan?",
+            "options": [
+              "Agregasi bersyarat",
+              "UNION"
+            ],
+            "answer_index": 0,
+            "explanation": "SUM CASE WHEN.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-09-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pertumbuhan_bulanan(c)` yang mengembalikan list tuple `(bulan, total, persen)` untuk pesanan `selesai`, terurut kronologis, dengan `persen` pertumbuhan terhadap bulan sebelumnya dibulatkan 1 desimal dan `None` untuk bulan pertama.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pertumbuhan_bulanan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pertumbuhan_bulanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert pertumbuhan_bulanan(c) == [('2026-01', 199000, None), ('2026-02', 121000, -39.2), ('2026-03', 372000, 207.4)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pertumbuhan_bulanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (10, 1, '2026-04-02', 'selesai')\")\nc.execute('INSERT INTO item VALUES (10, 3, 2)')\nassert pertumbuhan_bulanan(c)[-1] == ('2026-04', 300000, -19.4)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(pertumbuhan_bulanan(c))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('DELETE FROM item WHERE pesanan_id = 10')\nassert len(pertumbuhan_bulanan(c)) == 3"
+              }
+            ]
+          },
+          "hint": "CTE total bulanan lalu LAG pada query utama.",
+          "solution": "import sqlite3\n\ndef pertumbuhan_bulanan(c):\n    q = '''\n    WITH b AS (\n        SELECT strftime('%Y-%m', o.tanggal) AS bulan, SUM(i.qty * k.harga) AS total\n        FROM pesanan o\n        JOIN item i ON i.pesanan_id = o.id\n        JOIN produk k ON k.id = i.produk_id\n        WHERE o.status = 'selesai'\n        GROUP BY bulan\n    )\n    SELECT bulan, total,\n           ROUND(100.0 * (total - LAG(total) OVER (ORDER BY bulan)) / LAG(total) OVER (ORDER BY bulan), 1)\n    FROM b ORDER BY bulan\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-09-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kumulatif_bulanan(c)` yang mengembalikan list total pendapatan kumulatif per bulan (pesanan `selesai`), terurut kronologis.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef kumulatif_bulanan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kumulatif_bulanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert kumulatif_bulanan(c) == [199000, 320000, 692000]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kumulatif_bulanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (10, 1, '2026-04-02', 'selesai')\")\nc.execute('INSERT INTO item VALUES (10, 1, 4)')\nassert kumulatif_bulanan(c) == [199000, 320000, 692000, 702000]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kumulatif_bulanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (11, 1, '2026-04-09', 'batal')\")\nc.execute('INSERT INTO item VALUES (11, 3, 9)')\nassert kumulatif_bulanan(c)[-1] == 702000"
+              }
+            ]
+          },
+          "hint": "SUM total bulanan dengan frame dari awal sampai baris saat ini.",
+          "solution": "import sqlite3\n\ndef kumulatif_bulanan(c):\n    q = '''\n    WITH b AS (\n        SELECT strftime('%Y-%m', o.tanggal) AS bulan, SUM(i.qty * k.harga) AS total\n        FROM pesanan o\n        JOIN item i ON i.pesanan_id = o.id\n        JOIN produk k ON k.id = i.produk_id\n        WHERE o.status = 'selesai'\n        GROUP BY bulan\n    )\n    SELECT SUM(total) OVER (ORDER BY bulan ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)\n    FROM b ORDER BY bulan\n    '''\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-09-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kontribusi_produk(c)` yang mengembalikan list tuple `(nama, persen)` kontribusi tiap produk terhadap total pendapatan `selesai`, dibulatkan 1 desimal, terurut dari terbesar lalu nama.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef kontribusi_produk(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kontribusi_produk(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert kontribusi_produk(c) == [('Tas', 43.4), ('Botol', 20.2), ('Lampu', 20.2), ('Buku', 10.4), ('Pensil', 5.8)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(sum(p for _, p in kontribusi_produk(c)) -...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(sum(p for _, p in kontribusi_produk(c)) - 100) < 0.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kontribusi_produk(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO item VALUES (9, 3, 8)')\nassert kontribusi_produk(c)[0][0] == 'Tas'"
+              }
+            ]
+          },
+          "hint": "Agregasi per produk di CTE lalu bagi dengan SUM OVER ().",
+          "solution": "import sqlite3\n\ndef kontribusi_produk(c):\n    q = '''\n    WITH t AS (\n        SELECT k.nama AS nama, SUM(i.qty * k.harga) AS v\n        FROM pesanan o\n        JOIN item i ON i.pesanan_id = o.id\n        JOIN produk k ON k.id = i.produk_id\n        WHERE o.status = 'selesai'\n        GROUP BY k.id, k.nama\n    )\n    SELECT nama, ROUND(100.0 * v / SUM(v) OVER (), 1)\n    FROM t ORDER BY v DESC, nama\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-09-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pivot_kategori(c)` yang mengembalikan list tuple `(kategori, jan, feb, mar)` berisi pendapatan `selesai` per kategori untuk bulan 01, 02, dan 03, terurut menurut kategori, dengan 0 bila tidak ada penjualan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pivot_kategori(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pivot_kategori(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\n    CREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\n    INSERT INTO pelanggan VALUES\n    (1, 'Ani', 'Jakarta', '2026-01-05'),\n    (2, 'Budi', 'Bandung', '2026-01-20'),\n    (3, 'Citra', 'Jakarta', '2026-02-03'),\n    (4, 'Dewi', 'Surabaya', '2026-02-15'),\n    (5, 'Eko', 'Medan', '2026-03-01');\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'ATK', 2500),\n    (2, 'Buku', 'ATK', 12000),\n    (3, 'Tas', 'Fashion', 150000),\n    (4, 'Botol', 'Rumah', 35000),\n    (5, 'Lampu', 'Rumah', 20000);\n    INSERT INTO pesanan VALUES\n    (1, 1, '2026-01-10', 'selesai'),\n    (2, 2, '2026-01-25', 'selesai'),\n    (3, 1, '2026-02-05', 'selesai'),\n    (4, 3, '2026-02-10', 'batal'),\n    (5, 3, '2026-02-20', 'selesai'),\n    (6, 4, '2026-03-02', 'selesai'),\n    (7, 1, '2026-03-10', 'selesai'),\n    (8, 2, '2026-03-15', 'selesai'),\n    (9, 5, '2026-03-20', 'selesai');\n    INSERT INTO item VALUES\n    (1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n    (5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n    ''')\n    return c\nc = _db()\nassert pivot_kategori(c) == [('ATK', 49000, 46000, 17000), ('Fashion', 150000, 0, 150000), ('Rumah', 0, 75000, 205000)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pivot_kategori(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (10, 1, '2026-02-25', 'selesai')\")\nc.execute('INSERT INTO item VALUES (10, 3, 1)')\nassert pivot_kategori(c)[1] == ('Fashion', 150000, 150000, 150000)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pivot_kategori(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (11, 1, '2026-01-25', 'batal')\")\nc.execute('INSERT INTO item VALUES (11, 4, 7)')\nassert pivot_kategori(c)[2] == ('Rumah', 0, 75000, 205000)"
+              }
+            ]
+          },
+          "hint": "SUM(CASE WHEN bulan = ... THEN nilai ELSE 0 END) untuk tiap kolom.",
+          "solution": "import sqlite3\n\ndef pivot_kategori(c):\n    q = '''\n    SELECT k.kategori,\n           SUM(CASE WHEN strftime('%m', o.tanggal) = '01' THEN i.qty * k.harga ELSE 0 END),\n           SUM(CASE WHEN strftime('%m', o.tanggal) = '02' THEN i.qty * k.harga ELSE 0 END),\n           SUM(CASE WHEN strftime('%m', o.tanggal) = '03' THEN i.qty * k.harga ELSE 0 END)\n    FROM pesanan o\n    JOIN item i ON i.pesanan_id = o.id\n    JOIN produk k ON k.id = i.produk_id\n    WHERE o.status = 'selesai'\n    GROUP BY k.kategori ORDER BY k.kategori\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Pertumbuhan bulanan memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "LAG",
+              "description": ""
+            },
+            {
+              "label": "NTILE",
+              "description": ""
+            },
+            {
+              "label": "DISTINCT",
+              "description": ""
+            },
+            {
+              "label": "LIMIT",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lag.",
+          "explanation": "Bandingkan bulan sebelumnya."
+        },
+        {
+          "q": "Kontribusi produk dihitung dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nilai dibagi SUM OVER ()",
+              "description": ""
+            },
+            {
+              "label": "COUNT",
+              "description": ""
+            },
+            {
+              "label": "MAX",
+              "description": ""
+            },
+            {
+              "label": "ROW_NUMBER",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bagi total.",
+          "explanation": "Persen dari total."
+        },
+        {
+          "q": "Pivot di SQL ditiru dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Agregasi bersyarat",
+              "description": ""
+            },
+            {
+              "label": "UNION",
+              "description": ""
+            },
+            {
+              "label": "LIMIT",
+              "description": ""
+            },
+            {
+              "label": "INDEX",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Case.",
+          "explanation": "SUM CASE WHEN."
+        },
+        {
+          "q": "Prinsip Pareto menyatakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sedikit produk menyumbang sebagian besar hasil",
+              "description": ""
+            },
+            {
+              "label": "Semua sama",
+              "description": ""
+            },
+            {
+              "label": "Harga tetap",
+              "description": ""
+            },
+            {
+              "label": "Data acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sedikit.",
+          "explanation": "Konsentrasi."
+        },
+        {
+          "q": "Tujuan rekonsiliasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menangkap kesalahan angka",
+              "description": ""
+            },
+            {
+              "label": "Mempercepat",
+              "description": ""
+            },
+            {
+              "label": "Menghapus data",
+              "description": ""
+            },
+            {
+              "label": "Membuat tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Cocok.",
+          "explanation": "Pemeriksaan silang."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menyajikan laporan tanpa rekonsiliasi. Lebih baik: Cocokkan jumlah bagian dengan total keseluruhan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menyajikan laporan tanpa rekonsiliasi.",
+          "fix": "Cocokkan jumlah bagian dengan total keseluruhan."
+        },
+        {
+          "mistake": "Mencampur pesanan batal dalam tren.",
+          "fix": "Saring status di CTE pertama."
+        },
+        {
+          "mistake": "Menyajikan angka tanpa narasi.",
+          "fix": "Tutup dengan ringkasan temuan dan langkah berikutnya."
+        }
+      ],
+      "summary": [
+        "Pertumbuhan dan kumulatif dihitung dengan window function di atas CTE.",
+        "Kontribusi dan Pareto menunjukkan konsentrasi pendapatan.",
+        "Pivot dibuat dengan agregasi bersyarat.",
+        "Rekonsiliasi dan narasi menyempurnakan laporan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Laporan akhir: tren, kontribusi, dan pivot"
+          },
+          {
+            "type": "text",
+            "source": "Pendapatan turun tiga puluh sembilan koma dua persen di Februari lalu melonjak dua ratus tujuh koma empat persen di Maret, dan total kumulatif berakhir di 692.000."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nWITH b AS (\n    SELECT strftime('%Y-%m', o.tanggal) AS bulan, SUM(i.qty * k.harga) AS total\n    FROM pesanan o\n    JOIN item i ON i.pesanan_id = o.id\n    JOIN produk k ON k.id = i.produk_id\n    WHERE o.status = 'selesai'\n    GROUP BY bulan\n)\nSELECT bulan, total,\n       ROUND(100.0 * (total - LAG(total) OVER (ORDER BY bulan)) / LAG(total) OVER (ORDER BY bulan), 1),\n       SUM(total) OVER (ORDER BY bulan ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)\nFROM b ORDER BY bulan\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          },
+          {
+            "type": "text",
+            "source": "Tas menyumbang 43,4 persen, dan tiga produk teratas sudah mencapai 83,8 persen dari total pendapatan."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nWITH t AS (\n    SELECT k.nama AS nama, SUM(i.qty * k.harga) AS v\n    FROM pesanan o\n    JOIN item i ON i.pesanan_id = o.id\n    JOIN produk k ON k.id = i.produk_id\n    WHERE o.status = 'selesai'\n    GROUP BY k.id, k.nama\n)\nSELECT nama, v, ROUND(100.0 * v / SUM(v) OVER (), 1),\n       ROUND(100.0 * SUM(v) OVER (ORDER BY v DESC, nama) / SUM(v) OVER (), 1)\nFROM t ORDER BY v DESC, nama\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          },
+          {
+            "type": "text",
+            "source": "Tabel silang kategori dan bulan: fashion tidak laku di Februari dan kategori rumah baru mulai di Februari."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT, kota TEXT, daftar TEXT);\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga INTEGER);\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER, tanggal TEXT, status TEXT);\nCREATE TABLE item (pesanan_id INTEGER, produk_id INTEGER, qty INTEGER);\nINSERT INTO pelanggan VALUES\n(1, 'Ani', 'Jakarta', '2026-01-05'),\n(2, 'Budi', 'Bandung', '2026-01-20'),\n(3, 'Citra', 'Jakarta', '2026-02-03'),\n(4, 'Dewi', 'Surabaya', '2026-02-15'),\n(5, 'Eko', 'Medan', '2026-03-01');\nINSERT INTO produk VALUES\n(1, 'Pensil', 'ATK', 2500),\n(2, 'Buku', 'ATK', 12000),\n(3, 'Tas', 'Fashion', 150000),\n(4, 'Botol', 'Rumah', 35000),\n(5, 'Lampu', 'Rumah', 20000);\nINSERT INTO pesanan VALUES\n(1, 1, '2026-01-10', 'selesai'),\n(2, 2, '2026-01-25', 'selesai'),\n(3, 1, '2026-02-05', 'selesai'),\n(4, 3, '2026-02-10', 'batal'),\n(5, 3, '2026-02-20', 'selesai'),\n(6, 4, '2026-03-02', 'selesai'),\n(7, 1, '2026-03-10', 'selesai'),\n(8, 2, '2026-03-15', 'selesai'),\n(9, 5, '2026-03-20', 'selesai');\nINSERT INTO item VALUES\n(1, 1, 10), (1, 2, 2), (2, 3, 1), (3, 4, 1), (3, 1, 4), (4, 3, 1), (5, 2, 3),\n(5, 5, 2), (6, 3, 1), (6, 1, 2), (7, 5, 5), (8, 4, 2), (9, 2, 1), (9, 4, 1);\n''')\n\nq = '''\nSELECT k.kategori,\n       SUM(CASE WHEN strftime('%m', o.tanggal) = '01' THEN i.qty * k.harga ELSE 0 END),\n       SUM(CASE WHEN strftime('%m', o.tanggal) = '02' THEN i.qty * k.harga ELSE 0 END),\n       SUM(CASE WHEN strftime('%m', o.tanggal) = '03' THEN i.qty * k.harga ELSE 0 END)\nFROM pesanan o\nJOIN item i ON i.pesanan_id = o.id\nJOIN produk k ON k.id = i.produk_id\nWHERE o.status = 'selesai'\nGROUP BY k.kategori ORDER BY k.kategori\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

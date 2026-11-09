@@ -1,0 +1,1660 @@
+{
+  "schema_version": 2,
+  "course_id": "B1",
+  "module_no": 4,
+  "title": "Operasi vectorized dan ufunc",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menerapkan ufunc dan menangani nilai khusus",
+    "Meringkas dan menghitung kumulatif sepanjang sumbu",
+    "Mengendalikan kondisi dan membandingkan desimal dengan benar"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B1-04-1",
+    "exercise_id": "B1-04-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def hitung_tak_hingga(x):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B1-04-1",
+      "title": "Operasi vectorized dan fungsi matematika",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menjelaskan vectorization dan manfaatnya dibanding perulangan",
+        "Memakai ufunc matematika dasar",
+        "Memahami pembulatan dan modulo pada NumPy",
+        "Menangani pembagian dengan nol dan nilai tak terdefinisi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Berpikir dalam array utuh",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Berpikir dalam array utuh\n\n**Vectorization** berarti menulis operasi pada seluruh array sekaligus, tanpa perulangan eksplisit. Alih-alih menulis `for` yang menghitung akar tiap elemen, kita menulis `np.sqrt(x)`. Perulangan tetap terjadi, tetapi di dalam kode C yang dikompilasi dan bekerja pada memori berurutan, sehingga jauh lebih cepat. Kode juga lebih pendek dan lebih mudah dibaca karena menyerupai rumus matematika."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ufunc\n\nFungsi yang bekerja elemen demi elemen pada array disebut **universal function**, disingkat ufunc. Operator aritmetika seperti tambah, kali, dan pangkat adalah ufunc, begitu pula fungsi seperti `np.sqrt`, `np.exp`, `np.log`, dan `np.abs`. Semua ufunc mendukung broadcasting, menerima skalar maupun array, dan mengembalikan array baru berbentuk sesuai aturan broadcasting."
+            },
+            {
+              "type": "code_example",
+              "filename": "ufunc_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([1., 4., 9., 16.])\nprint(np.sqrt(x).tolist())\nprint(np.exp(np.array([0., 1.])).round(4).tolist())\nprint(np.log(np.array([1., np.e, 100.])).round(4).tolist())\nprint(np.abs(np.array([-3, 2])).tolist())\nprint((np.array([2, 3]) ** 3).tolist())\nprint(np.sign(np.array([-3, 0, 5])).tolist())",
+              "expected_output_note": "[1.0, 2.0, 3.0, 4.0]\n[1.0, 2.7183]\n[0.0, 1.0, 4.6052]\n[3, 2]\n[8, 27]\n[-1, 0, 1]",
+              "explanation": "Ufunc menerapkan fungsi pada tiap elemen. Log alami e bernilai satu dan sign mengembalikan tanda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hasil sama, jauh lebih cepat\n\nMenjumlahkan satu juta bilangan dengan perulangan Python memakan waktu puluhan milidetik hingga ratusan, sedangkan `np.sum` pada array yang sama selesai dalam sekitar satu milidetik. Selisih sepuluh sampai seratus kali ini membuat vectorization menjadi syarat praktis untuk analisis data. Anda dapat mengukurnya sendiri dengan modul `time` atau perintah `%timeit` di notebook."
+            },
+            {
+              "type": "code_example",
+              "filename": "loop_vs_vec.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.arange(1000, dtype=float)\ntotal_loop = 0.0\nfor v in x:\n    total_loop += v * v\ntotal_vec = float((x * x).sum())\nprint(total_loop == total_vec)\nprint(total_vec)\ny = [v * v for v in range(5)]\nprint(y == (np.arange(5) ** 2).tolist())",
+              "expected_output_note": "True\n332833500.0\nTrue",
+              "explanation": "Perulangan dan versi vectorized memberi hasil sama, tetapi versi kedua jauh lebih singkat dan cepat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pembulatan\n\nNumPy menyediakan `np.floor` untuk pembulatan ke bawah, `np.ceil` ke atas, `np.trunc` menuju nol, dan `np.round` ke bilangan terdekat. Hati-hati: `np.round` membulatkan setengah ke genap terdekat, jadi 0,5 menjadi 0, 1,5 menjadi 2, dan 2,5 menjadi 2. Aturan ini mengurangi bias pada penjumlahan banyak angka, tetapi mengejutkan bila Anda mengharapkan aturan sekolah."
+            },
+            {
+              "type": "code_example",
+              "filename": "pembulatan.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nprint(np.floor([1.7, -1.2]).tolist())\nprint(np.ceil([1.2, -1.7]).tolist())\nprint(np.trunc([1.7, -1.7]).tolist())\nprint(np.round([0.5, 1.5, 2.5]).tolist())\nprint(np.round([2.567, 0.5], 2).tolist())",
+              "expected_output_note": "[1.0, -2.0]\n[2.0, -1.0]\n[1.0, -1.0]\n[0.0, 2.0, 2.0]\n[2.57, 0.5]",
+              "explanation": "Floor menuju bawah, ceil menuju atas, trunc menuju nol. Round membulatkan setengah ke genap terdekat."
+            }
+          ],
+          "quick_check": {
+            "question": "Ufunc bekerja?",
+            "options": [
+              "Elemen demi elemen",
+              "Hanya pada baris"
+            ],
+            "answer_index": 0,
+            "explanation": "Pada tiap elemen.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Modulo dan sisa bagi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Modulo dan sisa bagi\n\nOperator `%` dan fungsi `np.mod` menghitung sisa bagi, dan hasilnya mengikuti tanda pembagi. Jadi minus tujuh modulo tiga adalah dua, bukan minus satu. Sifat ini berguna untuk menghitung posisi melingkar, misalnya hari dalam pekan atau indeks buffer. Fungsi `np.remainder` identik, sedangkan `np.fmod` mengikuti tanda yang dibagi seperti bahasa C."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pembagian dengan nol\n\nBerbeda dari Python murni, pembagian desimal dengan nol pada NumPy tidak menghentikan program. Hasilnya `inf`, `-inf`, atau `nan` disertai peringatan. Logaritma nol memberi minus tak hingga, dan logaritma bilangan negatif memberi nan. Nilai khusus ini mengalir melalui perhitungan berikutnya dan dapat mencemari hasil akhir, jadi penting mengenalinya dan menanganinya dengan sengaja."
+            },
+            {
+              "type": "code_example",
+              "filename": "pembagian_nol.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nwith np.errstate(all='ignore'):\n    print((np.array([1., 0., -1.]) / 0).tolist())\n    print(np.log(np.array([0., -1.])).tolist())\n    print((np.array([0.]) / 0).tolist())\nprint(np.mod(np.array([7, -7]), 3).tolist())\na = np.array([1., 2., 3.])\nb = np.array([2., 0., 3.])\nprint(np.divide(a, b, out=np.zeros(3), where=b != 0).tolist())",
+              "expected_output_note": "[inf, nan, -inf]\n[-inf, nan]\n[nan]\n[1, 2]\n[0.5, 0.0, 1.0]",
+              "explanation": "Pembagian dengan nol memberi inf atau nan. Parameter where bersama out membagi hanya yang aman dan menyisakan nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengendalikan peringatan\n\nKonteks `np.errstate` mengatur apa yang terjadi saat galat numerik seperti pembagian nol. Dengan `all='ignore'`, peringatan dibungkam dalam blok itu, dan dengan `all='raise'` setiap galat menjadi pengecualian. Membungkam hanya masuk akal bila Anda tahu nilai khusus itu akan muncul dan siap menanganinya, bukan sekadar agar layar bersih."
+            }
+          ],
+          "quick_check": {
+            "question": "np.round(2.5) menghasilkan?",
+            "options": [
+              "3.0",
+              "2.0"
+            ],
+            "answer_index": 1,
+            "explanation": "Setengah ke genap.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Parameter out dan where",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Parameter out dan where\n\nSemua ufunc menerima `out` untuk menulis hasil ke array yang sudah ada, yang menghemat alokasi memori pada data besar. Parameter `where` membatasi operasi pada posisi yang mask-nya benar, dan posisi lain dibiarkan seperti isi `out`. Gabungan keduanya adalah cara bersih menghitung hanya pada elemen valid tanpa menyaring dan menyusun ulang array."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tipe hasil ufunc\n\nFungsi seperti `np.sqrt` dan `np.exp` selalu menghasilkan desimal, walau masukannya bilangan bulat. Pembagian biasa dengan garis miring tunggal juga menghasilkan desimal, sedangkan pembagian lantai dengan dua garis miring mempertahankan bilangan bulat. Pahami aturan promosi tipe agar tidak terkejut saat hasil tiba-tiba berubah dari bulat menjadi desimal."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan perulangan tetap perlu\n\nTidak semua perhitungan dapat divektorkan. Bila nilai tiap langkah bergantung pada hasil langkah sebelumnya dengan cara rumit, seperti simulasi dengan keputusan bercabang, perulangan mungkin lebih jelas. Namun sering kali bentuk kumulatif seperti `cumsum` atau `accumulate`, yang dibahas pada pelajaran berikutnya, menyederhanakan kasus yang tampak berurutan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Refleks vectorized",
+              "markdown": "Bila menulis for atas elemen array, berhenti sejenak dan tanyakan apakah ada ufunc atau ringkasan NumPy yang melakukannya sekaligus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fungsi trigonometri dan lainnya\n\nNumPy juga menyediakan `np.sin`, `np.cos`, `np.tan`, dan kebalikannya, yang bekerja dalam radian, serta `np.deg2rad` untuk mengubah dari derajat. Ada pula `np.hypot` untuk sisi miring, `np.log10` dan `np.log2` untuk basis lain, dan `np.expm1` serta `np.log1p` yang lebih teliti untuk nilai sangat kecil. Seluruhnya ufunc, sehingga cara memakainya sama dengan fungsi yang sudah dibahas."
+            }
+          ],
+          "quick_check": {
+            "question": "-7 % 3 pada NumPy?",
+            "options": [
+              "2",
+              "-1"
+            ],
+            "answer_index": 0,
+            "explanation": "Mengikuti tanda pembagi.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-04-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `akar_aman(x)` yang mengembalikan akar kuadrat tiap elemen array `x`, dengan elemen negatif diperlakukan sebagai nol sehingga hasilnya nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef akar_aman(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "r.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = akar_aman(np.array([4., -1., 9.]))\nassert r.tolist() == [2.0, 0.0, 3.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "akar_aman(np.array([0.])).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert akar_aman(np.array([0.])).tolist() == [0.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "akar_aman(np.array([-5., -2.])).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert akar_aman(np.array([-5., -2.])).tolist() == [0.0, 0.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "akar_aman(np.array([16.]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert akar_aman(np.array([16.])).shape == (1,)"
+              }
+            ]
+          },
+          "hint": "Batasi minimum nol dengan np.maximum lalu akarkan.",
+          "solution": "import numpy as np\n\ndef akar_aman(x):\n    return np.sqrt(np.maximum(x, 0))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-04-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bagi_aman(a, b)` yang mengembalikan `a / b` per elemen sebagai array desimal, dengan hasil `0.0` pada posisi di mana `b` bernilai nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef bagi_aman(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bagi_aman([1, 2, 3], [2, 0, 3]).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_aman([1, 2, 3], [2, 0, 3]).tolist() == [0.5, 0.0, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bagi_aman([5, 5], [0, 0]).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_aman([5, 5], [0, 0]).tolist() == [0.0, 0.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bagi_aman([6, 9], [3, 3]).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_aman([6, 9], [3, 3]).tolist() == [2.0, 3.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bagi_aman([0, 1], [0, 4]).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_aman([0, 1], [0, 4]).tolist() == [0.0, 0.25]"
+              }
+            ]
+          },
+          "hint": "Gunakan np.divide dengan out berisi nol dan where bukan nol.",
+          "solution": "import numpy as np\n\ndef bagi_aman(a, b):\n    a = np.asarray(a, dtype=float)\n    b = np.asarray(b, dtype=float)\n    return np.divide(a, b, out=np.zeros(a.shape), where=b != 0)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-04-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bulatkan_dua(x)` yang membulatkan tiap elemen array `x` ke dua angka desimal dan mengembalikannya sebagai list Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef bulatkan_dua(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bulatkan_dua(np.array([2.567, 0.5]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bulatkan_dua(np.array([2.567, 0.5])) == [2.57, 0.5]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bulatkan_dua(np.array([1.234, 9.999]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bulatkan_dua(np.array([1.234, 9.999])) == [1.23, 10.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bulatkan_dua(np.array([3.0]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bulatkan_dua(np.array([3.0])) == [3.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bulatkan_dua(np.array([]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bulatkan_dua(np.array([])) == []"
+              }
+            ]
+          },
+          "hint": "np.round menerima jumlah desimal.",
+          "solution": "import numpy as np\n\ndef bulatkan_dua(x):\n    return np.round(x, 2).tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-04-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `hitung_tak_hingga(x)` yang menghitung `1 / x` per elemen dan mengembalikan banyaknya hasil yang tak hingga (positif atau negatif), sebagai bilangan bulat Python, tanpa memunculkan peringatan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef hitung_tak_hingga(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hitung_tak_hingga([0, 2, 0.0, -1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_tak_hingga([0, 2, 0.0, -1]) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hitung_tak_hingga([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_tak_hingga([1, 2, 3]) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hitung_tak_hingga([0, 0, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_tak_hingga([0, 0, 0]) == 3"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "type(hitung_tak_hingga([0]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert type(hitung_tak_hingga([0])) is int"
+              }
+            ]
+          },
+          "hint": "Bungkus pembagian dalam errstate lalu hitung isinf.",
+          "solution": "import numpy as np\n\ndef hitung_tak_hingga(x):\n    with np.errstate(all='ignore'):\n        hasil = 1 / np.asarray(x, dtype=float)\n    return int(np.isinf(hasil).sum())",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Ufunc bekerja?",
+          "code": null,
+          "options": [
+            {
+              "label": "Elemen demi elemen",
+              "description": ""
+            },
+            {
+              "label": "Hanya pada baris",
+              "description": ""
+            },
+            {
+              "label": "Hanya skalar",
+              "description": ""
+            },
+            {
+              "label": "Pada teks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Elemen.",
+          "explanation": "Pada tiap elemen."
+        },
+        {
+          "q": "np.round(2.5) menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "2.0",
+              "description": ""
+            },
+            {
+              "label": "3.0",
+              "description": ""
+            },
+            {
+              "label": "2.5",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Genap.",
+          "explanation": "Setengah ke genap."
+        },
+        {
+          "q": "-7 % 3 pada NumPy?",
+          "code": null,
+          "options": [
+            {
+              "label": "2",
+              "description": ""
+            },
+            {
+              "label": "-1",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "-2",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Positif.",
+          "explanation": "Mengikuti tanda pembagi."
+        },
+        {
+          "q": "1.0 / 0 pada array menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "inf",
+              "description": ""
+            },
+            {
+              "label": "Galat berhenti",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "nan saja",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tak hingga.",
+          "explanation": "Dengan peringatan."
+        },
+        {
+          "q": "Parameter yang membatasi operasi ufunc?",
+          "code": null,
+          "options": [
+            {
+              "label": "where",
+              "description": ""
+            },
+            {
+              "label": "axis",
+              "description": ""
+            },
+            {
+              "label": "dtype",
+              "description": ""
+            },
+            {
+              "label": "size",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Di mana.",
+          "explanation": "Mask posisi."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis for untuk operasi elemen sederhana. Lebih baik: Pakai ufunc atau operator array.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis for untuk operasi elemen sederhana.",
+          "fix": "Pakai ufunc atau operator array."
+        },
+        {
+          "mistake": "Mengira np.round membulatkan setengah ke atas.",
+          "fix": "Ia membulatkan setengah ke genap terdekat."
+        },
+        {
+          "mistake": "Membiarkan inf dan nan mengalir tanpa dicek.",
+          "fix": "Tangani dengan errstate, where, atau pengecekan."
+        }
+      ],
+      "summary": [
+        "Vectorization menjalankan perulangan di kode C sehingga cepat dan ringkas.",
+        "Ufunc menerapkan fungsi elemen demi elemen dan mendukung broadcasting.",
+        "np.round membulatkan setengah ke genap terdekat.",
+        "Pembagian dengan nol memberi inf atau nan, tangani dengan sengaja."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Operasi vectorized dan fungsi matematika"
+          },
+          {
+            "type": "text",
+            "source": "Ufunc menerapkan fungsi pada tiap elemen. Log alami e bernilai satu dan sign mengembalikan tanda."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([1., 4., 9., 16.])\nprint(np.sqrt(x).tolist())\nprint(np.exp(np.array([0., 1.])).round(4).tolist())\nprint(np.log(np.array([1., np.e, 100.])).round(4).tolist())\nprint(np.abs(np.array([-3, 2])).tolist())\nprint((np.array([2, 3]) ** 3).tolist())\nprint(np.sign(np.array([-3, 0, 5])).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Perulangan dan versi vectorized memberi hasil sama, tetapi versi kedua jauh lebih singkat dan cepat."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.arange(1000, dtype=float)\ntotal_loop = 0.0\nfor v in x:\n    total_loop += v * v\ntotal_vec = float((x * x).sum())\nprint(total_loop == total_vec)\nprint(total_vec)\ny = [v * v for v in range(5)]\nprint(y == (np.arange(5) ** 2).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Floor menuju bawah, ceil menuju atas, trunc menuju nol. Round membulatkan setengah ke genap terdekat."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nprint(np.floor([1.7, -1.2]).tolist())\nprint(np.ceil([1.2, -1.7]).tolist())\nprint(np.trunc([1.7, -1.7]).tolist())\nprint(np.round([0.5, 1.5, 2.5]).tolist())\nprint(np.round([2.567, 0.5], 2).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Pembagian dengan nol memberi inf atau nan. Parameter where bersama out membagi hanya yang aman dan menyisakan nol."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nwith np.errstate(all='ignore'):\n    print((np.array([1., 0., -1.]) / 0).tolist())\n    print(np.log(np.array([0., -1.])).tolist())\n    print((np.array([0.]) / 0).tolist())\nprint(np.mod(np.array([7, -7]), 3).tolist())\na = np.array([1., 2., 3.])\nb = np.array([2., 0., 3.])\nprint(np.divide(a, b, out=np.zeros(3), where=b != 0).tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B1-04-2",
+      "title": "Agregasi, sumbu, dan fungsi kumulatif",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Meringkas array dengan sum, mean, std, min, dan max",
+        "Memilih sumbu ringkasan dengan benar",
+        "Memakai fungsi kumulatif dan diff",
+        "Menangani nilai hilang dengan fungsi nan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Meringkas banyak nilai",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Meringkas banyak nilai\n\nAnalisis data hampir selalu berakhir pada ringkasan: total penjualan, rata-rata nilai, nilai tertinggi. NumPy menyediakan `sum`, `mean`, `std`, `var`, `min`, `max`, `prod`, dan banyak lagi, baik sebagai fungsi `np.sum(a)` maupun metode `a.sum()`. Tanpa argumen, ringkasan menyeluruh menghasilkan satu skalar. Dengan argumen `axis`, ringkasan dilakukan sepanjang sumbu tertentu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memahami axis\n\nArgumen `axis` menyatakan sumbu yang diringkas, dan sumbu itu hilang dari hasil. Pada matriks, `axis=0` meringkas turun melintasi baris sehingga menghasilkan satu angka per kolom. `axis=1` meringkas ke kanan melintasi kolom dan menghasilkan satu angka per baris. Cara mengingat paling aman: sumbu yang Anda tulis adalah sumbu yang lenyap dari shape hasil."
+            },
+            {
+              "type": "code_example",
+              "filename": "agregasi_axis.py",
+              "runnable": true,
+              "code": "import numpy as np\n\na = np.array([[1, 2, 3], [4, 5, 6]])\nprint(a.sum())\nprint(a.sum(axis=0).tolist())\nprint(a.sum(axis=1).tolist())\nprint(a.mean(axis=0).tolist())\nprint(a.max(axis=1).tolist())\nprint(a.prod(axis=0).tolist())",
+              "expected_output_note": "21\n[5, 7, 9]\n[6, 15]\n[2.5, 3.5, 4.5]\n[3, 6]\n[4, 10, 18]",
+              "explanation": "Axis nol memberi satu hasil per kolom dan axis satu memberi satu hasil per baris."
+            },
+            {
+              "type": "text",
+              "markdown": "## Statistik deskriptif\n\nSelain total dan rata-rata, `np.std` dan `np.var` memberi simpangan baku dan ragam, `np.median` memberi nilai tengah, dan `np.percentile` memberi persentil. Perhatikan bahwa `std` dan `var` secara bawaan membagi dengan n, yaitu ragam populasi. Untuk ragam sampel, tambahkan argumen `ddof=1` yang membagi dengan n dikurangi satu. Pilihan ini memengaruhi hasil terutama pada sampel kecil."
+            },
+            {
+              "type": "code_example",
+              "filename": "statistik_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nd = [1, 2, 3, 4]\nprint(np.var(d), np.std(d, ddof=1).round(4))\nprint(np.median([5, 1, 3, 2]))\nprint(np.percentile([1, 2, 3, 4, 5], 50))\nprint(np.percentile([1, 2, 3, 4], 25))\nprint(np.ptp([3, 9, 1]))",
+              "expected_output_note": "1.25 1.291\n2.5\n3.0\n1.75\n8",
+              "explanation": "Ragam bawaan membagi dengan n, sedangkan ddof satu memberi simpangan baku sampel. Ptp memberi rentang nilai."
+            },
+            {
+              "type": "text",
+              "markdown": "## Posisi nilai ekstrem\n\nFungsi `argmax` dan `argmin` mengembalikan posisi nilai terbesar dan terkecil, bukan nilainya. Dengan `axis`, keduanya memberi posisi per baris atau kolom. Bila nilai ekstrem muncul lebih dari sekali, yang dikembalikan adalah posisi kemunculan pertama. Posisi ini sering dipakai untuk memilih kelas dengan skor tertinggi pada keluaran model klasifikasi."
+            }
+          ],
+          "quick_check": {
+            "question": "axis=0 pada matriks memberi?",
+            "options": [
+              "Satu hasil per kolom",
+              "Satu hasil per baris"
+            ],
+            "answer_index": 0,
+            "explanation": "Baris diringkas.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Fungsi kumulatif",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi kumulatif\n\nFungsi `cumsum` dan `cumprod` mengembalikan jumlah dan hasil kali berjalan, dengan satu hasil untuk tiap posisi. Tanpa `axis`, array diratakan lebih dulu. Jumlah kumulatif dipakai untuk saldo berjalan dan distribusi kumulatif, sedangkan hasil kali kumulatif dipakai untuk pertumbuhan majemuk. Fungsi `np.diff` adalah kebalikannya: ia menghitung selisih antar elemen bertetangga, sehingga panjang hasil berkurang satu."
+            },
+            {
+              "type": "code_example",
+              "filename": "kumulatif.py",
+              "runnable": true,
+              "code": "import numpy as np\n\na = np.array([[1, 2, 3], [4, 5, 6]])\nprint(a.cumsum(axis=1).tolist())\nprint(a.cumsum().tolist())\nprint(np.cumprod([1, 2, 3, 4]).tolist())\nprint(np.diff([1, 4, 9, 16]).tolist())\nprint(np.argmax(a, axis=1).tolist())",
+              "expected_output_note": "[[1, 3, 6], [4, 9, 15]]\n[1, 3, 6, 10, 15, 21]\n[1, 2, 6, 24]\n[3, 5, 7]\n[2, 2]",
+              "explanation": "Cumsum menjumlahkan berjalan, diff menghitung selisih bertetangga, dan argmax memberi posisi nilai terbesar."
+            },
+            {
+              "type": "text",
+              "markdown": "## reduce dan accumulate\n\nCumsum dan sum adalah kasus khusus dari mekanisme ufunc yang lebih umum. Setiap ufunc biner memiliki metode `reduce`, yang melipat array menjadi satu nilai, dan `accumulate`, yang menyimpan hasil antara. Jadi `np.add.reduce` setara sum dan `np.multiply.accumulate` setara cumprod. Mekanisme umum ini memungkinkan ringkasan khusus seperti maksimum berjalan lewat `np.maximum.accumulate`."
+            },
+            {
+              "type": "code_example",
+              "filename": "reduce_accumulate.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nprint(int(np.add.reduce([1, 2, 3])))\nprint(np.add.accumulate([1, 2, 3]).tolist())\nprint(int(np.multiply.reduce([1, 2, 3, 4])))\nprint(np.maximum.accumulate([1, 3, 2, 5, 4]).tolist())\nprint(np.minimum.accumulate([5, 3, 4, 1]).tolist())",
+              "expected_output_note": "6\n[1, 3, 6]\n24\n[1, 3, 3, 5, 5]\n[5, 3, 3, 1]",
+              "explanation": "Reduce melipat ke satu nilai dan accumulate menyimpan semua hasil antara. Maksimum berjalan hanya naik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Nilai hilang\n\nData nyata sering memuat nilai hilang yang dinyatakan `np.nan`. Satu nan membuat `sum` dan `mean` biasa menghasilkan nan. Keluarga fungsi `nansum`, `nanmean`, `nanmax`, `nanstd`, dan sejenisnya mengabaikan nan. Gunakan `np.isnan` untuk menghitung atau menandai nilai hilang. Selalu laporkan berapa banyak nilai yang diabaikan, karena mengabaikannya diam-diam dapat menyembunyikan masalah kualitas data."
+            },
+            {
+              "type": "code_example",
+              "filename": "nilai_hilang.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nn = np.array([1., np.nan, 3.])\nprint(n.sum(), np.nansum(n))\nprint(np.nanmean(n), np.nanmax(n))\nprint(np.isnan(n).tolist(), int(np.isnan(n).sum()))\nprint(float(np.nanmean(n)) == 2.0)",
+              "expected_output_note": "nan 4.0\n2.0 3.0\n[False, True, False] 1\nTrue",
+              "explanation": "Satu nan mencemari sum. Fungsi nan mengabaikannya, dan isnan menghitung berapa banyak yang hilang."
+            }
+          ],
+          "quick_check": {
+            "question": "cumsum menghasilkan?",
+            "options": [
+              "Total saja",
+              "Jumlah berjalan"
+            ],
+            "answer_index": 1,
+            "explanation": "Per posisi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Rata-rata bergerak",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Rata-rata bergerak\n\nRata-rata bergerak menghaluskan data deret waktu dengan merata-ratakan jendela yang bergeser. Cara ringkas adalah konvolusi dengan vektor satu: `np.convolve(x, np.ones(k), 'valid')` menghasilkan jumlah tiap jendela berukuran k, lalu bagi dengan k bila ingin rata-rata. Argumen `valid` hanya menyimpan posisi ketika jendela penuh sehingga hasil lebih pendek dari masukan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih sumbu dengan benar\n\nKesalahan sumbu tidak memicu galat, hanya hasil yang keliru. Biasakan memeriksa shape hasil: matriks tiga kali empat diringkas dengan sumbu nol harus berbentuk empat, dan dengan sumbu satu berbentuk tiga. Pada array tiga dimensi, argumen sumbu boleh berupa tuple untuk meringkas dua sumbu sekaligus, dan `keepdims=True` menjaga hasil siap untuk broadcasting."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Cek sumbu",
+              "markdown": "Setelah meringkas, periksa shape hasil. Sumbu yang Anda tulis harus lenyap dari shape."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan bersyarat\n\nMenggabungkan mask dengan agregasi menghasilkan ringkasan bersyarat tanpa perulangan. Rata-rata nilai yang lulus ditulis `nilai[nilai >= 60].mean()`, banyaknya yang lulus `(nilai >= 60).sum()`, dan proporsi `(nilai >= 60).mean()`. Pola ini menggantikan banyak kueri yang biasa ditulis sebagai perulangan dengan penghitung, dan dapat dikombinasikan dengan sumbu untuk ringkasan per kolom."
+            },
+            {
+              "type": "text",
+              "markdown": "## Urutan dan peringkat\n\nFungsi `np.sort` mengembalikan salinan terurut, sedangkan `np.argsort` mengembalikan urutan indeksnya. Dua kali argsort menghasilkan peringkat tiap elemen. Untuk matriks, urutan dapat diterapkan per sumbu, sehingga `np.sort(a, axis=1)` mengurutkan tiap baris sendiri-sendiri. Median dan persentil pada dasarnya bergantung pada pengurutan ini."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kesalahan umum agregasi\n\nDua kesalahan paling sering: meringkas dengan sumbu yang salah, dan mengabaikan tipe hasil. Jumlah bilangan bulat berukuran kecil dapat melilit, dan rata-rata bilangan bulat selalu desimal. Periksa tipe dan rentang sebelum meringkas data bertipe sempit seperti uint8, dan ubah ke tipe lebih lebar bila perlu dengan argumen dtype pada sum."
+            }
+          ],
+          "quick_check": {
+            "question": "np.diff memberi?",
+            "options": [
+              "Selisih bertetangga",
+              "Jumlah"
+            ],
+            "answer_index": 0,
+            "explanation": "Panjang berkurang satu.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-04-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `total_kolom(a)` yang mengembalikan jumlah tiap kolom matriks `a` sebagai list Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef total_kolom(a):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_kolom([[1, 2, 3], [4, 5, 6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_kolom([[1, 2, 3], [4, 5, 6]]) == [5, 7, 9]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_kolom([[1], [2], [3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_kolom([[1], [2], [3]]) == [6]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_kolom(np.ones((2, 2)))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_kolom(np.ones((2, 2))) == [2.0, 2.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "total_kolom([[0, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_kolom([[0, 0]]) == [0, 0]"
+              }
+            ]
+          },
+          "hint": "Jumlahkan sepanjang sumbu nol.",
+          "solution": "import numpy as np\n\ndef total_kolom(a):\n    return np.asarray(a).sum(axis=0).tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-04-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_rata_valid(x)` yang mengembalikan rata-rata elemen `x` dengan mengabaikan nilai `nan`, sebagai bilangan Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef rata_rata_valid(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_rata_valid(np.array([1., np.nan, 3.]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_valid(np.array([1., np.nan, 3.])) == 2.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_rata_valid(np.array([2., 4.]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_valid(np.array([2., 4.])) == 3.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_rata_valid(np.array([np.nan, 5.]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_valid(np.array([np.nan, 5.])) == 5.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "type(rata_rata_valid(np.array([1., 2.])))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert type(rata_rata_valid(np.array([1., 2.]))) is float"
+              }
+            ]
+          },
+          "hint": "np.nanmean mengabaikan nan.",
+          "solution": "import numpy as np\n\ndef rata_rata_valid(x):\n    return float(np.nanmean(x))",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-04-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pertumbuhan(x)` yang menerima deret nilai dan mengembalikan array laju pertumbuhan antar periode, yaitu selisih dibagi nilai periode sebelumnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef pertumbuhan(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "np.allclose(pertumbuhan([100, 110, 121]), [0....",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(pertumbuhan([100, 110, 121]), [0.1, 0.1])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "np.allclose(pertumbuhan([50, 25]), [-0.5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(pertumbuhan([50, 25]), [-0.5])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pertumbuhan([1, 2, 3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pertumbuhan([1, 2, 3, 4]).shape == (3,)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "np.allclose(pertumbuhan([10, 10]), [0.0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(pertumbuhan([10, 10]), [0.0])"
+              }
+            ]
+          },
+          "hint": "Hitung np.diff lalu bagi dengan semua elemen kecuali yang terakhir.",
+          "solution": "import numpy as np\n\ndef pertumbuhan(x):\n    x = np.asarray(x, dtype=float)\n    return np.diff(x) / x[:-1]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-04-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `jumlah_bergerak(x, k)` yang mengembalikan, sebagai list Python, jumlah tiap jendela berukuran `k` yang bergeser satu langkah pada `x`, hanya untuk jendela yang penuh.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef jumlah_bergerak(x, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_bergerak([1, 2, 3, 4, 5], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_bergerak([1, 2, 3, 4, 5], 3) == [6.0, 9.0, 12.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_bergerak([1, 2, 3], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_bergerak([1, 2, 3], 1) == [1.0, 2.0, 3.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_bergerak([2, 4, 6, 8], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_bergerak([2, 4, 6, 8], 2) == [6.0, 10.0, 14.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(jumlah_bergerak(list(range(10)), 4))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(jumlah_bergerak(list(range(10)), 4)) == 7"
+              }
+            ]
+          },
+          "hint": "Konvolusi dengan vektor satu dalam mode valid.",
+          "solution": "import numpy as np\n\ndef jumlah_bergerak(x, k):\n    return np.convolve(x, np.ones(k), 'valid').tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "axis=0 pada matriks memberi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu hasil per kolom",
+              "description": ""
+            },
+            {
+              "label": "Satu hasil per baris",
+              "description": ""
+            },
+            {
+              "label": "Satu skalar",
+              "description": ""
+            },
+            {
+              "label": "Matriks sama",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom.",
+          "explanation": "Baris diringkas."
+        },
+        {
+          "q": "cumsum menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Jumlah berjalan",
+              "description": ""
+            },
+            {
+              "label": "Total saja",
+              "description": ""
+            },
+            {
+              "label": "Selisih",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Berjalan.",
+          "explanation": "Per posisi."
+        },
+        {
+          "q": "np.diff memberi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Selisih bertetangga",
+              "description": ""
+            },
+            {
+              "label": "Jumlah",
+              "description": ""
+            },
+            {
+              "label": "Ragam",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Selisih.",
+          "explanation": "Panjang berkurang satu."
+        },
+        {
+          "q": "Satu nan pada sum menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "nan",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Nilai lain",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "nan.",
+          "explanation": "Mencemari."
+        },
+        {
+          "q": "ddof=1 mengubah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pembagi menjadi n minus satu",
+              "description": ""
+            },
+            {
+              "label": "Sumbu",
+              "description": ""
+            },
+            {
+              "label": "Tipe",
+              "description": ""
+            },
+            {
+              "label": "Urutan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sampel.",
+          "explanation": "Ragam sampel."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis axis terbalik. Lebih baik: Axis nol per kolom, axis satu per baris.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis axis terbalik.",
+          "fix": "Axis nol per kolom, axis satu per baris."
+        },
+        {
+          "mistake": "Memakai mean biasa pada data bernan.",
+          "fix": "Gunakan nanmean dan laporkan jumlah nan."
+        },
+        {
+          "mistake": "Mengira std membagi dengan n minus satu.",
+          "fix": "Atur ddof=1 untuk sampel."
+        }
+      ],
+      "summary": [
+        "Axis menyatakan sumbu yang diringkas dan lenyap dari hasil.",
+        "cumsum, cumprod, dan diff menangani nilai berjalan dan selisih.",
+        "reduce dan accumulate menggeneralisasi ringkasan untuk ufunc apa pun.",
+        "Fungsi nan mengabaikan nilai hilang, tetapi laporkan jumlahnya."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Agregasi, sumbu, dan fungsi kumulatif"
+          },
+          {
+            "type": "text",
+            "source": "Axis nol memberi satu hasil per kolom dan axis satu memberi satu hasil per baris."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\na = np.array([[1, 2, 3], [4, 5, 6]])\nprint(a.sum())\nprint(a.sum(axis=0).tolist())\nprint(a.sum(axis=1).tolist())\nprint(a.mean(axis=0).tolist())\nprint(a.max(axis=1).tolist())\nprint(a.prod(axis=0).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Ragam bawaan membagi dengan n, sedangkan ddof satu memberi simpangan baku sampel. Ptp memberi rentang nilai."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nd = [1, 2, 3, 4]\nprint(np.var(d), np.std(d, ddof=1).round(4))\nprint(np.median([5, 1, 3, 2]))\nprint(np.percentile([1, 2, 3, 4, 5], 50))\nprint(np.percentile([1, 2, 3, 4], 25))\nprint(np.ptp([3, 9, 1]))"
+          },
+          {
+            "type": "text",
+            "source": "Cumsum menjumlahkan berjalan, diff menghitung selisih bertetangga, dan argmax memberi posisi nilai terbesar."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\na = np.array([[1, 2, 3], [4, 5, 6]])\nprint(a.cumsum(axis=1).tolist())\nprint(a.cumsum().tolist())\nprint(np.cumprod([1, 2, 3, 4]).tolist())\nprint(np.diff([1, 4, 9, 16]).tolist())\nprint(np.argmax(a, axis=1).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Reduce melipat ke satu nilai dan accumulate menyimpan semua hasil antara. Maksimum berjalan hanya naik."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nprint(int(np.add.reduce([1, 2, 3])))\nprint(np.add.accumulate([1, 2, 3]).tolist())\nprint(int(np.multiply.reduce([1, 2, 3, 4])))\nprint(np.maximum.accumulate([1, 3, 2, 5, 4]).tolist())\nprint(np.minimum.accumulate([5, 3, 4, 1]).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Satu nan mencemari sum. Fungsi nan mengabaikannya, dan isnan menghitung berapa banyak yang hilang."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nn = np.array([1., np.nan, 3.])\nprint(n.sum(), np.nansum(n))\nprint(np.nanmean(n), np.nanmax(n))\nprint(np.isnan(n).tolist(), int(np.isnan(n).sum()))\nprint(float(np.nanmean(n)) == 2.0)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B1-04-3",
+      "title": "Ufunc biner, perbandingan, dan kontrol kondisi",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memakai maximum, minimum, dan clip elemen demi elemen",
+        "Membandingkan desimal dengan isclose dan allclose",
+        "Memilih nilai bertingkat dengan select",
+        "Menggabungkan ufunc logika dan kumulatif"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Ufunc dengan dua masukan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ufunc dengan dua masukan\n\nBanyak ufunc menerima dua array dan menggabungkannya elemen demi elemen sesuai aturan broadcasting. Penjumlahan dan perkalian adalah contoh yang sudah dikenal. Pasangan yang berguna untuk membatasi nilai adalah `np.maximum` dan `np.minimum`, yang mengambil yang lebih besar atau lebih kecil dari dua masukan per posisi. Berbeda dari `max` dan `min` biasa, keduanya tidak meringkas array menjadi satu nilai."
+            },
+            {
+              "type": "code_example",
+              "filename": "maksimum_elemen.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nprint(np.maximum([1, 5, 3], [4, 2, 6]).tolist())\nprint(np.minimum([1, 5, 3], 2).tolist())\nprint(np.clip([1, 5, 10], 2, 8).tolist())\nprint(int(np.max([1, 5, 3])))\nprint(np.maximum([1, 5, 3], 0).tolist())",
+              "expected_output_note": "[4, 5, 6]\n[1, 2, 2]\n[2, 5, 8]\n5\n[1, 5, 3]",
+              "explanation": "Maximum membandingkan dua array per posisi, sedangkan max meringkas satu array menjadi satu nilai."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pembatasan nilai\n\nUntuk membatasi dari bawah, pakai `np.maximum(x, batas)`, dan dari atas `np.minimum(x, batas)`. Untuk dua sisi sekaligus, `np.clip(x, bawah, atas)` lebih ringkas. Operasi ini umum dipakai untuk memotong pencilan, menjaga probabilitas dalam rentang nol sampai satu, atau menghindari logaritma nol dengan menaikkan nilai ke angka kecil positif."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membandingkan desimal\n\nBilangan desimal biner tidak mewakili banyak pecahan desimal dengan tepat, sehingga `0.1 + 0.2 == 0.3` bernilai salah. Jangan membandingkan hasil desimal dengan sama dengan. Gunakan `np.isclose` untuk perbandingan per elemen dan `np.allclose` untuk seluruh array, yang menerima toleransi relatif dan absolut. Dalam pengujian kode numerik, `allclose` adalah teman setia."
+            },
+            {
+              "type": "code_example",
+              "filename": "isclose_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nprint(0.1 + 0.2 == 0.3)\nprint(bool(np.isclose(0.1 + 0.2, 0.3)))\nprint(bool(np.allclose([1, 2], [1.0000001, 2])))\nprint(bool(np.allclose([1, 2], [1.1, 2])))\nprint(np.isclose([1.0, 2.0], [1.0, 2.5]).tolist())",
+              "expected_output_note": "False\nTrue\nTrue\nFalse\n[True, False]",
+              "explanation": "Perbandingan sama dengan pada desimal rapuh. Isclose dan allclose memakai toleransi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fungsi logika elemen\n\nOperasi logika memiliki padanan ufunc: `np.logical_and`, `np.logical_or`, `np.logical_not`, dan `np.logical_xor`. Mereka setara dengan operator `&`, `|`, dan `~` pada array boolean, tetapi lebih jelas terbaca dan tidak peka pada tanda kurung. Karena merupakan ufunc, mereka mendukung `reduce`, sehingga `np.logical_and.reduce` menyatakan semuanya benar dan `np.logical_or.reduce` menyatakan adakah yang benar."
+            }
+          ],
+          "quick_check": {
+            "question": "np.maximum(a, b) melakukan?",
+            "options": [
+              "Perbandingan per elemen",
+              "Ringkasan satu nilai"
+            ],
+            "answer_index": 0,
+            "explanation": "Elemen demi elemen.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Pilihan bertingkat dengan select",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pilihan bertingkat dengan select\n\nFungsi `np.where` hanya memilih antara dua nilai. Untuk banyak kategori, `np.select(daftar_syarat, daftar_nilai, default)` memeriksa syarat berurutan dan memakai nilai pertama yang cocok, dengan default untuk sisanya. Ini versi vectorized dari rantai if, elif, dan else, dan sangat berguna untuk mengelompokkan nilai kontinu ke dalam kategori."
+            },
+            {
+              "type": "code_example",
+              "filename": "select_logika.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([1., 4., 9., 16.])\nprint(np.select([x < 5, x < 10], [0, 1], default=2).tolist())\nprint(np.logical_and([True, False], [True, True]).tolist())\nprint(np.logical_not([True, False]).tolist())\nprint(bool(np.logical_or.reduce([False, False, True])))\nprint(bool(np.logical_and.reduce([True, True])))",
+              "expected_output_note": "[0, 0, 1, 2]\n[True, False]\n[False, True]\nTrue\nTrue",
+              "explanation": "Select memilih nilai dari syarat pertama yang cocok, dan reduce dengan fungsi logika merangkum mask."
+            },
+            {
+              "type": "text",
+              "markdown": "## Parameter out\n\nMenulis hasil ufunc ke array yang sudah ada dengan `out` menghemat alokasi memori. Untuk pembaruan berulang pada array besar, misalnya `np.add(a, b, out=a)`, tidak ada array baru yang dibuat. Namun array `out` harus berbentuk dan bertipe yang sesuai, dan menimpa masukan sendiri hanya aman untuk operasi elemen demi elemen. Gunakan fitur ini bila profil menunjukkan memori jadi masalah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Maksimum berjalan\n\nMenggabungkan `accumulate` dengan ufunc biner menghasilkan ringkasan berjalan khusus. `np.maximum.accumulate` memberi nilai tertinggi sejauh ini, berguna untuk menghitung rekor atau penurunan dari puncak pada deret harga. `np.logical_or.accumulate` memberi penanda apakah suatu kejadian sudah terjadi sampai titik tersebut. Pola ini menyederhanakan banyak perulangan berurutan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Penurunan dari puncak\n\nContoh nyata: penurunan maksimum dalam deret nilai portofolio. Hitung puncak berjalan dengan `np.maximum.accumulate`, lalu selisih relatif antara nilai dan puncak berjalan menunjukkan seberapa jauh turun dari rekor sebelumnya. Nilai terkecil dari selisih itu adalah penurunan maksimum. Seluruh perhitungan hanya beberapa baris tanpa perulangan."
+            }
+          ],
+          "quick_check": {
+            "question": "Membandingkan desimal sebaiknya dengan?",
+            "options": [
+              "==",
+              "np.isclose"
+            ],
+            "answer_index": 1,
+            "explanation": "Toleransi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Ringkasan modul",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah belajar bahwa ufunc menerapkan fungsi elemen demi elemen, agregasi meringkas sepanjang sumbu, dan ufunc biner serta fungsi logika memberi kendali kondisi. Dengan toleransi pada perbandingan desimal dan kewaspadaan terhadap nan dan inf, Anda siap menulis perhitungan numerik yang cepat dan benar. Modul berikutnya masuk ke aljabar linear."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Perbandingan desimal",
+              "markdown": "Jangan membandingkan hasil desimal dengan sama dengan. Pakai isclose atau allclose dengan toleransi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tabel kebenaran\n\nFungsi `np.any` dan `np.all` dapat dipakai per sumbu, sehingga `mask.all(axis=1)` menyatakan baris mana yang seluruh syaratnya terpenuhi. Pola ini umum untuk menyaring baris yang tidak punya nilai hilang: `~np.isnan(X).any(axis=1)` memilih baris lengkap. Hasilnya adalah mask satu dimensi yang dapat langsung dipakai untuk menyaring matriks."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menguji kode numerik\n\nSaat menguji fungsi numerik, bandingkan hasilnya dengan jawaban yang dihitung tangan menggunakan `allclose`, dan sertakan kasus tepi seperti array kosong, satu elemen, nilai negatif, dan nan. Menulis uji sebelum kode membantu memperjelas harapan. Uji yang baik menangkap perubahan perilaku halus ketika Anda mengoptimalkan kode menjadi versi vectorized."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih fungsi yang tepat\n\nBila menghadapi masalah baru, tanyakan tiga hal berurutan. Apakah ada ufunc untuk operasi ini? Apakah ini ringkasan atau kumulatif yang dapat diberi sumbu? Apakah kondisinya dapat dinyatakan dengan mask atau select? Dengan tiga pertanyaan itu sebagian besar perhitungan dapat ditulis tanpa perulangan Python."
+            }
+          ],
+          "quick_check": {
+            "question": "np.select dipakai untuk?",
+            "options": [
+              "Banyak kategori bersyarat",
+              "Mengurutkan"
+            ],
+            "answer_index": 0,
+            "explanation": "If elif vectorized.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-04-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `batas_bawah(x, b)` yang mengembalikan, sebagai list Python, nilai `x` yang dinaikkan menjadi `b` bila lebih kecil dari `b`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef batas_bawah(x, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "batas_bawah([1, 5, 3], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_bawah([1, 5, 3], 2) == [2, 5, 3]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "batas_bawah([-1, -2], 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_bawah([-1, -2], 0) == [0, 0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "batas_bawah(np.array([4, 9]), 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_bawah(np.array([4, 9]), 1) == [4, 9]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "batas_bawah([], 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_bawah([], 0) == []"
+              }
+            ]
+          },
+          "hint": "np.maximum membandingkan per elemen.",
+          "solution": "import numpy as np\n\ndef batas_bawah(x, b):\n    return np.maximum(x, b).tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-04-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `hampir_sama(a, b)` yang mengembalikan `True` bila semua pasangan elemen `a` dan `b` hampir sama menurut toleransi bawaan NumPy, dan `False` bila tidak, sebagai bool Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef hampir_sama(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hampir_sama([0.1 + 0.2], [0.3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hampir_sama([0.1 + 0.2], [0.3]) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hampir_sama([1, 2], [1.1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hampir_sama([1, 2], [1.1, 2]) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hampir_sama(np.array([1.0, 2.0]), np.array([1...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hampir_sama(np.array([1.0, 2.0]), np.array([1.0000001, 2.0])) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "hampir_sama([1.0], [2.0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hampir_sama([1.0], [2.0]) is False"
+              }
+            ]
+          },
+          "hint": "np.allclose lalu ubah ke bool Python.",
+          "solution": "import numpy as np\n\ndef hampir_sama(a, b):\n    return bool(np.allclose(a, b))",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-04-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kategori(x)` yang mengembalikan list kode kategori untuk tiap elemen: 0 bila kurang dari 5, 1 bila kurang dari 10, dan 2 untuk lainnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef kategori(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kategori([1, 4, 9, 16])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kategori([1, 4, 9, 16]) == [0, 0, 1, 2]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kategori([5, 10])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kategori([5, 10]) == [1, 2]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kategori([4.99, 9.99, 10.0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kategori([4.99, 9.99, 10.0]) == [0, 1, 2]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kategori([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kategori([]) == []"
+              }
+            ]
+          },
+          "hint": "np.select dengan dua syarat berurutan dan default dua.",
+          "solution": "import numpy as np\n\ndef kategori(x):\n    x = np.asarray(x)\n    return np.select([x < 5, x < 10], [0, 1], default=2).tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-04-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `maks_berjalan(x)` yang mengembalikan, sebagai list Python, nilai tertinggi yang pernah muncul sampai tiap posisi pada `x`, tanpa perulangan Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef maks_berjalan(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "maks_berjalan([1, 3, 2, 5, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maks_berjalan([1, 3, 2, 5, 4]) == [1, 3, 3, 5, 5]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "maks_berjalan([5, 4, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maks_berjalan([5, 4, 3]) == [5, 5, 5]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "maks_berjalan([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maks_berjalan([1, 2, 3]) == [1, 2, 3]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "maks_berjalan(np.array([2.0, 1.0]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maks_berjalan(np.array([2.0, 1.0])) == [2.0, 2.0]"
+              }
+            ]
+          },
+          "hint": "np.maximum.accumulate.",
+          "solution": "import numpy as np\n\ndef maks_berjalan(x):\n    return np.maximum.accumulate(x).tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "np.maximum(a, b) melakukan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Perbandingan per elemen",
+              "description": ""
+            },
+            {
+              "label": "Ringkasan satu nilai",
+              "description": ""
+            },
+            {
+              "label": "Pengurutan",
+              "description": ""
+            },
+            {
+              "label": "Penjumlahan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Per posisi.",
+          "explanation": "Elemen demi elemen."
+        },
+        {
+          "q": "Membandingkan desimal sebaiknya dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "np.isclose",
+              "description": ""
+            },
+            {
+              "label": "==",
+              "description": ""
+            },
+            {
+              "label": "is",
+              "description": ""
+            },
+            {
+              "label": "in",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dekat.",
+          "explanation": "Toleransi."
+        },
+        {
+          "q": "np.select dipakai untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Banyak kategori bersyarat",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Mengiris",
+              "description": ""
+            },
+            {
+              "label": "Menyalin",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bertingkat.",
+          "explanation": "If elif vectorized."
+        },
+        {
+          "q": "np.maximum.accumulate memberi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Maksimum berjalan",
+              "description": ""
+            },
+            {
+              "label": "Total",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Posisi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Berjalan.",
+          "explanation": "Sejauh ini."
+        },
+        {
+          "q": "np.logical_or.reduce menyatakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Adakah yang benar",
+              "description": ""
+            },
+            {
+              "label": "Semuanya benar",
+              "description": ""
+            },
+            {
+              "label": "Jumlah",
+              "description": ""
+            },
+            {
+              "label": "Posisi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ada.",
+          "explanation": "Atau terlipat."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membandingkan desimal dengan sama dengan. Lebih baik: Pakai isclose atau allclose.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membandingkan desimal dengan sama dengan.",
+          "fix": "Pakai isclose atau allclose."
+        },
+        {
+          "mistake": "Memakai max padahal butuh perbandingan per elemen.",
+          "fix": "Pakai np.maximum untuk dua array."
+        },
+        {
+          "mistake": "Menulis rantai if untuk kategori.",
+          "fix": "Pakai np.select."
+        }
+      ],
+      "summary": [
+        "maximum, minimum, dan clip membatasi nilai per elemen.",
+        "isclose dan allclose membandingkan desimal dengan toleransi.",
+        "np.select menangani banyak kategori bersyarat.",
+        "accumulate dengan ufunc biner menghasilkan ringkasan berjalan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Ufunc biner, perbandingan, dan kontrol kondisi"
+          },
+          {
+            "type": "text",
+            "source": "Maximum membandingkan dua array per posisi, sedangkan max meringkas satu array menjadi satu nilai."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nprint(np.maximum([1, 5, 3], [4, 2, 6]).tolist())\nprint(np.minimum([1, 5, 3], 2).tolist())\nprint(np.clip([1, 5, 10], 2, 8).tolist())\nprint(int(np.max([1, 5, 3])))\nprint(np.maximum([1, 5, 3], 0).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Perbandingan sama dengan pada desimal rapuh. Isclose dan allclose memakai toleransi."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nprint(0.1 + 0.2 == 0.3)\nprint(bool(np.isclose(0.1 + 0.2, 0.3)))\nprint(bool(np.allclose([1, 2], [1.0000001, 2])))\nprint(bool(np.allclose([1, 2], [1.1, 2])))\nprint(np.isclose([1.0, 2.0], [1.0, 2.5]).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Select memilih nilai dari syarat pertama yang cocok, dan reduce dengan fungsi logika merangkum mask."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([1., 4., 9., 16.])\nprint(np.select([x < 5, x < 10], [0, 1], default=2).tolist())\nprint(np.logical_and([True, False], [True, True]).tolist())\nprint(np.logical_not([True, False]).tolist())\nprint(bool(np.logical_or.reduce([False, False, True])))\nprint(bool(np.logical_and.reduce([True, True])))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

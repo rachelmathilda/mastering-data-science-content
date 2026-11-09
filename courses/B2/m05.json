@@ -1,0 +1,1616 @@
+{
+  "schema_version": 2,
+  "course_id": "B2",
+  "module_no": 5,
+  "title": "Missing value dasar",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Mendeteksi dan memetakan nilai hilang",
+    "Membuang atau mengisi nilai hilang dengan strategi yang sesuai",
+    "Memakai isi berurutan, penanda, dan isi per kelompok"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B2-05-1",
+    "exercise_id": "B2-05-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def kolom_hilang(df):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B2-05-1",
+      "title": "Mendeteksi nilai hilang",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami NaN sebagai penanda nilai hilang",
+        "Menghitung dan memetakan nilai hilang dengan isna",
+        "Menjelaskan mengapa perbandingan dengan NaN selalu salah",
+        "Melihat dampak NaN pada agregasi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa nilai hilang penting",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa nilai hilang penting\n\nHampir semua data nyata memiliki sel kosong. Responden melewati pertanyaan, sensor gagal membaca, atau penggabungan tabel tidak menemukan pasangan. Cara kita menangani sel kosong memengaruhi rata-rata, korelasi, dan model. Langkah pertama selalu sama: ketahui di mana dan berapa banyak nilai hilang sebelum memutuskan apa pun, karena keputusan yang tergesa dapat mengubah kesimpulan analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## NaN dan None\n\nPandas menandai nilai hilang pada kolom angka dengan `NaN`, singkatan dari not a number, yang berasal dari standar bilangan desimal. Pada kolom teks nilai hilang juga ditampilkan sebagai NaN, meskipun Anda mengisinya dengan `None`. Metode pandas memperlakukan keduanya sebagai hilang. Karena NaN bertipe desimal, kolom bilangan bulat yang memiliki NaN otomatis menjadi desimal."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data contoh\n\nPelajaran ini memakai tabel lima orang dengan kolom `nama`, `umur`, `kota`, dan `gaji`. Umur Budi dan Dedi kosong, kota Cici kosong, dan gaji Cici kosong. Tabel kecil ini memudahkan Anda memeriksa tiap hasil dengan mata sebelum menerapkan metode yang sama ke tabel besar yang tidak mungkin diperiksa satu per satu."
+            },
+            {
+              "type": "code_example",
+              "filename": "deteksi_hilang.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nprint(df.isna().sum().to_dict())\nprint(df.notna().sum().to_dict())\nprint(df['umur'].isna().tolist())\nprint(df.isna().any(axis=1).tolist())\nprint(df.isna().sum(axis=1).tolist())\nprint(df.isna().mean().round(2).to_dict())",
+              "expected_output_note": "{'nama': 0, 'umur': 2, 'kota': 1, 'gaji': 1}\n{'nama': 5, 'umur': 3, 'kota': 4, 'gaji': 4}\n[False, True, False, True, False]\n[False, True, True, True, False]\n[0, 1, 2, 1, 0]\n{'nama': 0.0, 'umur': 0.4, 'kota': 0.2, 'gaji': 0.2}",
+              "explanation": "Isna menghasilkan tabel boolean. Sum menghitung hilang per kolom, dan mean memberi proporsinya."
+            },
+            {
+              "type": "text",
+              "markdown": "## isna dan notna\n\nMetode `isna()` menghasilkan objek berbentuk sama berisi True di tempat nilai hilang, dan `notna()` kebalikannya. Karena True bernilai satu, `sum()` menghitung jumlah hilang dan `mean()` menghitung proporsinya. Menjumlahkan pada `axis=1` menghitung hilang per baris, sedangkan `any(axis=1)` menandai baris yang memiliki setidaknya satu nilai hilang."
+            }
+          ],
+          "quick_check": {
+            "question": "Cara benar memeriksa hilang?",
+            "options": [
+              "isna",
+              "== np.nan"
+            ],
+            "answer_index": 0,
+            "explanation": "NaN tak sama dengan dirinya.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Peta nilai hilang",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Peta nilai hilang\n\nUntuk tabel lebar, hitung hilang per kolom lalu urutkan menurun agar kolom paling bermasalah tampak di atas. Proporsi lebih informatif dari jumlah mutlak: seribu hilang dari sepuluh ribu baris berbeda dari seribu hilang dari seribu lima ratus baris. Kolom yang kosong lebih dari separuh sering lebih baik dibuang daripada diisi paksa."
+            },
+            {
+              "type": "code_example",
+              "filename": "nan_agregasi.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nprint(df['umur'].mean(), df['umur'].sum(), df['umur'].count())\nprint(df['umur'].sum(skipna=False))\nprint(len(df), df['umur'].size, df['umur'].count())\nprint(np.nan == np.nan)\nprint((df['umur'] == np.nan).tolist())\nprint(df['umur'].isna().sum() / len(df))",
+              "expected_output_note": "28.0 84.0 3\nnan\n5 5 3\nFalse\n[False, False, False, False, False]\n0.4",
+              "explanation": "Agregasi pandas melewati NaN secara bawaan. Perbandingan langsung dengan NaN selalu salah, jadi pakai isna."
+            },
+            {
+              "type": "text",
+              "markdown": "## Perbandingan dengan NaN\n\nNaN tidak sama dengan apa pun, bahkan dengan dirinya sendiri. Karena itu `kolom == np.nan` selalu salah dan tidak pernah menemukan nilai hilang. Ini kesalahan klasik pemula. Gunakan selalu `isna()` atau `pd.isna(nilai)` untuk memeriksa. Sifat ini dipakai pula oleh trik lama `x != x` yang benar hanya untuk NaN, tetapi isna jauh lebih jelas dibaca."
+            },
+            {
+              "type": "text",
+              "markdown": "## NaN dalam agregasi\n\nSecara bawaan, `sum`, `mean`, `min`, `max`, dan `std` pada pandas melewati NaN dengan `skipna=True`. Rata-rata umur di atas dihitung dari tiga nilai, bukan lima. Bila Anda memakai `skipna=False`, satu NaN membuat hasil NaN. Perhatikan bahwa melewati NaN diam-diam mengubah penyebut, sehingga rata-rata dari tiga orang dapat berbeda dari populasi penuh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hilang acak atau tidak\n\nMengapa data hilang menentukan cara menanganinya. Bila hilang murni acak, membuang atau mengisi baris hanya sedikit mengubah hasil. Bila hilang berkaitan dengan nilai itu sendiri, misalnya orang berpenghasilan tinggi enggan melaporkan gaji, maka pembuangan atau pengisian rata-rata dapat membiaskan kesimpulan. Pahami proses pengumpulan data sebelum memutuskan strategi."
+            }
+          ],
+          "quick_check": {
+            "question": "np.nan == np.nan bernilai?",
+            "options": [
+              "True",
+              "False"
+            ],
+            "answer_index": 1,
+            "explanation": "Selalu salah.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Nilai hilang yang menyamar",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Nilai hilang yang menyamar\n\nTidak semua nilai hilang berupa NaN. Data nyata sering memakai penanda seperti nol, minus satu, 999, teks `N/A`, `-`, atau string kosong. Pandas hanya mengenali sebagian di antaranya saat `read_csv`. Periksa dengan `value_counts` untuk menemukan nilai mencurigakan, lalu ganti dengan `replace` menjadi NaN agar penanganan berikutnya konsisten."
+            },
+            {
+              "type": "code_example",
+              "filename": "hilang_menyamar.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ns = pd.Series(['10', 'N/A', '30', '-', ''])\nprint(pd.to_numeric(s, errors='coerce').tolist())\nt = pd.Series([5, -1, 7, -1, 9])\nprint(t.replace(-1, np.nan).tolist())\nprint(t.replace(-1, np.nan).isna().sum())\nprint(pd.read_csv(__import__('io').StringIO('a,b\\n1,NA\\n2,\\n3,x'))['b'].isna().tolist())",
+              "expected_output_note": "[10.0, nan, 30.0, nan, nan]\n[5.0, nan, 7.0, nan, 9.0]\n2\n[True, True, False]",
+              "explanation": "To_numeric dengan coerce dan replace mengubah penanda palsu menjadi NaN. Read_csv mengenali NA dan sel kosong secara bawaan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mencatat temuan\n\nDokumentasikan kolom yang memiliki nilai hilang, jumlahnya, dan dugaan penyebabnya. Catatan ini berguna ketika Anda atau orang lain kembali ke analisis berbulan-bulan kemudian dan bertanya mengapa baris tertentu dibuang. Laporan hilang yang singkat dalam notebook adalah bagian dari analisis yang dapat diulang, sama pentingnya dengan seed acak dan versi pustaka."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan pelajaran\n\nAnda telah belajar bahwa NaN menandai hilang, bahwa `isna` dan `notna` memetakannya, bahwa perbandingan `== np.nan` tidak pernah bekerja, dan bahwa agregasi melewati NaN secara bawaan. Pelajaran berikutnya membahas dua tindakan utama: membuang baris atau kolom, dan mengisi nilai dengan strategi yang masuk akal."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Jebakan NaN",
+              "markdown": "Jangan periksa nilai hilang dengan == np.nan. Hasilnya selalu False. Pakai isna."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hilang dalam praktik\n\nDalam proyek nyata, pemeriksaan hilang adalah langkah rutin pertama setelah memuat data, sejajar dengan memeriksa bentuk dan tipe kolom. Biasakan menjalankan `df.info()` dan hitungan isna segera setelah `read_csv`, sebelum menulis satu pun transformasi."
+            }
+          ],
+          "quick_check": {
+            "question": "Mean pandas terhadap NaN?",
+            "options": [
+              "Melewati NaN",
+              "Menghasilkan NaN"
+            ],
+            "answer_index": 0,
+            "explanation": "skipna True.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-05-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `hitung_hilang(df)` yang mengembalikan dict jumlah nilai hilang per kolom.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef hitung_hilang(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hitung_hilang(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert hitung_hilang(df) == {'nama': 0, 'umur': 2, 'kota': 1, 'gaji': 1}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hitung_hilang(df[['nama']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_hilang(df[['nama']]) == {'nama': 0}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hitung_hilang(df.dropna())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_hilang(df.dropna()) == {'nama': 0, 'umur': 0, 'kota': 0, 'gaji': 0}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(hitung_hilang(df).values())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(hitung_hilang(df).values()) == 4"
+              }
+            ]
+          },
+          "hint": "isna lalu sum per kolom dan ubah ke dict.",
+          "solution": "import pandas as pd\n\ndef hitung_hilang(df):\n    return df.isna().sum().to_dict()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-05-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `persen_hilang(df, kolom)` yang mengembalikan persentase nilai hilang pada kolom itu, dibulatkan ke dua desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef persen_hilang(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "persen_hilang(df, 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert persen_hilang(df, 'umur') == 40.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "persen_hilang(df, 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_hilang(df, 'kota') == 20.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "persen_hilang(df, 'nama')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_hilang(df, 'nama') == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "persen_hilang(df.iloc[:3], 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_hilang(df.iloc[:3], 'umur') == 33.33"
+              }
+            ]
+          },
+          "hint": "Rata-rata isna dikali seratus lalu bulatkan.",
+          "solution": "import pandas as pd\n\ndef persen_hilang(df, kolom):\n    return round(float(df[kolom].isna().mean() * 100), 2)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-05-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `baris_lengkap(df)` yang mengembalikan list `nama` untuk baris yang tidak memiliki nilai hilang sama sekali.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef baris_lengkap(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "baris_lengkap(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert baris_lengkap(df) == ['Ani', 'Eka']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "baris_lengkap(df.iloc[[1, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_lengkap(df.iloc[[1, 2]]) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "baris_lengkap(df.iloc[[0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_lengkap(df.iloc[[0]]) == ['Ani']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "baris_lengkap(df[['nama', 'gaji']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_lengkap(df[['nama', 'gaji']]) == ['Ani', 'Budi', 'Dedi', 'Eka']"
+              }
+            ]
+          },
+          "hint": "dropna lalu ambil kolom nama.",
+          "solution": "import pandas as pd\n\ndef baris_lengkap(df):\n    return df.dropna()['nama'].tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-05-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `kolom_hilang(df)` yang mengembalikan list nama kolom yang memiliki setidaknya satu nilai hilang, terurut abjad.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef kolom_hilang(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kolom_hilang(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert kolom_hilang(df) == ['gaji', 'kota', 'umur']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kolom_hilang(df.dropna())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolom_hilang(df.dropna()) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kolom_hilang(df[['nama', 'umur']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolom_hilang(df[['nama', 'umur']]) == ['umur']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kolom_hilang(df.iloc[[0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolom_hilang(df.iloc[[0]]) == []"
+              }
+            ]
+          },
+          "hint": "Pilih kolom dengan any pada isna lalu urutkan.",
+          "solution": "import pandas as pd\n\ndef kolom_hilang(df):\n    return sorted(df.columns[df.isna().any()].tolist())",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Cara benar memeriksa hilang?",
+          "code": null,
+          "options": [
+            {
+              "label": "isna",
+              "description": ""
+            },
+            {
+              "label": "== np.nan",
+              "description": ""
+            },
+            {
+              "label": "== None saja",
+              "description": ""
+            },
+            {
+              "label": "len",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "isna.",
+          "explanation": "NaN tak sama dengan dirinya."
+        },
+        {
+          "q": "np.nan == np.nan bernilai?",
+          "code": null,
+          "options": [
+            {
+              "label": "False",
+              "description": ""
+            },
+            {
+              "label": "True",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "False.",
+          "explanation": "Selalu salah."
+        },
+        {
+          "q": "Mean pandas terhadap NaN?",
+          "code": null,
+          "options": [
+            {
+              "label": "Melewati NaN",
+              "description": ""
+            },
+            {
+              "label": "Menghasilkan NaN",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Menghitung nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lewati.",
+          "explanation": "skipna True."
+        },
+        {
+          "q": "df.isna().sum() menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hilang per kolom",
+              "description": ""
+            },
+            {
+              "label": "Hilang total saja",
+              "description": ""
+            },
+            {
+              "label": "Baris lengkap",
+              "description": ""
+            },
+            {
+              "label": "Persen",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom.",
+          "explanation": "Per kolom."
+        },
+        {
+          "q": "Penanda palsu diubah dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "replace ke NaN",
+              "description": ""
+            },
+            {
+              "label": "dropna",
+              "description": ""
+            },
+            {
+              "label": "sort",
+              "description": ""
+            },
+            {
+              "label": "cut",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Replace.",
+          "explanation": "Samakan penanda."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memeriksa hilang dengan == np.nan. Lebih baik: Pakai isna atau pd.isna.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memeriksa hilang dengan == np.nan.",
+          "fix": "Pakai isna atau pd.isna."
+        },
+        {
+          "mistake": "Mengabaikan penanda palsu seperti -1 dan N/A.",
+          "fix": "Ganti dengan NaN memakai replace atau to_numeric."
+        },
+        {
+          "mistake": "Mengira rata-rata memakai seluruh baris.",
+          "fix": "Agregasi melewati NaN dan penyebutnya berkurang."
+        }
+      ],
+      "summary": [
+        "NaN menandai nilai hilang dan isna memetakannya.",
+        "Perbandingan dengan NaN selalu salah.",
+        "Agregasi melewati NaN secara bawaan.",
+        "Waspadai penanda hilang yang menyamar."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Mendeteksi nilai hilang"
+          },
+          {
+            "type": "text",
+            "source": "Isna menghasilkan tabel boolean. Sum menghitung hilang per kolom, dan mean memberi proporsinya."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nprint(df.isna().sum().to_dict())\nprint(df.notna().sum().to_dict())\nprint(df['umur'].isna().tolist())\nprint(df.isna().any(axis=1).tolist())\nprint(df.isna().sum(axis=1).tolist())\nprint(df.isna().mean().round(2).to_dict())"
+          },
+          {
+            "type": "text",
+            "source": "Agregasi pandas melewati NaN secara bawaan. Perbandingan langsung dengan NaN selalu salah, jadi pakai isna."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nprint(df['umur'].mean(), df['umur'].sum(), df['umur'].count())\nprint(df['umur'].sum(skipna=False))\nprint(len(df), df['umur'].size, df['umur'].count())\nprint(np.nan == np.nan)\nprint((df['umur'] == np.nan).tolist())\nprint(df['umur'].isna().sum() / len(df))"
+          },
+          {
+            "type": "text",
+            "source": "To_numeric dengan coerce dan replace mengubah penanda palsu menjadi NaN. Read_csv mengenali NA dan sel kosong secara bawaan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ns = pd.Series(['10', 'N/A', '30', '-', ''])\nprint(pd.to_numeric(s, errors='coerce').tolist())\nt = pd.Series([5, -1, 7, -1, 9])\nprint(t.replace(-1, np.nan).tolist())\nprint(t.replace(-1, np.nan).isna().sum())\nprint(pd.read_csv(__import__('io').StringIO('a,b\\n1,NA\\n2,\\n3,x'))['b'].isna().tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-05-2",
+      "title": "Membuang dan mengisi nilai hilang",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membuang baris atau kolom dengan dropna",
+        "Mengisi nilai dengan fillna memakai konstanta, rata-rata, atau median",
+        "Memilih strategi menurut tipe kolom",
+        "Menyadari efek samping tiap strategi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dua tindakan utama",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua tindakan utama\n\nSetelah menemukan nilai hilang, ada dua tindakan utama: membuang atau mengisi. Membuang sederhana tetapi mengurangi data dan dapat membiaskan. Mengisi mempertahankan baris tetapi menyuntikkan asumsi. Tidak ada jawaban universal. Pilihan bergantung pada banyaknya hilang, tipe kolom, dan tujuan analisis. Pelajaran ini menunjukkan perintah dan konsekuensinya."
+            },
+            {
+              "type": "text",
+              "markdown": "## dropna\n\nMetode `dropna()` membuang semua baris yang memiliki nilai hilang. Argumen `subset` membatasi pemeriksaan pada kolom tertentu, `how='all'` membuang hanya baris yang seluruhnya kosong, dan `thresh=n` mempertahankan baris yang memiliki sekurang-kurangnya n nilai terisi. Dengan `axis=1`, ia membuang kolom, bukan baris. Metode ini mengembalikan tabel baru dan tidak mengubah asalnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "dropna.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nprint(len(df.dropna()), df.dropna()['nama'].tolist())\nprint(df.dropna(subset=['gaji'])['nama'].tolist())\nprint(df.dropna(how='all').shape)\nprint(df.dropna(thresh=3)['nama'].tolist())\nprint(df.dropna(thresh=4)['nama'].tolist())\nprint(df.dropna(axis=1).columns.tolist())\nprint(df.shape)",
+              "expected_output_note": "2 ['Ani', 'Eka']\n['Ani', 'Budi', 'Dedi', 'Eka']\n(5, 4)\n['Ani', 'Budi', 'Dedi', 'Eka']\n['Ani', 'Eka']\n['nama']\n(5, 4)",
+              "explanation": "Dropna memiliki subset, how, thresh, dan axis. Tabel asal tidak berubah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan membuang\n\nMembuang cocok bila hilang sedikit dan acak, atau bila nilai yang dibutuhkan model benar-benar tidak ada, misalnya target. Waspadai membuang terlalu banyak: bila dropna tanpa argumen menyisakan dua dari lima baris, Anda kehilangan enam puluh persen data. Gunakan `subset` agar hanya kolom yang relevan menentukan pembuangan, bukan setiap kolom."
+            },
+            {
+              "type": "text",
+              "markdown": "## fillna dengan konstanta\n\nMetode `fillna(nilai)` mengganti NaN dengan nilai tertentu. Untuk teks, nilai seperti `'Tidak diketahui'` menjaga baris sekaligus menandai ketiadaan data sebagai kategori sendiri. Untuk angka, nol hanya sah bila nol memang berarti tidak ada, misalnya jumlah pembelian. Mengisi umur dengan nol jelas salah dan merusak rata-rata."
+            },
+            {
+              "type": "text",
+              "markdown": "## Isi dengan statistik\n\nUntuk kolom angka, pengganti umum adalah rata-rata atau median. Median lebih tahan terhadap pencilan sehingga lebih aman untuk data miring seperti gaji. Untuk kategori, gunakan modus, yaitu nilai paling sering. Hitung statistik hanya dari data latih agar tidak terjadi kebocoran informasi saat membangun model prediksi."
+            },
+            {
+              "type": "code_example",
+              "filename": "fillna.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nprint(df['umur'].fillna(0).tolist())\nprint(df['umur'].fillna(df['umur'].mean()).tolist())\nprint(df['umur'].fillna(df['umur'].median()).tolist())\nprint(df['kota'].fillna('Tidak diketahui').tolist())\nprint(df['kota'].fillna(df['kota'].mode()[0]).tolist())\nprint(df.fillna({'umur': 0, 'kota': '?', 'gaji': df['gaji'].mean()}).values.tolist())",
+              "expected_output_note": "[25.0, 0.0, 31.0, 0.0, 28.0]\n[25.0, 28.0, 31.0, 28.0, 28.0]\n[25.0, 28.0, 31.0, 28.0, 28.0]\n['Jakarta', 'Bandung', 'Tidak diketahui', 'Jakarta', 'Medan']\n['Jakarta', 'Bandung', 'Jakarta', 'Jakarta', 'Medan']\n[['Ani', 25.0, 'Jakarta', 8.0], ['Budi', 0.0, 'Bandung', 6.5], ['Cici', 31.0, '?', 6.625], ['Dedi', 0.0, 'Jakarta', 5.0], ['Eka', 28.0, 'Medan', 7.0]]",
+              "explanation": "Fillna menerima nilai tunggal, statistik, atau dict per kolom."
+            }
+          ],
+          "quick_check": {
+            "question": "dropna secara bawaan membuang?",
+            "options": [
+              "Baris dengan hilang",
+              "Kolom dengan hilang"
+            ],
+            "answer_index": 0,
+            "explanation": "Baris.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "fillna dengan dict",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## fillna dengan dict\n\nMemberi dict ke `fillna` mengisi setiap kolom dengan nilainya sendiri dalam satu perintah, sehingga strategi berbeda per kolom tertulis rapi di satu tempat. Kolom yang tidak disebut dalam dict tidak diubah. Pendekatan ini lebih mudah ditinjau dan diuji dibanding rangkaian penugasan terpisah yang tersebar di notebook."
+            },
+            {
+              "type": "text",
+              "markdown": "## Efek pada sebaran\n\nMengisi dengan rata-rata menumpuk banyak nilai pada satu titik, sehingga simpangan baku mengecil dan korelasi melemah. Ini tampak kecil pada sepuluh persen hilang, tetapi nyata pada empat puluh persen. Bila hilang banyak, pertimbangkan metode lebih canggih seperti imputasi berbasis model, atau setidaknya tambahkan kolom penanda hilang agar model dapat belajar dari pola ketiadaan."
+            },
+            {
+              "type": "code_example",
+              "filename": "efek_isi.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ns = pd.Series([10.0, np.nan, 30.0, np.nan, 50.0])\nfilled = s.fillna(s.mean())\nprint(round(s.std(), 2), round(filled.std(), 2))\nprint(s.mean(), filled.mean())\nprint(filled.tolist())\nprint(s.isna().astype(int).tolist())",
+              "expected_output_note": "20.0 14.14\n30.0 30.0\n[10.0, 30.0, 30.0, 30.0, 50.0]\n[0, 1, 0, 1, 0]",
+              "explanation": "Isi rata-rata mempertahankan mean tetapi menyusutkan simpangan baku. Penanda hilang menyimpan informasi ketiadaan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Inplace dan penugasan ulang\n\nMetode seperti `dropna` dan `fillna` mengembalikan objek baru. Argumen `inplace=True` sudah tidak dianjurkan karena membingungkan dan tidak lebih efisien. Tulis `df = df.dropna()` atau simpan ke kolom: `df['umur'] = df['umur'].fillna(0)`. Gaya ini eksplisit, bekerja dalam rantai metode, dan menghindari peringatan salinan pada pandas."
+            }
+          ],
+          "quick_check": {
+            "question": "thresh pada dropna berarti?",
+            "options": [
+              "Maksimum hilang",
+              "Minimum nilai terisi"
+            ],
+            "answer_index": 1,
+            "explanation": "Minimum terisi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Urutan pekerjaan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Urutan pekerjaan\n\nUrutan yang sehat: deteksi hilang, putuskan strategi per kolom, terapkan, lalu verifikasi dengan menghitung hilang lagi sampai nol. Jangan lupa memeriksa dampak: bandingkan statistik sebelum dan sesudah. Bila perbedaannya besar, pikirkan ulang strategi. Catat keputusan agar orang lain memahami asal tiap angka dalam laporan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Verifikasi",
+              "markdown": "Setelah mengisi, hitung hilang lagi dan bandingkan statistik sebelum dan sesudah untuk memastikan strategi tidak merusak sebaran data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membuang kolom\n\nKolom yang hampir seluruhnya kosong jarang berguna. Bila delapan puluh persen sel sebuah kolom hilang, mengisinya berarti mengarang sebagian besar isinya. Pertimbangkan membuang kolom itu dengan `drop(columns=...)` atau `dropna(axis=1, thresh=...)`. Pastikan dulu bahwa kolom itu tidak penting secara bisnis, misalnya kolom yang hanya terisi untuk kasus langka tetapi sangat bermakna."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengisi kategori\n\nUntuk kolom kategori, ada dua pilihan utama. Pertama, mengisi dengan modus, yang mempertahankan sebaran kira-kira sama tetapi menguatkan kategori dominan. Kedua, membuat kategori khusus seperti `Tidak diketahui`, yang jujur terhadap ketiadaan data dan membiarkan model atau analis memperlakukannya terpisah. Pilihan kedua biasanya lebih aman bila alasan hilang tidak jelas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengisi tanpa kebocoran\n\nDalam pemodelan, hitung rata-rata atau median hanya dari data latih, lalu pakai angka itu untuk mengisi data latih maupun uji. Bila statistik dihitung dari seluruh data, informasi dari data uji bocor ke pelatihan dan membuat skor evaluasi terlalu optimistis. Kebiasaan ini mudah dilupakan ketika bekerja cepat di notebook, jadi tulis langkah pengisian sebagai bagian dari pipeline."
+            }
+          ],
+          "quick_check": {
+            "question": "Isi lebih tahan pencilan?",
+            "options": [
+              "Median",
+              "Rata-rata"
+            ],
+            "answer_index": 0,
+            "explanation": "Median.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-05-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `isi_nol(df, kolom)` yang mengembalikan list isi kolom itu dengan nilai hilang diganti nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef isi_nol(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isi_nol(df, 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert isi_nol(df, 'umur') == [25.0, 0.0, 31.0, 0.0, 28.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "isi_nol(df, 'gaji')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_nol(df, 'gaji') == [8.0, 6.5, 0.0, 5.0, 7.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isi_nol(df, 'nama')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_nol(df, 'nama') == ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(isi_nol(df, 'umur'))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(isi_nol(df, 'umur')) == 84.0"
+              }
+            ]
+          },
+          "hint": "fillna dengan nol lalu ubah ke list.",
+          "solution": "import pandas as pd\n\ndef isi_nol(df, kolom):\n    return df[kolom].fillna(0).tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-05-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `isi_rata(df, kolom)` yang mengisi nilai hilang kolom angka dengan rata-rata kolom itu dan mengembalikan list.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef isi_rata(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isi_rata(df, 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert isi_rata(df, 'umur') == [25.0, 28.0, 31.0, 28.0, 28.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "isi_rata(df, 'gaji')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_rata(df, 'gaji') == [8.0, 6.5, 6.625, 5.0, 7.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isi_rata(df.iloc[[0, 1]], 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_rata(df.iloc[[0, 1]], 'umur') == [25.0, 25.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(isi_rata(df, 'gaji'))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(isi_rata(df, 'gaji')) == 5"
+              }
+            ]
+          },
+          "hint": "fillna dengan mean dari kolom yang sama.",
+          "solution": "import pandas as pd\n\ndef isi_rata(df, kolom):\n    return df[kolom].fillna(df[kolom].mean()).tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-05-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `isi_kota(df, pengganti)` yang mengisi kota hilang dengan teks `pengganti` dan mengembalikan list kota.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef isi_kota(df, pengganti):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isi_kota(df, 'Tidak diketahui')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert isi_kota(df, 'Tidak diketahui') == ['Jakarta', 'Bandung', 'Tidak diketahui', 'Jakarta', 'Medan']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "isi_kota(df, '?')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_kota(df, '?')[2] == '?'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isi_kota(df.iloc[[0]], 'X')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_kota(df.iloc[[0]], 'X') == ['Jakarta']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "isi_kota(df, 'Jakarta').count('Jakarta')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_kota(df, 'Jakarta').count('Jakarta') == 3"
+              }
+            ]
+          },
+          "hint": "fillna pada kolom kota.",
+          "solution": "import pandas as pd\n\ndef isi_kota(df, pengganti):\n    return df['kota'].fillna(pengganti).tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-05-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `hapus_minimal(df, thresh)` yang membuang baris dengan kurang dari `thresh` nilai terisi dan mengembalikan list `nama` yang tersisa.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef hapus_minimal(df, thresh):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hapus_minimal(df, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert hapus_minimal(df, 4) == ['Ani', 'Eka']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hapus_minimal(df, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hapus_minimal(df, 3) == ['Ani', 'Budi', 'Dedi', 'Eka']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hapus_minimal(df, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hapus_minimal(df, 2) == ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "hapus_minimal(df, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hapus_minimal(df, 5) == []"
+              }
+            ]
+          },
+          "hint": "dropna dengan argumen thresh lalu ambil nama.",
+          "solution": "import pandas as pd\n\ndef hapus_minimal(df, thresh):\n    return df.dropna(thresh=thresh)['nama'].tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "dropna secara bawaan membuang?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris dengan hilang",
+              "description": ""
+            },
+            {
+              "label": "Kolom dengan hilang",
+              "description": ""
+            },
+            {
+              "label": "Duplikat",
+              "description": ""
+            },
+            {
+              "label": "Pencilan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baris.",
+          "explanation": "Baris."
+        },
+        {
+          "q": "thresh pada dropna berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Minimum nilai terisi",
+              "description": ""
+            },
+            {
+              "label": "Maksimum hilang",
+              "description": ""
+            },
+            {
+              "label": "Jumlah kolom",
+              "description": ""
+            },
+            {
+              "label": "Ambang rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Terisi.",
+          "explanation": "Minimum terisi."
+        },
+        {
+          "q": "Isi lebih tahan pencilan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Median",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Maksimum",
+              "description": ""
+            },
+            {
+              "label": "Jumlah",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Median.",
+          "explanation": "Median."
+        },
+        {
+          "q": "fillna dengan dict?",
+          "code": null,
+          "options": [
+            {
+              "label": "Isi per kolom",
+              "description": ""
+            },
+            {
+              "label": "Isi per baris",
+              "description": ""
+            },
+            {
+              "label": "Hapus",
+              "description": ""
+            },
+            {
+              "label": "Urutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom.",
+          "explanation": "Per kolom."
+        },
+        {
+          "q": "Isi rata-rata terhadap simpangan baku?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mengecil",
+              "description": ""
+            },
+            {
+              "label": "Membesar",
+              "description": ""
+            },
+            {
+              "label": "Tetap",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kecil.",
+          "explanation": "Menumpuk."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengisi umur dengan nol. Lebih baik: Pakai median atau rata-rata bila nol tidak bermakna.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengisi umur dengan nol.",
+          "fix": "Pakai median atau rata-rata bila nol tidak bermakna."
+        },
+        {
+          "mistake": "Membuang terlalu banyak baris dengan dropna tanpa subset.",
+          "fix": "Batasi pada kolom yang relevan dengan subset."
+        },
+        {
+          "mistake": "Memakai inplace dan lupa penugasan ulang.",
+          "fix": "Tulis df = df.dropna()."
+        }
+      ],
+      "summary": [
+        "dropna membuang baris atau kolom dengan subset, how, dan thresh.",
+        "fillna mengisi dengan konstanta, statistik, atau dict per kolom.",
+        "Setiap strategi punya efek samping pada sebaran.",
+        "Verifikasi hasil setelah menangani hilang."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Membuang dan mengisi nilai hilang"
+          },
+          {
+            "type": "text",
+            "source": "Dropna memiliki subset, how, thresh, dan axis. Tabel asal tidak berubah."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nprint(len(df.dropna()), df.dropna()['nama'].tolist())\nprint(df.dropna(subset=['gaji'])['nama'].tolist())\nprint(df.dropna(how='all').shape)\nprint(df.dropna(thresh=3)['nama'].tolist())\nprint(df.dropna(thresh=4)['nama'].tolist())\nprint(df.dropna(axis=1).columns.tolist())\nprint(df.shape)"
+          },
+          {
+            "type": "text",
+            "source": "Fillna menerima nilai tunggal, statistik, atau dict per kolom."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nprint(df['umur'].fillna(0).tolist())\nprint(df['umur'].fillna(df['umur'].mean()).tolist())\nprint(df['umur'].fillna(df['umur'].median()).tolist())\nprint(df['kota'].fillna('Tidak diketahui').tolist())\nprint(df['kota'].fillna(df['kota'].mode()[0]).tolist())\nprint(df.fillna({'umur': 0, 'kota': '?', 'gaji': df['gaji'].mean()}).values.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Isi rata-rata mempertahankan mean tetapi menyusutkan simpangan baku. Penanda hilang menyimpan informasi ketiadaan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ns = pd.Series([10.0, np.nan, 30.0, np.nan, 50.0])\nfilled = s.fillna(s.mean())\nprint(round(s.std(), 2), round(filled.std(), 2))\nprint(s.mean(), filled.mean())\nprint(filled.tolist())\nprint(s.isna().astype(int).tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-05-3",
+      "title": "Strategi isi lanjutan",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memakai ffill, bfill, dan interpolate untuk data berurutan",
+        "Menambah kolom penanda hilang",
+        "Mengisi nilai per kelompok dengan transform",
+        "Memilih strategi menurut konteks data"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Data berurutan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Data berurutan\n\nUntuk data deret waktu atau data yang urutannya bermakna, mengisi dengan rata-rata keseluruhan sering kurang tepat. Suhu pukul tiga lebih mirip suhu pukul dua daripada rata-rata setahun. Pandas menyediakan `ffill` untuk menyalin nilai sebelumnya ke depan, `bfill` untuk menyalin nilai berikutnya ke belakang, dan `interpolate` untuk mengisi dengan garis lurus di antara tetangga."
+            },
+            {
+              "type": "code_example",
+              "filename": "isi_berurutan.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nprint(df['gaji'].ffill().tolist())\nprint(df['gaji'].bfill().tolist())\nprint(df['gaji'].interpolate().tolist())\nprint(df['umur'].interpolate().tolist())\nprint(df['umur'].cumsum().tolist())\nprint(df['gaji'].where(df['gaji'] > 6).tolist())",
+              "expected_output_note": "[8.0, 6.5, 6.5, 5.0, 7.0]\n[8.0, 6.5, 5.0, 5.0, 7.0]\n[8.0, 6.5, 5.75, 5.0, 7.0]\n[25.0, 28.0, 31.0, 29.5, 28.0]\n[25.0, nan, 56.0, nan, 84.0]\n[8.0, 6.5, nan, nan, 7.0]",
+              "explanation": "Ffill menyalin ke depan, bfill ke belakang, dan interpolate menarik garis lurus. Cumsum melewati NaN tetapi mempertahankannya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hati-hati dengan urutan\n\nMetode isi berurutan mengandalkan urutan baris. Bila data belum diurutkan menurut waktu, hasilnya menyesatkan. Urutkan dulu dengan `sort_values` atau `sort_index`. Perhatikan pula bahwa ffill pada awal data tetap menyisakan NaN karena belum ada nilai sebelumnya. Tambahkan `bfill` sesudahnya bila perlu, atau gunakan argumen `limit` agar celah panjang tidak terisi sembarangan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Interpolasi\n\nMetode `interpolate` secara bawaan linear: nilai hilang diisi sepanjang garis lurus antara dua tetangga terdekat. Untuk indeks tanggal, argumen `method='time'` memperhitungkan jarak waktu sebenarnya. Interpolasi cocok untuk besaran yang berubah mulus seperti suhu, tetapi tidak cocok untuk kategori atau besaran yang melompat seperti harga barang yang berganti tiba-tiba."
+            },
+            {
+              "type": "text",
+              "markdown": "## Penanda hilang\n\nBila ketiadaan data itu sendiri informatif, simpan informasi itu sebagai kolom baru bernilai nol atau satu sebelum mengisi. Misalnya orang yang tidak mengisi gaji mungkin berbeda dari yang mengisi. Dengan kolom penanda, model dapat menangkap pola tersebut, sedangkan hanya mengisi rata-rata akan menghapus jejaknya. Penanda murah dibuat dan sering berguna."
+            },
+            {
+              "type": "code_example",
+              "filename": "penanda_hilang.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nd = df.assign(umur_hilang=df['umur'].isna().astype(int))\nprint(d['umur_hilang'].tolist())\nprint(d['umur_hilang'].sum())\nd['umur'] = d['umur'].fillna(d['umur'].median())\nprint(d['umur'].tolist())\nprint(d[['umur_hilang', 'umur']].values.tolist())",
+              "expected_output_note": "[0, 1, 0, 1, 0]\n2\n[25.0, 28.0, 31.0, 28.0, 28.0]\n[[0.0, 25.0], [1.0, 28.0], [0.0, 31.0], [1.0, 28.0], [0.0, 28.0]]",
+              "explanation": "Penanda dibuat sebelum mengisi sehingga jejak hilang tetap tersimpan."
+            }
+          ],
+          "quick_check": {
+            "question": "ffill menyalin nilai ke?",
+            "options": [
+              "Depan",
+              "Belakang"
+            ],
+            "answer_index": 0,
+            "explanation": "Maju.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Isi per kelompok",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Isi per kelompok\n\nMengisi dengan statistik global mengabaikan kelompok. Gaji tenaga senior berbeda dari magang, jadi mengisi dengan rata-rata per jabatan lebih masuk akal. Pola idiomnya adalah `df['x'].fillna(df.groupby('g')['x'].transform('mean'))`. Metode `transform` mengembalikan Series sepanjang tabel berisi statistik kelompok tiap baris, sehingga dapat dipakai langsung sebagai pengisi."
+            },
+            {
+              "type": "code_example",
+              "filename": "isi_kelompok.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\nd = pd.DataFrame({'g': ['a', 'a', 'b', 'b', 'b'], 'x': [1.0, np.nan, 10.0, np.nan, 30.0]})\nrata = d.groupby('g')['x'].transform('mean')\nprint(rata.tolist())\nprint(d['x'].fillna(rata).tolist())\nprint(d['x'].fillna(d['x'].mean()).tolist())\nprint(d.groupby('g')['x'].apply(lambda s: s.isna().sum()).to_dict())",
+              "expected_output_note": "[1.0, 1.0, 20.0, 20.0, 20.0]\n[1.0, 1.0, 10.0, 20.0, 30.0]\n[1.0, 13.666666666666666, 10.0, 13.666666666666666, 30.0]\n{'a': 1, 'b': 1}",
+              "explanation": "Transform menghasilkan statistik kelompok per baris. Hasilnya lebih masuk akal daripada rata-rata global."
+            },
+            {
+              "type": "text",
+              "markdown": "## Baris yang kelompoknya hilang\n\nIsi per kelompok gagal bila kolom kelompoknya sendiri hilang, atau bila seluruh kelompok kosong. Dalam kasus ini statistik kelompok berupa NaN dan baris tetap kosong. Tambahkan langkah cadangan dengan `fillna` statistik global sesudahnya. Selalu hitung hilang lagi di akhir untuk memastikan tidak ada sel yang terlewat oleh strategi bertingkat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Imputasi berbasis model\n\nSelain metode sederhana, ada imputasi berbasis model seperti k tetangga terdekat dan imputasi iteratif yang menebak nilai hilang dari kolom lain. Pustaka scikit-learn menyediakan `SimpleImputer`, `KNNImputer`, dan `IterativeImputer`. Metode ini lebih akurat bila hilang banyak, tetapi lebih rumit, lebih lambat, dan wajib dipasang hanya pada data latih agar tidak bocor."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih strategi\n\nPilih menurut konteks. Hilang sangat sedikit dan acak: buang. Kolom angka tanpa urutan: median. Kategori: modus atau kategori khusus. Data berurutan: ffill atau interpolasi. Ada kelompok bermakna: isi per kelompok. Ketiadaan informatif: tambah penanda. Kolom hampir kosong: buang kolomnya. Tulis alasan pilihan agar dapat ditinjau."
+            }
+          ],
+          "quick_check": {
+            "question": "interpolate bawaan?",
+            "options": [
+              "Kuadrat",
+              "Linear"
+            ],
+            "answer_index": 1,
+            "explanation": "Garis lurus.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Ringkasan modul",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah belajar mendeteksi nilai hilang, membuang dan mengisinya dengan konstanta atau statistik, serta memakai metode berurutan, penanda, dan isi per kelompok. Prinsip utamanya: pahami mengapa data hilang, pilih strategi yang sesuai konteks, verifikasi hasilnya, dan dokumentasikan keputusan. Modul berikutnya membahas groupby dan agregasi."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Simpan jejak",
+              "markdown": "Tambahkan kolom penanda hilang sebelum mengisi bila ketiadaan data mungkin informatif."
+            },
+            {
+              "type": "text",
+              "markdown": "## Batas pengisian\n\nArgumen `limit` pada `ffill`, `bfill`, dan `interpolate` membatasi berapa banyak nilai hilang berurutan yang boleh diisi. Ini berguna agar celah panjang, misalnya sensor mati sepanjang hari, tidak diisi dengan nilai usang yang menyesatkan. Celah yang melebihi batas tetap NaN dan dapat ditangani terpisah atau dilaporkan sebagai data yang tidak tersedia."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengisi data deret waktu\n\nPada deret waktu berindeks tanggal, sering lebih tepat mengisi menurut musim, misalnya rata-rata jam yang sama pada hari lain. Pendekatan ini memakai groupby pada jam atau hari dalam pekan lalu transform seperti pada isi per kelompok. Metode sederhana seperti ffill cukup untuk celah pendek, tetapi tidak menangkap pola harian yang berulang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menguji strategi isi\n\nCara jujur menilai strategi isi adalah menyembunyikan sebagian nilai yang diketahui dengan sengaja, mengisinya dengan tiap strategi, lalu membandingkan hasil dengan nilai asli memakai galat rata-rata. Strategi dengan galat terkecil pada data uji layak dipilih. Teknik ini mengganti perdebatan selera dengan bukti dan mudah dilakukan dengan beberapa baris kode."
+            }
+          ],
+          "quick_check": {
+            "question": "transform mengembalikan?",
+            "options": [
+              "Series sepanjang tabel",
+              "Satu angka"
+            ],
+            "answer_index": 0,
+            "explanation": "Per baris.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-05-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `interpolasi(s)` yang menerima list angka dengan NaN dan mengembalikan list hasil interpolasi linear.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef interpolasi(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "interpolasi([1, np.nan, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert interpolasi([1, np.nan, 3]) == [1.0, 2.0, 3.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "interpolasi(df['gaji'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interpolasi(df['gaji']) == [8.0, 6.5, 5.75, 5.0, 7.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "interpolasi([0, np.nan, np.nan, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interpolasi([0, np.nan, np.nan, 3]) == [0.0, 1.0, 2.0, 3.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "interpolasi([5, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interpolasi([5, 6]) == [5.0, 6.0]"
+              }
+            ]
+          },
+          "hint": "Ubah ke Series desimal lalu panggil interpolate.",
+          "solution": "import pandas as pd\n\ndef interpolasi(s):\n    return pd.Series(s, dtype=float).interpolate().tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-05-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `penanda_hilang(df, kolom)` yang mengembalikan list 1 untuk baris yang hilang pada kolom itu dan 0 untuk lainnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef penanda_hilang(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "penanda_hilang(df, 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert penanda_hilang(df, 'umur') == [0, 1, 0, 1, 0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "penanda_hilang(df, 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert penanda_hilang(df, 'kota') == [0, 0, 1, 0, 0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "penanda_hilang(df, 'nama')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert penanda_hilang(df, 'nama') == [0, 0, 0, 0, 0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sum(penanda_hilang(df, 'gaji'))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sum(penanda_hilang(df, 'gaji')) == 1"
+              }
+            ]
+          },
+          "hint": "isna lalu ubah ke bilangan bulat.",
+          "solution": "import pandas as pd\n\ndef penanda_hilang(df, kolom):\n    return df[kolom].isna().astype(int).tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-05-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `isi_maju(df, kolom)` yang menyalin nilai terakhir yang ada ke depan pada kolom itu dan mengembalikan list.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef isi_maju(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "isi_maju(df, 'gaji')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert isi_maju(df, 'gaji') == [8.0, 6.5, 6.5, 5.0, 7.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "isi_maju(df, 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_maju(df, 'umur') == [25.0, 25.0, 31.0, 31.0, 28.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "isi_maju(df, 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_maju(df, 'kota') == ['Jakarta', 'Bandung', 'Bandung', 'Jakarta', 'Medan']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "isi_maju(df.iloc[[1, 2]], 'gaji')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert isi_maju(df.iloc[[1, 2]], 'gaji') == [6.5, 6.5]"
+              }
+            ]
+          },
+          "hint": "ffill pada kolom yang dipilih.",
+          "solution": "import pandas as pd\n\ndef isi_maju(df, kolom):\n    return df[kolom].ffill().tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-05-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ringkas_hilang(df)` yang mengembalikan dict `{kolom: persen_hilang}` hanya untuk kolom yang memiliki hilang, dibulatkan dua desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef ringkas_hilang(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ringkas_hilang(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\nassert ringkas_hilang(df) == {'umur': 40.0, 'kota': 20.0, 'gaji': 20.0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ringkas_hilang(df.dropna())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkas_hilang(df.dropna()) == {}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ringkas_hilang(df[['nama', 'umur']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkas_hilang(df[['nama', 'umur']]) == {'umur': 40.0}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ringkas_hilang(df.iloc[:3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkas_hilang(df.iloc[:3]) == {'umur': 33.33, 'kota': 33.33, 'gaji': 33.33}"
+              }
+            ]
+          },
+          "hint": "Rata-rata isna dikali seratus, bulatkan, lalu saring yang positif.",
+          "solution": "import pandas as pd\n\ndef ringkas_hilang(df):\n    p = (df.isna().mean() * 100).round(2)\n    return p[p > 0].to_dict()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "ffill menyalin nilai ke?",
+          "code": null,
+          "options": [
+            {
+              "label": "Depan",
+              "description": ""
+            },
+            {
+              "label": "Belakang",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Depan.",
+          "explanation": "Maju."
+        },
+        {
+          "q": "interpolate bawaan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Linear",
+              "description": ""
+            },
+            {
+              "label": "Kuadrat",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Modus",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Linear.",
+          "explanation": "Garis lurus."
+        },
+        {
+          "q": "transform mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Series sepanjang tabel",
+              "description": ""
+            },
+            {
+              "label": "Satu angka",
+              "description": ""
+            },
+            {
+              "label": "Dict",
+              "description": ""
+            },
+            {
+              "label": "Tabel kecil",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Panjang sama.",
+          "explanation": "Per baris."
+        },
+        {
+          "q": "Penanda hilang dibuat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sebelum mengisi",
+              "description": ""
+            },
+            {
+              "label": "Sesudah mengisi",
+              "description": ""
+            },
+            {
+              "label": "Tak perlu",
+              "description": ""
+            },
+            {
+              "label": "Saat plot",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sebelum.",
+          "explanation": "Jejak."
+        },
+        {
+          "q": "Data deret waktu cocok dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "ffill atau interpolate",
+              "description": ""
+            },
+            {
+              "label": "Isi nol",
+              "description": ""
+            },
+            {
+              "label": "dropna saja",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Urutan.",
+          "explanation": "Berurutan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai ffill pada data yang belum terurut. Lebih baik: Urutkan dulu menurut waktu atau kunci.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai ffill pada data yang belum terurut.",
+          "fix": "Urutkan dulu menurut waktu atau kunci."
+        },
+        {
+          "mistake": "Mengisi per kelompok tanpa cadangan.",
+          "fix": "Tambahkan fillna global sesudahnya."
+        },
+        {
+          "mistake": "Mengisi tanpa menyimpan penanda.",
+          "fix": "Buat kolom penanda sebelum mengisi."
+        }
+      ],
+      "summary": [
+        "ffill, bfill, dan interpolate cocok untuk data berurutan.",
+        "Penanda hilang menyimpan jejak ketiadaan.",
+        "Isi per kelompok memakai groupby dan transform.",
+        "Pilih strategi menurut konteks dan dokumentasikan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Strategi isi lanjutan"
+          },
+          {
+            "type": "text",
+            "source": "Ffill menyalin ke depan, bfill ke belakang, dan interpolate menarik garis lurus. Cumsum melewati NaN tetapi mempertahankannya."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nprint(df['gaji'].ffill().tolist())\nprint(df['gaji'].bfill().tolist())\nprint(df['gaji'].interpolate().tolist())\nprint(df['umur'].interpolate().tolist())\nprint(df['umur'].cumsum().tolist())\nprint(df['gaji'].where(df['gaji'] > 6).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Penanda dibuat sebelum mengisi sehingga jejak hilang tetap tersimpan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi', 'Eka'],\n    'umur': [25, np.nan, 31, np.nan, 28],\n    'kota': ['Jakarta', 'Bandung', None, 'Jakarta', 'Medan'],\n    'gaji': [8.0, 6.5, np.nan, 5.0, 7.0],\n})\n\nd = df.assign(umur_hilang=df['umur'].isna().astype(int))\nprint(d['umur_hilang'].tolist())\nprint(d['umur_hilang'].sum())\nd['umur'] = d['umur'].fillna(d['umur'].median())\nprint(d['umur'].tolist())\nprint(d[['umur_hilang', 'umur']].values.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Transform menghasilkan statistik kelompok per baris. Hasilnya lebih masuk akal daripada rata-rata global."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\nd = pd.DataFrame({'g': ['a', 'a', 'b', 'b', 'b'], 'x': [1.0, np.nan, 10.0, np.nan, 30.0]})\nrata = d.groupby('g')['x'].transform('mean')\nprint(rata.tolist())\nprint(d['x'].fillna(rata).tolist())\nprint(d['x'].fillna(d['x'].mean()).tolist())\nprint(d.groupby('g')['x'].apply(lambda s: s.isna().sum()).to_dict())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

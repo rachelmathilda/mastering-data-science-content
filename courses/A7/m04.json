@@ -1,0 +1,1636 @@
+{
+  "schema_version": 2,
+  "course_id": "A7",
+  "module_no": 4,
+  "title": "Workflow analisis yang reproducible",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menjelaskan reproduksibilitas dan mengendalikan keacakan",
+    "Menyusun proyek, lingkungan, dan data yang dapat diverifikasi",
+    "Membangun pipeline yang tercatat dan dapat dijalankan ulang secukupnya"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A7-04-1",
+    "exercise_id": "A7-04-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def jumlah_stabil(angka):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A7-04-1",
+      "title": "Mengapa hasil harus bisa diulang",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan reproduksibilitas dan perbedaannya dengan replikasi",
+        "Mengendalikan keacakan dengan seed",
+        "Membagi data secara deterministik",
+        "Membuat sidik jari hasil dan memahami pengaruh urutan perhitungan desimal"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Angka yang tidak bisa dijelaskan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Angka yang tidak bisa dijelaskan\n\nBayangkan atasan bertanya bagaimana angka 12,4 persen di laporan bulan lalu dihitung, dan Anda tidak bisa menghasilkannya lagi. Skrip sudah berubah, data sudah diperbarui, dan model dilatih dengan pengacakan yang berbeda. Situasi seperti ini sangat umum, dan merusak kepercayaan pada analisis.\n\n**Reproduksibilitas** berarti orang lain, atau diri Anda enam bulan kemudian, dapat menjalankan ulang analisis dengan kode dan data yang sama dan mendapat hasil yang sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Reproduksi dan replikasi\n\nDua istilah ini sering tertukar. **Reproduksi** memakai kode dan data yang sama untuk mendapat hasil yang sama, sehingga terutama soal ketelitian teknis. **Replikasi** mengumpulkan data baru dengan metode serupa untuk melihat apakah kesimpulannya bertahan, sehingga soal kebenaran ilmiahnya.\n\nReproduksi adalah syarat minimum. Bila analisis tidak dapat direproduksi, kita bahkan tidak bisa mulai menilai apakah temuannya bisa direplikasi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Empat sumber ketidakpastian\n\nHasil yang berubah hampir selalu berasal dari empat hal. **Kode** berubah tanpa tercatat. **Data** berubah atau diperbarui diam-diam. **Lingkungan**, yaitu versi bahasa dan pustaka, berbeda antar mesin. Dan **keacakan** yang tidak dikendalikan menghasilkan angka berbeda tiap dijalankan.\n\nPelajaran ini membahas keacakan dan sidik jari hasil. Pelajaran berikutnya membahas lingkungan dan data, dan pelajaran terakhir membahas urutan langkah dan pencatatan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengendalikan keacakan dengan seed\n\nPembangkit bilangan acak komputer sebenarnya deterministik: ia menghasilkan deret yang tampak acak dari nilai awal yang disebut **seed**. Seed yang sama menghasilkan deret yang sama persis. Karena itu pengacakan, seperti pembagian data latih dan uji atau inisialisasi model, dapat diulang dengan menetapkan seed.\n\nGunakan objek `random.Random(seed)` terpisah alih-alih pembangkit global. Dengan begitu bagian kode lain yang juga memakai pengacakan tidak mengubah deret yang kita harapkan."
+            },
+            {
+              "type": "code_example",
+              "filename": "seed_acak.py",
+              "runnable": true,
+              "code": "import random\n\ndef acak_terkontrol(seed, n):\n    rng = random.Random(seed)\n    return [rng.randint(0, 100) for _ in range(n)]\n\nprint(acak_terkontrol(1, 5))\nprint(acak_terkontrol(1, 5))\nprint(acak_terkontrol(2, 5))\nprint(acak_terkontrol(1, 5) == acak_terkontrol(1, 5))",
+              "expected_output_note": "[17, 72, 97, 8, 32]\n[17, 72, 97, 8, 32]\n[7, 11, 10, 46, 21]\nTrue",
+              "explanation": "Seed yang sama menghasilkan deret yang sama persis, sedangkan seed berbeda menghasilkan deret berbeda."
+            }
+          ],
+          "quick_check": {
+            "question": "Reproduksibilitas berarti?",
+            "options": [
+              "Kode dan data sama memberi hasil sama",
+              "Data baru memberi kesimpulan sama"
+            ],
+            "answer_index": 0,
+            "explanation": "Mengulang dengan bahan sama.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Pembagian data yang bisa diulang",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pembagian data yang bisa diulang\n\nMembagi data menjadi bagian latih dan uji adalah langkah acak yang sangat sering dilakukan. Bila pembagiannya berubah tiap dijalankan, metrik model ikut berubah dan perbandingan antar eksperimen menjadi tidak adil. Tetapkan seed, acak salinan data, lalu potong pada rasio yang ditentukan.\n\nPerhatikan bahwa kita mengacak salinan, bukan data aslinya. Fungsi yang mengubah argumennya diam-diam adalah sumber bug yang sulit dilacak."
+            },
+            {
+              "type": "code_example",
+              "filename": "bagi_data.py",
+              "runnable": true,
+              "code": "import random\n\ndef bagi_data(data, rasio, seed):\n    salinan = list(data)\n    random.Random(seed).shuffle(salinan)\n    batas = int(len(salinan) * rasio)\n    return (salinan[:batas], salinan[batas:])\n\ndata = list(range(10))\nlatih, uji = bagi_data(data, 0.7, 7)\nprint(latih)\nprint(uji)\nprint(data)\nprint(bagi_data(data, 0.7, 7) == (latih, uji))",
+              "expected_output_note": "[8, 3, 1, 4, 7, 0, 9]\n[6, 2, 5]\n[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]\nTrue",
+              "explanation": "Pembagian dengan seed tetap selalu sama, dan data asli tidak berubah urutannya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Sidik jari hasil\n\nUntuk membuktikan dua hasil identik, bandingkan **sidik jari**-nya, yaitu hash dari isi hasil. Ubah hasil menjadi teks yang kanonik, misalnya JSON dengan kunci terurut, lalu hitung SHA-256. Dua hasil yang sama selalu menghasilkan sidik jari sama, dan perbedaan sekecil apa pun mengubahnya total.\n\nMengurutkan kunci penting: dua dict dengan isi sama tetapi urutan sisip berbeda harus punya sidik jari sama."
+            },
+            {
+              "type": "code_example",
+              "filename": "sidik_jari.py",
+              "runnable": true,
+              "code": "import hashlib\nimport json\n\ndef sidik_jari(obj):\n    teks = json.dumps(obj, sort_keys=True)\n    return hashlib.sha256(teks.encode('utf-8')).hexdigest()\n\na = {'rata': 12.4, 'n': 100}\nb = {'n': 100, 'rata': 12.4}\nc = {'n': 100, 'rata': 12.5}\nprint(sidik_jari(a) == sidik_jari(b))\nprint(sidik_jari(a) == sidik_jari(c))\nprint(len(sidik_jari(a)))",
+              "expected_output_note": "True\nFalse\n64",
+              "explanation": "Urutan kunci tidak memengaruhi sidik jari, tetapi nilai berbeda mengubahnya. Panjangnya selalu enam puluh empat karakter."
+            }
+          ],
+          "quick_check": {
+            "question": "Seed berfungsi?",
+            "options": [
+              "Mempercepat kode",
+              "Menetapkan deret acak yang bisa diulang"
+            ],
+            "answer_index": 1,
+            "explanation": "Nilai awal pembangkit.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Urutan perhitungan desimal",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Urutan perhitungan desimal\n\nBahkan tanpa keacakan, hasil dapat berubah halus karena aritmetika desimal tidak asosiatif: `(a + b) + c` tidak selalu sama dengan `a + (b + c)`. Bila jumlah dihitung dari data yang urutannya berubah, misalnya hasil kueri tanpa `ORDER BY` atau pemrosesan paralel, angka terakhir bisa berbeda.\n\nUntuk menjumlahkan dengan stabil, gunakan `math.fsum`, yang melacak galat pembulatan sehingga hasilnya tidak bergantung pada urutan. Alternatifnya, urutkan data sebelum menjumlahkan."
+            },
+            {
+              "type": "code_example",
+              "filename": "urutan_desimal.py",
+              "runnable": true,
+              "code": "import math\n\ndef naif(angka):\n    total = 0.0\n    for x in angka:\n        total += x\n    return total\n\na = [1e16, 1.0, -1e16]\nb = [1e16, -1e16, 1.0]\nprint(naif(a), naif(b))\nprint(math.fsum(a), math.fsum(b))",
+              "expected_output_note": "0.0 1.0\n1.0 1.0",
+              "explanation": "Penjumlahan berurutan memberi hasil berbeda tergantung urutan data, sedangkan fsum selalu memberi jawaban benar yang sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tingkat reproduksibilitas\n\nReproduksibilitas bukan semua atau tidak sama sekali. Tingkat terendah: kode ada tetapi tidak jelas cara menjalankannya. Tingkat menengah: ada instruksi, versi pustaka dicatat, dan data dapat diverifikasi. Tingkat tinggi: seluruh analisis dapat dijalankan dengan satu perintah di mesin bersih dan menghasilkan sidik jari yang sama.\n\nMulailah dari yang mudah dan naikkan bertahap. Seed, version control, dan catatan versi pustaka sudah memberi lompatan besar dengan usaha kecil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Biaya tidak mengulang\n\nAnalisis yang tidak dapat diulang mahal. Kesalahan tidak dapat dilacak, perbaikan tidak dapat diverifikasi, dan setiap pertanyaan lanjutan berarti memulai dari nol. Di dunia kerja, pemeriksa dan auditor sering meminta bukti bagaimana angka dihasilkan, dan di dunia akademik, jurnal makin mewajibkan kode dan data dibagikan.\n\nMenginvestasikan sedikit waktu di awal untuk kebiasaan reproduksibel menghemat banyak waktu di akhir."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Kebiasaan dasar",
+              "markdown": "Tetapkan seed pada setiap langkah acak, ubah hasil penting menjadi sidik jari, dan catat keduanya bersama hasilnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Sidik jari hasil dibuat dengan?",
+            "options": [
+              "Hash dari bentuk kanonik hasil",
+              "Menyalin hasil"
+            ],
+            "answer_index": 0,
+            "explanation": "SHA-256 atas JSON terurut.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A7-04-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `acak_terkontrol(seed, n)` yang mengembalikan list `n` bilangan bulat acak antara 0 dan 100 (inklusif) memakai objek `random.Random(seed)`, sehingga seed sama selalu menghasilkan list sama.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import random\n\ndef acak_terkontrol(seed, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "all(isinstance(x, int) and 0 <= x <= 100 for ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = acak_terkontrol(1, 5)\nassert len(a) == 5 and all(isinstance(x, int) and 0 <= x <= 100 for x in a)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "acak_terkontrol(1, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert a == acak_terkontrol(1, 5)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "acak_terkontrol(2, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert a != acak_terkontrol(2, 5)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "acak_terkontrol(3, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert acak_terkontrol(3, 0) == []"
+              }
+            ]
+          },
+          "hint": "Buat random.Random(seed) lokal lalu panggil randint sebanyak n.",
+          "solution": "import random\n\ndef acak_terkontrol(seed, n):\n    rng = random.Random(seed)\n    return [rng.randint(0, 100) for _ in range(n)]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-04-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bagi_data(data, rasio, seed)` yang mengacak salinan `data` dengan `random.Random(seed).shuffle`, lalu mengembalikan tuple `(latih, uji)` dengan `latih` berisi `int(len * rasio)` elemen pertama.",
+          "note": "Data asli tidak boleh berubah.",
+          "filename": "solution.py",
+          "starter_code": "import random\n\ndef bagi_data(data, rasio, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(latih)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "data = list(range(10))\nlatih, uji = bagi_data(data, 0.7, 7)\nassert len(latih) == 7 and len(uji) == 3"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sorted(latih + uji)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sorted(latih + uji) == list(range(10))"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "list(range(10))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert data == list(range(10))"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bagi_data(data, 0.7, 7)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_data(data, 0.7, 7) == (latih, uji)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "bagi_data(data, 0.7, 8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_data(data, 0.7, 8) != (latih, uji)"
+              }
+            ]
+          },
+          "hint": "Salin list, acak dengan Random(seed), lalu potong pada batas.",
+          "solution": "import random\n\ndef bagi_data(data, rasio, seed):\n    salinan = list(data)\n    random.Random(seed).shuffle(salinan)\n    batas = int(len(salinan) * rasio)\n    return (salinan[:batas], salinan[batas:])",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-04-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `sidik_jari(obj)` yang mengembalikan SHA-256 heksadesimal dari `json.dumps(obj, sort_keys=True)` yang di-encode UTF-8.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import hashlib\nimport json\n\ndef sidik_jari(obj):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(sidik_jari(a))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = {'rata': 12.4, 'n': 100}\nb = {'n': 100, 'rata': 12.4}\nc = {'n': 100, 'rata': 12.5}\nassert len(sidik_jari(a)) == 64"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sidik_jari(a)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sidik_jari(a) == sidik_jari(b)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sidik_jari(a)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sidik_jari(a) != sidik_jari(c)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sidik_jari([1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sidik_jari([1, 2]) != sidik_jari([2, 1])"
+              }
+            ]
+          },
+          "hint": "Serialisasi dengan kunci terurut lalu hash.",
+          "solution": "import hashlib\nimport json\n\ndef sidik_jari(obj):\n    teks = json.dumps(obj, sort_keys=True)\n    return hashlib.sha256(teks.encode('utf-8')).hexdigest()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-04-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `jumlah_stabil(angka)` yang menjumlahkan list bilangan desimal sehingga hasilnya tidak bergantung pada urutan elemen, memakai `math.fsum`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef jumlah_stabil(angka):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_stabil([1e16, 1.0, -1e16])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_stabil([1e16, 1.0, -1e16]) == 1.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_stabil([1e16, -1e16, 1.0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_stabil([1e16, -1e16, 1.0]) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_stabil([0.1] * 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_stabil([0.1] * 10) == 1.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_stabil([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_stabil([]) == 0.0"
+              }
+            ]
+          },
+          "hint": "Gunakan math.fsum alih-alih perulangan penjumlahan biasa.",
+          "solution": "import math\n\ndef jumlah_stabil(angka):\n    return math.fsum(angka)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Reproduksibilitas berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kode dan data sama memberi hasil sama",
+              "description": ""
+            },
+            {
+              "label": "Data baru memberi kesimpulan sama",
+              "description": ""
+            },
+            {
+              "label": "Kode lebih cepat",
+              "description": ""
+            },
+            {
+              "label": "Laporan lebih panjang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ulang.",
+          "explanation": "Mengulang dengan bahan sama."
+        },
+        {
+          "q": "Seed berfungsi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menetapkan deret acak yang bisa diulang",
+              "description": ""
+            },
+            {
+              "label": "Mempercepat kode",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan data",
+              "description": ""
+            },
+            {
+              "label": "Menyimpan hasil",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Awal.",
+          "explanation": "Nilai awal pembangkit."
+        },
+        {
+          "q": "Sidik jari hasil dibuat dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hash dari bentuk kanonik hasil",
+              "description": ""
+            },
+            {
+              "label": "Menyalin hasil",
+              "description": ""
+            },
+            {
+              "label": "Menghitung panjang",
+              "description": ""
+            },
+            {
+              "label": "Menghapus hasil",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hash.",
+          "explanation": "SHA-256 atas JSON terurut."
+        },
+        {
+          "q": "Penjumlahan desimal stabil memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "math.fsum",
+              "description": ""
+            },
+            {
+              "label": "sum biasa dengan urutan acak",
+              "description": ""
+            },
+            {
+              "label": "round",
+              "description": ""
+            },
+            {
+              "label": "int",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "fsum.",
+          "explanation": "Tidak bergantung urutan."
+        },
+        {
+          "q": "Replikasi berbeda dari reproduksi karena?",
+          "code": null,
+          "options": [
+            {
+              "label": "Memakai data baru",
+              "description": ""
+            },
+            {
+              "label": "Memakai kode lebih baru",
+              "description": ""
+            },
+            {
+              "label": "Lebih cepat",
+              "description": ""
+            },
+            {
+              "label": "Tanpa seed",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Data baru.",
+          "explanation": "Menguji kebenaran ilmiah."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai pembangkit acak global tanpa seed. Lebih baik: Gunakan random.Random(seed) lokal.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai pembangkit acak global tanpa seed.",
+          "fix": "Gunakan random.Random(seed) lokal."
+        },
+        {
+          "mistake": "Mengacak data asli di tempat.",
+          "fix": "Acak salinan agar data asli tidak berubah."
+        },
+        {
+          "mistake": "Menyimpulkan hasil sama hanya karena mirip.",
+          "fix": "Bandingkan sidik jari hasilnya."
+        }
+      ],
+      "summary": [
+        "Reproduksibilitas adalah mengulang analisis dengan kode dan data sama dan mendapat hasil sama.",
+        "Seed tetap dan pembagian data deterministik membuat keacakan bisa diulang.",
+        "Sidik jari hasil membuktikan dua hasil identik.",
+        "Urutan perhitungan desimal dapat mengubah hasil, jadi gunakan penjumlahan stabil."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Mengapa hasil harus bisa diulang"
+          },
+          {
+            "type": "text",
+            "source": "Seed yang sama menghasilkan deret yang sama persis, sedangkan seed berbeda menghasilkan deret berbeda."
+          },
+          {
+            "type": "code",
+            "source": "import random\n\ndef acak_terkontrol(seed, n):\n    rng = random.Random(seed)\n    return [rng.randint(0, 100) for _ in range(n)]\n\nprint(acak_terkontrol(1, 5))\nprint(acak_terkontrol(1, 5))\nprint(acak_terkontrol(2, 5))\nprint(acak_terkontrol(1, 5) == acak_terkontrol(1, 5))"
+          },
+          {
+            "type": "text",
+            "source": "Pembagian dengan seed tetap selalu sama, dan data asli tidak berubah urutannya."
+          },
+          {
+            "type": "code",
+            "source": "import random\n\ndef bagi_data(data, rasio, seed):\n    salinan = list(data)\n    random.Random(seed).shuffle(salinan)\n    batas = int(len(salinan) * rasio)\n    return (salinan[:batas], salinan[batas:])\n\ndata = list(range(10))\nlatih, uji = bagi_data(data, 0.7, 7)\nprint(latih)\nprint(uji)\nprint(data)\nprint(bagi_data(data, 0.7, 7) == (latih, uji))"
+          },
+          {
+            "type": "text",
+            "source": "Urutan kunci tidak memengaruhi sidik jari, tetapi nilai berbeda mengubahnya. Panjangnya selalu enam puluh empat karakter."
+          },
+          {
+            "type": "code",
+            "source": "import hashlib\nimport json\n\ndef sidik_jari(obj):\n    teks = json.dumps(obj, sort_keys=True)\n    return hashlib.sha256(teks.encode('utf-8')).hexdigest()\n\na = {'rata': 12.4, 'n': 100}\nb = {'n': 100, 'rata': 12.4}\nc = {'n': 100, 'rata': 12.5}\nprint(sidik_jari(a) == sidik_jari(b))\nprint(sidik_jari(a) == sidik_jari(c))\nprint(len(sidik_jari(a)))"
+          },
+          {
+            "type": "text",
+            "source": "Penjumlahan berurutan memberi hasil berbeda tergantung urutan data, sedangkan fsum selalu memberi jawaban benar yang sama."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef naif(angka):\n    total = 0.0\n    for x in angka:\n        total += x\n    return total\n\na = [1e16, 1.0, -1e16]\nb = [1e16, -1e16, 1.0]\nprint(naif(a), naif(b))\nprint(math.fsum(a), math.fsum(b))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A7-04-2",
+      "title": "Struktur proyek, lingkungan, dan data",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menyusun struktur folder proyek analisis yang konsisten",
+        "Mencatat dan mengunci versi pustaka dalam requirements",
+        "Memverifikasi data dengan checksum",
+        "Memisahkan konfigurasi dari kode"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Proyek yang bisa dipahami orang lain",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Proyek yang bisa dipahami orang lain\n\nOrang yang membuka proyek Anda untuk pertama kali, termasuk Anda sendiri setahun kemudian, harus segera tahu di mana data, di mana kode, dan bagaimana menjalankannya. Struktur folder yang konsisten menjawab pertanyaan itu tanpa penjelasan panjang.\n\nTidak ada struktur tunggal yang benar, tetapi pola yang umum memisahkan data mentah, kode, notebook eksplorasi, dan laporan hasil. Yang penting adalah konsistensi antar proyek."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tata letak yang umum\n\n```text\nproyek/\n  README.md\n  requirements.txt\n  .gitignore\n  data/\n    raw/\n    processed/\n  src/\n  notebooks/\n  reports/\n```\n\nFolder `data/raw` berisi data asli yang tidak pernah diubah. `data/processed` berisi hasil pembersihan yang dapat dibuat ulang dari data mentah dan kode. `src` berisi fungsi yang dipakai ulang, `notebooks` berisi eksplorasi, dan `reports` berisi keluaran akhir."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data mentah itu suci\n\nAturan paling penting: jangan pernah mengubah data mentah. Semua pembersihan dilakukan oleh kode yang membaca data mentah dan menulis hasil ke folder lain. Dengan begitu kita selalu dapat mengulang dari awal, dan orang lain dapat memeriksa setiap keputusan pembersihan yang kita ambil.\n\nBila data mentah diedit manual, tidak ada jejak apa yang berubah, dan reproduksibilitas hilang seketika."
+            },
+            {
+              "type": "code_example",
+              "filename": "cek_struktur.py",
+              "runnable": true,
+              "code": "def cek_struktur(daftar_path, wajib):\n    hilang = []\n    for nama in wajib:\n        if not any(p.startswith(nama + '/') for p in daftar_path):\n            hilang.append(nama)\n    return sorted(hilang)\n\npaths = ['data/raw/a.csv', 'src/bersih.py', 'README.md', 'notebooks/eda.ipynb']\nprint(cek_struktur(paths, ['data', 'src', 'notebooks', 'reports']))\nprint(cek_struktur(paths + ['reports/laporan.md'], ['data', 'src', 'notebooks', 'reports']))",
+              "expected_output_note": "['reports']\n[]",
+              "explanation": "Pemeriksaan sederhana menemukan folder wajib yang belum berisi apa pun."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengunci versi pustaka\n\nKode yang berjalan hari ini bisa rusak bulan depan karena pustaka diperbarui dan perilakunya berubah. Solusinya mencatat versi persis yang dipakai dalam file `requirements.txt`, dengan format `paket==versi`. Perintah `pip freeze > requirements.txt` menghasilkannya dari lingkungan aktif, dan `pip install -r requirements.txt` memulihkannya.\n\nMengunci versi dengan `==` membuat lingkungan identik di semua mesin. Paket yang ditulis tanpa versi akan mengambil yang terbaru saat itu, dan itulah sumber ketidakpastian."
+            },
+            {
+              "type": "code_example",
+              "filename": "requirements.py",
+              "runnable": true,
+              "code": "def parse_requirements(teks):\n    hasil = {}\n    for baris in teks.splitlines():\n        b = baris.strip()\n        if not b or b.startswith('#') or '==' not in b:\n            continue\n        nama, versi = b.split('==', 1)\n        hasil[nama.strip().lower()] = versi.strip()\n    return hasil\n\ndef belum_dipin(teks):\n    hasil = []\n    for baris in teks.splitlines():\n        b = baris.strip()\n        if not b or b.startswith('#') or '==' in b:\n            continue\n        hasil.append(b.lower())\n    return sorted(hasil)\n\nteks = '# lingkungan\\nPandas==2.2.1\\nnumpy==1.26.4\\nscikit-learn\\nmatplotlib==3.8.3'\nprint(parse_requirements(teks))\nprint(belum_dipin(teks))",
+              "expected_output_note": "{'pandas': '2.2.1', 'numpy': '1.26.4', 'matplotlib': '3.8.3'}\n['scikit-learn']",
+              "explanation": "Tiga paket terkunci pada versi tertentu, sedangkan scikit-learn belum dipin sehingga menjadi sumber risiko."
+            }
+          ],
+          "quick_check": {
+            "question": "Data mentah sebaiknya?",
+            "options": [
+              "Tidak pernah diubah",
+              "Diedit sesuka hati"
+            ],
+            "answer_index": 0,
+            "explanation": "Sumber kebenaran.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Lingkungan virtual",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Lingkungan virtual\n\nSetiap proyek sebaiknya punya **lingkungan virtual** sendiri agar pustakanya tidak bercampur dengan proyek lain. Perintah `python -m venv .venv` membuat satu, dan mengaktifkannya membuat `pip` memasang paket hanya di sana. Pengguna conda memakai `environment.yml` untuk tujuan yang sama.\n\nFolder `.venv` tidak dimasukkan ke version control karena besar dan bergantung mesin. Yang disimpan adalah `requirements.txt`, resep untuk membuatnya kembali."
+            },
+            {
+              "type": "text",
+              "markdown": "## Checksum data\n\nBagaimana kita tahu data yang dipakai hari ini sama dengan yang dipakai saat analisis dibuat? Hitung **checksum**, yaitu hash isi file, dan simpan di repositori. Sebelum analisis berjalan, hitung ulang dan bandingkan. Bila berbeda, data telah berubah dan hasilnya tidak boleh dipercaya begitu saja.\n\nUntuk data besar yang tidak masuk repositori, checksum adalah bukti ringan bahwa versi yang tepat sedang dipakai."
+            },
+            {
+              "type": "code_example",
+              "filename": "verifikasi_data.py",
+              "runnable": true,
+              "code": "import hashlib\n\ndef verifikasi_data(isi, harapan):\n    return hashlib.sha256(isi.encode('utf-8')).hexdigest() == harapan\n\nisi = 'id,nilai\\n1,10\\n2,20\\n'\nharapan = hashlib.sha256(isi.encode('utf-8')).hexdigest()\nprint(verifikasi_data(isi, harapan))\nprint(verifikasi_data(isi + '3,30\\n', harapan))\nprint(len(harapan))",
+              "expected_output_note": "True\nFalse\n64",
+              "explanation": "Data yang sama lolos verifikasi, dan menambah satu baris saja membuat checksum tidak cocok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memisahkan konfigurasi dari kode\n\nNilai seperti seed, rasio pembagian data, ambang batas, dan lokasi file sebaiknya tidak tertanam di tengah kode. Kumpulkan dalam satu tempat, misalnya dict konfigurasi atau file JSON, dan baca dari sana. Mengubah eksperimen cukup dengan mengubah konfigurasi, dan konfigurasi itu sendiri dapat dicatat bersama hasil.\n\nRahasia seperti kata sandi dan token tidak boleh masuk konfigurasi yang dicommit. Simpan di variabel lingkungan atau file yang masuk `.gitignore`."
+            }
+          ],
+          "quick_check": {
+            "question": "requirements.txt berfungsi?",
+            "options": [
+              "Menyimpan data",
+              "Mencatat versi pustaka"
+            ],
+            "answer_index": 1,
+            "explanation": "Resep lingkungan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "README sebagai pintu masuk",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## README sebagai pintu masuk\n\nFile README adalah halaman pertama proyek. Isinya singkat: tujuan proyek, cara memasang lingkungan, cara menjalankan analisis, dan asal data. Dengan README yang baik, rekan baru dapat menjalankan proyek dalam hitungan menit tanpa bertanya.\n\nUji README dengan cara sederhana: minta seseorang yang belum pernah melihat proyek mengikutinya dari awal. Setiap pertanyaan yang muncul menunjukkan bagian yang perlu diperjelas."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Dua larangan",
+              "markdown": "Jangan mengubah data mentah dan jangan mencommit rahasia. Data mentah dibaca saja, hasil olahan ditulis ke folder lain."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh isi README singkat\n\nTulis judul proyek, satu paragraf tujuan, daftar langkah pemasangan seperti membuat lingkungan virtual dan menjalankan pip install, perintah untuk menjalankan analisis, serta sumber dan tanggal pengambilan data. Cantumkan juga siapa yang dapat dihubungi bila ada masalah. Dokumen sependek ini sudah cukup berguna dan jauh lebih baik daripada tidak ada sama sekali."
+            },
+            {
+              "type": "text",
+              "markdown": "## Nama file yang jelas\n\nBeri nama file dengan pola yang konsisten, misalnya awalan angka untuk urutan eksekusi seperti 01_ambil.py dan 02_bersih.py. Hindari nama seperti final_revisi_baru2. Nama yang jelas membuat urutan kerja terbaca dari daftar folder saja, dan riwayat version control mencatat perubahan sehingga versi lama tidak perlu ditumpuk dalam nama file."
+            }
+          ],
+          "quick_check": {
+            "question": "Checksum data berguna untuk?",
+            "options": [
+              "Memastikan data tidak berubah",
+              "Mempercepat baca"
+            ],
+            "answer_index": 0,
+            "explanation": "Hash isi file.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A7-04-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `parse_requirements(teks)` yang mengembalikan dict `{nama_paket: versi}` dari baris berformat `paket==versi`.",
+          "note": "Abaikan baris kosong, baris komentar berawalan `#`, dan baris tanpa `==`. Nama paket diubah ke huruf kecil dan spasi di tepi dibuang.",
+          "filename": "solution.py",
+          "starter_code": "def parse_requirements(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "parse_requirements(t)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = '# x\\nPandas==2.2.1\\n\\nnumpy == 1.26.4\\nscikit-learn\\n'\nassert parse_requirements(t) == {'pandas': '2.2.1', 'numpy': '1.26.4'}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "parse_requirements('')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert parse_requirements('') == {}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "parse_requirements('# saja')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert parse_requirements('# saja') == {}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "parse_requirements('A==1\\nB==2')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert parse_requirements('A==1\\nB==2') == {'a': '1', 'b': '2'}"
+              }
+            ]
+          },
+          "hint": "Pisahkan setiap baris valid pada tanda sama dengan ganda.",
+          "solution": "def parse_requirements(teks):\n    hasil = {}\n    for baris in teks.splitlines():\n        b = baris.strip()\n        if not b or b.startswith('#') or '==' not in b:\n            continue\n        nama, versi = b.split('==', 1)\n        hasil[nama.strip().lower()] = versi.strip()\n    return hasil",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-04-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `belum_dipin(teks)` yang mengembalikan list terurut nama paket (huruf kecil) pada baris yang tidak memuat `==`, dengan mengabaikan baris kosong dan komentar berawalan `#`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def belum_dipin(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "belum_dipin(t)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = '# x\\nPandas==2.2.1\\nscikit-learn\\nSeaborn\\n\\n'\nassert belum_dipin(t) == ['scikit-learn', 'seaborn']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "belum_dipin('a==1\\nb==2')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert belum_dipin('a==1\\nb==2') == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "belum_dipin('')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert belum_dipin('') == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "belum_dipin('Zeta\\nAlfa')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert belum_dipin('Zeta\\nAlfa') == ['alfa', 'zeta']"
+              }
+            ]
+          },
+          "hint": "Kumpulkan baris valid tanpa tanda sama dengan ganda lalu urutkan.",
+          "solution": "def belum_dipin(teks):\n    hasil = []\n    for baris in teks.splitlines():\n        b = baris.strip()\n        if not b or b.startswith('#') or '==' in b:\n            continue\n        hasil.append(b.lower())\n    return sorted(hasil)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-04-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `verifikasi_data(isi, harapan)` yang mengembalikan `True` bila SHA-256 heksadesimal dari `isi` (di-encode UTF-8) sama dengan `harapan`, dan `False` bila tidak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import hashlib\n\ndef verifikasi_data(isi, harapan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import hashlib",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "verifikasi_data(isi, h)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "isi = 'id,nilai\\n1,10\\n'\nh = hashlib.sha256(isi.encode('utf-8')).hexdigest()\nassert verifikasi_data(isi, h) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "verifikasi_data(isi + 'x', h)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert verifikasi_data(isi + 'x', h) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "verifikasi_data(isi, 'salah')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert verifikasi_data(isi, 'salah') is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "verifikasi_data('', hashlib.sha256(b'').hexdi...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert verifikasi_data('', hashlib.sha256(b'').hexdigest()) is True"
+              }
+            ]
+          },
+          "hint": "Hitung hash isi lalu bandingkan dengan nilai harapan.",
+          "solution": "import hashlib\n\ndef verifikasi_data(isi, harapan):\n    return hashlib.sha256(isi.encode('utf-8')).hexdigest() == harapan",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-04-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `cek_struktur(daftar_path, wajib)` yang mengembalikan list terurut nama folder dalam `wajib` yang belum berisi file apa pun, yaitu tidak ada path di `daftar_path` yang berawalan nama itu diikuti `/`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def cek_struktur(daftar_path, wajib):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "cek_struktur(p, ['data', 'src', 'reports'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "p = ['data/raw/a.csv', 'src/x.py', 'README.md']\nassert cek_struktur(p, ['data', 'src', 'reports']) == ['reports']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "cek_struktur(p, ['data', 'src'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cek_struktur(p, ['data', 'src']) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "cek_struktur([], ['b', 'a'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cek_struktur([], ['b', 'a']) == ['a', 'b']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "cek_struktur(['datax/a.csv'], ['data'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cek_struktur(['datax/a.csv'], ['data']) == ['data']"
+              }
+            ]
+          },
+          "hint": "Periksa awalan nama dengan garis miring agar folder bernama mirip tidak salah cocok.",
+          "solution": "def cek_struktur(daftar_path, wajib):\n    hilang = []\n    for nama in wajib:\n        if not any(p.startswith(nama + '/') for p in daftar_path):\n            hilang.append(nama)\n    return sorted(hilang)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Data mentah sebaiknya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak pernah diubah",
+              "description": ""
+            },
+            {
+              "label": "Diedit sesuka hati",
+              "description": ""
+            },
+            {
+              "label": "Dihapus setelah dipakai",
+              "description": ""
+            },
+            {
+              "label": "Disimpan di notebook",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Suci.",
+          "explanation": "Sumber kebenaran."
+        },
+        {
+          "q": "requirements.txt berfungsi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mencatat versi pustaka",
+              "description": ""
+            },
+            {
+              "label": "Menyimpan data",
+              "description": ""
+            },
+            {
+              "label": "Menjalankan kode",
+              "description": ""
+            },
+            {
+              "label": "Menghapus cache",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Versi.",
+          "explanation": "Resep lingkungan."
+        },
+        {
+          "q": "Checksum data berguna untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Memastikan data tidak berubah",
+              "description": ""
+            },
+            {
+              "label": "Mempercepat baca",
+              "description": ""
+            },
+            {
+              "label": "Mengompres data",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan data",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hash.",
+          "explanation": "Hash isi file."
+        },
+        {
+          "q": "Lingkungan virtual bertujuan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Memisahkan pustaka antar proyek",
+              "description": ""
+            },
+            {
+              "label": "Mempercepat internet",
+              "description": ""
+            },
+            {
+              "label": "Menyimpan data",
+              "description": ""
+            },
+            {
+              "label": "Membuat grafik",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pisah.",
+          "explanation": "Terisolasi."
+        },
+        {
+          "q": "Yang tidak masuk version control?",
+          "code": null,
+          "options": [
+            {
+              "label": "Folder .venv dan rahasia",
+              "description": ""
+            },
+            {
+              "label": "Kode sumber",
+              "description": ""
+            },
+            {
+              "label": "README",
+              "description": ""
+            },
+            {
+              "label": "requirements.txt",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Rahasia.",
+          "explanation": "Besar dan sensitif."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengubah data mentah secara manual. Lebih baik: Baca saja, tulis hasil ke folder lain.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengubah data mentah secara manual.",
+          "fix": "Baca saja, tulis hasil ke folder lain."
+        },
+        {
+          "mistake": "Memasang pustaka tanpa mencatat versi.",
+          "fix": "Kunci dengan requirements.txt dan =="
+        },
+        {
+          "mistake": "Mencommit kata sandi di konfigurasi.",
+          "fix": "Pakai variabel lingkungan atau .gitignore."
+        }
+      ],
+      "summary": [
+        "Struktur proyek yang konsisten memudahkan pemahaman dan pengulangan.",
+        "Data mentah dibaca saja dan hasil olahan ditulis ke tempat lain.",
+        "Kunci versi pustaka dengan requirements.txt dan lingkungan virtual.",
+        "Checksum dan konfigurasi terpisah menjaga data dan eksperimen terkendali."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Struktur proyek, lingkungan, dan data"
+          },
+          {
+            "type": "text",
+            "source": "Pemeriksaan sederhana menemukan folder wajib yang belum berisi apa pun."
+          },
+          {
+            "type": "code",
+            "source": "def cek_struktur(daftar_path, wajib):\n    hilang = []\n    for nama in wajib:\n        if not any(p.startswith(nama + '/') for p in daftar_path):\n            hilang.append(nama)\n    return sorted(hilang)\n\npaths = ['data/raw/a.csv', 'src/bersih.py', 'README.md', 'notebooks/eda.ipynb']\nprint(cek_struktur(paths, ['data', 'src', 'notebooks', 'reports']))\nprint(cek_struktur(paths + ['reports/laporan.md'], ['data', 'src', 'notebooks', 'reports']))"
+          },
+          {
+            "type": "text",
+            "source": "Tiga paket terkunci pada versi tertentu, sedangkan scikit-learn belum dipin sehingga menjadi sumber risiko."
+          },
+          {
+            "type": "code",
+            "source": "def parse_requirements(teks):\n    hasil = {}\n    for baris in teks.splitlines():\n        b = baris.strip()\n        if not b or b.startswith('#') or '==' not in b:\n            continue\n        nama, versi = b.split('==', 1)\n        hasil[nama.strip().lower()] = versi.strip()\n    return hasil\n\ndef belum_dipin(teks):\n    hasil = []\n    for baris in teks.splitlines():\n        b = baris.strip()\n        if not b or b.startswith('#') or '==' in b:\n            continue\n        hasil.append(b.lower())\n    return sorted(hasil)\n\nteks = '# lingkungan\\nPandas==2.2.1\\nnumpy==1.26.4\\nscikit-learn\\nmatplotlib==3.8.3'\nprint(parse_requirements(teks))\nprint(belum_dipin(teks))"
+          },
+          {
+            "type": "text",
+            "source": "Data yang sama lolos verifikasi, dan menambah satu baris saja membuat checksum tidak cocok."
+          },
+          {
+            "type": "code",
+            "source": "import hashlib\n\ndef verifikasi_data(isi, harapan):\n    return hashlib.sha256(isi.encode('utf-8')).hexdigest() == harapan\n\nisi = 'id,nilai\\n1,10\\n2,20\\n'\nharapan = hashlib.sha256(isi.encode('utf-8')).hexdigest()\nprint(verifikasi_data(isi, harapan))\nprint(verifikasi_data(isi + '3,30\\n', harapan))\nprint(len(harapan))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A7-04-3",
+      "title": "Pipeline, pencatatan run, dan notebook yang bersih",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengurutkan langkah analisis berdasarkan ketergantungan",
+        "Menentukan langkah yang perlu dijalankan ulang saat sesuatu berubah",
+        "Mencatat parameter, data, dan versi kode pada setiap run",
+        "Membersihkan notebook sebelum dicommit"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Analisis sebagai rangkaian langkah",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Analisis sebagai rangkaian langkah\n\nAnalisis nyata jarang satu skrip raksasa. Ia terdiri dari langkah-langkah: ambil data, bersihkan, bangun fitur, latih model, buat laporan. Tiap langkah menghasilkan keluaran yang dipakai langkah berikutnya. Memandang analisis sebagai **pipeline** membuat tiap bagian dapat diuji dan dijalankan ulang secara terpisah.\n\nPipeline yang baik menyatakan ketergantungan antar langkah dengan jelas, sehingga siapa pun tahu urutan menjalankan dan apa yang terdampak bila satu langkah berubah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Graf ketergantungan\n\nKetergantungan antar langkah membentuk graf terarah tanpa siklus. Langkah `bersih` bergantung pada `ambil`, `fitur` pada `bersih`, dan seterusnya. Urutan menjalankan yang benar adalah **urutan topologis**: setiap langkah muncul setelah semua langkah yang menjadi prasyaratnya.\n\nAlat pembangun seperti Make dan banyak pengelola alur kerja bekerja dengan prinsip ini. Kita dapat meniru intinya dalam beberapa baris Python."
+            },
+            {
+              "type": "code_example",
+              "filename": "urutan_langkah.py",
+              "runnable": true,
+              "code": "def urutan_langkah(deps):\n    sisa = {k: set(v) for k, v in deps.items()}\n    hasil = []\n    while sisa:\n        siap = sorted(k for k, v in sisa.items() if not (v - set(hasil)))\n        if not siap:\n            raise ValueError('ada siklus')\n        langkah = siap[0]\n        hasil.append(langkah)\n        del sisa[langkah]\n    return hasil\n\ndeps = {\n    'ambil': [],\n    'bersih': ['ambil'],\n    'fitur': ['bersih'],\n    'model': ['fitur'],\n    'laporan': ['model', 'bersih'],\n}\nprint(urutan_langkah(deps))\ntry:\n    urutan_langkah({'a': ['b'], 'b': ['a']})\nexcept ValueError as e:\n    print(e)",
+              "expected_output_note": "['ambil', 'bersih', 'fitur', 'model', 'laporan']\nada siklus",
+              "explanation": "Langkah diurutkan sesuai prasyaratnya, dan ketergantungan melingkar ditolak karena tidak mungkin dijalankan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menjalankan ulang secukupnya\n\nBila hanya langkah `fitur` yang berubah, tidak perlu mengambil dan membersihkan data lagi. Cukup jalankan ulang `fitur` dan semua langkah di hilirnya, yaitu yang bergantung padanya secara langsung maupun tidak langsung. Menghemat waktu ini sangat berarti pada pipeline yang berjalan berjam-jam.\n\nMenentukan himpunan langkah terdampak adalah penelusuran sederhana di sepanjang urutan topologis: langkah perlu diulang bila ia berubah atau salah satu prasyaratnya diulang."
+            },
+            {
+              "type": "code_example",
+              "filename": "perlu_dijalankan.py",
+              "runnable": true,
+              "code": "def urutan_langkah(deps):\n    sisa = {k: set(v) for k, v in deps.items()}\n    hasil = []\n    while sisa:\n        siap = sorted(k for k, v in sisa.items() if not (v - set(hasil)))\n        if not siap:\n            raise ValueError('ada siklus')\n        langkah = siap[0]\n        hasil.append(langkah)\n        del sisa[langkah]\n    return hasil\n\ndef perlu_dijalankan(deps, diubah):\n    ulang = set()\n    hasil = []\n    for langkah in urutan_langkah(deps):\n        if langkah in diubah or any(d in ulang for d in deps[langkah]):\n            ulang.add(langkah)\n            hasil.append(langkah)\n    return hasil\n\ndeps = {\n    'ambil': [],\n    'bersih': ['ambil'],\n    'fitur': ['bersih'],\n    'model': ['fitur'],\n    'laporan': ['model', 'bersih'],\n}\nprint(perlu_dijalankan(deps, {'fitur'}))\nprint(perlu_dijalankan(deps, {'laporan'}))\nprint(perlu_dijalankan(deps, {'ambil'}))",
+              "expected_output_note": "['fitur', 'model', 'laporan']\n['laporan']\n['ambil', 'bersih', 'fitur', 'model', 'laporan']",
+              "explanation": "Perubahan di hulu memicu seluruh langkah di hilirnya, sedangkan perubahan di langkah terakhir hanya menjalankan langkah itu."
+            }
+          ],
+          "quick_check": {
+            "question": "Urutan topologis berarti?",
+            "options": [
+              "Prasyarat selalu lebih dulu",
+              "Urut alfabet"
+            ],
+            "answer_index": 0,
+            "explanation": "Langkah setelah prasyaratnya.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mencatat setiap run",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mencatat setiap run\n\nSetiap kali analisis dijalankan, catat tiga hal: **parameter** yang dipakai, **sidik jari data**, dan **versi kode**, misalnya hash commit Git. Ketiganya bersama menentukan hasil. Gabungkan menjadi satu identitas run yang singkat, sehingga hasil dapat dihubungkan kembali dengan persis apa yang menghasilkannya.\n\nCatatan ini dapat berupa baris di file log, entri di basis data kecil, atau alat pelacak eksperimen. Bentuknya kurang penting dibanding kebiasaan melakukannya."
+            },
+            {
+              "type": "code_example",
+              "filename": "catat_run.py",
+              "runnable": true,
+              "code": "import hashlib\nimport json\n\ndef catat_run(params, hash_data, versi_kode):\n    isi = {'params': params, 'hash_data': hash_data, 'versi_kode': versi_kode}\n    teks = json.dumps(isi, sort_keys=True)\n    isi['id'] = hashlib.sha256(teks.encode('utf-8')).hexdigest()[:12]\n    return isi\n\na = catat_run({'seed': 42, 'rasio': 0.8}, 'h1', 'v1')\nb = catat_run({'rasio': 0.8, 'seed': 42}, 'h1', 'v1')\nc = catat_run({'seed': 43, 'rasio': 0.8}, 'h1', 'v1')\nprint(a['id'] == b['id'])\nprint(a['id'] == c['id'])\nprint(len(a['id']))\nprint(sorted(a))",
+              "expected_output_note": "True\nFalse\n12\n['hash_data', 'id', 'params', 'versi_kode']",
+              "explanation": "Run dengan masukan sama punya identitas sama walau urutan parameter berbeda, dan mengubah seed menghasilkan identitas baru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Notebook dan version control\n\nNotebook Jupyter nyaman untuk eksplorasi, tetapi kurang ramah version control. File `.ipynb` adalah JSON yang menyimpan kode, keluaran, gambar, dan nomor eksekusi. Setiap kali sel dijalankan ulang, nomor eksekusi dan keluaran berubah sehingga diff dipenuhi kebisingan walau kodenya tidak berubah.\n\nPraktik yang disarankan: bersihkan keluaran sebelum commit, dan pindahkan logika yang matang ke modul `.py` yang diimpor notebook, sehingga diff kode bersih dan dapat diuji."
+            },
+            {
+              "type": "code_example",
+              "filename": "bersihkan_notebook.py",
+              "runnable": true,
+              "code": "import copy\n\ndef bersihkan_notebook(nb):\n    baru = copy.deepcopy(nb)\n    for sel in baru['cells']:\n        if sel['cell_type'] == 'code':\n            sel['outputs'] = []\n            sel['execution_count'] = None\n    return baru\n\nnb = {'cells': [\n    {'cell_type': 'markdown', 'source': 'Judul'},\n    {'cell_type': 'code', 'source': 'print(1)', 'outputs': ['1'], 'execution_count': 5},\n]}\nbersih = bersihkan_notebook(nb)\nprint(bersih['cells'][1]['outputs'], bersih['cells'][1]['execution_count'])\nprint(nb['cells'][1]['outputs'], nb['cells'][1]['execution_count'])\nprint(bersih['cells'][0] == nb['cells'][0])",
+              "expected_output_note": "[] None\n['1'] 5\nTrue",
+              "explanation": "Keluaran dan nomor eksekusi dibuang pada salinan, notebook asli tidak berubah, dan sel teks dibiarkan utuh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Satu perintah dari awal sampai akhir\n\nTujuan akhir reproduksibilitas adalah satu perintah yang menjalankan seluruh analisis di mesin bersih: pasang lingkungan, verifikasi data, jalankan pipeline, hasilkan laporan. Bila perintah itu ada dan berhasil dijalankan orang lain, proyek Anda dapat dipercaya.\n\nTidak perlu langsung sempurna. Mulailah dengan skrip `jalankan_semua` sederhana yang memanggil langkah-langkah berurutan, lalu perbaiki seiring waktu."
+            }
+          ],
+          "quick_check": {
+            "question": "Langkah hilir adalah?",
+            "options": [
+              "Langkah pertama",
+              "Yang bergantung pada langkah berubah"
+            ],
+            "answer_index": 1,
+            "explanation": "Terdampak.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Ringkasan course",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ringkasan course\n\nAnda telah belajar bahwa version control mencatat riwayat, cabang memungkinkan kerja paralel, merge dan konflik menyatukannya, dan remote menghubungkan tim. Pada modul terakhir ini Anda melihat bagaimana semua itu bermuara pada analisis yang dapat diulang: seed, sidik jari, lingkungan terkunci, data terverifikasi, pipeline jelas, dan catatan run.\n\nKebiasaan ini tidak hanya melindungi hasil Anda, tetapi juga membuat Anda lebih cepat dan lebih percaya diri dalam setiap proyek data berikutnya."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Catatan run",
+              "markdown": "Catat parameter, sidik jari data, dan versi kode untuk setiap run penting. Ketiganya menjelaskan hasil sepenuhnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menguji tiap langkah\n\nKarena setiap langkah adalah fungsi dengan masukan dan keluaran jelas, ia dapat diuji terpisah dengan contoh kecil. Uji bahwa pembersihan membuang baris rusak, bahwa fitur memiliki kolom yang diharapkan, dan bahwa metrik berada dalam rentang wajar. Pengujian otomatis menangkap kesalahan sebelum sampai ke laporan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menyimpan keluaran perantara\n\nSimpan keluaran tiap langkah ke folder processed bersama sidik jarinya. Bila sidik jari masukan tidak berubah sejak run terakhir, langkah dapat dilewati dan hasil lama dipakai ulang. Teknik caching ini menghemat waktu dan sekaligus memberi bukti bahwa hasil lama masih sah untuk masukan yang sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca log run\n\nLog run yang baik dapat dijawab dengan tiga pertanyaan: apa yang dijalankan, dengan apa, dan hasilnya apa. Dengan identitas run, Anda dapat menemukan eksperimen yang menghasilkan metrik terbaik dan mengulangnya persis. Tanpa log, eksperimen terbaik sering hilang karena tidak ada yang ingat parameternya."
+            }
+          ],
+          "quick_check": {
+            "question": "Identitas run mencakup?",
+            "options": [
+              "Parameter, data, dan versi kode",
+              "Hanya nama file"
+            ],
+            "answer_index": 0,
+            "explanation": "Tiga penentu hasil.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A7-04-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `urutan_langkah(deps)` yang menerima dict `{langkah: [prasyarat, ...]}` dan mengembalikan list urutan topologis.",
+          "note": "Bila beberapa langkah siap sekaligus, pilih yang paling awal secara alfabet. Bila ada siklus, lemparkan `ValueError`.",
+          "filename": "solution.py",
+          "starter_code": "def urutan_langkah(deps):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "urutan_langkah(deps)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "deps = {\n    'ambil': [],\n    'bersih': ['ambil'],\n    'fitur': ['bersih'],\n    'model': ['fitur'],\n    'laporan': ['model', 'bersih'],\n}\nassert urutan_langkah(deps) == ['ambil', 'bersih', 'fitur', 'model', 'laporan']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "urutan_langkah({'b': [], 'a': []})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert urutan_langkah({'b': [], 'a': []}) == ['a', 'b']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "urutan_langkah({'x': ['y'], 'y': []})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert urutan_langkah({'x': ['y'], 'y': []}) == ['y', 'x']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "try:\n    urutan_langkah({'a': ['b'], 'b': ['a']})\n    ditolak = False\nexcept ValueError:\n    ditolak = True\nassert ditolak is True"
+              }
+            ]
+          },
+          "hint": "Ambil langkah yang semua prasyaratnya sudah selesai, paling awal secara alfabet, berulang.",
+          "solution": "def urutan_langkah(deps):\n    sisa = {k: set(v) for k, v in deps.items()}\n    hasil = []\n    while sisa:\n        siap = sorted(k for k, v in sisa.items() if not (v - set(hasil)))\n        if not siap:\n            raise ValueError('ada siklus')\n        langkah = siap[0]\n        hasil.append(langkah)\n        del sisa[langkah]\n    return hasil",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-04-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `perlu_dijalankan(deps, diubah)` yang mengembalikan list langkah (dalam urutan topologis alfabetis seperti `urutan_langkah`) yang harus dijalankan ulang bila himpunan langkah `diubah` berubah: langkah itu sendiri dan semua langkah yang bergantung padanya, langsung maupun tidak langsung.",
+          "note": "Fungsi `urutan_langkah` sudah tersedia.",
+          "filename": "solution.py",
+          "starter_code": "def urutan_langkah(deps):\n    sisa = {k: set(v) for k, v in deps.items()}\n    hasil = []\n    while sisa:\n        siap = sorted(k for k, v in sisa.items() if not (v - set(hasil)))\n        if not siap:\n            raise ValueError('ada siklus')\n        langkah = siap[0]\n        hasil.append(langkah)\n        del sisa[langkah]\n    return hasil\n\ndef perlu_dijalankan(deps, diubah):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "perlu_dijalankan(deps, {'fitur'})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "deps = {\n    'ambil': [],\n    'bersih': ['ambil'],\n    'fitur': ['bersih'],\n    'model': ['fitur'],\n    'laporan': ['model', 'bersih'],\n}\nassert perlu_dijalankan(deps, {'fitur'}) == ['fitur', 'model', 'laporan']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "perlu_dijalankan(deps, {'laporan'})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert perlu_dijalankan(deps, {'laporan'}) == ['laporan']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "perlu_dijalankan(deps, {'ambil'})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert perlu_dijalankan(deps, {'ambil'}) == ['ambil', 'bersih', 'fitur', 'model', 'laporan']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "perlu_dijalankan(deps, set())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert perlu_dijalankan(deps, set()) == []"
+              }
+            ]
+          },
+          "hint": "Telusuri urutan topologis dan tandai langkah yang berubah atau yang prasyaratnya ditandai.",
+          "solution": "def urutan_langkah(deps):\n    sisa = {k: set(v) for k, v in deps.items()}\n    hasil = []\n    while sisa:\n        siap = sorted(k for k, v in sisa.items() if not (v - set(hasil)))\n        if not siap:\n            raise ValueError('ada siklus')\n        langkah = siap[0]\n        hasil.append(langkah)\n        del sisa[langkah]\n    return hasil\n\n\ndef perlu_dijalankan(deps, diubah):\n    ulang = set()\n    hasil = []\n    for langkah in urutan_langkah(deps):\n        if langkah in diubah or any(d in ulang for d in deps[langkah]):\n            ulang.add(langkah)\n            hasil.append(langkah)\n    return hasil",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-04-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `catat_run(params, hash_data, versi_kode)` yang mengembalikan dict berkunci `params`, `hash_data`, `versi_kode`, dan `id`.",
+          "note": "Nilai `id` adalah 12 karakter pertama SHA-256 heksadesimal dari `json.dumps` dict tiga kunci pertama dengan `sort_keys=True` (di-encode UTF-8).",
+          "filename": "solution.py",
+          "starter_code": "import hashlib\nimport json\n\ndef catat_run(params, hash_data, versi_kode):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "set(a)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = catat_run({'seed': 42, 'rasio': 0.8}, 'h1', 'v1')\nb = catat_run({'rasio': 0.8, 'seed': 42}, 'h1', 'v1')\nc = catat_run({'seed': 43, 'rasio': 0.8}, 'h1', 'v1')\nassert set(a) == {'params', 'hash_data', 'versi_kode', 'id'}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "len(a['id'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(a['id']) == 12"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert a['id'] == b['id']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert a['id'] != c['id']"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "catat_run({}, 'h1', 'v1')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert catat_run({}, 'h1', 'v1')['id'] != catat_run({}, 'h2', 'v1')['id']"
+              }
+            ]
+          },
+          "hint": "Hash dict tiga kunci dengan kunci terurut lalu ambil dua belas karakter pertama.",
+          "solution": "import hashlib\nimport json\n\ndef catat_run(params, hash_data, versi_kode):\n    isi = {'params': params, 'hash_data': hash_data, 'versi_kode': versi_kode}\n    teks = json.dumps(isi, sort_keys=True)\n    isi['id'] = hashlib.sha256(teks.encode('utf-8')).hexdigest()[:12]\n    return isi",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-04-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `bersihkan_notebook(nb)` yang mengembalikan salinan notebook (dict dengan list `cells`) di mana setiap sel berjenis `code` memiliki `outputs` berupa list kosong dan `execution_count` bernilai `None`.",
+          "note": "Sel lain tidak diubah dan notebook asli tidak boleh berubah.",
+          "filename": "solution.py",
+          "starter_code": "import copy\n\ndef bersihkan_notebook(nb):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "nb = {'cells': [\n    {'cell_type': 'markdown', 'source': 'Judul'},\n    {'cell_type': 'code', 'source': 'print(1)', 'outputs': ['1'], 'execution_count': 5},\n]}\nb = bersihkan_notebook(nb)\nassert b['cells'][1]['outputs'] == [] and b['cells'][1]['execution_count'] is None"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nb['cells'][1]['outputs'] == ['1'] and nb['cells'][1]['execution_count'] == 5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert b['cells'][0] == nb['cells'][0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert b['cells'][1]['source'] == 'print(1)'"
+              }
+            ]
+          },
+          "hint": "Salin dalam-dalam notebook lalu kosongkan keluaran pada sel kode.",
+          "solution": "import copy\n\ndef bersihkan_notebook(nb):\n    baru = copy.deepcopy(nb)\n    for sel in baru['cells']:\n        if sel['cell_type'] == 'code':\n            sel['outputs'] = []\n            sel['execution_count'] = None\n    return baru",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Urutan topologis berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Prasyarat selalu lebih dulu",
+              "description": ""
+            },
+            {
+              "label": "Urut alfabet",
+              "description": ""
+            },
+            {
+              "label": "Urut ukuran",
+              "description": ""
+            },
+            {
+              "label": "Urut waktu edit",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Prasyarat.",
+          "explanation": "Langkah setelah prasyaratnya."
+        },
+        {
+          "q": "Langkah hilir adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Yang bergantung pada langkah berubah",
+              "description": ""
+            },
+            {
+              "label": "Langkah pertama",
+              "description": ""
+            },
+            {
+              "label": "Langkah paling lama",
+              "description": ""
+            },
+            {
+              "label": "Langkah gagal",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bergantung.",
+          "explanation": "Terdampak."
+        },
+        {
+          "q": "Identitas run mencakup?",
+          "code": null,
+          "options": [
+            {
+              "label": "Parameter, data, dan versi kode",
+              "description": ""
+            },
+            {
+              "label": "Hanya nama file",
+              "description": ""
+            },
+            {
+              "label": "Hanya waktu",
+              "description": ""
+            },
+            {
+              "label": "Hanya hasil",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tiga.",
+          "explanation": "Tiga penentu hasil."
+        },
+        {
+          "q": "Notebook sebaiknya sebelum commit?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dibersihkan keluarannya",
+              "description": ""
+            },
+            {
+              "label": "Ditambah keluaran",
+              "description": ""
+            },
+            {
+              "label": "Dihapus",
+              "description": ""
+            },
+            {
+              "label": "Diubah ke PDF",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bersih.",
+          "explanation": "Diff bersih."
+        },
+        {
+          "q": "Ketergantungan melingkar menyebabkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Urutan tidak mungkin dibuat",
+              "description": ""
+            },
+            {
+              "label": "Pipeline lebih cepat",
+              "description": ""
+            },
+            {
+              "label": "Data hilang",
+              "description": ""
+            },
+            {
+              "label": "Kode lebih pendek",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Siklus.",
+          "explanation": "Siklus."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menjalankan ulang seluruh pipeline untuk perubahan kecil. Lebih baik: Jalankan hanya langkah terdampak dan hilirnya.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menjalankan ulang seluruh pipeline untuk perubahan kecil.",
+          "fix": "Jalankan hanya langkah terdampak dan hilirnya."
+        },
+        {
+          "mistake": "Tidak mencatat parameter dan versi kode tiap run.",
+          "fix": "Catat identitas run lengkap."
+        },
+        {
+          "mistake": "Mencommit notebook dengan semua keluaran.",
+          "fix": "Bersihkan keluaran sebelum commit."
+        }
+      ],
+      "summary": [
+        "Pipeline menyatakan ketergantungan antar langkah dengan jelas.",
+        "Hanya langkah terdampak dan hilirnya yang perlu dijalankan ulang.",
+        "Catat parameter, sidik jari data, dan versi kode setiap run.",
+        "Bersihkan notebook dan pindahkan logika matang ke modul."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Pipeline, pencatatan run, dan notebook yang bersih"
+          },
+          {
+            "type": "text",
+            "source": "Langkah diurutkan sesuai prasyaratnya, dan ketergantungan melingkar ditolak karena tidak mungkin dijalankan."
+          },
+          {
+            "type": "code",
+            "source": "def urutan_langkah(deps):\n    sisa = {k: set(v) for k, v in deps.items()}\n    hasil = []\n    while sisa:\n        siap = sorted(k for k, v in sisa.items() if not (v - set(hasil)))\n        if not siap:\n            raise ValueError('ada siklus')\n        langkah = siap[0]\n        hasil.append(langkah)\n        del sisa[langkah]\n    return hasil\n\ndeps = {\n    'ambil': [],\n    'bersih': ['ambil'],\n    'fitur': ['bersih'],\n    'model': ['fitur'],\n    'laporan': ['model', 'bersih'],\n}\nprint(urutan_langkah(deps))\ntry:\n    urutan_langkah({'a': ['b'], 'b': ['a']})\nexcept ValueError as e:\n    print(e)"
+          },
+          {
+            "type": "text",
+            "source": "Perubahan di hulu memicu seluruh langkah di hilirnya, sedangkan perubahan di langkah terakhir hanya menjalankan langkah itu."
+          },
+          {
+            "type": "code",
+            "source": "def urutan_langkah(deps):\n    sisa = {k: set(v) for k, v in deps.items()}\n    hasil = []\n    while sisa:\n        siap = sorted(k for k, v in sisa.items() if not (v - set(hasil)))\n        if not siap:\n            raise ValueError('ada siklus')\n        langkah = siap[0]\n        hasil.append(langkah)\n        del sisa[langkah]\n    return hasil\n\ndef perlu_dijalankan(deps, diubah):\n    ulang = set()\n    hasil = []\n    for langkah in urutan_langkah(deps):\n        if langkah in diubah or any(d in ulang for d in deps[langkah]):\n            ulang.add(langkah)\n            hasil.append(langkah)\n    return hasil\n\ndeps = {\n    'ambil': [],\n    'bersih': ['ambil'],\n    'fitur': ['bersih'],\n    'model': ['fitur'],\n    'laporan': ['model', 'bersih'],\n}\nprint(perlu_dijalankan(deps, {'fitur'}))\nprint(perlu_dijalankan(deps, {'laporan'}))\nprint(perlu_dijalankan(deps, {'ambil'}))"
+          },
+          {
+            "type": "text",
+            "source": "Run dengan masukan sama punya identitas sama walau urutan parameter berbeda, dan mengubah seed menghasilkan identitas baru."
+          },
+          {
+            "type": "code",
+            "source": "import hashlib\nimport json\n\ndef catat_run(params, hash_data, versi_kode):\n    isi = {'params': params, 'hash_data': hash_data, 'versi_kode': versi_kode}\n    teks = json.dumps(isi, sort_keys=True)\n    isi['id'] = hashlib.sha256(teks.encode('utf-8')).hexdigest()[:12]\n    return isi\n\na = catat_run({'seed': 42, 'rasio': 0.8}, 'h1', 'v1')\nb = catat_run({'rasio': 0.8, 'seed': 42}, 'h1', 'v1')\nc = catat_run({'seed': 43, 'rasio': 0.8}, 'h1', 'v1')\nprint(a['id'] == b['id'])\nprint(a['id'] == c['id'])\nprint(len(a['id']))\nprint(sorted(a))"
+          },
+          {
+            "type": "text",
+            "source": "Keluaran dan nomor eksekusi dibuang pada salinan, notebook asli tidak berubah, dan sel teks dibiarkan utuh."
+          },
+          {
+            "type": "code",
+            "source": "import copy\n\ndef bersihkan_notebook(nb):\n    baru = copy.deepcopy(nb)\n    for sel in baru['cells']:\n        if sel['cell_type'] == 'code':\n            sel['outputs'] = []\n            sel['execution_count'] = None\n    return baru\n\nnb = {'cells': [\n    {'cell_type': 'markdown', 'source': 'Judul'},\n    {'cell_type': 'code', 'source': 'print(1)', 'outputs': ['1'], 'execution_count': 5},\n]}\nbersih = bersihkan_notebook(nb)\nprint(bersih['cells'][1]['outputs'], bersih['cells'][1]['execution_count'])\nprint(nb['cells'][1]['outputs'], nb['cells'][1]['execution_count'])\nprint(bersih['cells'][0] == nb['cells'][0])"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

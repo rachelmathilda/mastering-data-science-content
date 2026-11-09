@@ -1,0 +1,1648 @@
+{
+  "schema_version": 2,
+  "course_id": "B1",
+  "module_no": 1,
+  "title": "ndarray, dtype, dan shape",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Membuat array dan membaca atributnya",
+    "Memilih dan mengonversi dtype dengan sadar risikonya",
+    "Mengubah bentuk, menggabungkan, dan membedakan view dari salinan"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B1-01-1",
+    "exercise_id": "B1-01-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def jenis_hasil(daftar):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B1-01-1",
+      "title": "Mengenal ndarray",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan mengapa NumPy lebih cocok daripada list untuk data numerik",
+        "Membuat array dari list dan dengan fungsi pembuat",
+        "Membaca atribut shape, ndim, size, dan dtype",
+        "Memilih fungsi pembuat array yang tepat"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa NumPy",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa NumPy\n\nPython menyediakan list untuk menyimpan banyak nilai, tetapi list dirancang serbaguna, bukan cepat. Setiap elemen adalah objek Python lengkap dengan tipe dan penghitung referensi, dan elemen tersebar di memori. NumPy menyediakan **ndarray**, yaitu larik berdimensi banyak yang menyimpan nilai bertipe sama secara berurutan di memori. Susunan ini membuat perhitungan jauh lebih cepat dan hemat memori, dan menjadi fondasi hampir seluruh ekosistem data science Python seperti pandas, scikit-learn, dan matplotlib."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dua sifat utama\n\nNdarray punya dua sifat yang membedakannya dari list. Pertama, **homogen**: semua elemen bertipe sama, misalnya semuanya bilangan bulat atau semuanya desimal. Kedua, **berbentuk tetap**: ukurannya ditentukan saat dibuat dan menyatakan jumlah elemen pada tiap sumbu. Karena tipe dan bentuk diketahui, NumPy dapat menjalankan operasi massal dalam kode C yang dioptimalkan tanpa memeriksa tipe elemen satu per satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membuat array dari list\n\nCara paling langsung membuat array adalah `np.array` yang menerima list. List bersarang menghasilkan array berdimensi lebih tinggi: list berisi angka menjadi vektor satu dimensi, list berisi list berukuran sama menjadi matriks dua dimensi. Konvensi impor yang dipakai di seluruh dunia adalah `import numpy as np`, jadi kita akan menulis `np.` di depan semua fungsi NumPy."
+            },
+            {
+              "type": "code_example",
+              "filename": "array_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\na = np.array([[1, 2, 3], [4, 5, 6]])\nprint(a.shape)\nprint(a.ndim)\nprint(a.size)\nprint(a.dtype)\nprint(a.tolist())",
+              "expected_output_note": "(2, 3)\n2\n6\nint64\n[[1, 2, 3], [4, 5, 6]]",
+              "explanation": "Matriks dua baris tiga kolom punya shape (2, 3), dua dimensi, enam elemen, dan tipe bilangan bulat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca atribut array\n\nEmpat atribut perlu dihafal. `shape` adalah tuple jumlah elemen tiap sumbu. `ndim` adalah jumlah sumbu, sama dengan panjang shape. `size` adalah jumlah seluruh elemen, hasil kali isi shape. `dtype` adalah tipe data elemen. Bila ragu tentang bentuk data saat debugging, hampir selalu jawabannya ada pada empat atribut ini, jadi biasakan mencetaknya lebih dulu sebelum menduga-duga."
+            }
+          ],
+          "quick_check": {
+            "question": "Sifat utama ndarray?",
+            "options": [
+              "Homogen dan berbentuk tetap",
+              "Boleh campur tipe"
+            ],
+            "answer_index": 0,
+            "explanation": "Semua elemen sama tipe.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Fungsi pembuat array",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi pembuat array\n\nMenulis semua nilai dengan tangan tidak praktis. NumPy menyediakan `np.zeros` dan `np.ones` untuk array berisi nol atau satu, `np.full` untuk nilai tetap lain, `np.eye` untuk matriks identitas, `np.arange` untuk deret dengan langkah, dan `np.linspace` untuk sejumlah titik yang tersebar rata. Semuanya menerima shape atau parameter rentang, dan hasilnya langsung siap dipakai untuk perhitungan."
+            },
+            {
+              "type": "code_example",
+              "filename": "pembuat_array.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nprint(np.arange(0, 10, 3).tolist())\nprint(np.linspace(0, 1, 5).tolist())\nprint(np.eye(2).tolist())\nprint(np.full((2, 2), 7).tolist())\nprint(np.zeros(3).dtype)",
+              "expected_output_note": "[0, 3, 6, 9]\n[0.0, 0.25, 0.5, 0.75, 1.0]\n[[1.0, 0.0], [0.0, 1.0]]\n[[7, 7], [7, 7]]\nfloat64",
+              "explanation": "Arange memakai langkah, linspace memakai jumlah titik dan menyertakan ujung akhir, dan zeros menghasilkan desimal secara bawaan."
+            },
+            {
+              "type": "text",
+              "markdown": "## arange dan linspace\n\nDua fungsi ini sering tertukar. `np.arange(awal, akhir, langkah)` mengikuti aturan `range`: ujung akhir tidak termasuk dan Anda mengatur selisih antar elemen. `np.linspace(awal, akhir, n)` menyertakan ujung akhir dan Anda mengatur jumlah titik, selisihnya dihitung otomatis. Gunakan arange untuk indeks dan hitungan bulat, dan linspace untuk sumbu grafik atau grid nilai kontinu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tipe yang dipilih otomatis\n\nSaat membuat array dari list, NumPy memilih tipe yang dapat menampung semua elemen. List bilangan bulat menjadi `int64`, campuran bulat dan desimal menjadi `float64`, dan campuran angka dengan teks menjadi tipe teks sehingga angkanya berubah jadi string. Perilaku terakhir sering mengejutkan, karena satu elemen teks cukup untuk mengubah seluruh array dan merusak perhitungan berikutnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "tipe_otomatis.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nprint(np.array([1, 2, 3]).dtype)\nprint(np.array([1, 2.5]).dtype)\nprint(np.array([True, 2]).dtype)\nprint(np.array([1, 'a']).dtype.kind)",
+              "expected_output_note": "int64\nfloat64\nint64\nU",
+              "explanation": "Tipe hasil mengikuti elemen paling umum. Campuran angka dan teks berakhir sebagai tipe teks berkode U."
+            }
+          ],
+          "quick_check": {
+            "question": "Shape (2, 3) berarti?",
+            "options": [
+              "Tiga baris dua kolom",
+              "Dua baris tiga kolom"
+            ],
+            "answer_index": 1,
+            "explanation": "Urutan sumbu.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Array dan list tidak sama",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Array dan list tidak sama\n\nOperator pada array bekerja elemen demi elemen, sedangkan pada list bekerja pada seluruh objek. Menambah dua list menyambungkannya, tetapi menambah dua array menjumlahkan pasangan elemen. Mengalikan list dengan 2 menggandakan isinya, sedangkan mengalikan array dengan 2 menggandakan tiap nilai. Perbedaan ini adalah alasan utama NumPy terasa seperti matematika, dan dibahas penuh pada modul operasi vectorized."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan memilih NumPy\n\nGunakan ndarray bila data numerik dalam jumlah besar dan diproses dengan rumus yang sama pada semua elemen, seperti sensor, piksel gambar, atau fitur model. Tetap pakai list bila isi data beragam tipe atau jumlahnya kecil dan sering bertambah. Menambah elemen ke array berarti membuat array baru, sehingga list lebih cocok untuk pengumpulan data yang terus tumbuh."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Kebiasaan debugging",
+              "markdown": "Setiap kali menerima array dari pihak lain, cetak shape dan dtype lebih dulu. Dua atribut itu menjawab sebagian besar kebingungan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Array kosong dan ukuran nol\n\nArray boleh berukuran nol, misalnya `np.zeros(0)`, dan semua atributnya tetap valid: shape berisi nol dan size nol. Kasus ini muncul saat penyaringan tidak menyisakan data, jadi kode yang baik tidak boleh mengasumsikan array selalu berisi. Periksa size sebelum mengambil elemen pertama atau menghitung rata-rata agar program tidak gagal diam-diam."
+            }
+          ],
+          "quick_check": {
+            "question": "Size array shape (2, 3)?",
+            "options": [
+              "6",
+              "5"
+            ],
+            "answer_index": 0,
+            "explanation": "Hasil kali shape.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-01-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `info_array(a)` yang mengembalikan tuple `(shape, ndim, size, nama_dtype)` dari array `a`, dengan nama dtype berupa string.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef info_array(a):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "info_array(a)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = np.array([[1, 2, 3], [4, 5, 6]])\nassert info_array(a) == ((2, 3), 2, 6, 'int64')"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "info_array(np.zeros(4))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert info_array(np.zeros(4)) == ((4,), 1, 4, 'float64')"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "info_array(np.ones((2, 1, 3)))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert info_array(np.ones((2, 1, 3))) == ((2, 1, 3), 3, 6, 'float64')"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "info_array(np.array([True, False]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert info_array(np.array([True, False])) == ((2,), 1, 2, 'bool')"
+              }
+            ]
+          },
+          "hint": "Kembalikan atribut shape, ndim, size, dan str(dtype) dalam satu tuple.",
+          "solution": "import numpy as np\n\ndef info_array(a):\n    return (a.shape, a.ndim, a.size, str(a.dtype))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-01-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `identitas_skala(n, k)` yang mengembalikan array persegi berukuran `n` kali `n` dengan nilai `k` pada diagonal dan nol di tempat lain.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef identitas_skala(n, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "identitas_skala(2, 5).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert identitas_skala(2, 5).tolist() == [[5.0, 0.0], [0.0, 5.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "identitas_skala(3, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert identitas_skala(3, 1).shape == (3, 3)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "identitas_skala(3, 2).sum()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert identitas_skala(3, 2).sum() == 6"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "identitas_skala(1, 9).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert identitas_skala(1, 9).tolist() == [[9.0]]"
+              }
+            ]
+          },
+          "hint": "Kalikan np.eye(n) dengan k.",
+          "solution": "import numpy as np\n\ndef identitas_skala(n, k):\n    return k * np.eye(n)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-01-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `titik_seragam(a, b, n)` yang mengembalikan array berisi `n` titik berjarak sama dari `a` sampai `b` inklusif.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef titik_seragam(a, b, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "titik_seragam(0, 1, 5).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert titik_seragam(0, 1, 5).tolist() == [0.0, 0.25, 0.5, 0.75, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "titik_seragam(1, 2, 3).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert titik_seragam(1, 2, 3).tolist() == [1.0, 1.5, 2.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "titik_seragam(0, 10, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert titik_seragam(0, 10, 5).shape == (5,)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "titik_seragam(5, 5, 3).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert titik_seragam(5, 5, 3).tolist() == [5.0, 5.0, 5.0]"
+              }
+            ]
+          },
+          "hint": "linspace menyertakan ujung akhir.",
+          "solution": "import numpy as np\n\ndef titik_seragam(a, b, n):\n    return np.linspace(a, b, n)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-01-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `jenis_hasil(daftar)` yang mengembalikan nama dtype (string) dari array yang dibuat dari list `daftar` oleh NumPy.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef jenis_hasil(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jenis_hasil([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_hasil([1, 2, 3]) == 'int64'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jenis_hasil([1, 2.5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_hasil([1, 2.5]) == 'float64'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jenis_hasil([True, False])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_hasil([True, False]) == 'bool'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jenis_hasil([[1, 2], [3, 4.0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_hasil([[1, 2], [3, 4.0]]) == 'float64'"
+              }
+            ]
+          },
+          "hint": "Buat array lalu ubah dtype-nya menjadi string.",
+          "solution": "import numpy as np\n\ndef jenis_hasil(daftar):\n    return str(np.array(daftar).dtype)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Sifat utama ndarray?",
+          "code": null,
+          "options": [
+            {
+              "label": "Homogen dan berbentuk tetap",
+              "description": ""
+            },
+            {
+              "label": "Boleh campur tipe",
+              "description": ""
+            },
+            {
+              "label": "Selalu satu dimensi",
+              "description": ""
+            },
+            {
+              "label": "Hanya teks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Homogen.",
+          "explanation": "Semua elemen sama tipe."
+        },
+        {
+          "q": "Shape (2, 3) berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dua baris tiga kolom",
+              "description": ""
+            },
+            {
+              "label": "Tiga baris dua kolom",
+              "description": ""
+            },
+            {
+              "label": "Enam dimensi",
+              "description": ""
+            },
+            {
+              "label": "Dua elemen",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baris dulu.",
+          "explanation": "Urutan sumbu."
+        },
+        {
+          "q": "Size array shape (2, 3)?",
+          "code": null,
+          "options": [
+            {
+              "label": "6",
+              "description": ""
+            },
+            {
+              "label": "5",
+              "description": ""
+            },
+            {
+              "label": "2",
+              "description": ""
+            },
+            {
+              "label": "3",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kalikan.",
+          "explanation": "Hasil kali shape."
+        },
+        {
+          "q": "Fungsi dengan ujung akhir termasuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "linspace",
+              "description": ""
+            },
+            {
+              "label": "arange",
+              "description": ""
+            },
+            {
+              "label": "range",
+              "description": ""
+            },
+            {
+              "label": "zeros",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Titik.",
+          "explanation": "Titik seragam inklusif."
+        },
+        {
+          "q": "np.array([1, 2.5]) bertipe?",
+          "code": null,
+          "options": [
+            {
+              "label": "float64",
+              "description": ""
+            },
+            {
+              "label": "int64",
+              "description": ""
+            },
+            {
+              "label": "bool",
+              "description": ""
+            },
+            {
+              "label": "str",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Desimal.",
+          "explanation": "Tipe paling umum."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mencampur teks dan angka dalam satu array. Lebih baik: Pisahkan, atau ubah tipe lebih dulu agar angkanya tetap numerik.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mencampur teks dan angka dalam satu array.",
+          "fix": "Pisahkan, atau ubah tipe lebih dulu agar angkanya tetap numerik."
+        },
+        {
+          "mistake": "Mengira arange menyertakan ujung akhir.",
+          "fix": "Arange tidak menyertakan, linspace menyertakan."
+        },
+        {
+          "mistake": "Menebak bentuk data.",
+          "fix": "Cetak shape dan dtype."
+        }
+      ],
+      "summary": [
+        "Ndarray homogen dan berbentuk tetap sehingga cepat.",
+        "Atribut shape, ndim, size, dan dtype menjelaskan array.",
+        "zeros, ones, full, eye, arange, dan linspace membuat array tanpa menulis nilai.",
+        "Tipe array dipilih otomatis dari elemennya."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Mengenal ndarray"
+          },
+          {
+            "type": "text",
+            "source": "Matriks dua baris tiga kolom punya shape (2, 3), dua dimensi, enam elemen, dan tipe bilangan bulat."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\na = np.array([[1, 2, 3], [4, 5, 6]])\nprint(a.shape)\nprint(a.ndim)\nprint(a.size)\nprint(a.dtype)\nprint(a.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Arange memakai langkah, linspace memakai jumlah titik dan menyertakan ujung akhir, dan zeros menghasilkan desimal secara bawaan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nprint(np.arange(0, 10, 3).tolist())\nprint(np.linspace(0, 1, 5).tolist())\nprint(np.eye(2).tolist())\nprint(np.full((2, 2), 7).tolist())\nprint(np.zeros(3).dtype)"
+          },
+          {
+            "type": "text",
+            "source": "Tipe hasil mengikuti elemen paling umum. Campuran angka dan teks berakhir sebagai tipe teks berkode U."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nprint(np.array([1, 2, 3]).dtype)\nprint(np.array([1, 2.5]).dtype)\nprint(np.array([True, 2]).dtype)\nprint(np.array([1, 'a']).dtype.kind)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B1-01-2",
+      "title": "dtype dan konversi tipe",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan dtype dan ukurannya di memori",
+        "Mengonversi tipe dengan astype dan memahami risikonya",
+        "Memahami overflow pada bilangan bulat berukuran tetap",
+        "Memprediksi tipe hasil operasi campuran"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Tipe data dalam array",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tipe data dalam array\n\nSetiap array punya satu **dtype** yang menentukan cara membaca byte di memori. Tipe bilangan bulat berbertanda ditulis `int8`, `int16`, `int32`, `int64`, dan angka di belakangnya adalah jumlah bit. Versi tak bertanda diawali `u` seperti `uint8`. Desimal memakai `float16`, `float32`, `float64`, dan nilai logika memakai `bool`. Pilihan tipe memengaruhi rentang nilai, ketelitian, dan memori yang terpakai."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memori yang terpakai\n\nAtribut `itemsize` memberi jumlah byte per elemen dan `nbytes` memberi total byte seluruh array, yaitu size dikali itemsize. Array berisi satu juta bilangan `float64` memakai delapan megabyte, sedangkan versi `float32` hanya empat megabyte. Untuk gambar dan data sensor yang besar, memilih tipe lebih kecil dapat menghemat memori secara berarti asalkan rentang dan ketelitiannya masih cukup."
+            },
+            {
+              "type": "code_example",
+              "filename": "memori_dtype.py",
+              "runnable": true,
+              "code": "import numpy as np\n\na = np.array([[1, 2, 3], [4, 5, 6]])\nprint(a.itemsize)\nprint(a.nbytes)\nb = a.astype(np.int8)\nprint(b.itemsize, b.nbytes)\nprint(np.zeros((3, 4), dtype=np.float32).nbytes)",
+              "expected_output_note": "8\n48\n1 6\n48",
+              "explanation": "Enam elemen int64 memakai empat puluh delapan byte, tetapi int8 hanya enam. Array nol float32 berukuran tiga kali empat memakai empat puluh delapan byte."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengubah tipe dengan astype\n\nMetode `astype` membuat array baru dengan tipe yang diminta, array asli tidak berubah. Mengubah bilangan bulat menjadi desimal aman. Mengubah desimal menjadi bilangan bulat memotong bagian pecahan menuju nol, bukan membulatkan, sehingga 1,9 menjadi 1 dan minus 1,9 menjadi minus 1. Bila ingin pembulatan, panggil `np.round` lebih dulu sebelum konversi."
+            },
+            {
+              "type": "code_example",
+              "filename": "astype_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([[1.5, -2.7], [3.2, 0.9]])\nprint(x.astype(int).tolist())\nprint(np.round(x).astype(int).tolist())\nprint(x.dtype)\ny = np.array([1, 2, 3]).astype(float)\nprint(y.dtype, y.tolist())",
+              "expected_output_note": "[[1, -2], [3, 0]]\n[[2, -3], [3, 1]]\nfloat64\nfloat64 [1.0, 2.0, 3.0]",
+              "explanation": "Konversi ke bilangan bulat memotong menuju nol. Pembulatan lebih dulu memberi hasil berbeda, dan array asli tetap float64."
+            }
+          ],
+          "quick_check": {
+            "question": "nbytes sama dengan?",
+            "options": [
+              "size dikali itemsize",
+              "ndim dikali size"
+            ],
+            "answer_index": 0,
+            "explanation": "Total byte.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Overflow diam-diam",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Overflow diam-diam\n\nBilangan bulat berukuran tetap punya rentang terbatas. Tipe `uint8` hanya menampung nol sampai 255 dan `int8` hanya minus 128 sampai 127. Mengonversi nilai di luar rentang tidak menimbulkan galat, nilainya melilit begitu saja seperti odometer. Itu sebabnya 300 menjadi 44 pada `uint8` dan 200 menjadi minus 56 pada `int8`. Galat senyap ini berbahaya karena hasilnya tampak wajar."
+            },
+            {
+              "type": "code_example",
+              "filename": "overflow_tipe.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nprint(np.array([300, -1, 5]).astype(np.uint8).tolist())\nprint(np.array([200]).astype(np.int8).tolist())\nprint(np.iinfo(np.uint8).max, np.iinfo(np.int8).min)\nprint(np.finfo(np.float32).eps > np.finfo(np.float64).eps)",
+              "expected_output_note": "[44, 255, 5]\n[-56]\n255 -128\nTrue",
+              "explanation": "Nilai di luar rentang melilit tanpa peringatan. Rentang dan ketelitian tiap tipe dapat ditanyakan lewat iinfo dan finfo."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa rentang\n\nFungsi `np.iinfo` melaporkan nilai minimum dan maksimum tipe bilangan bulat, dan `np.finfo` melaporkan ketelitian tipe desimal, misalnya `eps` yang merupakan selisih terkecil di dekat angka satu. Periksa rentang sebelum mengecilkan tipe. Pada pengolahan gambar, data piksel memang `uint8`, tetapi hitungan di atasnya sebaiknya dilakukan pada `float` lalu dikembalikan di akhir."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ketelitian desimal\n\nTipe `float32` menyimpan sekitar tujuh digit penting dan `float64` sekitar enam belas. Angka 0,1 tidak dapat dinyatakan persis dalam biner, dan kesalahan itu lebih besar pada `float32`. Untuk perhitungan statistik dan model, `float64` adalah pilihan aman. Gunakan `float32` bila memori atau kecepatan pada GPU lebih penting dan ketelitian tujuh digit sudah cukup."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tipe hasil operasi campuran\n\nKetika dua array bertipe berbeda dioperasikan, NumPy menaikkan ke tipe yang dapat memuat keduanya, disebut **type promotion**. `int8` dengan `int32` menghasilkan `int32`. `int64` dengan `float32` menghasilkan `float64`. `uint8` dengan `int8` menghasilkan `int16` karena tidak ada tipe 8 bit yang memuat keduanya. Fungsi `np.result_type` memberi tahu hasilnya tanpa menjalankan operasi."
+            },
+            {
+              "type": "code_example",
+              "filename": "promosi_tipe.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nprint(np.result_type('int8', 'int32'))\nprint(np.result_type('int64', 'float32'))\nprint(np.result_type('uint8', 'int8'))\nprint((np.array([1, 2, 3]) / 2).tolist())\nprint((np.array([1, 2, 3]) // 2).dtype)",
+              "expected_output_note": "int32\nfloat64\nint16\n[0.5, 1.0, 1.5]\nint64",
+              "explanation": "Promosi tipe memilih tipe terkecil yang memuat keduanya. Pembagian biasa selalu menghasilkan desimal, pembagian lantai mempertahankan bilangan bulat."
+            }
+          ],
+          "quick_check": {
+            "question": "astype(int) pada 1.9 menghasilkan?",
+            "options": [
+              "2",
+              "1"
+            ],
+            "answer_index": 1,
+            "explanation": "Memotong.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mengatur dtype saat membuat",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengatur dtype saat membuat\n\nDaripada membuat array lalu mengonversinya, tetapkan tipe sejak awal dengan argumen `dtype`, misalnya `np.zeros(3, dtype=int)` atau `np.array([1, 2], dtype=np.float32)`. Cara ini menghindari salinan sementara dan menjelaskan maksud kode. Untuk data dengan nilai kosong, ingat bahwa bilangan bulat tidak punya nilai NaN, jadi data demikian harus bertipe desimal."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Overflow senyap",
+              "markdown": "Mengonversi ke tipe yang lebih kecil dapat melilitkan nilai tanpa galat. Periksa rentang dengan iinfo sebelum mengecilkan tipe."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih tipe untuk gambar\n\nGambar berwarna biasanya `uint8` dengan nilai nol sampai 255 per kanal. Bila Anda menambah kecerahan langsung pada `uint8`, nilai di atas 255 melilit menjadi gelap. Ubah ke `float` dulu, lakukan perhitungan, batasi nilai dengan `np.clip`, lalu kembalikan ke `uint8`. Pola tiga langkah ini adalah praktik standar pengolahan citra."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tipe bool dan hitungan\n\nArray `bool` memakai satu byte per elemen dan berperan sebagai mask pada modul berikutnya. Menjumlahkan array bool menghitung jumlah True karena True dianggap satu dan False dianggap nol. Trik ini sering dipakai untuk menghitung berapa elemen memenuhi syarat tanpa perulangan, dan hasilnya bertipe bilangan bulat."
+            }
+          ],
+          "quick_check": {
+            "question": "300 sebagai uint8 menjadi?",
+            "options": [
+              "44",
+              "255"
+            ],
+            "answer_index": 0,
+            "explanation": "Melilit.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-01-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ke_uint8(daftar)` yang mengubah list bilangan menjadi array lalu mengonversinya ke `uint8` dan mengembalikannya sebagai list Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef ke_uint8(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ke_uint8([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_uint8([1, 2, 3]) == [1, 2, 3]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ke_uint8([300, -1, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_uint8([300, -1, 5]) == [44, 255, 5]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ke_uint8([256])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_uint8([256]) == [0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ke_uint8([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_uint8([]) == []"
+              }
+            ]
+          },
+          "hint": "Gunakan astype(np.uint8) lalu tolist.",
+          "solution": "import numpy as np\n\ndef ke_uint8(daftar):\n    return np.array(daftar).astype(np.uint8).tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-01-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `hemat_memori(a)` yang mengembalikan jumlah byte yang dipakai array `a` bila dikonversi ke `float32`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef hemat_memori(a):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hemat_memori(np.zeros((3, 4)))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hemat_memori(np.zeros((3, 4))) == 48"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hemat_memori(np.arange(10))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hemat_memori(np.arange(10)) == 40"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hemat_memori(np.zeros(0))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hemat_memori(np.zeros(0)) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "hemat_memori(np.ones((2, 2), dtype=np.int8))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hemat_memori(np.ones((2, 2), dtype=np.int8)) == 16"
+              }
+            ]
+          },
+          "hint": "Konversi dengan astype lalu baca nbytes.",
+          "solution": "import numpy as np\n\ndef hemat_memori(a):\n    return a.astype(np.float32).nbytes",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-01-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pangkas_int(a)` yang mengonversi array desimal `a` ke bilangan bulat dengan memotong pecahan, lalu mengembalikannya sebagai list Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef pangkas_int(a):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pangkas_int(np.array([1.9, -1.9]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkas_int(np.array([1.9, -1.9])) == [1, -1]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pangkas_int(np.array([[1.5, -2.7], [3.2, 0.9]]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkas_int(np.array([[1.5, -2.7], [3.2, 0.9]])) == [[1, -2], [3, 0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pangkas_int(np.array([2.0]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkas_int(np.array([2.0])) == [2]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pangkas_int(np.array([0.99]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkas_int(np.array([0.99])) == [0]"
+              }
+            ]
+          },
+          "hint": "astype(int) memotong menuju nol.",
+          "solution": "import numpy as np\n\ndef pangkas_int(a):\n    return a.astype(int).tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-01-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `dtype_hasil(a, b)` yang menerima dua nama tipe (string) dan mengembalikan nama tipe hasil bila keduanya dioperasikan, dalam bentuk string.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef dtype_hasil(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "dtype_hasil('int8', 'int32')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert dtype_hasil('int8', 'int32') == 'int32'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "dtype_hasil('int64', 'float32')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert dtype_hasil('int64', 'float32') == 'float64'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "dtype_hasil('uint8', 'int8')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert dtype_hasil('uint8', 'int8') == 'int16'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "dtype_hasil('float32', 'float64')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert dtype_hasil('float32', 'float64') == 'float64'"
+              }
+            ]
+          },
+          "hint": "np.result_type menerima nama tipe.",
+          "solution": "import numpy as np\n\ndef dtype_hasil(a, b):\n    return str(np.result_type(a, b))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "nbytes sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "size dikali itemsize",
+              "description": ""
+            },
+            {
+              "label": "ndim dikali size",
+              "description": ""
+            },
+            {
+              "label": "shape pertama",
+              "description": ""
+            },
+            {
+              "label": "itemsize saja",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kali.",
+          "explanation": "Total byte."
+        },
+        {
+          "q": "astype(int) pada 1.9 menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "2",
+              "description": ""
+            },
+            {
+              "label": "1.9",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Potong.",
+          "explanation": "Memotong."
+        },
+        {
+          "q": "300 sebagai uint8 menjadi?",
+          "code": null,
+          "options": [
+            {
+              "label": "44",
+              "description": ""
+            },
+            {
+              "label": "255",
+              "description": ""
+            },
+            {
+              "label": "300",
+              "description": ""
+            },
+            {
+              "label": "galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lilit.",
+          "explanation": "Melilit."
+        },
+        {
+          "q": "int64 dan float32 menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "float64",
+              "description": ""
+            },
+            {
+              "label": "int64",
+              "description": ""
+            },
+            {
+              "label": "float32",
+              "description": ""
+            },
+            {
+              "label": "int32",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Muat keduanya.",
+          "explanation": "Promosi tipe."
+        },
+        {
+          "q": "Fungsi rentang bilangan bulat?",
+          "code": null,
+          "options": [
+            {
+              "label": "np.iinfo",
+              "description": ""
+            },
+            {
+              "label": "np.finfo",
+              "description": ""
+            },
+            {
+              "label": "np.size",
+              "description": ""
+            },
+            {
+              "label": "np.shape",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "i.",
+          "explanation": "Informasi integer."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira astype membulatkan. Lebih baik: astype memotong menuju nol, bulatkan dulu dengan np.round.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira astype membulatkan.",
+          "fix": "astype memotong menuju nol, bulatkan dulu dengan np.round."
+        },
+        {
+          "mistake": "Mengecilkan tipe tanpa memeriksa rentang.",
+          "fix": "Cek dengan np.iinfo sebelum konversi."
+        },
+        {
+          "mistake": "Memakai float32 untuk statistik teliti.",
+          "fix": "Pakai float64 bila ketelitian penting."
+        }
+      ],
+      "summary": [
+        "Dtype menentukan rentang, ketelitian, dan memori array.",
+        "astype membuat salinan bertipe baru dan memotong pecahan.",
+        "Overflow melilit nilai tanpa galat.",
+        "Operasi campuran menaikkan ke tipe yang memuat keduanya."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# dtype dan konversi tipe"
+          },
+          {
+            "type": "text",
+            "source": "Enam elemen int64 memakai empat puluh delapan byte, tetapi int8 hanya enam. Array nol float32 berukuran tiga kali empat memakai empat puluh delapan byte."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\na = np.array([[1, 2, 3], [4, 5, 6]])\nprint(a.itemsize)\nprint(a.nbytes)\nb = a.astype(np.int8)\nprint(b.itemsize, b.nbytes)\nprint(np.zeros((3, 4), dtype=np.float32).nbytes)"
+          },
+          {
+            "type": "text",
+            "source": "Konversi ke bilangan bulat memotong menuju nol. Pembulatan lebih dulu memberi hasil berbeda, dan array asli tetap float64."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([[1.5, -2.7], [3.2, 0.9]])\nprint(x.astype(int).tolist())\nprint(np.round(x).astype(int).tolist())\nprint(x.dtype)\ny = np.array([1, 2, 3]).astype(float)\nprint(y.dtype, y.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Nilai di luar rentang melilit tanpa peringatan. Rentang dan ketelitian tiap tipe dapat ditanyakan lewat iinfo dan finfo."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nprint(np.array([300, -1, 5]).astype(np.uint8).tolist())\nprint(np.array([200]).astype(np.int8).tolist())\nprint(np.iinfo(np.uint8).max, np.iinfo(np.int8).min)\nprint(np.finfo(np.float32).eps > np.finfo(np.float64).eps)"
+          },
+          {
+            "type": "text",
+            "source": "Promosi tipe memilih tipe terkecil yang memuat keduanya. Pembagian biasa selalu menghasilkan desimal, pembagian lantai mempertahankan bilangan bulat."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nprint(np.result_type('int8', 'int32'))\nprint(np.result_type('int64', 'float32'))\nprint(np.result_type('uint8', 'int8'))\nprint((np.array([1, 2, 3]) / 2).tolist())\nprint((np.array([1, 2, 3]) // 2).dtype)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B1-01-3",
+      "title": "Shape, reshape, dan view",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Mengubah bentuk array dengan reshape, ravel, dan transpose",
+        "Menggabungkan array dengan concatenate, vstack, hstack, dan stack",
+        "Membedakan view dan salinan",
+        "Menghindari bug akibat view yang memodifikasi data asal"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Bentuk bisa diubah",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bentuk bisa diubah\n\nData yang sama dapat dilihat dalam bentuk berbeda: dua belas angka bisa menjadi satu baris panjang, matriks tiga kali empat, atau tumpukan dua matriks tiga kali dua. Metode `reshape` mengubah shape selama jumlah elemen tetap. Salah satu ukuran boleh ditulis minus satu, dan NumPy menghitungnya otomatis dari ukuran lain. Ini sangat berguna ketika jumlah baris tidak diketahui sebelumnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "reshape_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\na = np.arange(12)\nprint(a.reshape(3, 4).shape)\nprint(a.reshape(2, -1).shape)\nprint(a.reshape(2, 3, 2).shape)\ntry:\n    a.reshape(5, 3)\nexcept ValueError:\n    print('ditolak')",
+              "expected_output_note": "(3, 4)\n(2, 6)\n(2, 3, 2)\nditolak",
+              "explanation": "Reshape menjaga jumlah elemen. Minus satu dihitung otomatis, dan bentuk yang tidak cocok ditolak dengan ValueError."
+            },
+            {
+              "type": "text",
+              "markdown": "## Urutan pengisian\n\nSecara bawaan reshape mengisi baris demi baris, disebut urutan C. Elemen nol sampai lima pada shape dua kali tiga menjadi baris pertama nol, satu, dua dan baris kedua tiga, empat, lima. Metode `ravel` dan `flatten` melakukan kebalikannya: meratakan array menjadi satu dimensi. Bedanya, `ravel` sebisa mungkin mengembalikan view sedangkan `flatten` selalu membuat salinan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Transpose dan sumbu\n\nTranspose menukar sumbu. Untuk matriks, `a.T` menukar baris dan kolom sehingga shape dua kali tiga menjadi tiga kali dua. Untuk array tiga dimensi, `transpose` menerima urutan sumbu baru, misalnya `transpose(2, 0, 1)` memindahkan sumbu terakhir ke depan. Menambah sumbu berukuran satu dengan `np.expand_dims` atau indeks `None` sering dibutuhkan agar array cocok untuk operasi, dan akan dipakai lagi pada broadcasting."
+            },
+            {
+              "type": "code_example",
+              "filename": "transpose_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nm = np.arange(6).reshape(2, 3)\nprint(m.T.shape)\nprint(m.ravel().tolist())\nprint(m.flatten('F').tolist())\nv = np.array([1, 2, 3])\nprint(v[:, None].shape, np.expand_dims(v, 0).shape)\nprint(np.arange(24).reshape(2, 3, 4).transpose(2, 0, 1).shape)",
+              "expected_output_note": "(3, 2)\n[0, 1, 2, 3, 4, 5]\n[0, 3, 1, 4, 2, 5]\n(3, 1) (1, 3)\n(4, 2, 3)",
+              "explanation": "Transpose menukar sumbu, ravel meratakan baris demi baris, dan urutan F meratakan kolom demi kolom."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menggabungkan array\n\nUntuk menyambung array sepanjang sumbu yang ada, pakai `np.concatenate` dengan argumen `axis`. Singkatannya, `np.vstack` menumpuk secara vertikal dan `np.hstack` berdampingan secara horizontal. Untuk membuat sumbu baru, pakai `np.stack`, yang menumpuk array berbentuk sama sepanjang sumbu baru. Pada semua penggabungan, ukuran pada sumbu lain harus cocok, kalau tidak NumPy melaporkan galat."
+            },
+            {
+              "type": "code_example",
+              "filename": "gabung_array.py",
+              "runnable": true,
+              "code": "import numpy as np\n\na = [[1, 2], [3, 4]]\nprint(np.vstack([a, a]).shape)\nprint(np.hstack([a, a]).tolist())\nprint(np.stack([[1, 2], [3, 4]], axis=1).tolist())\nprint(np.concatenate([np.ones((2, 2)), np.zeros((1, 2))]).shape)",
+              "expected_output_note": "(4, 2)\n[[1, 2, 1, 2], [3, 4, 3, 4]]\n[[1, 3], [2, 4]]\n(3, 2)",
+              "explanation": "Vstack menumpuk baris, hstack menyambung kolom, dan stack membuat sumbu baru."
+            }
+          ],
+          "quick_check": {
+            "question": "Minus satu pada reshape berarti?",
+            "options": [
+              "Dihitung otomatis",
+              "Dibuang"
+            ],
+            "answer_index": 0,
+            "explanation": "Ukuran dilengkapi.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "View dan salinan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## View dan salinan\n\nBanyak operasi NumPy mengembalikan **view**, yaitu array baru yang berbagi memori dengan aslinya, bukan salinan. Reshape, transpose, ravel, dan slicing biasa menghasilkan view. Karena memori dibagi, mengubah elemen lewat view ikut mengubah array asal. Perilaku ini hemat memori dan cepat, tetapi menjadi sumber bug klasik bila tidak disadari."
+            },
+            {
+              "type": "code_example",
+              "filename": "view_salinan.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nb = np.arange(6)\nv = b.reshape(2, 3)\nv[0, 0] = 99\nprint(b.tolist())\nprint(np.shares_memory(b, v))\nc = b.copy()\nc[0] = 0\nprint(b[0])\nprint(np.shares_memory(b, c))",
+              "expected_output_note": "[99, 1, 2, 3, 4, 5]\nTrue\n99\nFalse",
+              "explanation": "Mengubah view ikut mengubah array asal. Salinan lewat copy tidak berbagi memori."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mendeteksi dan menghindari\n\nFungsi `np.shares_memory` memberi tahu apakah dua array berbagi data. Slicing biasa dan transpose menghasilkan view, sedangkan indeks daftar atau mask boolean menghasilkan salinan. Bila perlu mengubah hasil tanpa memengaruhi asal, panggil `.copy()` secara eksplisit. Menulis `.copy()` di tempat yang tepat adalah cara termurah menghindari bug yang sulit ditelusuri."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Berbagi memori",
+              "markdown": "Reshape, transpose, dan slicing biasa memberi view. Ubah hasilnya dan data asal ikut berubah, kecuali Anda memanggil copy lebih dulu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih antara ravel dan flatten\n\nGunakan `ravel` bila hanya membaca atau bila Anda ingin menghemat memori, karena ia mengembalikan view bila memungkinkan. Gunakan `flatten` bila hasilnya akan diubah dan array asal harus aman, karena ia selalu menyalin. Kedua fungsi menghasilkan isi sama, jadi perbedaannya hanya pada berbagi memori dan biaya penyalinan."
+            }
+          ],
+          "quick_check": {
+            "question": "a.T pada shape (2, 3) menghasilkan?",
+            "options": [
+              "(2, 3)",
+              "(3, 2)"
+            ],
+            "answer_index": 1,
+            "explanation": "Tukar sumbu.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memecah array",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memecah array\n\nKebalikan penggabungan adalah pemecahan. Fungsi `np.split` memotong array menjadi bagian sama besar sepanjang suatu sumbu, dan `np.array_split` mengizinkan bagian tidak sama besar. Hasilnya berupa list array yang umumnya berupa view dari array asal. Pemecahan dipakai untuk membagi data menjadi lipatan validasi silang atau kelompok pemrosesan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menambah dan membuang sumbu\n\nSelain expand_dims, `np.squeeze` membuang sumbu berukuran satu, misalnya shape tiga kali satu menjadi tiga. Pasangan ini penting saat menyiapkan masukan model yang menuntut jumlah dimensi tertentu, dan saat hasil fungsi membawa sumbu berlebih. Selalu periksa shape sesudahnya agar tidak ada dimensi yang tertukar tanpa disadari."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contiguous dan kecepatan\n\nArray menyimpan data berurutan di memori. Transpose tidak memindahkan data, hanya mengubah cara membacanya, sehingga hasilnya tidak lagi berurutan menurut barisnya. Operasi pada array tidak berurutan bisa lebih lambat. Bila perlu, `np.ascontiguousarray` membuat salinan berurutan. Untuk sebagian besar pemakaian Anda tidak perlu peduli, tetapi bagus mengetahui alasannya bila performa menurun."
+            },
+            {
+              "type": "text",
+              "markdown": "## Urutan F dan C\n\nUrutan C mengisi baris lebih dulu dan urutan F mengisi kolom lebih dulu, seperti pada bahasa Fortran dan R. Reshape dan ravel menerima argumen order untuk memilihnya. Bila data berasal dari sistem yang memakai urutan kolom, pilih order F agar elemen jatuh pada posisi yang benar. Kesalahan urutan tidak menimbulkan galat, hanya hasil yang tertukar, jadi uji dengan contoh kecil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan pelajaran\n\nAnda telah melihat cara menyusun ulang data tanpa mengubah isinya. Reshape, transpose, dan ravel mengubah sudut pandang, penggabungan menyatukan potongan, dan pemahaman tentang view melindungi data dari perubahan tidak sengaja. Kebiasaan memeriksa shape setelah setiap langkah akan menghemat banyak waktu pada modul berikutnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Fungsi membuat sumbu baru saat menumpuk?",
+            "options": [
+              "np.stack",
+              "np.vstack"
+            ],
+            "answer_index": 0,
+            "explanation": "Sumbu baru.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-01-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ubah_bentuk(a, baris)` yang mengubah array `a` menjadi `baris` baris dengan jumlah kolom dihitung otomatis, lalu mengembalikan shape-nya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef ubah_bentuk(a, baris):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ubah_bentuk(np.arange(12), 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ubah_bentuk(np.arange(12), 3) == (3, 4)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ubah_bentuk(np.arange(12), 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ubah_bentuk(np.arange(12), 2) == (2, 6)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ubah_bentuk(np.arange(6), 6)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ubah_bentuk(np.arange(6), 6) == (6, 1)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ubah_bentuk(np.arange(10).reshape(2, 5), 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ubah_bentuk(np.arange(10).reshape(2, 5), 5) == (5, 2)"
+              }
+            ]
+          },
+          "hint": "reshape(baris, -1) lalu ambil shape.",
+          "solution": "import numpy as np\n\ndef ubah_bentuk(a, baris):\n    return a.reshape(baris, -1).shape",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-01-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `susun_vertikal(a, b)` yang menumpuk dua array secara vertikal dan mengembalikan hasilnya sebagai list Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef susun_vertikal(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "susun_vertikal([[1, 2]], [[3, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert susun_vertikal([[1, 2]], [[3, 4]]) == [[1, 2], [3, 4]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "susun_vertikal(np.zeros((1, 2)), np.ones((2, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert susun_vertikal(np.zeros((1, 2)), np.ones((2, 2))) == [[0.0, 0.0], [1.0, 1.0], [1.0, 1.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "susun_vertikal([1, 2], [3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert susun_vertikal([1, 2], [3, 4]) == [[1, 2], [3, 4]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "np.array(susun_vertikal(np.ones((2, 3)), np.o...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.array(susun_vertikal(np.ones((2, 3)), np.ones((2, 3)))).shape == (4, 3)"
+              }
+            ]
+          },
+          "hint": "np.vstack menerima dua array dalam list.",
+          "solution": "import numpy as np\n\ndef susun_vertikal(a, b):\n    return np.vstack([a, b]).tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-01-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `salinan_aman(a)` yang mengembalikan salinan array `a` dengan elemen pertama (urutan ratakan) diubah menjadi nol, tanpa mengubah `a`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef salinan_aman(a):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "r.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = np.array([5, 6, 7])\nr = salinan_aman(a)\nassert r.tolist() == [0, 6, 7]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "a.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert a.tolist() == [5, 6, 7]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "r2.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "m = np.array([[1, 2], [3, 4]])\nr2 = salinan_aman(m)\nassert r2.tolist() == [[0, 2], [3, 4]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "m.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert m.tolist() == [[1, 2], [3, 4]]"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "np.shares_memory(m, r2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.shares_memory(m, r2) == False"
+              }
+            ]
+          },
+          "hint": "Salin dulu, lalu ubah elemen pertama lewat flat.",
+          "solution": "import numpy as np\n\ndef salinan_aman(a):\n    c = a.copy()\n    c.flat[0] = 0\n    return c",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-01-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `apakah_view(a, b)` yang mengembalikan `True` bila array `a` dan `b` berbagi memori, dan `False` bila tidak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef apakah_view(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "apakah_view(a, a.reshape(2, 3))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = np.arange(6)\nassert apakah_view(a, a.reshape(2, 3)) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "apakah_view(a, a.T)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert apakah_view(a, a.T) is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "apakah_view(a, a[::2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert apakah_view(a, a[::2]) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "apakah_view(a, a.copy())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert apakah_view(a, a.copy()) is False"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "apakah_view(a, a[[0, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert apakah_view(a, a[[0, 1]]) is False"
+              }
+            ]
+          },
+          "hint": "np.shares_memory memeriksa memori yang dibagi. Ubah ke bool murni.",
+          "solution": "import numpy as np\n\ndef apakah_view(a, b):\n    return bool(np.shares_memory(a, b))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Minus satu pada reshape berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dihitung otomatis",
+              "description": ""
+            },
+            {
+              "label": "Dibuang",
+              "description": ""
+            },
+            {
+              "label": "Dibalik",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Otomatis.",
+          "explanation": "Ukuran dilengkapi."
+        },
+        {
+          "q": "a.T pada shape (2, 3) menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "(3, 2)",
+              "description": ""
+            },
+            {
+              "label": "(2, 3)",
+              "description": ""
+            },
+            {
+              "label": "(6,)",
+              "description": ""
+            },
+            {
+              "label": "(1, 6)",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tukar.",
+          "explanation": "Tukar sumbu."
+        },
+        {
+          "q": "Fungsi membuat sumbu baru saat menumpuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "np.stack",
+              "description": ""
+            },
+            {
+              "label": "np.vstack",
+              "description": ""
+            },
+            {
+              "label": "np.ravel",
+              "description": ""
+            },
+            {
+              "label": "np.copy",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Stack.",
+          "explanation": "Sumbu baru."
+        },
+        {
+          "q": "Reshape menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "View",
+              "description": ""
+            },
+            {
+              "label": "Salinan selalu",
+              "description": ""
+            },
+            {
+              "label": "List",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bagi.",
+          "explanation": "Berbagi memori."
+        },
+        {
+          "q": "Indeks daftar menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Salinan",
+              "description": ""
+            },
+            {
+              "label": "View",
+              "description": ""
+            },
+            {
+              "label": "Tuple",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Salin.",
+          "explanation": "Fancy indexing menyalin."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengubah hasil reshape lalu heran data asal berubah. Lebih baik: Panggil copy bila butuh data terpisah.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengubah hasil reshape lalu heran data asal berubah.",
+          "fix": "Panggil copy bila butuh data terpisah."
+        },
+        {
+          "mistake": "Menyambung array dengan ukuran sumbu tidak cocok.",
+          "fix": "Periksa shape lebih dulu."
+        },
+        {
+          "mistake": "Memakai reshape dengan jumlah elemen berbeda.",
+          "fix": "Pastikan hasil kali shape sama dengan size."
+        }
+      ],
+      "summary": [
+        "Reshape mengubah bentuk tanpa mengubah jumlah elemen.",
+        "Transpose menukar sumbu dan ravel meratakan array.",
+        "concatenate, vstack, hstack, dan stack menggabungkan array.",
+        "View berbagi memori, copy tidak."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Shape, reshape, dan view"
+          },
+          {
+            "type": "text",
+            "source": "Reshape menjaga jumlah elemen. Minus satu dihitung otomatis, dan bentuk yang tidak cocok ditolak dengan ValueError."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\na = np.arange(12)\nprint(a.reshape(3, 4).shape)\nprint(a.reshape(2, -1).shape)\nprint(a.reshape(2, 3, 2).shape)\ntry:\n    a.reshape(5, 3)\nexcept ValueError:\n    print('ditolak')"
+          },
+          {
+            "type": "text",
+            "source": "Transpose menukar sumbu, ravel meratakan baris demi baris, dan urutan F meratakan kolom demi kolom."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nm = np.arange(6).reshape(2, 3)\nprint(m.T.shape)\nprint(m.ravel().tolist())\nprint(m.flatten('F').tolist())\nv = np.array([1, 2, 3])\nprint(v[:, None].shape, np.expand_dims(v, 0).shape)\nprint(np.arange(24).reshape(2, 3, 4).transpose(2, 0, 1).shape)"
+          },
+          {
+            "type": "text",
+            "source": "Vstack menumpuk baris, hstack menyambung kolom, dan stack membuat sumbu baru."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\na = [[1, 2], [3, 4]]\nprint(np.vstack([a, a]).shape)\nprint(np.hstack([a, a]).tolist())\nprint(np.stack([[1, 2], [3, 4]], axis=1).tolist())\nprint(np.concatenate([np.ones((2, 2)), np.zeros((1, 2))]).shape)"
+          },
+          {
+            "type": "text",
+            "source": "Mengubah view ikut mengubah array asal. Salinan lewat copy tidak berbagi memori."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nb = np.arange(6)\nv = b.reshape(2, 3)\nv[0, 0] = 99\nprint(b.tolist())\nprint(np.shares_memory(b, v))\nc = b.copy()\nc[0] = 0\nprint(b[0])\nprint(np.shares_memory(b, c))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

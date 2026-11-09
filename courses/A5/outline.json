@@ -28,61 +28,91 @@
       "module_no": 1,
       "title": "Jenis data dan skala pengukuran",
       "file": "m01.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A5-01-1",
+        "exercise_id": "A5-01-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def modus(data):\n    ..."
+      }
     },
     {
       "module_no": 2,
       "title": "Ukuran pemusatan",
       "file": "m02.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A5-02-1",
+        "exercise_id": "A5-02-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def rata_berjalan_inkremental(stream):\n    ..."
+      }
     },
     {
       "module_no": 3,
       "title": "Ukuran penyebaran",
       "file": "m03.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A5-03-1",
+        "exercise_id": "A5-03-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def varians_welford(stream):\n    ..."
+      }
     },
     {
       "module_no": 4,
       "title": "Bentuk distribusi dan kuantil",
       "file": "m04.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A5-04-1",
+        "exercise_id": "A5-04-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def kotak_modus(data, lo, lebar, k):\n    ..."
+      }
     },
     {
       "module_no": 5,
       "title": "Korelasi dan kovariansi",
       "file": "m05.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A5-05-1",
+        "exercise_id": "A5-05-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def kovariansi_inkremental(pasangan):\n    ..."
+      }
     },
     {
       "module_no": 6,
       "title": "Meringkas data dengan pandas",
       "file": "m06.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A5-06-1",
+        "exercise_id": "A5-06-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def ringkas_hilang(data):\n    ..."
+      }
     }
   ]
 }

@@ -1,19 +1,19 @@
 # Status Konten
 
-Courses: 62. Modul: 413. Siap: 36.
+Courses: 62. Modul: 413. Siap: 75.
 
 | Kode | Judul | Siap | Total |
 |---|---|---|---|
 | A1 | Python untuk Data Science | 8 | 8 |
 | A2 | Aljabar Linear untuk Data Science | 7 | 7 |
 | A3 | Kalkulus dan Optimasi untuk ML | 6 | 6 |
-| A4 | Probabilitas untuk Data Science | 7 | 8 |
-| A5 | Statistika Deskriptif | 0 | 6 |
-| A6 | SQL untuk Analisis Data | 0 | 9 |
-| A7 | Git dan Alur Kerja Reproducible | 0 | 4 |
-| B1 | Penguasaan NumPy | 0 | 6 |
-| B2 | Penguasaan Pandas | 0 | 10 |
-| B3 | Pembersihan dan Persiapan Data | 0 | 7 |
+| A4 | Probabilitas untuk Data Science | 8 | 8 |
+| A5 | Statistika Deskriptif | 6 | 6 |
+| A6 | SQL untuk Analisis Data | 9 | 9 |
+| A7 | Git dan Alur Kerja Reproducible | 4 | 4 |
+| B1 | Penguasaan NumPy | 6 | 6 |
+| B2 | Penguasaan Pandas | 10 | 10 |
+| B3 | Pembersihan dan Persiapan Data | 3 | 7 |
 | B4 | Visualisasi Data dengan Matplotlib dan Seaborn | 0 | 8 |
 | B5 | Analisis Data Eksploratif | 0 | 7 |
 | B6 | Rekayasa Fitur | 0 | 8 |

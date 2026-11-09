@@ -1,0 +1,1620 @@
+{
+  "schema_version": 2,
+  "course_id": "B3",
+  "module_no": 1,
+  "title": "Audit kualitas data",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menjalankan profil cepat pada tabel yang belum dikenal",
+    "Menulis aturan validasi sebagai kode untuk beberapa dimensi kualitas",
+    "Menyusun laporan audit dan menentukan prioritas perbaikan"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B3-01-1",
+    "exercise_id": "B3-01-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def ringkasan_numerik(df, kolom):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B3-01-1",
+      "title": "Profil cepat sebuah tabel",
+      "estimated_minutes": 35,
+      "read_minutes": 8,
+      "objectives": [
+        "Menjalankan pemeriksaan pertama pada tabel yang belum dikenal",
+        "Membaca bentuk, tipe, hilang, dan kardinalitas dengan cepat",
+        "Mengenali duplikat dan kolom yang mencurigakan",
+        "Membaca ringkasan numerik untuk menemukan angka tak wajar"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Jangan percaya data yang baru tiba",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Jangan percaya data yang baru tiba\n\nData yang baru Anda terima hampir selalu lebih kotor daripada dugaan. Ada sel kosong, tanggal yang terbaca sebagai teks, nama kota dengan tiga ejaan, usia negatif, dan baris yang tercatat dua kali. Model dan grafik yang dibangun di atas data seperti itu akan tampak meyakinkan tetapi salah, dan kesalahannya sulit dilacak karena tidak ada pesan galat. Audit kualitas data adalah langkah sistematis untuk menemukan masalah itu sebelum analisis dimulai. Pelajaran ini mengajarkan profil cepat: lima menit pemeriksaan yang menjawab pertanyaan apakah tabel ini layak dipercaya dan apa yang perlu diperbaiki lebih dulu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pepatah lama yang masih benar\n\nPepatah sampah masuk, sampah keluar berlaku keras dalam ilmu data. Algoritma paling canggih pun hanya meniru pola yang ada pada data latihnya, termasuk pola kesalahan. Chip Huyen dalam bukunya tentang sistem pembelajaran mesin menekankan bahwa data adalah fondasi dan bahwa sebagian besar masalah di produksi berakar pada data, bukan pada algoritma. Karena itu waktu yang dihabiskan memeriksa data hampir selalu lebih menguntungkan daripada waktu yang dihabiskan menyetel model. Audit juga menumbuhkan pemahaman tentang bagaimana data lahir, yang menjadi bahan penilaian saat memilih cara memperbaikinya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data contoh\n\nPelajaran ini memakai tabel enam baris yang sengaja berantakan. Kolom `id` berisi satu sampai enam tetapi angka tiga muncul dua kali dan empat hilang. Kolom `nama` memiliki satu nilai kosong dan satu nama dengan spasi di depan. Kolom `umur` mengandung nilai negatif dan nilai dua ratus. Kolom `email` memiliki satu alamat yang tidak lengkap dan satu yang kosong. Kolom `kota` menulis Jakarta dalam dua ejaan huruf besar dan kecil. Kolom `gaji` memiliki dua nilai kosong dan satu angka sejuta yang jauh di luar yang lain. Anggaplah tabel ini sebagai daftar periksa temuan."
+            },
+            {
+              "type": "code_example",
+              "filename": "profil_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\nprint(df.shape, df.columns.tolist())\nprint(df.isna().sum().to_dict())\nprint(df.isna().mean().round(3).to_dict())\nprint(df.nunique().to_dict())\nprint(df.nunique(dropna=False).to_dict())\nprint(df.select_dtypes('number').columns.tolist())\nprint(df.isna().sum().sum(), df.isna().any(axis=1).sum())",
+              "expected_output_note": "(6, 6) ['id', 'nama', 'umur', 'email', 'kota', 'gaji']\n{'id': 0, 'nama': 1, 'umur': 0, 'email': 1, 'kota': 0, 'gaji': 2}\n{'id': 0.0, 'nama': 0.167, 'umur': 0.0, 'email': 0.167, 'kota': 0.0, 'gaji': 0.333}\n{'id': 5, 'nama': 4, 'umur': 5, 'email': 4, 'kota': 4, 'gaji': 4}\n{'id': 5, 'nama': 5, 'umur': 5, 'email': 5, 'kota': 4, 'gaji': 5}\n['id', 'umur', 'gaji']\n4 4",
+              "explanation": "Bentuk, hilang, dan jumlah nilai unik adalah tiga angka pertama yang dilihat pada tabel baru. Nunique melewati NaN kecuali dropna False."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pertanyaan pertama: seberapa besar\n\nMulailah dengan bentuk tabel: berapa baris dan kolom. Angka ini memberi rasa skala dan langsung berguna: bila Anda mengharapkan sejuta baris dan menerima sepuluh ribu, ada yang terpotong saat pengambilan. Bandingkan juga dengan dokumentasi sumber data atau jumlah dari sistem asal. Selisih antara jumlah yang diharapkan dan yang diterima adalah temuan pertama yang paling murah dan sering paling penting. Setelah itu lihat nama kolom: apakah sesuai kamus data, adakah kolom tak terduga, dan adakah kolom yang seharusnya ada tetapi hilang."
+            }
+          ],
+          "quick_check": {
+            "question": "Langkah pertama audit?",
+            "options": [
+              "Lihat bentuk dan tipe",
+              "Hapus duplikat"
+            ],
+            "answer_index": 0,
+            "explanation": "Kenali dulu.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Pertanyaan kedua: tipe dan hilang",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pertanyaan kedua: tipe dan hilang\n\nPeriksa tipe tiap kolom dan jumlah nilai hilang. Kolom angka yang bertipe teks hampir selalu berarti ada nilai kotor seperti `N/A` atau tanda mata uang. Kolom tanggal bertipe teks perlu diurai. Proporsi hilang lebih informatif daripada jumlah mutlak: satu dari enam berbeda dari satu dari sejuta. Pada contoh, sepertiga gaji hilang, angka yang terlalu besar untuk diabaikan dan terlalu besar untuk diisi sembarangan. Catat kolom mana yang hilang dan perkirakan mengapa, sebab alasan hilang menentukan cara menanganinya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pertanyaan ketiga: kardinalitas\n\nKardinalitas adalah banyaknya nilai unik per kolom, dan memberi petunjuk cepat tentang peran kolom. Kolom dengan nilai unik sebanyak baris, seperti id, adalah pengenal. Kolom dengan sedikit nilai unik adalah kategori. Kolom dengan satu nilai unik tidak informatif dan dapat dibuang. Kolom yang kardinalitasnya aneh patut diselidiki: kota dengan empat nilai unik padahal hanya tiga kota nyata menandakan variasi ejaan. Bandingkan `nunique` dengan dan tanpa `dropna=False` untuk melihat seberapa besar peran nilai hilang pada kolom itu."
+            },
+            {
+              "type": "code_example",
+              "filename": "duplikat_variasi.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\nprint(df.duplicated().tolist(), df.duplicated('id').tolist(), df.duplicated().sum())\nprint(df['id'].is_unique, df['id'].is_monotonic_increasing)\nprint(df['kota'].value_counts().to_dict())\nprint(df['kota'].str.lower().value_counts().to_dict())\nprint(df['kota'].nunique(), df['kota'].str.strip().str.lower().nunique())\nprint(df.loc[df.duplicated(keep=False), 'id'].tolist())\nprint(df.groupby('id').size().loc[lambda s: s > 1].to_dict())",
+              "expected_output_note": "[False, False, False, True, False, False] [False, False, False, True, False, False] 1\nFalse True\n{'Jakarta': 2, 'Medan': 2, 'jakarta': 1, 'Bandung': 1}\n{'jakarta': 3, 'medan': 2, 'bandung': 1}\n4 3\n[3, 3]\n{3: 2}",
+              "explanation": "Duplicated menandai pengulangan, dan value_counts pada teks mentah membongkar variasi ejaan. Keep False menandai semua anggota kelompok duplikat, bukan hanya salinan kedua."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pertanyaan keempat: duplikat\n\nPeriksa baris yang sama persis dengan `duplicated()`, dan periksa duplikat pada kolom yang seharusnya unik seperti pengenal dengan `duplicated('id')`. Keduanya menjawab hal berbeda. Duplikat seluruh baris biasanya akibat pemuatan ganda atau penggabungan keliru. Duplikat pada pengenal dengan isi berbeda lebih berbahaya karena berarti dua catatan bertentangan untuk entitas yang sama. Argumen `keep=False` menandai semua anggota kelompok duplikat sehingga Anda dapat melihat kedua salinannya berdampingan sebelum memutuskan mana yang dipertahankan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pertanyaan kelima: variasi ejaan\n\nTabel `value_counts` pada kolom teks menunjukkan setiap ejaan yang ada. Pada contoh, Jakarta dan jakarta dihitung sebagai dua kota padahal sama. Membandingkan hitungan sebelum dan sesudah menyeragamkan huruf besar dan spasi dengan `str.strip().str.lower()` menunjukkan seberapa besar masalah variasi. Selisih empat dan tiga pada contoh berarti satu kota terpecah. Temuan seperti ini merusak groupby dan merge diam-diam, sebab kelompok yang seharusnya satu terpecah menjadi dua dan total per kota keliru tanpa pesan galat apa pun."
+            }
+          ],
+          "quick_check": {
+            "question": "Kolom dengan satu nilai unik?",
+            "options": [
+              "Pengenal",
+              "Tidak informatif"
+            ],
+            "answer_index": 1,
+            "explanation": "Konstan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Ringkasan numerik",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ringkasan numerik\n\nMetode `describe` memberi hitungan, rata-rata, simpangan baku, minimum, kuartil, dan maksimum untuk kolom angka. Fokus pertama bukan pada rata-rata tetapi pada minimum dan maksimum, yang membongkar nilai mustahil. Usia minimum minus tiga dan maksimum dua ratus langsung menunjukkan masalah, begitu juga gaji maksimum sejuta ketika median hanya tujuh koma lima. Bandingkan rata-rata dengan median: selisih besar menandakan pencilan yang menarik rata-rata. Pada gaji, rata-rata dua ratus lima puluh ribu jauh dari median tujuh koma lima, tanda jelas ada nilai ekstrem."
+            },
+            {
+              "type": "code_example",
+              "filename": "ringkasan_numerik.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\nprint(df['umur'].describe().round(2).tolist())\nprint(df['gaji'].describe().round(1).tolist())\nprint(df['umur'].agg(['min', 'max']).tolist(), df['umur'].lt(0).sum(), df['umur'].gt(120).sum())\nprint(df['gaji'].median(), df['gaji'].mean())\nprint(df['gaji'].quantile([0.25, 0.5, 0.75]).tolist())\nprint(df['umur'].mode().tolist())",
+              "expected_output_note": "[6.0, 52.0, 73.64, -3.0, 25.75, 29.5, 31.0, 200.0]\n[4.0, 250005.4, 499996.4, 6.5, 6.9, 7.5, 250006.0, 1000000.0]\n[-3, 200] 1 1\n7.5 250005.375\n[6.875, 7.5, 250006.0]\n[31]",
+              "explanation": "Describe memuat delapan angka: hitungan, rata-rata, simpangan baku, minimum, tiga kuartil, dan maksimum. Selisih besar rata-rata dan median menandakan pencilan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca describe dengan curiga\n\nSaat membaca keluaran describe, ajukan tiga pertanyaan. Apakah minimum dan maksimum masuk akal secara dunia nyata? Apakah rata-rata dan median berdekatan? Apakah hitungan sama dengan jumlah baris, atau ada yang hilang? Hitungan empat pada gaji padahal ada enam baris langsung memberi tahu dua nilai hilang tanpa perlu menghitung terpisah. Jawaban atas ketiga pertanyaan ini biasanya sudah menunjuk ke masalah paling serius, dan merupakan alasan describe adalah perintah yang hampir selalu dijalankan pertama kali pada data baru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Jangan memperbaiki saat mengaudit\n\nGodaan terbesar saat menemukan masalah adalah langsung memperbaikinya. Tahanlah. Audit adalah tahap mengamati dan mencatat, bukan mengubah. Memperbaiki sebelum memahami seluruh masalah sering menghasilkan perbaikan yang saling bertabrakan, misalnya membuang baris duplikat sebelum menyadari bahwa duplikat itu menandai masalah penggabungan yang lebih besar. Catat setiap temuan dengan jumlah barisnya, lalu putuskan strategi perbaikan secara terpadu pada pelajaran dan modul berikutnya, dengan data mentah tetap utuh sebagai sumber kebenaran."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Lima pemeriksaan",
+              "markdown": "Jalankan lima pemeriksaan pertama pada setiap tabel baru: bentuk, tipe, hilang, kardinalitas dan duplikat, serta min dan maks. Jangan memperbaiki apa pun sebelum audit selesai."
+            }
+          ],
+          "quick_check": {
+            "question": "keep False pada duplicated menandai?",
+            "options": [
+              "Semua anggota kelompok",
+              "Hanya yang pertama"
+            ],
+            "answer_index": 0,
+            "explanation": "Semua.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B3-01-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_hilang_total(df)` yang mengembalikan bilangan bulat jumlah seluruh sel kosong dalam tabel.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef jumlah_hilang_total(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_hilang_total(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert jumlah_hilang_total(df) == 4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_hilang_total(df.dropna())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_hilang_total(df.dropna()) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_hilang_total(df[['id', 'umur']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_hilang_total(df[['id', 'umur']]) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_hilang_total(df[['gaji']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_hilang_total(df[['gaji']]) == 2"
+              }
+            ]
+          },
+          "hint": "isna lalu sum dua kali.",
+          "solution": "import pandas as pd\n\ndef jumlah_hilang_total(df):\n    return int(df.isna().sum().sum())",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-01-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kolom_kardinalitas_kecil(df, batas)` yang mengembalikan list nama kolom dengan jumlah nilai unik (tanpa menghitung hilang) sebanyak-banyaknya `batas`, mengikuti urutan kolom.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef kolom_kardinalitas_kecil(df, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kolom_kardinalitas_kecil(df, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert kolom_kardinalitas_kecil(df, 4) == ['nama', 'email', 'kota', 'gaji']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kolom_kardinalitas_kecil(df, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolom_kardinalitas_kecil(df, 5) == ['id', 'nama', 'umur', 'email', 'kota', 'gaji']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kolom_kardinalitas_kecil(df, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolom_kardinalitas_kecil(df, 3) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kolom_kardinalitas_kecil(df[['kota']], 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolom_kardinalitas_kecil(df[['kota']], 4) == ['kota']"
+              }
+            ]
+          },
+          "hint": "nunique per kolom dibandingkan dengan batas.",
+          "solution": "import pandas as pd\n\ndef kolom_kardinalitas_kecil(df, batas):\n    return [c for c in df.columns if df[c].nunique() <= batas]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-01-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `baris_duplikat(df, subset=None)` yang mengembalikan bilangan bulat jumlah baris duplikat (salinan kedua dan seterusnya), dengan `subset` kolom opsional.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef baris_duplikat(df, subset=None):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "baris_duplikat(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert baris_duplikat(df) == 1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "baris_duplikat(df, ['id'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_duplikat(df, ['id']) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "baris_duplikat(df, ['kota'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_duplikat(df, ['kota']) == 2"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "baris_duplikat(df.drop_duplicates())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_duplikat(df.drop_duplicates()) == 0"
+              }
+            ]
+          },
+          "hint": "duplicated dengan subset lalu jumlahkan.",
+          "solution": "import pandas as pd\n\ndef baris_duplikat(df, subset=None):\n    return int(df.duplicated(subset=subset).sum())",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-01-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ringkasan_numerik(df, kolom)` yang mengembalikan list tiga angka desimal `[minimum, maksimum, median]` kolom itu.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef ringkasan_numerik(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ringkasan_numerik(df, 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert ringkasan_numerik(df, 'umur') == [-3.0, 200.0, 29.5]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ringkasan_numerik(df, 'gaji')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkasan_numerik(df, 'gaji') == [6.5, 1000000.0, 7.5]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ringkasan_numerik(df, 'id')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkasan_numerik(df, 'id') == [1.0, 6.0, 3.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ringkasan_numerik(df.iloc[[0]], 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkasan_numerik(df.iloc[[0]], 'umur') == [25.0, 25.0, 25.0]"
+              }
+            ]
+          },
+          "hint": "min, max, dan median dari kolom lalu ubah ke float.",
+          "solution": "import pandas as pd\n\ndef ringkasan_numerik(df, kolom):\n    s = df[kolom]\n    return [float(s.min()), float(s.max()), float(s.median())]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Langkah pertama audit?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lihat bentuk dan tipe",
+              "description": ""
+            },
+            {
+              "label": "Hapus duplikat",
+              "description": ""
+            },
+            {
+              "label": "Isi hilang",
+              "description": ""
+            },
+            {
+              "label": "Latih model",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bentuk.",
+          "explanation": "Kenali dulu."
+        },
+        {
+          "q": "Kolom dengan satu nilai unik?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak informatif",
+              "description": ""
+            },
+            {
+              "label": "Pengenal",
+              "description": ""
+            },
+            {
+              "label": "Target",
+              "description": ""
+            },
+            {
+              "label": "Kategori",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu.",
+          "explanation": "Konstan."
+        },
+        {
+          "q": "keep False pada duplicated menandai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Semua anggota kelompok",
+              "description": ""
+            },
+            {
+              "label": "Hanya yang pertama",
+              "description": ""
+            },
+            {
+              "label": "Hanya yang terakhir",
+              "description": ""
+            },
+            {
+              "label": "Tak satu pun",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Semua.",
+          "explanation": "Semua."
+        },
+        {
+          "q": "Rata-rata jauh dari median menandakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pencilan",
+              "description": ""
+            },
+            {
+              "label": "Data bersih",
+              "description": ""
+            },
+            {
+              "label": "Kolom teks",
+              "description": ""
+            },
+            {
+              "label": "Duplikat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pencilan.",
+          "explanation": "Tertarik ekstrem."
+        },
+        {
+          "q": "Saat mengaudit sebaiknya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mencatat tanpa mengubah",
+              "description": ""
+            },
+            {
+              "label": "Mengubah langsung",
+              "description": ""
+            },
+            {
+              "label": "Menghapus data",
+              "description": ""
+            },
+            {
+              "label": "Mengacak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Catat.",
+          "explanation": "Amati dulu."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Langsung memperbaiki saat menemukan masalah. Lebih baik: Audit dulu, catat semua, lalu putuskan strategi terpadu.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Langsung memperbaiki saat menemukan masalah.",
+          "fix": "Audit dulu, catat semua, lalu putuskan strategi terpadu."
+        },
+        {
+          "mistake": "Hanya melihat rata-rata dan mengabaikan min dan maks.",
+          "fix": "Baca min, maks, dan selisih rata-rata dengan median."
+        },
+        {
+          "mistake": "Mempercayai nilai unik teks tanpa menyeragamkan ejaan.",
+          "fix": "Bandingkan nunique sebelum dan sesudah strip dan lower."
+        }
+      ],
+      "summary": [
+        "Profil cepat meliputi bentuk, tipe, hilang, kardinalitas, duplikat, dan ringkasan numerik.",
+        "Min, maks, dan perbandingan rata-rata dengan median membongkar nilai mustahil.",
+        "Variasi ejaan terlihat dari nunique sebelum dan sesudah penyeragaman.",
+        "Audit mencatat temuan, perbaikan menyusul kemudian."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Profil cepat sebuah tabel"
+          },
+          {
+            "type": "text",
+            "source": "Bentuk, hilang, dan jumlah nilai unik adalah tiga angka pertama yang dilihat pada tabel baru. Nunique melewati NaN kecuali dropna False."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\nprint(df.shape, df.columns.tolist())\nprint(df.isna().sum().to_dict())\nprint(df.isna().mean().round(3).to_dict())\nprint(df.nunique().to_dict())\nprint(df.nunique(dropna=False).to_dict())\nprint(df.select_dtypes('number').columns.tolist())\nprint(df.isna().sum().sum(), df.isna().any(axis=1).sum())"
+          },
+          {
+            "type": "text",
+            "source": "Duplicated menandai pengulangan, dan value_counts pada teks mentah membongkar variasi ejaan. Keep False menandai semua anggota kelompok duplikat, bukan hanya salinan kedua."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\nprint(df.duplicated().tolist(), df.duplicated('id').tolist(), df.duplicated().sum())\nprint(df['id'].is_unique, df['id'].is_monotonic_increasing)\nprint(df['kota'].value_counts().to_dict())\nprint(df['kota'].str.lower().value_counts().to_dict())\nprint(df['kota'].nunique(), df['kota'].str.strip().str.lower().nunique())\nprint(df.loc[df.duplicated(keep=False), 'id'].tolist())\nprint(df.groupby('id').size().loc[lambda s: s > 1].to_dict())"
+          },
+          {
+            "type": "text",
+            "source": "Describe memuat delapan angka: hitungan, rata-rata, simpangan baku, minimum, tiga kuartil, dan maksimum. Selisih besar rata-rata dan median menandakan pencilan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\nprint(df['umur'].describe().round(2).tolist())\nprint(df['gaji'].describe().round(1).tolist())\nprint(df['umur'].agg(['min', 'max']).tolist(), df['umur'].lt(0).sum(), df['umur'].gt(120).sum())\nprint(df['gaji'].median(), df['gaji'].mean())\nprint(df['gaji'].quantile([0.25, 0.5, 0.75]).tolist())\nprint(df['umur'].mode().tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B3-01-2",
+      "title": "Dimensi kualitas dan aturan validasi",
+      "estimated_minutes": 35,
+      "read_minutes": 8,
+      "objectives": [
+        "Menyebut dimensi kualitas data dan contoh pelanggarannya",
+        "Menulis aturan validasi sebagai ekspresi boolean",
+        "Memeriksa rentang, format, keunikan, dan konsistensi",
+        "Menghitung kelengkapan dan pelanggaran per aturan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Kualitas bukan satu angka",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kualitas bukan satu angka\n\nKata kualitas data terdengar tunggal, padahal terdiri dari beberapa dimensi yang dapat gagal secara terpisah. Sebuah tabel bisa lengkap tetapi salah, benar tetapi duplikat, atau konsisten tetapi sudah usang. Memecah kualitas menjadi dimensi memberi kosakata untuk menyebut masalah dengan tepat dan daftar periksa untuk memastikan tidak ada yang terlewat. Pelajaran ini membahas dimensi yang paling berguna dalam praktik dan cara menerjemahkan masing-masing menjadi pemeriksaan kode yang dapat dijalankan ulang tiap kali data baru masuk."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kelengkapan\n\nKelengkapan menanyakan apakah semua data yang seharusnya ada memang ada. Ukurannya sederhana: persentase sel terisi per kolom. Pada contoh, gaji hanya terisi enam puluh enam koma tujuh persen, nama dan email delapan puluh tiga koma tiga persen. Ketidaklengkapan tidak selalu buruk: kolom nomor telepon kedua memang boleh kosong. Yang penting membedakan kosong yang sah dari kosong yang menandakan kerusakan, dan menetapkan ambang yang dapat diterima per kolom berdasarkan perannya dalam analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Validitas dan keunikan\n\nValiditas menanyakan apakah nilai mematuhi aturan format dan rentang: usia antara nol dan seratus dua puluh, email berbentuk alamat, tanggal lahir tidak di masa depan. Keunikan menanyakan apakah entitas yang sama tercatat sekali: nomor identitas tidak boleh berulang. Keduanya dapat dituliskan sebagai ekspresi boolean yang menghasilkan satu nilai benar atau salah per baris, sehingga pelanggaran dapat dihitung, ditampilkan, dan dilacak. Menulis aturan sebagai kode, bukan sebagai catatan mental, membuat audit dapat diulang."
+            },
+            {
+              "type": "code_example",
+              "filename": "aturan_validasi.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\npat = r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'\nprint(df['umur'].between(0, 120).tolist(), (~df['umur'].between(0, 120)).sum())\nprint(df['email'].str.match(pat, na=False).tolist())\nprint(df['id'].is_unique, (~df.duplicated('id', keep=False)).tolist())\nprint((df.notna().mean() * 100).round(1).to_dict())\nprint(df['umur'].where(df['umur'].between(0, 120)).tolist())\nprint(df['umur'].where(df['umur'].between(0, 120)).mean())",
+              "expected_output_note": "[True, False, True, True, False, True] 2\n[True, False, True, True, True, False]\nFalse [True, True, False, False, True, True]\n{'id': 100.0, 'nama': 83.3, 'umur': 100.0, 'email': 83.3, 'kota': 100.0, 'gaji': 66.7}\n[25.0, nan, 31.0, 31.0, nan, 28.0]\n28.75",
+              "explanation": "Aturan rentang, format, dan keunikan masing-masing menjadi satu Series boolean. Menandai nilai tidak valid sebagai NaN memperlihatkan dampaknya pada rata-rata."
+            },
+            {
+              "type": "text",
+              "markdown": "## Aturan sebagai Series boolean\n\nSetiap aturan ditulis sebagai ekspresi yang menghasilkan Series boolean dengan satu nilai per baris, di mana True berarti lolos. Aturan rentang memakai `between`, aturan format memakai `str.match` dengan ekspresi reguler, dan aturan keunikan memakai `duplicated` dengan `keep=False` yang dinegasikan. Argumen `na=False` pada `str.match` menetapkan bahwa nilai hilang tidak lolos aturan format, keputusan eksplisit yang menghindari NaN di dalam hasil boolean. Dengan bentuk seragam ini, semua aturan dapat digabung dan dihitung dengan cara yang sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Konsistensi\n\nKonsistensi menanyakan apakah data yang sama ditulis dengan cara yang sama di seluruh tabel dan antar tabel. Jakarta dan jakarta adalah inkonsistensi format. Umur yang tidak cocok dengan tanggal lahir adalah inkonsistensi antar kolom. Kode pelanggan di tabel pesanan yang tidak ada di tabel pelanggan adalah inkonsistensi antar tabel. Inkonsistensi sulit ditangkap oleh aturan rentang, sehingga memerlukan pemeriksaan khusus: menyeragamkan lalu menghitung nilai unik, membandingkan kolom turunan, dan memeriksa integritas referensi antar tabel dengan `isin`."
+            }
+          ],
+          "quick_check": {
+            "question": "Validitas menanyakan?",
+            "options": [
+              "Format dan rentang nilai",
+              "Jumlah baris"
+            ],
+            "answer_index": 0,
+            "explanation": "Aturan nilai.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Ketepatan waktu dan akurasi",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ketepatan waktu dan akurasi\n\nKetepatan waktu menanyakan apakah data cukup baru untuk keputusan yang akan diambil. Tabel harga kemarin tidak berguna untuk keputusan hari ini. Periksa tanggal terbaru dalam data dan bandingkan dengan harapan. Akurasi menanyakan apakah nilai mencerminkan kenyataan, dimensi tersulit karena memerlukan pembanding di luar data. Pembanding dapat berupa sumber lain, pengukuran ulang pada sampel kecil, atau aturan bisnis seperti total pesanan harus sama dengan jumlah rinciannya. Tanpa pembanding, akurasi hanya bisa diperkirakan lewat kewajaran."
+            },
+            {
+              "type": "code_example",
+              "filename": "konsistensi.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\npat = r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'\nprint(df.loc[~df['email'].str.match(pat, na=False), 'id'].tolist())\nprint(df['kota'].nunique() - df['kota'].str.strip().str.lower().nunique())\nprint(df['kota'].map(df['kota'].value_counts()).tolist())\nprint(df['kota'].str.lower().isin(['jakarta', 'medan']).tolist())\nprint(df[~df['kota'].str.lower().isin(['jakarta', 'medan'])]['kota'].tolist())\nprint((df['nama'].notna() & (df['nama'] != df['nama'].str.strip())).tolist())",
+              "expected_output_note": "[2, 6]\n1\n[2, 1, 2, 2, 1, 2]\n[True, True, True, True, False, True]\n['Bandung']\n[False, True, False, False, False, False]",
+              "explanation": "Daftar nilai yang diizinkan dengan isin, spasi tak terlihat, dan variasi ejaan semuanya dapat dideteksi dengan ekspresi boolean sederhana."
+            },
+            {
+              "type": "text",
+              "markdown": "## Daftar nilai yang diizinkan\n\nUntuk kolom kategori dengan himpunan nilai yang diketahui, seperti kota yang dilayani atau status pesanan, aturan terbaik adalah memeriksa keanggotaan dengan `isin`. Nilai di luar daftar langsung terlihat, apakah itu kategori baru yang sah atau kesalahan ketik. Pada contoh, hanya Bandung yang tidak ada dalam daftar dua kota, dan itu perlu keputusan: kota baru atau salah ketik. Mencantumkan daftar itu sebagai konstanta yang dirawat bersama tim mencegah kategori liar menyelinap ke dalam analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Spasi dan karakter tak terlihat\n\nSalah satu penyebab masalah paling licik adalah spasi di awal atau akhir teks, serta karakter tak terlihat seperti spasi lebar nol atau tab. Nilai ` budi` dan `budi` tampak sama di layar tetapi berbeda bagi komputer, sehingga merge dan groupby gagal tanpa alasan terlihat. Bandingkan teks dengan versi yang dipangkas, `s != s.str.strip()`, untuk menemukannya, dan ingat memeriksa nilai hilang lebih dulu agar NaN tidak ikut ditandai. Pembersihan teks lebih dalam dibahas pada modul tersendiri."
+            },
+            {
+              "type": "text",
+              "markdown": "## Integritas referensi\n\nDalam data relasional, kolom penghubung antar tabel harus merujuk ke baris yang ada. Setiap id pelanggan di tabel pesanan harus ada di tabel pelanggan. Pelanggaran disebut baris yatim dan biasanya muncul akibat penghapusan yang tidak diikuti pembersihan, atau data yang dimuat dari sumber berbeda pada waktu berbeda. Periksa dengan `isin` pada dua arah, seperti dalam modul merge. Baris yatim membuat inner join menghilangkan data dan left join memunculkan NaN yang membingungkan, sehingga memeriksanya sebelum menggabung menghemat banyak kebingungan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Aturan sebagai kode",
+              "markdown": "Tulis setiap aturan kualitas sebagai ekspresi boolean satu nilai per baris, dengan na=False agar nilai hilang diperlakukan eksplisit. Aturan sebagai kode dapat dijalankan ulang kapan saja."
+            },
+            {
+              "type": "code_example",
+              "filename": "integritas.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\npes_id = [1, 2, 9]\nprint(pd.Series(pes_id).isin(df['id']).tolist())\nprint(df['id'].isin(pes_id).tolist())\nprint(sorted(set(pes_id) - set(df['id'])))\nprint(round(float(df['umur'].between(0, 120).mean()), 3))\nprint(df.loc[df['umur'].between(0, 120), 'umur'].mean())\nprint(df.assign(ok=df['umur'].between(0, 120)).groupby('ok').size().to_dict())",
+              "expected_output_note": "[True, True, False]\n[True, True, False, False, False, False]\n[9]\n0.667\n28.75\n{False: 2, True: 4}",
+              "explanation": "Integritas referensi diperiksa dengan isin pada dua arah. Mengelompokkan menurut hasil aturan menunjukkan berapa baris lolos dan gagal."
+            }
+          ],
+          "quick_check": {
+            "question": "Keunikan menanyakan?",
+            "options": [
+              "Semua kolom unik",
+              "Entitas tercatat sekali"
+            ],
+            "answer_index": 1,
+            "explanation": "Tanpa duplikat.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Aturan antar kolom",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Aturan antar kolom\n\nBeberapa aturan melibatkan lebih dari satu kolom: tanggal selesai tidak boleh sebelum tanggal mulai, total harus sama dengan jumlah rincian, kota harus sesuai provinsi. Aturan seperti ini lolos dari pemeriksaan per kolom dan hanya terlihat bila kolom dibandingkan. Tulis sebagai ekspresi boolean yang membandingkan kolom, misalnya `df['akhir'] >= df['mulai']`. Pelanggaran antar kolom sering menandakan kolom tertukar atau salah masuk, kesalahan sistematis yang menyentuh banyak baris sekaligus dan layak diselidiki akarnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menetapkan ambang yang realistis\n\nMenuntut seratus persen pada setiap aturan jarang realistis. Tetapkan ambang berdasarkan peran kolom: kolom kunci harus seratus persen, kolom pendukung boleh sembilan puluh lima persen. Ambang dapat diturunkan dari kebutuhan analisis, misalnya berapa nilai hilang yang masih dapat diimputasi tanpa merusak hasil. Catat ambang beserta alasannya agar tim sepakat tentang apa yang dimaksud data cukup baik, dan agar perubahan kualitas yang melewati ambang dapat memicu tindakan, bukan sekadar menjadi angka yang tidak dibaca siapa pun."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh menilai satu kolom\n\nAmbil kolom gaji sebagai contoh. Kelengkapannya enam puluh enam koma tujuh persen, sehingga sepertiga baris tidak punya gaji. Validitasnya: satu nilai sejuta jauh di luar yang lain, mungkin salah satuan. Keunikan tidak relevan. Konsistensi: bila gaji dicatat dalam juta pada sebagian baris dan rupiah penuh pada baris lain, itulah penyebab angka sejuta. Dengan menelusuri satu kolom melalui keempat dimensi, Anda memperoleh cerita lengkap tentang kesehatannya, bukan hanya daftar angka yang terpisah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menimbang biaya salah\n\nPilih seberapa ketat aturan berdasarkan biaya kesalahan. Pada data untuk laporan ringan, usia kosong mungkin tidak berarti apa-apa. Pada data untuk keputusan kredit, usia salah dapat berdampak hukum. Semakin tinggi taruhannya, semakin ketat aturannya dan semakin penting pemeriksaan manual atas sampel. Pertimbangan ini mencegah dua kegagalan sekaligus: terlalu longgar sehingga kesalahan lolos, dan terlalu ketat sehingga waktu habis memeriksa hal yang tidak berpengaruh pada keputusan."
+            }
+          ],
+          "quick_check": {
+            "question": "Integritas referensi memakai?",
+            "options": [
+              "isin antar tabel",
+              "describe"
+            ],
+            "answer_index": 0,
+            "explanation": "Kunci asing.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B3-01-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `umur_tidak_valid(df, bawah, atas)` yang mengembalikan bilangan bulat jumlah baris dengan `umur` di luar rentang `bawah` sampai `atas` (kedua ujung dianggap valid).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef umur_tidak_valid(df, bawah, atas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "umur_tidak_valid(df, 0, 120)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert umur_tidak_valid(df, 0, 120) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "umur_tidak_valid(df, 0, 300)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert umur_tidak_valid(df, 0, 300) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "umur_tidak_valid(df, -10, 300)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert umur_tidak_valid(df, -10, 300) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "umur_tidak_valid(df, 28, 31)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert umur_tidak_valid(df, 28, 31) == 3"
+              }
+            ]
+          },
+          "hint": "between lalu negasikan dan jumlahkan.",
+          "solution": "import pandas as pd\n\ndef umur_tidak_valid(df, bawah, atas):\n    return int((~df['umur'].between(bawah, atas)).sum())",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-01-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `id_email_buruk(df)` yang mengembalikan list `id` baris yang emailnya kosong atau tidak berbentuk `nama@domain.tld` (pola `^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$`).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef id_email_buruk(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "id_email_buruk(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert id_email_buruk(df) == [2, 6]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "id_email_buruk(df.iloc[[0, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_email_buruk(df.iloc[[0, 2]]) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "id_email_buruk(df.iloc[[1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_email_buruk(df.iloc[[1]]) == [2]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "id_email_buruk(df.iloc[[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_email_buruk(df.iloc[[5]]) == [6]"
+              }
+            ]
+          },
+          "hint": "str.match dengan na False lalu saring baris yang tidak lolos.",
+          "solution": "import pandas as pd\n\ndef id_email_buruk(df):\n    pola = r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'\n    ok = df['email'].str.match(pola, na=False)\n    return df.loc[~ok, 'id'].tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-01-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `variasi_kota(df)` yang mengembalikan selisih jumlah nilai unik `kota` mentah dan setelah dipangkas serta diubah ke huruf kecil.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef variasi_kota(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "variasi_kota(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert variasi_kota(df) == 1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "variasi_kota(df.iloc[[0, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert variasi_kota(df.iloc[[0, 1]]) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "variasi_kota(df.iloc[[0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert variasi_kota(df.iloc[[0]]) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "variasi_kota(df.iloc[[2, 3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert variasi_kota(df.iloc[[2, 3]]) == 0"
+              }
+            ]
+          },
+          "hint": "nunique mentah dikurangi nunique setelah strip dan lower.",
+          "solution": "import pandas as pd\n\ndef variasi_kota(df):\n    mentah = df['kota'].nunique()\n    bersih = df['kota'].str.strip().str.lower().nunique()\n    return int(mentah - bersih)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-01-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `kelengkapan(df)` yang mengembalikan dict persentase sel terisi per kolom, dibulatkan satu desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef kelengkapan(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kelengkapan(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert kelengkapan(df) == {'id': 100.0, 'nama': 83.3, 'umur': 100.0, 'email': 83.3, 'kota': 100.0, 'gaji': 66.7}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kelengkapan(df.dropna())",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kelengkapan(df.dropna()) == {'id': 100.0, 'nama': 100.0, 'umur': 100.0, 'email': 100.0, 'kota': 100.0, 'gaji': 100.0}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kelengkapan(df[['gaji']])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kelengkapan(df[['gaji']]) == {'gaji': 66.7}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kelengkapan(df.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kelengkapan(df.iloc[:2])['gaji'] == 100.0"
+              }
+            ]
+          },
+          "hint": "notna lalu rata-rata dikali seratus dan bulatkan.",
+          "solution": "import pandas as pd\n\ndef kelengkapan(df):\n    return (df.notna().mean() * 100).round(1).to_dict()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Validitas menanyakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Format dan rentang nilai",
+              "description": ""
+            },
+            {
+              "label": "Jumlah baris",
+              "description": ""
+            },
+            {
+              "label": "Kecepatan",
+              "description": ""
+            },
+            {
+              "label": "Ukuran file",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Format.",
+          "explanation": "Aturan nilai."
+        },
+        {
+          "q": "Keunikan menanyakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Entitas tercatat sekali",
+              "description": ""
+            },
+            {
+              "label": "Semua kolom unik",
+              "description": ""
+            },
+            {
+              "label": "Nilai positif",
+              "description": ""
+            },
+            {
+              "label": "Tanggal baru",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sekali.",
+          "explanation": "Tanpa duplikat."
+        },
+        {
+          "q": "Integritas referensi memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "isin antar tabel",
+              "description": ""
+            },
+            {
+              "label": "describe",
+              "description": ""
+            },
+            {
+              "label": "sort",
+              "description": ""
+            },
+            {
+              "label": "cut",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "isin.",
+          "explanation": "Kunci asing."
+        },
+        {
+          "q": "na=False pada str.match berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hilang tidak lolos",
+              "description": ""
+            },
+            {
+              "label": "Hilang lolos",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Hapus baris",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tidak lolos.",
+          "explanation": "Eksplisit."
+        },
+        {
+          "q": "Aturan paling baik ditulis sebagai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kode boolean",
+              "description": ""
+            },
+            {
+              "label": "Catatan",
+              "description": ""
+            },
+            {
+              "label": "Komentar",
+              "description": ""
+            },
+            {
+              "label": "Ingatan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kode.",
+          "explanation": "Dapat diulang."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menganggap kualitas hanya soal data hilang. Lebih baik: Periksa semua dimensi: kelengkapan, validitas, keunikan, konsistensi, waktu.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menganggap kualitas hanya soal data hilang.",
+          "fix": "Periksa semua dimensi: kelengkapan, validitas, keunikan, konsistensi, waktu."
+        },
+        {
+          "mistake": "Aturan validasi hanya dalam kepala.",
+          "fix": "Tulis sebagai kode yang dapat dijalankan ulang."
+        },
+        {
+          "mistake": "Mengabaikan spasi tak terlihat.",
+          "fix": "Bandingkan teks dengan versi yang dipangkas."
+        }
+      ],
+      "summary": [
+        "Kualitas data memiliki dimensi: kelengkapan, validitas, keunikan, konsistensi, ketepatan waktu, dan akurasi.",
+        "Aturan validasi ditulis sebagai Series boolean per baris.",
+        "Daftar nilai yang diizinkan dan integritas referensi memakai isin.",
+        "Spasi tak terlihat dan variasi ejaan perlu dideteksi eksplisit."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Dimensi kualitas dan aturan validasi"
+          },
+          {
+            "type": "text",
+            "source": "Aturan rentang, format, dan keunikan masing-masing menjadi satu Series boolean. Menandai nilai tidak valid sebagai NaN memperlihatkan dampaknya pada rata-rata."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\npat = r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'\nprint(df['umur'].between(0, 120).tolist(), (~df['umur'].between(0, 120)).sum())\nprint(df['email'].str.match(pat, na=False).tolist())\nprint(df['id'].is_unique, (~df.duplicated('id', keep=False)).tolist())\nprint((df.notna().mean() * 100).round(1).to_dict())\nprint(df['umur'].where(df['umur'].between(0, 120)).tolist())\nprint(df['umur'].where(df['umur'].between(0, 120)).mean())"
+          },
+          {
+            "type": "text",
+            "source": "Daftar nilai yang diizinkan dengan isin, spasi tak terlihat, dan variasi ejaan semuanya dapat dideteksi dengan ekspresi boolean sederhana."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\npat = r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'\nprint(df.loc[~df['email'].str.match(pat, na=False), 'id'].tolist())\nprint(df['kota'].nunique() - df['kota'].str.strip().str.lower().nunique())\nprint(df['kota'].map(df['kota'].value_counts()).tolist())\nprint(df['kota'].str.lower().isin(['jakarta', 'medan']).tolist())\nprint(df[~df['kota'].str.lower().isin(['jakarta', 'medan'])]['kota'].tolist())\nprint((df['nama'].notna() & (df['nama'] != df['nama'].str.strip())).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Integritas referensi diperiksa dengan isin pada dua arah. Mengelompokkan menurut hasil aturan menunjukkan berapa baris lolos dan gagal."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\npes_id = [1, 2, 9]\nprint(pd.Series(pes_id).isin(df['id']).tolist())\nprint(df['id'].isin(pes_id).tolist())\nprint(sorted(set(pes_id) - set(df['id'])))\nprint(round(float(df['umur'].between(0, 120).mean()), 3))\nprint(df.loc[df['umur'].between(0, 120), 'umur'].mean())\nprint(df.assign(ok=df['umur'].between(0, 120)).groupby('ok').size().to_dict())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B3-01-3",
+      "title": "Laporan audit dan prioritas perbaikan",
+      "estimated_minutes": 35,
+      "read_minutes": 8,
+      "objectives": [
+        "Menggabung aturan menjadi laporan audit yang ringkas",
+        "Menghitung pelanggaran dan persen lolos per aturan",
+        "Menentukan prioritas perbaikan berdasarkan dampak",
+        "Mengunci harapan kualitas dengan assert dan dokumentasi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari temuan ke laporan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari temuan ke laporan\n\nPemeriksaan yang tersebar di sel-sel notebook tidak banyak membantu orang lain, bahkan Anda sendiri bulan depan. Audit yang baik berakhir dengan satu laporan ringkas: daftar aturan, jumlah pelanggaran masing-masing, dan persentase lolos. Laporan ini menjadi dasar keputusan: mana yang harus diperbaiki sebelum analisis, mana yang cukup dicatat, mana yang menandakan masalah di hulu pengumpulan data. Ia juga berfungsi sebagai bukti kondisi data pada saat analisis, berguna ketika hasil dipertanyakan atau data berubah di kemudian hari."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengemas aturan dalam kamus\n\nCara rapi menyusun audit adalah menyimpan aturan dalam kamus yang memetakan nama aturan ke Series boolean. Dengan begitu, satu perulangan atau satu komprehensi dict menghitung semua pelanggaran, dan menambah aturan baru hanya menambah satu baris. Nama aturan yang deskriptif seperti `umur_valid` atau `email_valid` membuat laporan terbaca tanpa penjelasan. Pola ini juga memudahkan pengujian: setiap aturan dapat diuji dengan tabel kecil yang pelanggarannya sudah diketahui, sehingga Anda yakin aturan itu benar-benar menangkap yang dimaksud."
+            },
+            {
+              "type": "code_example",
+              "filename": "laporan_audit.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\npat = r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'\nrules = {\n    'umur_valid': df['umur'].between(0, 120),\n    'email_valid': df['email'].str.match(pat, na=False),\n    'id_unik': ~df.duplicated('id', keep=False),\n}\nprint({k: int((~v).sum()) for k, v in rules.items()})\nprint({k: round(float(v.mean() * 100), 1) for k, v in rules.items()})\nok = pd.concat(rules, axis=1).all(axis=1)\nprint(ok.tolist(), round(float(ok.mean()), 3))\nprint(int(ok.sum()), len(df) - int(ok.sum()))",
+              "expected_output_note": "{'umur_valid': 2, 'email_valid': 2, 'id_unik': 2}\n{'umur_valid': 66.7, 'email_valid': 66.7, 'id_unik': 66.7}\n[True, False, False, False, False, False] 0.167\n1 5",
+              "explanation": "Kamus aturan menghasilkan laporan pelanggaran dan persen lolos. Concat dengan all menandai baris yang lolos semua aturan sekaligus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Baris lolos semua aturan\n\nSelain pelanggaran per aturan, hitung berapa baris yang lolos seluruh aturan. Pada contoh, hanya satu dari enam baris yang bersih, angka yang sangat berbeda dari enam puluh enam koma tujuh persen lolos per aturan. Pelanggaran tersebar pada baris berbeda, sehingga bila Anda membuang setiap baris yang melanggar satu aturan pun, hampir seluruh data hilang. Perbandingan kedua angka ini membantu memutuskan apakah membuang baris layak atau perbaikan yang lebih halus diperlukan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Prioritas berdasarkan dampak\n\nTidak semua pelanggaran sama pentingnya. Prioritas ditentukan oleh dua hal: seberapa banyak baris terdampak dan seberapa penting kolom itu bagi analisis. Pelanggaran pada kolom target atau kunci penggabungan lebih mendesak daripada pada kolom yang tidak dipakai. Urutkan temuan menurut dampak, dan pada hasil seri, urutkan menurut nama agar laporan stabil antar jalannya. Fokuskan upaya perbaikan pada beberapa temuan teratas yang menutup sebagian besar kerusakan, bukan pada kesempurnaan yang mahal dan jarang memberi nilai."
+            },
+            {
+              "type": "code_example",
+              "filename": "prioritas.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\nlaporan = {'a': 2, 'b': 5, 'c': 2}\nprint(sorted(laporan, key=lambda k: (-laporan[k], k)))\nprint(sorted(laporan.items(), key=lambda kv: -kv[1])[0])\nprint(max(laporan, key=laporan.get))\nprint(sum(laporan.values()), [k for k, v in laporan.items() if v >= 2])",
+              "expected_output_note": "['b', 'a', 'c']\n('b', 5)\nb\n9 ['a', 'b', 'c']",
+              "explanation": "Kunci pengurutan dengan tanda minus menurunkan jumlah, dan nama sebagai pemutus seri menjaga urutan tetap deterministik."
+            }
+          ],
+          "quick_check": {
+            "question": "Kamus aturan memetakan?",
+            "options": [
+              "Nama aturan ke Series boolean",
+              "Kolom ke tipe"
+            ],
+            "answer_index": 0,
+            "explanation": "Rapi.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mencari akar masalah",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mencari akar masalah\n\nPelanggaran yang tampak banyak sering berasal dari satu akar. Seribu baris dengan kota berejaan berbeda mungkin hanya berasal dari satu formulir yang tidak membakukan isian. Seratus baris duplikat mungkin akibat satu proses yang berjalan dua kali. Sebelum memperbaiki gejala, tanyakan dari mana pelanggaran itu berasal: kelompokkan pelanggaran menurut sumber, tanggal, atau versi sistem. Memperbaiki akar di hulu mencegah masalah muncul kembali pada data kiriman berikutnya, sedangkan memperbaiki gejala hanya menunda masalah yang sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengunci harapan dengan assert\n\nSetelah memperbaiki data, kunci harapan kualitas dengan pernyataan `assert` di awal alur analisis: id harus unik, umur harus antara nol dan seratus dua puluh, tidak ada kota di luar daftar. Bila data baru melanggar, alur berhenti dengan pesan jelas, bukan menghasilkan angka salah secara diam-diam. Pernyataan ini adalah dokumentasi hidup tentang apa yang Anda anggap benar, dan merupakan bentuk paling sederhana dari kontrak data. Pustaka khusus validasi memperluas gagasan yang sama untuk kasus besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mendokumentasikan keputusan\n\nSetiap keputusan pembersihan perlu dicatat: apa yang diubah, berapa baris terdampak, dan mengapa. Catatan singkat dalam notebook atau berkas README cukup. Dua bulan kemudian, ketika seseorang bertanya mengapa dua puluh baris hilang atau mengapa umur di atas seratus dua puluh diganti kosong, jawabannya sudah tersedia. Dokumentasi juga memaksa Anda berpikir jernih tentang pilihan itu, dan sering membuat Anda menyadari bahwa sebagian keputusan tidak dapat dibenarkan sehingga perlu ditinjau ulang sebelum dipakai lebih jauh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data mentah tetap utuh\n\nPrinsip penting audit dan pembersihan: jangan pernah menimpa data mentah. Simpan salinan asli yang tidak diubah, lakukan pembersihan melalui kode yang menghasilkan versi bersih, dan simpan versi bersih terpisah. Dengan begitu pembersihan dapat diulang, ditinjau, dan diperbaiki bila ada keputusan yang ternyata keliru, tanpa kehilangan informasi asli. Ini selaras dengan prinsip reproduksibilitas yang dibahas pada course alur kerja: hasil bersih adalah turunan dari data mentah dan kode, bukan benda yang dirawat tangan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah belajar menjalankan profil cepat, mengenali dimensi kualitas data, menulis aturan validasi sebagai kode, menyusun laporan audit, dan menentukan prioritas perbaikan. Pesan utamanya: periksa sebelum percaya, tulis aturan sebagai kode, laporkan dengan angka, dan jangan menimpa data mentah. Modul berikutnya membahas strategi menangani nilai hilang secara lebih dalam, termasuk jenis mekanisme hilang dan pilihan imputasi yang lebih canggih."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Kontrak data",
+              "markdown": "Kunci harapan kualitas dengan assert di awal alur dan simpan data mentah tanpa diubah. Data baru yang melanggar akan menghentikan alur dengan jelas."
+            },
+            {
+              "type": "code_example",
+              "filename": "kontrak_assert.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\ndef periksa(d):\n    assert d['id'].is_unique, 'id tidak unik'\n    assert d['umur'].between(0, 120).all(), 'umur di luar rentang'\n    return 'lolos'\ntry:\n    periksa(df)\nexcept AssertionError as e:\n    print('gagal:', e)\nbersih = df.drop_duplicates('id').query('umur >= 0 and umur <= 120')\nprint(periksa(bersih), len(bersih))\nprint(bersih['id'].tolist())",
+              "expected_output_note": "gagal: id tidak unik\nlolos 3\n[1, 3, 6]",
+              "explanation": "Assert dengan pesan menghentikan alur pada data yang melanggar. Setelah dibersihkan, pemeriksaan yang sama lolos."
+            }
+          ],
+          "quick_check": {
+            "question": "Baris lolos semua biasanya?",
+            "options": [
+              "Lebih banyak",
+              "Lebih sedikit dari lolos per aturan"
+            ],
+            "answer_index": 1,
+            "explanation": "Pelanggaran tersebar.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Pesan galat yang berguna",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pesan galat yang berguna\n\nPernyataan assert sebaiknya menyertakan pesan yang menjelaskan apa yang salah dan, bila mungkin, berapa banyak. Pesan `id tidak unik` jauh lebih membantu daripada AssertionError kosong, apalagi bila disertai jumlah atau contoh baris. Pesan yang baik membuat orang yang menerima galat pada pukul dua pagi dapat langsung memahami masalahnya tanpa membaca kode. Untuk pemeriksaan yang tidak boleh dimatikan oleh opsi optimasi Python, tulis `if ... raise ValueError(...)` agar tetap berjalan di semua mode."
+            },
+            {
+              "type": "text",
+              "markdown": "## Audit berulang\n\nAudit bukan kegiatan sekali jalan. Data baru terus datang, dan kualitasnya dapat memburuk tanpa disadari: formulir diubah, sensor rusak, sistem hulu diperbarui. Jalankan audit yang sama tiap kali data baru dimuat, simpan hasilnya bersama tanggal, dan bandingkan antar waktu. Tren yang memburuk, misalnya persentase hilang yang naik perlahan, adalah sinyal dini masalah di hulu yang dapat diperbaiki sebelum merusak keputusan. Banyak tim memantau metrik kualitas data seperti mereka memantau metrik layanan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh laporan yang baik\n\nLaporan audit yang baik pendek: judul dan tanggal, jumlah baris dan kolom, tabel aturan dengan jumlah pelanggaran dan persen lolos, tiga temuan teratas beserta dugaan akar masalah, dan rekomendasi tindakan. Satu halaman cukup. Pembaca utamanya adalah orang yang memutuskan apakah data layak dipakai, bukan sesama analis, sehingga bahasa dan angka harus langsung bermakna bagi mereka. Lampirkan kode audit agar siapa pun dapat menjalankan ulang dan memeriksa angka tersebut."
+            },
+            {
+              "type": "text",
+              "markdown": "## Siapa memiliki data\n\nSetiap tabel sebaiknya punya pemilik yang bertanggung jawab atas kualitasnya, orang atau tim yang dapat menjawab pertanyaan dan memperbaiki sumber masalah. Tanpa pemilik, temuan audit hanya menjadi daftar keluhan. Cantumkan pemilik pada laporan sehingga temuan mengalir ke orang yang tepat, dan jalin komunikasi rutin dengan pemilik data di hulu supaya perubahan format dan sistem diberitahukan lebih dulu, bukan ditemukan belakangan lewat analisis yang rusak."
+            }
+          ],
+          "quick_check": {
+            "question": "Prioritas ditentukan oleh?",
+            "options": [
+              "Dampak dan pentingnya kolom",
+              "Abjad"
+            ],
+            "answer_index": 0,
+            "explanation": "Dampak.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B3-01-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `laporan_aturan(df)` yang mengembalikan dict jumlah pelanggaran untuk tiga aturan: `umur_valid` (umur 0 sampai 120), `email_valid` (pola `^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$`, kosong dianggap tidak valid), dan `id_unik` (id tidak berulang).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef laporan_aturan(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "laporan_aturan(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert laporan_aturan(df) == {'umur_valid': 2, 'email_valid': 2, 'id_unik': 2}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "laporan_aturan(df.iloc[[0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert laporan_aturan(df.iloc[[0]]) == {'umur_valid': 0, 'email_valid': 0, 'id_unik': 0}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "laporan_aturan(df.iloc[[2, 3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert laporan_aturan(df.iloc[[2, 3]]) == {'umur_valid': 0, 'email_valid': 0, 'id_unik': 2}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "laporan_aturan(df.iloc[[1, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert laporan_aturan(df.iloc[[1, 4]])['umur_valid'] == 2"
+              }
+            ]
+          },
+          "hint": "Kamus aturan boolean lalu hitung yang tidak lolos.",
+          "solution": "import pandas as pd\n\ndef laporan_aturan(df):\n    pola = r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'\n    aturan = {\n        'umur_valid': df['umur'].between(0, 120),\n        'email_valid': df['email'].str.match(pola, na=False),\n        'id_unik': ~df.duplicated('id', keep=False),\n    }\n    return {k: int((~v).sum()) for k, v in aturan.items()}",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-01-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `persen_lolos(df)` yang mengembalikan dict persentase baris yang lolos tiap aturan yang sama (`umur_valid`, `email_valid`, `id_unik`), dibulatkan satu desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef persen_lolos(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "persen_lolos(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert persen_lolos(df) == {'umur_valid': 66.7, 'email_valid': 66.7, 'id_unik': 66.7}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "persen_lolos(df.iloc[[0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_lolos(df.iloc[[0]]) == {'umur_valid': 100.0, 'email_valid': 100.0, 'id_unik': 100.0}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "persen_lolos(df.iloc[[0, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_lolos(df.iloc[[0, 1]])['umur_valid'] == 50.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "persen_lolos(df.iloc[[2, 3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_lolos(df.iloc[[2, 3]])['id_unik'] == 0.0"
+              }
+            ]
+          },
+          "hint": "Rata-rata Series boolean dikali seratus.",
+          "solution": "import pandas as pd\n\ndef persen_lolos(df):\n    pola = r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'\n    aturan = {\n        'umur_valid': df['umur'].between(0, 120),\n        'email_valid': df['email'].str.match(pola, na=False),\n        'id_unik': ~df.duplicated('id', keep=False),\n    }\n    return {k: round(float(v.mean() * 100), 1) for k, v in aturan.items()}",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-01-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `baris_lolos_semua(df)` yang mengembalikan bilangan bulat jumlah baris yang lolos ketiga aturan sekaligus.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef baris_lolos_semua(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "baris_lolos_semua(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert baris_lolos_semua(df) == 1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "baris_lolos_semua(df.iloc[[0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_lolos_semua(df.iloc[[0]]) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "baris_lolos_semua(df.iloc[[1, 4, 5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_lolos_semua(df.iloc[[1, 4, 5]]) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "baris_lolos_semua(df.iloc[[0, 5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baris_lolos_semua(df.iloc[[0, 5]]) == 1"
+              }
+            ]
+          },
+          "hint": "Gabungkan aturan dengan operator dan lalu jumlahkan.",
+          "solution": "import pandas as pd\n\ndef baris_lolos_semua(df):\n    pola = r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'\n    ok = (df['umur'].between(0, 120)\n          & df['email'].str.match(pola, na=False)\n          & ~df.duplicated('id', keep=False))\n    return int(ok.sum())",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-01-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `prioritas(laporan)` yang menerima dict `{aturan: jumlah_pelanggaran}` dan mengembalikan list nama aturan dari pelanggaran terbanyak, dengan pemutus seri menurut abjad.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef prioritas(laporan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "prioritas({'a': 2, 'b': 5, 'c': 2})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\nassert prioritas({'a': 2, 'b': 5, 'c': 2}) == ['b', 'a', 'c']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "prioritas({'x': 0})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert prioritas({'x': 0}) == ['x']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "prioritas({'b': 1, 'a': 1})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert prioritas({'b': 1, 'a': 1}) == ['a', 'b']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "prioritas({})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert prioritas({}) == []"
+              }
+            ]
+          },
+          "hint": "sorted dengan kunci minus jumlah lalu nama.",
+          "solution": "import pandas as pd\n\ndef prioritas(laporan):\n    return sorted(laporan, key=lambda k: (-laporan[k], k))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Kamus aturan memetakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nama aturan ke Series boolean",
+              "description": ""
+            },
+            {
+              "label": "Kolom ke tipe",
+              "description": ""
+            },
+            {
+              "label": "Baris ke id",
+              "description": ""
+            },
+            {
+              "label": "Nilai ke label",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Boolean.",
+          "explanation": "Rapi."
+        },
+        {
+          "q": "Baris lolos semua biasanya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lebih sedikit dari lolos per aturan",
+              "description": ""
+            },
+            {
+              "label": "Lebih banyak",
+              "description": ""
+            },
+            {
+              "label": "Sama",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sedikit.",
+          "explanation": "Pelanggaran tersebar."
+        },
+        {
+          "q": "Prioritas ditentukan oleh?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dampak dan pentingnya kolom",
+              "description": ""
+            },
+            {
+              "label": "Abjad",
+              "description": ""
+            },
+            {
+              "label": "Urutan kolom",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dampak.",
+          "explanation": "Dampak."
+        },
+        {
+          "q": "assert di awal alur berfungsi sebagai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kontrak data",
+              "description": ""
+            },
+            {
+              "label": "Hiasan",
+              "description": ""
+            },
+            {
+              "label": "Cache",
+              "description": ""
+            },
+            {
+              "label": "Log",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kontrak.",
+          "explanation": "Menghentikan data buruk."
+        },
+        {
+          "q": "Data mentah sebaiknya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak diubah",
+              "description": ""
+            },
+            {
+              "label": "Ditimpa",
+              "description": ""
+            },
+            {
+              "label": "Dihapus",
+              "description": ""
+            },
+            {
+              "label": "Dikompres saja",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Utuh.",
+          "explanation": "Sumber kebenaran."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menyebar pemeriksaan di banyak sel tanpa laporan. Lebih baik: Susun kamus aturan dan satu laporan ringkas.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menyebar pemeriksaan di banyak sel tanpa laporan.",
+          "fix": "Susun kamus aturan dan satu laporan ringkas."
+        },
+        {
+          "mistake": "Memperbaiki gejala tanpa mencari akar.",
+          "fix": "Kelompokkan pelanggaran menurut sumber."
+        },
+        {
+          "mistake": "Menimpa data mentah dengan versi bersih.",
+          "fix": "Simpan mentah utuh dan hasilkan bersih lewat kode."
+        }
+      ],
+      "summary": [
+        "Laporan audit merangkum pelanggaran dan persen lolos per aturan.",
+        "Kamus aturan memudahkan penambahan dan pengujian aturan.",
+        "Prioritas ditentukan oleh dampak dan pentingnya kolom.",
+        "Assert dan dokumentasi mengunci harapan, dan data mentah tetap utuh."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Laporan audit dan prioritas perbaikan"
+          },
+          {
+            "type": "text",
+            "source": "Kamus aturan menghasilkan laporan pelanggaran dan persen lolos. Concat dengan all menandai baris yang lolos semua aturan sekaligus."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\npat = r'^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'\nrules = {\n    'umur_valid': df['umur'].between(0, 120),\n    'email_valid': df['email'].str.match(pat, na=False),\n    'id_unik': ~df.duplicated('id', keep=False),\n}\nprint({k: int((~v).sum()) for k, v in rules.items()})\nprint({k: round(float(v.mean() * 100), 1) for k, v in rules.items()})\nok = pd.concat(rules, axis=1).all(axis=1)\nprint(ok.tolist(), round(float(ok.mean()), 3))\nprint(int(ok.sum()), len(df) - int(ok.sum()))"
+          },
+          {
+            "type": "text",
+            "source": "Kunci pengurutan dengan tanda minus menurunkan jumlah, dan nama sebagai pemutus seri menjaga urutan tetap deterministik."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\nlaporan = {'a': 2, 'b': 5, 'c': 2}\nprint(sorted(laporan, key=lambda k: (-laporan[k], k)))\nprint(sorted(laporan.items(), key=lambda kv: -kv[1])[0])\nprint(max(laporan, key=laporan.get))\nprint(sum(laporan.values()), [k for k, v in laporan.items() if v >= 2])"
+          },
+          {
+            "type": "text",
+            "source": "Assert dengan pesan menghentikan alur pada data yang melanggar. Setelah dibersihkan, pemeriksaan yang sama lolos."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 3, 5, 6],\n    'nama': ['Ani', ' budi', 'Cici', 'Cici', None, 'Fani'],\n    'umur': [25, -3, 31, 31, 200, 28],\n    'email': ['a@x.com', 'b@x', 'c@x.com', 'c@x.com', 'e@x.com', None],\n    'kota': ['Jakarta', 'jakarta', 'Medan', 'Medan', 'Bandung', 'Jakarta'],\n    'gaji': [8.0, 6.5, np.nan, np.nan, 7.0, 1000000.0],\n})\n\ndef periksa(d):\n    assert d['id'].is_unique, 'id tidak unik'\n    assert d['umur'].between(0, 120).all(), 'umur di luar rentang'\n    return 'lolos'\ntry:\n    periksa(df)\nexcept AssertionError as e:\n    print('gagal:', e)\nbersih = df.drop_duplicates('id').query('umur >= 0 and umur <= 120')\nprint(periksa(bersih), len(bersih))\nprint(bersih['id'].tolist())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

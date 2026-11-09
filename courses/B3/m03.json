@@ -1,0 +1,1616 @@
+{
+  "schema_version": 2,
+  "course_id": "B3",
+  "module_no": 3,
+  "title": "Duplikat dan inkonsistensi",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Mendeteksi duplikat persis, duplikat kunci, dan duplikat tersembunyi",
+    "Menyeragamkan kategori dan ejaan dengan peta dan pencocokan mirip",
+    "Menyelesaikan duplikat dengan strategi yang dapat diaudit"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B3-03-1",
+    "exercise_id": "B3-03-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def id_setelah_normalisasi(df, subset):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B3-03-1",
+      "title": "Mendeteksi baris duplikat",
+      "estimated_minutes": 35,
+      "read_minutes": 9,
+      "objectives": [
+        "Membedakan duplikat persis dan duplikat berdasarkan kunci",
+        "Memakai duplicated dan drop_duplicates dengan subset dan keep",
+        "Melihat seluruh anggota kelompok duplikat",
+        "Menormalkan teks sebelum mendeteksi duplikat tersembunyi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa duplikat berbahaya",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa duplikat berbahaya\n\nBaris ganda tampak sepele, tetapi dampaknya nyata. Bila seorang pelanggan tercatat dua kali, total penjualan dan jumlah pelanggan menggembung. Bila baris duplikat jatuh ke data latih dan data uji sekaligus, model seakan-akan menghafal jawaban dan skor evaluasi menjadi terlalu bagus. Duplikat muncul dari banyak sumber: formulir yang dikirim dua kali, penggabungan beberapa file yang tumpang tindih, proses impor yang diulang, atau pengguna yang mendaftar dengan ejaan berbeda. Pelajaran ini membahas cara mendeteksi duplikat dengan pandas, termasuk duplikat yang tersembunyi di balik perbedaan huruf besar dan spasi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data contoh\n\nPelajaran ini memakai tabel tujuh baris dengan kolom `id`, `nama`, `kota`, dan `nilai`. Sekilas tidak ada baris yang sama persis karena `id` selalu berbeda. Namun mata manusia segera melihat bahwa Ani Putri muncul dua kali dengan huruf besar berbeda dan spasi di ujung, Budi muncul dua kali dengan kota dan nilai sama, dan Cici juga muncul dua kali. Kota juga ditulis dengan banyak cara. Tabel kecil ini sengaja dibuat berantakan agar setiap teknik dapat Anda periksa langsung dengan mata sebelum dipakai pada tabel besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Duplikat persis dan duplikat kunci\n\nAda dua makna duplikat. Duplikat persis berarti seluruh kolom sama. Duplikat kunci berarti kolom-kolom yang mengidentifikasi entitas sama, walaupun kolom lain boleh berbeda. Pada tabel pelanggan, kunci bisa berupa email, atau gabungan nama dan tanggal lahir. Kolom `id` yang dibuat otomatis hampir tidak pernah ikut kunci, karena ia selalu unik dan menyembunyikan duplikat. Langkah pertama yang baik adalah memutuskan secara eksplisit kolom mana yang membentuk kunci, lalu menuliskannya, sebab seluruh deteksi dan penghapusan bergantung pada keputusan ini."
+            },
+            {
+              "type": "text",
+              "markdown": "## duplicated dan subset\n\nMetode `df.duplicated()` mengembalikan deret boolean yang bernilai benar untuk setiap baris yang sudah pernah muncul sebelumnya. Baris pertama dari suatu kelompok bernilai salah, dan sisanya benar. Parameter `subset` membatasi pemeriksaan pada kolom tertentu, misalnya `df.duplicated(['nama', 'kota'])`. Tanpa subset, semua kolom dibandingkan, sehingga pada contoh kita tidak ada duplikat karena `id` berbeda. Menjumlahkan deret boolean dengan `sum()` memberi jumlah baris berlebih, yaitu baris yang akan hilang bila Anda menghapus duplikat dan menyisakan satu wakil."
+            },
+            {
+              "type": "code_example",
+              "filename": "duplicated_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nprint(df.duplicated().tolist())\nprint(df.duplicated(['nama']).tolist())\nprint(df.duplicated(['nama', 'kota', 'nilai']).tolist())\nprint(df.duplicated(['nilai']).sum(), df.duplicated(['id']).sum())\nprint(df.duplicated().sum(), df.drop(columns='id').duplicated().sum())",
+              "expected_output_note": "[False, False, False, False, False, False, False]\n[False, False, False, False, True, False, False]\n[False, False, False, False, True, False, False]\n3 0\n0 1",
+              "explanation": "Tanpa subset, kolom id yang unik menyembunyikan semua duplikat. Dengan subset nama dan kota dan nilai, hanya baris kelima yang terdeteksi sebagai pengulangan Budi."
+            }
+          ],
+          "quick_check": {
+            "question": "Parameter yang membatasi kolom pemeriksaan?",
+            "options": [
+              "subset",
+              "keep"
+            ],
+            "answer_index": 0,
+            "explanation": "Subset.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Memilih baris yang dipertahankan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih baris yang dipertahankan\n\nParameter `keep` menentukan baris mana yang dianggap asli. Nilai bawaan `first` menandai kemunculan berikutnya sebagai duplikat dan mempertahankan yang pertama. Nilai `last` mempertahankan yang terakhir, berguna bila data lebih baru berada di bawah. Nilai `False` menandai semua anggota kelompok duplikat, termasuk yang pertama. Pilihan ini penting karena data tidak selalu terurut. Jika Anda mengira yang pertama adalah yang terbaru padahal sebaliknya, Anda membuang versi yang benar dan menyimpan yang usang. Selalu urutkan data secara sadar sebelum menghapus duplikat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Melihat semua anggota kelompok\n\nSebelum menghapus, lihatlah seluruh anggota kelompok duplikat, bukan hanya pengulangannya. Dengan `keep=False`, deret boolean bernilai benar untuk semua anggota kelompok yang beranggota lebih dari satu. Menyaring dengan deret itu menampilkan pasangan atau kelompok yang akan dipangkas sehingga Anda dapat memeriksa apakah memang duplikat sungguhan. Kebiasaan ini mencegah kecelakaan, misalnya dua orang berbeda yang kebetulan bernama sama dan berasal dari kota sama. Hapus hanya setelah Anda yakin kunci Anda cukup tajam untuk membedakan entitas."
+            },
+            {
+              "type": "code_example",
+              "filename": "keep_duplikat.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nk = ['nama', 'kota', 'nilai']\nprint(df.duplicated(k, keep=False).tolist())\nprint(df.loc[df.duplicated(k, keep=False), 'id'].tolist())\nprint(df.drop_duplicates(k)['id'].tolist())\nprint(df.drop_duplicates(k, keep='last')['id'].tolist())\nprint(len(df.drop_duplicates(k)), len(df))",
+              "expected_output_note": "[False, False, True, False, True, False, False]\n[3, 5]\n[1, 2, 3, 4, 6, 7]\n[1, 2, 4, 5, 6, 7]\n6 7",
+              "explanation": "Keep false menampilkan kedua anggota pasangan. Keep first mempertahankan id 3 sedangkan keep last mempertahankan id 5."
+            },
+            {
+              "type": "text",
+              "markdown": "## Duplikat tersembunyi\n\nMata Anda melihat bahwa Ani Putri dan ani putri adalah orang yang sama, tetapi komputer membandingkan karakter satu demi satu sehingga huruf besar dan kecil dianggap berbeda, dan spasi di ujung juga dianggap karakter. Karena itu duplikat tersembunyi tidak terdeteksi. Solusinya menormalkan kolom kunci sebelum membandingkan: buang spasi di tepi dengan `str.strip`, samakan huruf dengan `str.lower`, dan bila perlu rapatkan spasi ganda di tengah. Normalisasi dilakukan pada salinan atau kolom bantu agar data asli tidak rusak."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menormalkan lalu mendeteksi\n\nSetelah nama dan kota dinormalkan menjadi huruf kecil tanpa spasi tepi, deteksi pada pasangan nama dan kota menemukan dua duplikat, yaitu baris kedua sebagai pengulangan Ani Putri dan baris kelima sebagai pengulangan Budi. Cici pada baris keempat dan ketujuh tidak dihitung duplikat karena kotanya berbeda, Bandung dan Surabaya, dan hal itu masuk akal bila kunci mencakup kota. Perhatikan bahwa hasil bergantung pada kunci. Perubahan kecil pada daftar kolom kunci mengubah jumlah duplikat, sehingga catat pilihan Anda dalam laporan."
+            },
+            {
+              "type": "code_example",
+              "filename": "duplikat_tersembunyi.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nb = df.assign(nama=df['nama'].str.strip().str.lower(), kota=df['kota'].str.strip().str.lower())\nprint(b['nama'].tolist())\nprint(b.duplicated(['nama', 'kota']).tolist())\nprint(b.drop_duplicates(['nama', 'kota'])['id'].tolist(), len(b.drop_duplicates(['nama', 'kota'])))\nprint(b.duplicated(['nama']).sum(), df.duplicated(['nama']).sum())\nprint(df['nama'].str.len().tolist(), df['nama'].str.strip().str.len().tolist())",
+              "expected_output_note": "['ani putri', 'ani putri', 'budi', 'cici', 'budi', 'dedi', 'cici']\n[False, True, False, False, True, False, False]\n[1, 3, 4, 6, 7] 5\n3 1\n[9, 10, 4, 4, 4, 4, 4]\n[9, 9, 4, 4, 4, 4, 4]",
+              "explanation": "Setelah normalisasi, duplikat meningkat dari satu menjadi tiga pada kolom nama saja. Spasi tepi terlihat dari panjang teks yang berbeda sebelum dan sesudah strip."
+            }
+          ],
+          "quick_check": {
+            "question": "keep=False menandai?",
+            "options": [
+              "Hanya yang pertama",
+              "Semua anggota kelompok duplikat"
+            ],
+            "answer_index": 1,
+            "explanation": "Semua anggota.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memeriksa panjang untuk menemukan spasi",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memeriksa panjang untuk menemukan spasi\n\nSpasi di ujung teks tidak terlihat saat mencetak. Cara cepat menemukannya adalah membandingkan panjang teks sebelum dan sesudah `strip`. Pada contoh, nama kedua memiliki panjang sepuluh sebelum dan sembilan sesudah, tanda adanya spasi tersembunyi. Pemeriksaan serupa dapat dilakukan dengan `df['nama'] != df['nama'].str.strip()` untuk menyaring baris bermasalah. Karakter tak terlihat lain, seperti tab, pemisah baris, dan spasi tanpa putus dari salinan halaman web, juga sering menjadi biang duplikat tersembunyi pada data hasil tempel dari dokumen."
+            },
+            {
+              "type": "text",
+              "markdown": "## Duplikat dan kebocoran data\n\nPada pemodelan, duplikat punya risiko tambahan. Bila Anda membagi data menjadi latih dan uji secara acak sebelum menghapus duplikat, salinan baris yang sama dapat berada di kedua sisi. Model yang menghafal baris latih akan tampak menebak baris uji dengan sempurna, padahal itu hanya mengingat. Aturannya jelas: hapus atau kelompokkan duplikat sebelum membagi data. Bila baris hampir sama harus tetap ada, bagi data menurut kelompok kunci sehingga seluruh anggota satu kelompok masuk sisi yang sama."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Jangan ikutkan id",
+              "markdown": "Kolom id otomatis hampir selalu unik dan menyembunyikan duplikat. Tentukan kolom kunci secara eksplisit dan jangan memeriksa duplikat dengan semua kolom bila ada id."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh dari dunia nyata\n\nBayangkan toko daring dengan tabel pesanan. Pelanggan menekan tombol bayar dua kali karena koneksi lambat, sehingga sistem menyimpan dua pesanan dengan isi sama dan selisih waktu satu detik. Laporan penjualan bulanan lalu melebih-lebihkan omzet. Kasus lain: tim pemasaran mengunggah daftar kontak dari tiga kegiatan berbeda, dan banyak orang hadir di lebih dari satu kegiatan, sehingga email yang sama muncul beberapa kali dengan nama ditulis berbeda. Kampanye surel lalu mengirim pesan ganda dan pelanggan merasa terganggu. Pola serupa terjadi di hampir setiap organisasi, dan mengenalinya adalah keterampilan dasar analis data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menyusun daftar periksa deteksi\n\nUntuk membuat deteksi menjadi kebiasaan, susun daftar periksa singkat. Pertama, tentukan kolom kunci dan tulis alasannya. Kedua, hitung duplikat persis dan duplikat kunci. Ketiga, normalkan teks lalu hitung ulang dan bandingkan angkanya. Keempat, lihat seluruh anggota beberapa kelompok dengan keep False. Kelima, catat jumlah dan persentase dalam laporan kualitas. Daftar sederhana ini mudah diulang pada setiap dataset baru, dan perbandingan angka sebelum dan sesudah normalisasi segera memberi tahu seberapa tersembunyi masalah duplikat pada data yang sedang Anda hadapi."
+            }
+          ],
+          "quick_check": {
+            "question": "Duplikat tersembunyi sering karena?",
+            "options": [
+              "Huruf besar dan spasi",
+              "Tipe int"
+            ],
+            "answer_index": 0,
+            "explanation": "Teks tidak seragam.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B3-03-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_duplikat(df, subset)` yang mengembalikan bilangan bulat jumlah baris yang dianggap duplikat menurut kolom `subset` (kemunculan pertama tidak dihitung).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef jumlah_duplikat(df, subset):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_duplikat(df, ['nama'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nassert jumlah_duplikat(df, ['nama']) == 1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_duplikat(df, ['nilai'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_duplikat(df, ['nilai']) == 3"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_duplikat(df, ['id'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_duplikat(df, ['id']) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_duplikat(df, ['nama', 'kota', 'nilai'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_duplikat(df, ['nama', 'kota', 'nilai']) == 1"
+              }
+            ]
+          },
+          "hint": "duplicated dengan subset lalu sum.",
+          "solution": "import pandas as pd\n\ndef jumlah_duplikat(df, subset):\n    return int(df.duplicated(subset).sum())",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-03-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `id_kelompok_duplikat(df, subset)` yang mengembalikan list `id` semua baris yang menjadi anggota kelompok duplikat menurut `subset`, termasuk kemunculan pertama.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef id_kelompok_duplikat(df, subset):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "id_kelompok_duplikat(df, ['nama', 'kota', 'ni...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nassert id_kelompok_duplikat(df, ['nama', 'kota', 'nilai']) == [3, 5]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "id_kelompok_duplikat(df, ['nilai'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_kelompok_duplikat(df, ['nilai']) == [1, 2, 3, 4, 5, 7]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "id_kelompok_duplikat(df, ['id'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_kelompok_duplikat(df, ['id']) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "id_kelompok_duplikat(df, ['nama'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_kelompok_duplikat(df, ['nama']) == [3, 5]"
+              }
+            ]
+          },
+          "hint": "duplicated dengan keep False sebagai penyaring baris.",
+          "solution": "import pandas as pd\n\ndef id_kelompok_duplikat(df, subset):\n    return df.loc[df.duplicated(subset, keep=False), 'id'].tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-03-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `normalisasi_kunci(df, kolom)` yang mengembalikan list nilai kolom teks setelah spasi tepi dibuang dan huruf diubah menjadi kecil.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef normalisasi_kunci(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "normalisasi_kunci(df, 'nama')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nassert normalisasi_kunci(df, 'nama') == ['ani putri', 'ani putri', 'budi', 'cici', 'budi', 'dedi', 'cici']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "normalisasi_kunci(df, 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert normalisasi_kunci(df, 'kota')[1] == 'jakarta'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "normalisasi_kunci(df, 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert normalisasi_kunci(df, 'kota')[3] == 'bandung'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "len(set(normalisasi_kunci(df, 'kota')))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(set(normalisasi_kunci(df, 'kota'))) == 4"
+              }
+            ]
+          },
+          "hint": "str.strip diikuti str.lower lalu tolist.",
+          "solution": "import pandas as pd\n\ndef normalisasi_kunci(df, kolom):\n    return df[kolom].str.strip().str.lower().tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-03-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `id_setelah_normalisasi(df, subset)` yang menormalkan (strip dan lower) kolom teks di `subset` pada salinan, menghapus duplikat menurut `subset`, dan mengembalikan list `id` yang tersisa.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef id_setelah_normalisasi(df, subset):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "id_setelah_normalisasi(df, ['nama', 'kota'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nassert id_setelah_normalisasi(df, ['nama', 'kota']) == [1, 3, 4, 6, 7]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "id_setelah_normalisasi(df, ['nama'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_setelah_normalisasi(df, ['nama']) == [1, 3, 4, 6]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "id_setelah_normalisasi(df, ['nama', 'kota', '...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert id_setelah_normalisasi(df, ['nama', 'kota', 'nilai']) == [1, 3, 4, 6, 7]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "df['nama'].tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert df['nama'].tolist()[1] == 'ani putri '"
+              }
+            ]
+          },
+          "hint": "Normalkan kolom teks pada salinan lalu drop_duplicates dengan subset.",
+          "solution": "import pandas as pd\n\ndef id_setelah_normalisasi(df, subset):\n    b = df.copy()\n    for k in subset:\n        if b[k].dtype == object or str(b[k].dtype).startswith('str'):\n            b[k] = b[k].str.strip().str.lower()\n    return b.drop_duplicates(subset)['id'].tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Parameter yang membatasi kolom pemeriksaan?",
+          "code": null,
+          "options": [
+            {
+              "label": "subset",
+              "description": ""
+            },
+            {
+              "label": "keep",
+              "description": ""
+            },
+            {
+              "label": "axis",
+              "description": ""
+            },
+            {
+              "label": "inplace",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Daftar kolom.",
+          "explanation": "Subset."
+        },
+        {
+          "q": "keep=False menandai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Semua anggota kelompok duplikat",
+              "description": ""
+            },
+            {
+              "label": "Hanya yang pertama",
+              "description": ""
+            },
+            {
+              "label": "Hanya yang terakhir",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Semua.",
+          "explanation": "Semua anggota."
+        },
+        {
+          "q": "Duplikat tersembunyi sering karena?",
+          "code": null,
+          "options": [
+            {
+              "label": "Huruf besar dan spasi",
+              "description": ""
+            },
+            {
+              "label": "Tipe int",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            },
+            {
+              "label": "Urutan kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Teks.",
+          "explanation": "Teks tidak seragam."
+        },
+        {
+          "q": "Hapus duplikat sebaiknya sebelum?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membagi data latih dan uji",
+              "description": ""
+            },
+            {
+              "label": "Membaca file",
+              "description": ""
+            },
+            {
+              "label": "Mencetak",
+              "description": ""
+            },
+            {
+              "label": "Menamai kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pembagian.",
+          "explanation": "Cegah kebocoran."
+        },
+        {
+          "q": "Kolom id otomatis biasanya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak dipakai sebagai kunci",
+              "description": ""
+            },
+            {
+              "label": "Selalu kunci",
+              "description": ""
+            },
+            {
+              "label": "Diubah ke teks",
+              "description": ""
+            },
+            {
+              "label": "Dihapus pertama",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Unik.",
+          "explanation": "Selalu unik."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memeriksa duplikat dengan semua kolom padahal ada id unik. Lebih baik: Tentukan kolom kunci dan pakai subset.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memeriksa duplikat dengan semua kolom padahal ada id unik.",
+          "fix": "Tentukan kolom kunci dan pakai subset."
+        },
+        {
+          "mistake": "Menghapus duplikat tanpa melihat anggota kelompoknya.",
+          "fix": "Tampilkan dengan keep False dan periksa dulu."
+        },
+        {
+          "mistake": "Membandingkan teks tanpa normalisasi.",
+          "fix": "Strip dan lower dulu pada kolom kunci."
+        }
+      ],
+      "summary": [
+        "Duplikat persis berbeda dari duplikat berdasarkan kunci.",
+        "duplicated dan drop_duplicates memakai subset dan keep.",
+        "keep False menampilkan seluruh kelompok duplikat untuk diperiksa.",
+        "Normalisasi teks mengungkap duplikat tersembunyi."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Mendeteksi baris duplikat"
+          },
+          {
+            "type": "text",
+            "source": "Tanpa subset, kolom id yang unik menyembunyikan semua duplikat. Dengan subset nama dan kota dan nilai, hanya baris kelima yang terdeteksi sebagai pengulangan Budi."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nprint(df.duplicated().tolist())\nprint(df.duplicated(['nama']).tolist())\nprint(df.duplicated(['nama', 'kota', 'nilai']).tolist())\nprint(df.duplicated(['nilai']).sum(), df.duplicated(['id']).sum())\nprint(df.duplicated().sum(), df.drop(columns='id').duplicated().sum())"
+          },
+          {
+            "type": "text",
+            "source": "Keep false menampilkan kedua anggota pasangan. Keep first mempertahankan id 3 sedangkan keep last mempertahankan id 5."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nk = ['nama', 'kota', 'nilai']\nprint(df.duplicated(k, keep=False).tolist())\nprint(df.loc[df.duplicated(k, keep=False), 'id'].tolist())\nprint(df.drop_duplicates(k)['id'].tolist())\nprint(df.drop_duplicates(k, keep='last')['id'].tolist())\nprint(len(df.drop_duplicates(k)), len(df))"
+          },
+          {
+            "type": "text",
+            "source": "Setelah normalisasi, duplikat meningkat dari satu menjadi tiga pada kolom nama saja. Spasi tepi terlihat dari panjang teks yang berbeda sebelum dan sesudah strip."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nb = df.assign(nama=df['nama'].str.strip().str.lower(), kota=df['kota'].str.strip().str.lower())\nprint(b['nama'].tolist())\nprint(b.duplicated(['nama', 'kota']).tolist())\nprint(b.drop_duplicates(['nama', 'kota'])['id'].tolist(), len(b.drop_duplicates(['nama', 'kota'])))\nprint(b.duplicated(['nama']).sum(), df.duplicated(['nama']).sum())\nprint(df['nama'].str.len().tolist(), df['nama'].str.strip().str.len().tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B3-03-2",
+      "title": "Inkonsistensi kategori dan ejaan",
+      "estimated_minutes": 35,
+      "read_minutes": 9,
+      "objectives": [
+        "Menemukan varian penulisan dengan value_counts dan nunique",
+        "Menyeragamkan huruf, spasi, dan ejaan dengan peta penggantian",
+        "Memakai pencocokan mirip untuk ejaan yang salah",
+        "Menyusun daftar nilai baku yang dapat dipakai ulang"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Satu kota, banyak tulisan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Satu kota, banyak tulisan\n\nKolom kategori adalah sumber inkonsistensi terbesar dalam data nyata. Jakarta bisa tertulis Jakarta, jakarta, JAKARTA, Jkt, atau Jakarta Pusat tergantung siapa yang mengetik. Bagi manusia semuanya jelas sama, tetapi untuk groupby atau model, setiap tulisan dianggap kategori terpisah. Hasilnya, rata-rata per kota terpecah menjadi potongan kecil yang menyesatkan, dan variabel boneka melonjak jumlahnya tanpa alasan. Pelajaran ini membahas cara menemukan dan menyeragamkan varian, dari yang mudah seperti huruf besar hingga ejaan salah yang memerlukan pencocokan mirip."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menemukan varian\n\nLangkah pertama selalu melihat daftar nilai unik beserta frekuensinya. `value_counts()` menampilkan tiap tulisan dan jumlahnya, sedangkan `nunique()` menghitung banyaknya tulisan berbeda. Pada contoh, kolom kota memiliki enam tulisan berbeda, padahal setelah huruf diseragamkan hanya tersisa empat. Selisih antara jumlah unik mentah dan jumlah unik setelah normalisasi adalah ukuran cepat seberapa berantakan suatu kolom. Selisih nol berarti kolom bersih dari masalah huruf dan spasi, sedangkan selisih besar menandakan pekerjaan pembersihan yang perlu direncanakan."
+            },
+            {
+              "type": "code_example",
+              "filename": "varian_kota.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nprint(df['kota'].value_counts().to_dict())\nprint(df['kota'].nunique(), df['kota'].str.lower().nunique())\nprint(sorted(set(df['kota'].str.lower())))\nprint(df['nama'].nunique(), df['nama'].str.strip().str.lower().nunique())\nprint(df['kota'].str.strip().str.lower().value_counts().to_dict())",
+              "expected_output_note": "{'Bandung': 2, 'Jakarta': 1, 'jakarta': 1, 'BANDUNG': 1, 'Jkt': 1, 'Surabaya': 1}\n6 4\n['bandung', 'jakarta', 'jkt', 'surabaya']\n6 4\n{'bandung': 3, 'jakarta': 2, 'jkt': 1, 'surabaya': 1}",
+              "explanation": "Jumlah unik turun dari enam menjadi empat setelah huruf diseragamkan. Daftar terurut nilai unik memperlihatkan sisa masalah, yaitu singkatan jkt."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menyeragamkan huruf dan spasi\n\nPerbaikan paling sederhana dan paling aman adalah menyeragamkan huruf dan spasi. Gunakan `str.strip` untuk membuang spasi di tepi, `str.lower` atau `str.title` untuk menyamakan huruf, dan `' '.join(s.split())` atau ekspresi reguler untuk merapatkan spasi ganda di tengah. Pilih satu konvensi dan pakai konsisten: huruf kecil mudah untuk pencocokan dan kunci, sedangkan huruf judul lebih enak dibaca di laporan. Praktik umum menyimpan kolom bersih untuk analisis dan menampilkan versi cantik hanya pada tahap presentasi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peta penggantian\n\nSetelah huruf seragam, sisa varian seperti singkatan dan nama lain ditangani dengan peta penggantian, yaitu kamus dari tulisan yang salah ke tulisan baku. Misalnya `{'jkt': 'jakarta'}`. Metode `replace` pada Series menerapkan peta itu dan membiarkan nilai yang tidak ada di peta. Peta ini adalah aset: simpan dalam berkas atau modul tersendiri, bukan tersebar dalam kode, sehingga dapat ditinjau dan diperbarui. Setiap kali data baru membawa varian baru, tambahkan entri peta dan jalankan ulang seluruh alur."
+            },
+            {
+              "type": "code_example",
+              "filename": "peta_ganti.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nb = df['kota'].str.strip().str.lower()\npeta = {'jkt': 'jakarta'}\nc = b.replace(peta)\nprint(c.tolist())\nprint(c.value_counts().to_dict(), c.nunique())\nprint(b.map(peta).tolist())\nprint(b.map(lambda x: peta.get(x, x)).tolist() == c.tolist())\nprint(df['nama'].str.strip().str.title().tolist())",
+              "expected_output_note": "['jakarta', 'jakarta', 'bandung', 'bandung', 'bandung', 'jakarta', 'surabaya']\n{'jakarta': 3, 'bandung': 3, 'surabaya': 1} 3\n[nan, nan, nan, nan, nan, 'jakarta', nan]\nTrue\n['Ani Putri', 'Ani Putri', 'Budi', 'Cici', 'Budi', 'Dedi', 'Cici']",
+              "explanation": "Replace mengganti hanya nilai yang ada di peta, sedangkan map menghasilkan NaN untuk nilai di luar peta. Gunakan get dengan nilai cadangan bila memakai map."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengetahui varian tulisan memakai?",
+            "options": [
+              "value_counts",
+              "shape"
+            ],
+            "answer_index": 0,
+            "explanation": "Frekuensi.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Replace berbeda dari map",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Replace berbeda dari map\n\nDua metode ini sering tertukar. `replace` dengan kamus hanya mengganti kunci yang cocok dan membiarkan yang lain, sehingga aman untuk perbaikan sebagian. `map` dengan kamus mengubah setiap nilai dan menghasilkan NaN untuk nilai yang tidak ada di kamus, yang berguna untuk pengodean penuh tetapi berbahaya bila peta tidak lengkap. Bila Anda memakai map untuk pembersihan, pakai `lambda x: peta.get(x, x)` agar nilai di luar peta tetap utuh. Periksa jumlah NaN setelah pemetaan untuk memastikan tidak ada data tak sengaja hilang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ejaan salah dan pencocokan mirip\n\nPeta manual cukup bila variannya sedikit. Untuk ejaan salah yang beragam, seperti jakrta, jakartaa, atau bandun, pencocokan mirip membantu. Modul `difflib` bawaan Python menyediakan `get_close_matches(kata, daftar, n, cutoff)` yang mengembalikan kandidat dari daftar baku yang paling mirip dengan kata masukan, dengan ambang kemiripan antara nol dan satu. Ambang tinggi mengurangi salah cocok tetapi melewatkan koreksi, sedangkan ambang rendah menangkap lebih banyak tetapi berisiko mencocokkan kata yang sebenarnya berbeda. Tidak ada ambang yang benar untuk semua kasus."
+            },
+            {
+              "type": "code_example",
+              "filename": "difflib_cocok.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nimport difflib\nbaku = ['jakarta', 'bandung', 'surabaya']\nprint(difflib.get_close_matches('jakrta', baku, n=1, cutoff=0.8))\nprint(difflib.get_close_matches('bandun', baku, n=1, cutoff=0.8))\nprint(difflib.get_close_matches('xyz', baku, n=1, cutoff=0.8))\nprint(difflib.get_close_matches('jkt', baku, n=1, cutoff=0.5))\nprint(round(difflib.SequenceMatcher(None, 'jakarta', 'jkt').ratio(), 2), round(difflib.SequenceMatcher(None, 'ani', 'ana').ratio(), 3))",
+              "expected_output_note": "['jakarta']\n['bandung']\n[]\n['jakarta']\n0.6 0.667",
+              "explanation": "Kemiripan jakarta dan jkt hanya 0.6, sehingga ambang tinggi akan melewatkannya. Singkatan sebaiknya ditangani dengan peta manual, bukan pencocokan mirip."
+            },
+            {
+              "type": "text",
+              "markdown": "## Batas pencocokan mirip\n\nPencocokan mirip bukan sihir. Ia mengukur kemiripan huruf, bukan makna. Ani dan Ana mirip hampir tujuh puluh persen padahal bisa jadi dua orang berbeda, sementara Jakarta dan Jkt hanya mirip enam puluh persen padahal sama. Karena itu hasilnya harus ditinjau manusia untuk kolom penting, atau dibatasi pada daftar baku yang kecil dan jelas seperti nama kota atau provinsi. Untuk nama orang, pencocokan otomatis berisiko menggabungkan orang berbeda. Lebih baik biarkan sebagai kandidat yang ditandai untuk ditinjau daripada digabungkan diam-diam."
+            },
+            {
+              "type": "text",
+              "markdown": "## Daftar baku\n\nCara paling kuat mencegah inkonsistensi adalah memiliki daftar baku, yaitu himpunan nilai sah untuk tiap kolom kategori. Dengan daftar ini Anda dapat memeriksa setiap data baru: nilai yang tidak ada dalam daftar ditandai, dikoreksi lewat peta, atau dicocokkan mirip lalu ditinjau. Di sistem sumber, cara terbaik tentu memakai menu pilihan alih-alih kolom teks bebas. Bila Anda tidak mengendalikan sumber, daftar baku di sisi analisis tetap memberi jaring pengaman. Simpan daftar baku di berkas konfigurasi agar tim lain memakai versi yang sama."
+            }
+          ],
+          "quick_check": {
+            "question": "replace dengan kamus untuk nilai di luar kamus?",
+            "options": [
+              "Menjadi NaN",
+              "Dibiarkan"
+            ],
+            "answer_index": 1,
+            "explanation": "Tetap.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memeriksa kategori di luar daftar",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memeriksa kategori di luar daftar\n\nSetelah menormalkan, selalu periksa nilai yang berada di luar daftar baku dengan `~b.isin(baku)`. Hasilnya adalah baris bermasalah yang perlu ditangani, dan jumlahnya menjadi ukuran kualitas kolom. Laporkan persentase nilai di luar daftar sebelum dan sesudah pembersihan sehingga pembaca dapat melihat perbaikan nyata. Bila persentase masih tinggi setelah peta dan pencocokan, kemungkinan ada kategori sah baru yang belum masuk daftar, atau sumber data bermasalah yang perlu diperbaiki dari hulunya, bukan di sisi analisis saja."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Peta sebagai aset",
+              "markdown": "Simpan peta penggantian dan daftar baku di berkas terpisah. Dengan begitu pembersihan dapat ditinjau, diperbarui, dan dipakai ulang di semua proyek."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kasus huruf judul dan akronim\n\nMemakai `str.title` terlihat rapi tetapi dapat merusak akronim dan nama khusus. Kata seperti DKI, UI, atau McDonald akan menjadi Dki, Ui, dan Mcdonald. Untuk kolom kunci dan analisis, huruf kecil lebih aman karena tidak ada keputusan estetika. Gunakan huruf judul hanya pada tahap tampilan, dan bila perlu sediakan pengecualian untuk akronim yang dikenal. Begitu pula dengan menghapus tanda baca: titik dalam singkatan atau tanda hubung dalam nama dapat bermakna, sehingga periksa dulu apakah penghapusan menggabungkan dua nilai yang sebenarnya berbeda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Karakter tak terlihat\n\nSelain spasi biasa, teks hasil salinan sering membawa karakter tak terlihat seperti spasi tanpa putus, tab, pemisah baris, atau penanda urutan byte. Karakter ini lolos dari `strip` bawaan dalam beberapa kasus dan membuat dua teks yang tampak sama berbeda bagi komputer. Gejala khasnya adalah value_counts yang menampilkan dua baris yang tampak identik. Periksa dengan `repr` pada nilai mencurigakan, atau ganti kelas karakter spasi dengan ekspresi reguler `\\s+` menjadi satu spasi. Pembersihan semacam ini sebaiknya menjadi langkah pertama sebelum mendeteksi duplikat atau varian apa pun."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menyimpan hasil pembersihan\n\nSetelah kategori seragam, simpan hasilnya sebagai kolom baru atau berkas bersih, jangan menimpa kolom asli. Kolom asli berguna untuk menelusuri asal nilai dan untuk memperbaiki peta bila ternyata ada kesalahan. Beri nama jelas seperti kota_bersih, dan dokumentasikan aturan yang dipakai. Pada alur otomatis, jalankan pemeriksaan jumlah kategori unik setelah pembersihan dan beri peringatan bila angkanya melonjak, karena itu tanda varian baru muncul dari sumber data."
+            }
+          ],
+          "quick_check": {
+            "question": "map dengan kamus untuk nilai di luar kamus?",
+            "options": [
+              "Menjadi NaN",
+              "Dibiarkan"
+            ],
+            "answer_index": 0,
+            "explanation": "NaN.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B3-03-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bersihkan_teks(daftar)` yang menerima list teks dan mengembalikan list teks dengan spasi ganda dirapatkan menjadi satu, spasi tepi dibuang, dan semua huruf kecil.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def bersihkan_teks(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bersihkan_teks([' Ani Putri ', 'BUDI'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nassert bersihkan_teks(['  Ani   Putri ', 'BUDI']) == ['ani putri', 'budi']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bersihkan_teks(['a b c'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bersihkan_teks(['a  b   c']) == ['a b c']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bersihkan_teks([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bersihkan_teks([]) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bersihkan_teks([' X '])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bersihkan_teks(['  X ']) == ['x']"
+              }
+            ]
+          },
+          "hint": "split lalu join dengan satu spasi lalu lower.",
+          "solution": "import pandas as pd\n\ndef bersihkan_teks(daftar):\n    return [' '.join(str(x).split()).lower() for x in daftar]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-03-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `hitung_varian(df, kolom)` yang mengembalikan tuple `(unik_mentah, unik_bersih)` dengan jumlah nilai unik sebelum dan sesudah strip dan lower.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef hitung_varian(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hitung_varian(df, 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nassert hitung_varian(df, 'kota') == (6, 4)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hitung_varian(df, 'nama')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_varian(df, 'nama') == (6, 4)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hitung_varian(df, 'nilai')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_varian(df, 'nilai') == (4, 4)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "hitung_varian(df.iloc[[0, 1]], 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_varian(df.iloc[[0, 1]], 'kota') == (2, 1)"
+              }
+            ]
+          },
+          "hint": "nunique mentah dan nunique setelah astype str strip lower.",
+          "solution": "import pandas as pd\n\ndef hitung_varian(df, kolom):\n    mentah = int(df[kolom].nunique())\n    bersih = int(df[kolom].astype(str).str.strip().str.lower().nunique())\n    return (mentah, bersih)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-03-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `terapkan_peta(df, kolom, peta)` yang membuang spasi tepi, mengubah ke huruf kecil, lalu mengganti nilai sesuai `peta` (nilai di luar peta tetap) dan mengembalikan list.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef terapkan_peta(df, kolom, peta):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "terapkan_peta(df, 'kota', {'jkt': 'jakarta'})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nassert terapkan_peta(df, 'kota', {'jkt': 'jakarta'}) == ['jakarta', 'jakarta', 'bandung', 'bandung', 'bandung', 'jakarta', 'surabaya']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "terapkan_peta(df, 'kota', {})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert terapkan_peta(df, 'kota', {})[5] == 'jkt'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "terapkan_peta(df, 'nama', {'cici': 'cc'})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert terapkan_peta(df, 'nama', {'cici': 'cc'})[3] == 'cc'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "terapkan_peta(df, 'nama', {'cici': 'cc'})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert terapkan_peta(df, 'nama', {'cici': 'cc'})[2] == 'budi'"
+              }
+            ]
+          },
+          "hint": "strip lower lalu replace dengan kamus.",
+          "solution": "import pandas as pd\n\ndef terapkan_peta(df, kolom, peta):\n    return df[kolom].str.strip().str.lower().replace(peta).tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-03-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `cocok_terdekat(kata, baku, cutoff)` yang mengembalikan kata baku paling mirip memakai `difflib.get_close_matches` atau `None` bila tidak ada yang melewati ambang.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import difflib\n\ndef cocok_terdekat(kata, baku, cutoff):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "cocok_terdekat('jakrta', baku, 0.8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nbaku = ['jakarta', 'bandung', 'surabaya']\nassert cocok_terdekat('jakrta', baku, 0.8) == 'jakarta'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "cocok_terdekat('bandun', baku, 0.8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cocok_terdekat('bandun', baku, 0.8) == 'bandung'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "cocok_terdekat('xyz', baku, 0.8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cocok_terdekat('xyz', baku, 0.8) is None"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "cocok_terdekat('jkt', baku, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cocok_terdekat('jkt', baku, 0.5) == 'jakarta'"
+              }
+            ]
+          },
+          "hint": "get_close_matches dengan n satu lalu ambil elemen pertama atau None.",
+          "solution": "import difflib\n\ndef cocok_terdekat(kata, baku, cutoff):\n    hasil = difflib.get_close_matches(kata, baku, n=1, cutoff=cutoff)\n    return hasil[0] if hasil else None",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Mengetahui varian tulisan memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "value_counts",
+              "description": ""
+            },
+            {
+              "label": "shape",
+              "description": ""
+            },
+            {
+              "label": "head",
+              "description": ""
+            },
+            {
+              "label": "dtypes",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hitung.",
+          "explanation": "Frekuensi."
+        },
+        {
+          "q": "replace dengan kamus untuk nilai di luar kamus?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dibiarkan",
+              "description": ""
+            },
+            {
+              "label": "Menjadi NaN",
+              "description": ""
+            },
+            {
+              "label": "Dihapus",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tetap.",
+          "explanation": "Tetap."
+        },
+        {
+          "q": "map dengan kamus untuk nilai di luar kamus?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menjadi NaN",
+              "description": ""
+            },
+            {
+              "label": "Dibiarkan",
+              "description": ""
+            },
+            {
+              "label": "Dihapus",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NaN.",
+          "explanation": "NaN."
+        },
+        {
+          "q": "difflib mengukur kemiripan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Huruf",
+              "description": ""
+            },
+            {
+              "label": "Makna",
+              "description": ""
+            },
+            {
+              "label": "Panjang",
+              "description": ""
+            },
+            {
+              "label": "Frekuensi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Karakter.",
+          "explanation": "Huruf."
+        },
+        {
+          "q": "Daftar baku berguna untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Memeriksa nilai sah",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menggabung",
+              "description": ""
+            },
+            {
+              "label": "Mengompres",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sah.",
+          "explanation": "Validasi."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengabaikan varian huruf pada kolom kategori. Lebih baik: Cek value_counts dan nunique sebelum groupby.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengabaikan varian huruf pada kolom kategori.",
+          "fix": "Cek value_counts dan nunique sebelum groupby."
+        },
+        {
+          "mistake": "Memakai map untuk perbaikan sebagian.",
+          "fix": "Pakai replace atau map dengan get cadangan."
+        },
+        {
+          "mistake": "Menyerahkan nama orang pada pencocokan mirip otomatis.",
+          "fix": "Tandai kandidat dan tinjau manual."
+        }
+      ],
+      "summary": [
+        "Selisih unik mentah dan bersih mengukur kekacauan kolom.",
+        "Seragamkan huruf dan spasi lalu pakai peta untuk sisa varian.",
+        "Replace dan map berbeda perilaku pada nilai di luar peta.",
+        "Pencocokan mirip membantu tetapi butuh tinjauan manusia."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Inkonsistensi kategori dan ejaan"
+          },
+          {
+            "type": "text",
+            "source": "Jumlah unik turun dari enam menjadi empat setelah huruf diseragamkan. Daftar terurut nilai unik memperlihatkan sisa masalah, yaitu singkatan jkt."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nprint(df['kota'].value_counts().to_dict())\nprint(df['kota'].nunique(), df['kota'].str.lower().nunique())\nprint(sorted(set(df['kota'].str.lower())))\nprint(df['nama'].nunique(), df['nama'].str.strip().str.lower().nunique())\nprint(df['kota'].str.strip().str.lower().value_counts().to_dict())"
+          },
+          {
+            "type": "text",
+            "source": "Replace mengganti hanya nilai yang ada di peta, sedangkan map menghasilkan NaN untuk nilai di luar peta. Gunakan get dengan nilai cadangan bila memakai map."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nb = df['kota'].str.strip().str.lower()\npeta = {'jkt': 'jakarta'}\nc = b.replace(peta)\nprint(c.tolist())\nprint(c.value_counts().to_dict(), c.nunique())\nprint(b.map(peta).tolist())\nprint(b.map(lambda x: peta.get(x, x)).tolist() == c.tolist())\nprint(df['nama'].str.strip().str.title().tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Kemiripan jakarta dan jkt hanya 0.6, sehingga ambang tinggi akan melewatkannya. Singkatan sebaiknya ditangani dengan peta manual, bukan pencocokan mirip."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nimport difflib\nbaku = ['jakarta', 'bandung', 'surabaya']\nprint(difflib.get_close_matches('jakrta', baku, n=1, cutoff=0.8))\nprint(difflib.get_close_matches('bandun', baku, n=1, cutoff=0.8))\nprint(difflib.get_close_matches('xyz', baku, n=1, cutoff=0.8))\nprint(difflib.get_close_matches('jkt', baku, n=1, cutoff=0.5))\nprint(round(difflib.SequenceMatcher(None, 'jakarta', 'jkt').ratio(), 2), round(difflib.SequenceMatcher(None, 'ani', 'ana').ratio(), 3))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B3-03-3",
+      "title": "Menyelesaikan duplikat dengan aman",
+      "estimated_minutes": 35,
+      "read_minutes": 8,
+      "objectives": [
+        "Memilih strategi: buang, gabung, atau pertahankan versi terbaik",
+        "Menggabungkan kelompok duplikat dengan groupby dan agregasi",
+        "Mendeteksi konflik nilai di dalam kelompok duplikat",
+        "Menyusun laporan deduplikasi yang dapat diaudit"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mendeteksi belum menyelesaikan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mendeteksi belum menyelesaikan\n\nMenemukan duplikat hanyalah separuh pekerjaan. Setelah kelompok duplikat teridentifikasi, Anda harus memutuskan apa yang dilakukan dengannya. Membuang semuanya kecuali satu tampak jelas, tetapi baris mana yang dipertahankan memengaruhi hasil bila isinya tidak persis sama. Dua catatan tentang Budi mungkin memuat nilai berbeda, atau satu catatan mungkin lengkap sedangkan lainnya kosong. Pelajaran ini membahas tiga strategi, yaitu membuang, menggabung, dan memilih versi terbaik, serta cara mendeteksi konflik dan mendokumentasikan keputusan agar dapat diaudit."
+            },
+            {
+              "type": "text",
+              "markdown": "## Strategi pertama: buang\n\nBila duplikat benar-benar identik pada semua kolom penting, cukup pertahankan satu dengan `drop_duplicates`. Ini kasus terbersih dan paling aman, misalnya hasil impor ganda. Namun sebelum membuang, pastikan baris itu memang identik pada kolom yang Anda pedulikan, bukan hanya pada kunci. Cara cepatnya membandingkan jumlah baris unik menurut kunci dengan jumlah baris unik menurut semua kolom non-id. Jika sama, tidak ada informasi yang hilang. Jika berbeda, ada konflik nilai yang perlu strategi lain, karena membuang akan menghilangkan data diam-diam."
+            },
+            {
+              "type": "text",
+              "markdown": "## Strategi kedua: gabung\n\nBila setiap catatan memuat sebagian informasi, gabungkan menjadi satu catatan lengkap. Gunakan `groupby` pada kunci yang telah dinormalkan lalu agregasi tiap kolom dengan aturan yang masuk akal: rata-rata atau maksimum untuk angka, nilai pertama yang tidak kosong untuk teks, jumlah untuk transaksi. Aturan agregasi ini adalah keputusan bisnis, bukan teknis, sehingga lakukan bersama pemilik data. Ingat bahwa menjumlahkan transaksi duplikat menggandakan nilai, sementara menjumlahkan transaksi terpisah milik satu pelanggan benar. Bedakan keduanya sebelum memilih agregasi."
+            },
+            {
+              "type": "code_example",
+              "filename": "gabung_duplikat.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nb = df.assign(nama=df['nama'].str.strip().str.lower())\ng = b.groupby('nama').agg(n=('id', 'size'), rata=('nilai', 'mean'))\nprint(g['n'].to_dict(), g['rata'].to_dict())\nprint(b.groupby('nama')['nilai'].nunique().to_dict())\nprint(b.groupby('nama')['kota'].first().to_dict())\nprint(b.drop(columns='id').duplicated().sum(), b.drop(columns='id').drop_duplicates().shape)",
+              "expected_output_note": "{'ani putri': 2, 'budi': 2, 'cici': 2, 'dedi': 1} {'ani putri': 80.0, 'budi': 70.0, 'cici': 90.0, 'dedi': 60.0}\n{'ani putri': 1, 'budi': 1, 'cici': 1, 'dedi': 1}\n{'ani putri': 'Jakarta', 'budi': 'Bandung', 'cici': 'BANDUNG', 'dedi': 'Jkt'}\n1 (6, 3)",
+              "explanation": "Setiap nama memiliki satu nilai unik sehingga tidak ada konflik nilai. Kota masih belum seragam, jadi first mengambil tulisan mentah yang berbeda-beda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Strategi ketiga: versi terbaik\n\nKadang catatan duplikat berbeda kualitas atau waktu, dan Anda ingin mempertahankan yang terbaik. Contohnya yang paling baru, yang paling lengkap, atau yang bernilai tertinggi. Caranya urutkan baris menurut kriteria, lalu `drop_duplicates` pada kunci dengan `keep='first'`. Gunakan `kind='stable'` pada `sort_values` agar urutan baris sama kriterianya tetap deterministik. Tanpa itu, hasil bisa berubah antar versi pustaka. Aturan pemilihan harus tertulis jelas, misalnya catatan dengan tanggal pembaruan terbaru menang, sehingga orang lain dapat mengulang dan membenarkan hasilnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "versi_terbaik.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nb = df.assign(nama=df['nama'].str.strip().str.lower())\ns = b.sort_values('nilai', ascending=False, kind='stable')\nprint(s['id'].tolist())\nprint(s.drop_duplicates('nama')['id'].tolist())\nprint(b.sort_values('id', ascending=False).drop_duplicates('nama')['id'].tolist())\nprint(b.sort_values('id').drop_duplicates('nama', keep='last')['id'].tolist())\nprint(len(s.drop_duplicates('nama')))",
+              "expected_output_note": "[4, 7, 1, 2, 3, 5, 6]\n[4, 1, 3, 6]\n[7, 6, 5, 2]\n[2, 5, 6, 7]\n4",
+              "explanation": "Urutan menentukan baris mana yang menang. Menurut nilai tertinggi yang menang adalah id 4, 1, 3, dan 6, sedangkan menurut id terbaru yang menang adalah id 7, 6, 5, dan 2."
+            }
+          ],
+          "quick_check": {
+            "question": "Bila duplikat memuat info berbeda, strategi yang cocok?",
+            "options": [
+              "Gabung",
+              "Hapus semua"
+            ],
+            "answer_index": 0,
+            "explanation": "Agregasi.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Konflik di dalam kelompok",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Konflik di dalam kelompok\n\nKonflik terjadi ketika duplikat menurut kunci memiliki nilai berbeda pada kolom lain. Misalnya dua catatan Ani dengan nilai 80 dan 75. Mendeteksinya mudah: kelompokkan menurut kunci lalu hitung `nunique` kolom nilai, dan ambil kelompok dengan hasil lebih dari satu. Konflik adalah sinyal penting. Ia bisa berarti salah ketik, pembaruan data, atau dua entitas berbeda yang kuncinya terlalu longgar. Jangan menimpa konflik secara diam-diam. Tampilkan, tinjau, lalu putuskan aturan penyelesaian yang dapat dibenarkan, dan catat jumlah konflik dalam laporan."
+            },
+            {
+              "type": "code_example",
+              "filename": "konflik.py",
+              "runnable": true,
+              "code": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nd2 = df.assign(nilai=[80, 75, 70, 90, 70, 60, 90])\nb = d2.assign(nama=d2['nama'].str.strip().str.lower())\nn = b.groupby('nama')['nilai'].nunique()\nprint(n.to_dict(), sorted(n[n > 1].index.tolist()))\nprint(b.groupby('nama')['nilai'].agg(['min', 'max']).loc['ani putri'].tolist())\nk = df.assign(kota=df['kota'].str.strip().str.lower()).groupby('kota')['nilai'].nunique()\nprint(k.to_dict(), sorted(k[k > 1].index.tolist()))\nprint(len(df), len(df.assign(nama=df['nama'].str.strip().str.lower()).drop_duplicates(['nama', 'kota'])))",
+              "expected_output_note": "{'ani putri': 2, 'budi': 1, 'cici': 1, 'dedi': 1} ['ani putri']\n[75, 80]\n{'bandung': 2, 'jakarta': 1, 'jkt': 1, 'surabaya': 1} ['bandung']\n7 6",
+              "explanation": "Hanya Ani yang memiliki dua nilai berbeda setelah nilai kedua diubah. Pada kunci kota, bandung memiliki dua nilai berbeda karena kotanya dipakai banyak orang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kunci terlalu longgar\n\nKonflik kadang bukan kesalahan data melainkan kunci yang terlalu longgar. Pada contoh terakhir, kota bukan kunci yang baik karena banyak orang tinggal di kota yang sama, sehingga nilai berbeda di dalam kelompok adalah hal biasa. Kunci yang baik cukup spesifik untuk membedakan entitas tetapi cukup longgar untuk menangkap penulisan berbeda dari entitas sama. Kombinasi nama, tanggal lahir, dan kota biasanya lebih tepat daripada nama saja. Uji kunci Anda dengan memeriksa beberapa kelompok duplikat secara manual: apakah anggotanya benar orang yang sama atau dua orang berbeda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Laporan deduplikasi\n\nSetiap deduplikasi sebaiknya menghasilkan laporan singkat: jumlah baris sebelum dan sesudah, jumlah yang dibuang, kunci yang dipakai, aturan memilih baris, dan jumlah konflik. Laporan ini memberi pembaca gambaran seberapa besar intervensi Anda, dan memungkinkan audit bila angka akhir dipertanyakan. Bila jumlah yang dibuang sangat besar, misalnya lebih dari sepuluh persen, itu patut dicurigai sebagai masalah sumber data atau kunci yang salah, bukan sekadar pembersihan rutin. Simpan laporan bersama data bersih di berkas terpisah agar jejaknya tidak hilang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Jangan menghapus data asli\n\nPrinsip penting: jangan menimpa data mentah. Simpan salinan asli, dan hasilkan data bersih sebagai berkas atau tabel terpisah. Bila ternyata aturan deduplikasi keliru, Anda dapat mengulang dari data asli. Bila perlu, simpan juga tabel baris yang dibuang beserta alasannya sehingga keputusan dapat ditinjau. Pendekatan ini sejalan dengan prinsip reproduksibilitas dalam alur kerja data: setiap langkah pembersihan adalah fungsi dari data mentah menuju data bersih, dan dapat dijalankan ulang kapan saja dengan hasil yang sama."
+            }
+          ],
+          "quick_check": {
+            "question": "sort_values stabil memakai?",
+            "options": [
+              "inplace",
+              "kind='stable'"
+            ],
+            "answer_index": 1,
+            "explanation": "Deterministik.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Ringkasan modul",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah mempelajari cara mendeteksi duplikat persis dan duplikat kunci, menormalkan teks untuk menangkap duplikat tersembunyi, menyeragamkan kategori dengan peta penggantian dan pencocokan mirip, serta menyelesaikan kelompok duplikat dengan membuang, menggabung, atau memilih versi terbaik sambil melaporkan konflik. Pesan utamanya: tentukan kunci dengan sadar, jangan mengubah data diam-diam, dan dokumentasikan setiap keputusan. Modul berikutnya membahas pencilan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Laporan jejak",
+              "markdown": "Buat laporan singkat setiap kali menghapus duplikat: baris sebelum, sesudah, dibuang, kunci, dan konflik. Angka dibuang yang terlalu besar adalah tanda bahaya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menyimpan jejak keputusan\n\nTulis keputusan deduplikasi sebagai fungsi yang menerima data mentah dan mengembalikan data bersih beserta laporan. Fungsi seperti ini dapat diuji dengan data kecil seperti tabel dalam pelajaran ini, dijalankan ulang ketika data baru tiba, dan ditinjau oleh rekan. Hindari langkah manual yang tidak tercatat, misalnya menghapus baris lewat spreadsheet, karena tidak dapat diulang. Bila terpaksa ada keputusan manual, simpan daftar id yang dibuang dalam berkas dengan alasannya. Dengan cara ini keputusan Anda dapat dipertanggungjawabkan berbulan-bulan kemudian ketika seseorang bertanya mengapa angka tidak sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menguji aturan dengan contoh kecil\n\nSebelum menjalankan aturan deduplikasi pada jutaan baris, ujilah pada tabel kecil yang jawabannya sudah Anda ketahui. Buat contoh berisi pasangan duplikat, duplikat dengan konflik, dan pasangan yang mirip tetapi sebenarnya berbeda orang. Pastikan fungsi Anda membuang yang seharusnya dan mempertahankan yang seharusnya. Uji semacam ini menangkap kesalahan seperti kunci yang terlalu longgar atau urutan pengurutan yang salah. Tabel contoh juga menjadi dokumentasi hidup tentang perilaku yang Anda inginkan, dan berguna sebagai uji otomatis ketika aturan diubah di kemudian hari."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peran pemilik data\n\nBanyak keputusan deduplikasi tidak dapat diambil sendiri oleh analis. Apakah dua catatan dengan nama sama tetapi tanggal lahir berbeda adalah satu orang? Catatan mana yang dianggap resmi? Pemilik data atau pemangku kepentingan bisnis memegang jawabannya. Siapkan contoh konkret kasus ambigu, ajukan beberapa aturan beserta dampaknya terhadap angka, lalu minta mereka memilih. Keputusan yang disetujui bersama mengurangi sengketa nanti dan membuat laporan Anda lebih dipercaya karena aturan berasal dari pihak yang paham konteks."
+            }
+          ],
+          "quick_check": {
+            "question": "Konflik dideteksi dengan?",
+            "options": [
+              "nunique per kunci",
+              "shape"
+            ],
+            "answer_index": 0,
+            "explanation": "Lebih dari satu.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B3-03-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `gabung_per_nama(df)` yang menormalkan `nama` (strip dan lower) lalu mengembalikan dict `{nama: (jumlah_baris, rata_rata_nilai)}` dengan jumlah bilangan bulat dan rata-rata float.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef gabung_per_nama(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nr = gabung_per_nama(df)\nassert r['ani putri'] == (2, 80.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['dedi'] == (1, 60.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r['cici'] == (2, 90.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sorted(r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sorted(r) == ['ani putri', 'budi', 'cici', 'dedi']"
+              }
+            ]
+          },
+          "hint": "groupby nama dengan agg size dan mean lalu bentuk dict tuple.",
+          "solution": "import pandas as pd\n\ndef gabung_per_nama(df):\n    b = df.assign(nama=df['nama'].str.strip().str.lower())\n    g = b.groupby('nama').agg(n=('id', 'size'), rata=('nilai', 'mean'))\n    return {k: (int(r.n), float(r.rata)) for k, r in g.iterrows()}",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-03-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `simpan_tertinggi(df)` yang menormalkan `nama`, mengurutkan menurun menurut `nilai` secara stabil, dan mengembalikan list `id` setelah hanya satu baris per nama dipertahankan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef simpan_tertinggi(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "simpan_tertinggi(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nassert simpan_tertinggi(df) == [4, 1, 3, 6]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "simpan_tertinggi(df.iloc[[0, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simpan_tertinggi(df.iloc[[0, 1]]) == [1]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(simpan_tertinggi(df))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(simpan_tertinggi(df)) == 4"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "simpan_tertinggi(df.iloc[[2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simpan_tertinggi(df.iloc[[2, 4]]) == [3]"
+              }
+            ]
+          },
+          "hint": "sort_values stabil menurun lalu drop_duplicates pada nama.",
+          "solution": "import pandas as pd\n\ndef simpan_tertinggi(df):\n    b = df.assign(nama=df['nama'].str.strip().str.lower())\n    b = b.sort_values('nilai', ascending=False, kind='stable')\n    return b.drop_duplicates('nama')['id'].tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-03-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `konflik_kunci(df, kunci, nilai)` yang menormalkan kolom `kunci` lalu mengembalikan list terurut kunci yang memiliki lebih dari satu nilai berbeda pada kolom `nilai`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef konflik_kunci(df, kunci, nilai):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "konflik_kunci(df, 'nama', 'nilai')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nassert konflik_kunci(df, 'nama', 'nilai') == []"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "konflik_kunci(df.assign(nilai=[80, 75, 70, 90...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert konflik_kunci(df.assign(nilai=[80, 75, 70, 90, 70, 60, 90]), 'nama', 'nilai') == ['ani putri']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "konflik_kunci(df, 'kota', 'nilai')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert konflik_kunci(df, 'kota', 'nilai') == ['bandung']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "konflik_kunci(df.iloc[[0, 1]], 'kota', 'nilai')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert konflik_kunci(df.iloc[[0, 1]], 'kota', 'nilai') == []"
+              }
+            ]
+          },
+          "hint": "groupby kunci ternormalisasi, nunique, lalu saring lebih dari satu.",
+          "solution": "import pandas as pd\n\ndef konflik_kunci(df, kunci, nilai):\n    b = df.assign(**{kunci: df[kunci].str.strip().str.lower()})\n    n = b.groupby(kunci)[nilai].nunique()\n    return sorted(n[n > 1].index.tolist())",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B3-03-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `laporan_dedup(df, subset)` yang menormalkan kolom `subset` pada salinan, menghapus duplikat menurut `subset`, dan mengembalikan dict dengan kunci `sebelum`, `sesudah`, dan `dibuang` berisi bilangan bulat.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef laporan_dedup(df, subset):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np\nimport pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "laporan_dedup(df, ['nama', 'kota'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\nassert laporan_dedup(df, ['nama', 'kota']) == {'sebelum': 7, 'sesudah': 5, 'dibuang': 2}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "laporan_dedup(df, ['nama'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert laporan_dedup(df, ['nama']) == {'sebelum': 7, 'sesudah': 4, 'dibuang': 3}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "laporan_dedup(df, ['kota'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert laporan_dedup(df, ['kota'])['sesudah'] == 4"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "df['nama'].tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert df['nama'].tolist()[1] == 'ani putri '"
+              }
+            ]
+          },
+          "hint": "Normalkan salinan, drop_duplicates, lalu hitung selisih panjang.",
+          "solution": "import pandas as pd\n\ndef laporan_dedup(df, subset):\n    b = df.copy()\n    for k in subset:\n        b[k] = b[k].str.strip().str.lower()\n    sesudah = len(b.drop_duplicates(subset))\n    return {'sebelum': len(df), 'sesudah': sesudah, 'dibuang': len(df) - sesudah}",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Bila duplikat memuat info berbeda, strategi yang cocok?",
+          "code": null,
+          "options": [
+            {
+              "label": "Gabung",
+              "description": ""
+            },
+            {
+              "label": "Hapus semua",
+              "description": ""
+            },
+            {
+              "label": "Abaikan",
+              "description": ""
+            },
+            {
+              "label": "Ubah tipe",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satukan.",
+          "explanation": "Agregasi."
+        },
+        {
+          "q": "sort_values stabil memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "kind='stable'",
+              "description": ""
+            },
+            {
+              "label": "inplace",
+              "description": ""
+            },
+            {
+              "label": "axis",
+              "description": ""
+            },
+            {
+              "label": "na_position",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "stable.",
+          "explanation": "Deterministik."
+        },
+        {
+          "q": "Konflik dideteksi dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "nunique per kunci",
+              "description": ""
+            },
+            {
+              "label": "shape",
+              "description": ""
+            },
+            {
+              "label": "head",
+              "description": ""
+            },
+            {
+              "label": "dtypes",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Nunique.",
+          "explanation": "Lebih dari satu."
+        },
+        {
+          "q": "Jumlah dibuang sangat besar menandakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kemungkinan masalah kunci atau sumber",
+              "description": ""
+            },
+            {
+              "label": "Hasil bagus",
+              "description": ""
+            },
+            {
+              "label": "Tidak apa",
+              "description": ""
+            },
+            {
+              "label": "Format salah",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tanda bahaya.",
+          "explanation": "Curigai."
+        },
+        {
+          "q": "Data mentah sebaiknya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Disimpan tanpa diubah",
+              "description": ""
+            },
+            {
+              "label": "Ditimpa",
+              "description": ""
+            },
+            {
+              "label": "Dihapus",
+              "description": ""
+            },
+            {
+              "label": "Dikompres",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Aman.",
+          "explanation": "Reproduksibilitas."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membuang duplikat tanpa memeriksa konflik nilai. Lebih baik: Hitung nunique per kunci dan tinjau konflik.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membuang duplikat tanpa memeriksa konflik nilai.",
+          "fix": "Hitung nunique per kunci dan tinjau konflik."
+        },
+        {
+          "mistake": "Memakai kunci terlalu longgar seperti kota.",
+          "fix": "Gabungkan beberapa kolom agar kunci spesifik."
+        },
+        {
+          "mistake": "Menimpa data mentah dengan hasil bersih.",
+          "fix": "Simpan data mentah dan hasil bersih terpisah."
+        }
+      ],
+      "summary": [
+        "Pilih strategi buang, gabung, atau versi terbaik sesuai isi duplikat.",
+        "Konflik nilai dalam kelompok harus dideteksi dan dilaporkan.",
+        "Kunci yang baik spesifik namun toleran terhadap ejaan.",
+        "Laporan deduplikasi dan data mentah yang utuh menjaga keterauditan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Menyelesaikan duplikat dengan aman"
+          },
+          {
+            "type": "text",
+            "source": "Setiap nama memiliki satu nilai unik sehingga tidak ada konflik nilai. Kota masih belum seragam, jadi first mengambil tulisan mentah yang berbeda-beda."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nb = df.assign(nama=df['nama'].str.strip().str.lower())\ng = b.groupby('nama').agg(n=('id', 'size'), rata=('nilai', 'mean'))\nprint(g['n'].to_dict(), g['rata'].to_dict())\nprint(b.groupby('nama')['nilai'].nunique().to_dict())\nprint(b.groupby('nama')['kota'].first().to_dict())\nprint(b.drop(columns='id').duplicated().sum(), b.drop(columns='id').drop_duplicates().shape)"
+          },
+          {
+            "type": "text",
+            "source": "Urutan menentukan baris mana yang menang. Menurut nilai tertinggi yang menang adalah id 4, 1, 3, dan 6, sedangkan menurut id terbaru yang menang adalah id 7, 6, 5, dan 2."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nb = df.assign(nama=df['nama'].str.strip().str.lower())\ns = b.sort_values('nilai', ascending=False, kind='stable')\nprint(s['id'].tolist())\nprint(s.drop_duplicates('nama')['id'].tolist())\nprint(b.sort_values('id', ascending=False).drop_duplicates('nama')['id'].tolist())\nprint(b.sort_values('id').drop_duplicates('nama', keep='last')['id'].tolist())\nprint(len(s.drop_duplicates('nama')))"
+          },
+          {
+            "type": "text",
+            "source": "Hanya Ani yang memiliki dua nilai berbeda setelah nilai kedua diubah. Pada kunci kota, bandung memiliki dua nilai berbeda karena kotanya dipakai banyak orang."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    'id': [1, 2, 3, 4, 5, 6, 7],\n    'nama': ['Ani Putri', 'ani putri ', 'Budi', 'Cici', 'Budi', 'Dedi', 'cici'],\n    'kota': ['Jakarta', 'jakarta', 'Bandung', 'BANDUNG', 'Bandung', 'Jkt', 'Surabaya'],\n    'nilai': [80, 80, 70, 90, 70, 60, 90],\n})\n\nd2 = df.assign(nilai=[80, 75, 70, 90, 70, 60, 90])\nb = d2.assign(nama=d2['nama'].str.strip().str.lower())\nn = b.groupby('nama')['nilai'].nunique()\nprint(n.to_dict(), sorted(n[n > 1].index.tolist()))\nprint(b.groupby('nama')['nilai'].agg(['min', 'max']).loc['ani putri'].tolist())\nk = df.assign(kota=df['kota'].str.strip().str.lower()).groupby('kota')['nilai'].nunique()\nprint(k.to_dict(), sorted(k[k > 1].index.tolist()))\nprint(len(df), len(df.assign(nama=df['nama'].str.strip().str.lower()).drop_duplicates(['nama', 'kota'])))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

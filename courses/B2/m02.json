@@ -1,0 +1,1620 @@
+{
+  "schema_version": 2,
+  "course_id": "B2",
+  "module_no": 2,
+  "title": "Memilih data dengan loc dan iloc",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memilih sel, baris, dan kolom dengan loc dan iloc",
+    "Menyaring dan mengubah data bersyarat dengan aman",
+    "Mengelola indeks dan menghindari jebakan pemilihan"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B2-02-1",
+    "exercise_id": "B2-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def selang_kolom(df, kolom):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B2-02-1",
+      "title": "loc dan iloc untuk baris dan kolom",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membedakan pemilihan berbasis label (loc) dan posisi (iloc)",
+        "Memilih sel, baris, kolom, dan blok",
+        "Memahami perbedaan slice inklusif dan eksklusif",
+        "Memakai at dan iat untuk akses satu sel"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dua pintu masuk",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua pintu masuk\n\nPandas memberi dua pintu utama untuk memilih bagian tabel. `loc` memilih menurut **label** indeks dan nama kolom, sedangkan `iloc` memilih menurut **posisi** bilangan bulat. Keduanya memakai bentuk yang sama: `tabel.loc[baris, kolom]` dan `tabel.iloc[baris, kolom]`, dengan koma memisahkan sumbu baris dan kolom. Menguasai kedua pintu ini menghilangkan sebagian besar kebingungan pemilihan data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data contoh\n\nPada pelajaran ini kita memakai tabel kecil berisi empat orang dengan indeks berlabel `p1` sampai `p4` dan kolom `nama`, `umur`, `kota`, dan `skor`. Indeks berupa teks sengaja dipakai agar perbedaan label dan posisi terlihat jelas. Bila indeks hanya nomor urut bawaan, label dan posisi kebetulan sama dan perbedaan keduanya tersembunyi sampai data difilter."
+            },
+            {
+              "type": "code_example",
+              "filename": "loc_iloc_dasar.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.loc['p2', 'nama'])\nprint(df.iloc[1, 0])\nprint(df.loc['p2'].to_dict())\nprint(df.loc[:, 'umur'].tolist())\nprint(df.iloc[:, -1].tolist())",
+              "expected_output_note": "Budi\nBudi\n{'nama': 'Budi', 'umur': 25, 'kota': 'B', 'skor': 70.0}\n[20, 25, 22, 30]\n[80.0, 70.0, 90.0, 60.0]",
+              "explanation": "Loc memakai label p2 dan nama, iloc memakai posisi satu dan nol, keduanya memilih sel yang sama. Titik dua berarti seluruh sumbu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Satu baris atau satu kolom\n\nMemberi satu label pada `loc` tanpa kolom mengembalikan satu baris sebagai Series yang indeksnya nama kolom. Titik dua pada posisi baris dengan satu nama kolom mengembalikan satu kolom. Hasil satu baris bertipe campuran dipaksa ke tipe umum, sehingga angka dapat berubah menjadi desimal atau objek. Itu sebabnya mengambil satu kolom sebagai Series biasanya lebih bersih daripada satu baris."
+            },
+            {
+              "type": "text",
+              "markdown": "## Slice: inklusif dan eksklusif\n\nPerbedaan terpenting antara dua pintu: slice `loc` menyertakan ujung akhir, sedangkan slice `iloc` tidak. Menulis `df.loc['p1':'p3']` mengembalikan tiga baris, dan `df.iloc[0:3]` juga tiga baris, tetapi karena alasan berbeda. Alasan `loc` menyertakan ujung akhir adalah label tidak punya konsep label berikutnya yang pasti, sehingga ujung akhir yang disebutkan dianggap bagian dari rentang."
+            },
+            {
+              "type": "code_example",
+              "filename": "slice_label_posisi.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.loc['p1':'p3'].index.tolist())\nprint(df.iloc[0:3].index.tolist())\nprint(df.loc['p2':'p3', ['nama', 'skor']].values.tolist())\nprint(df.iloc[1:3, [0, 3]].values.tolist())\nprint(df.loc[:, 'nama':'kota'].columns.tolist())\nprint(df.iloc[-2:].index.tolist())",
+              "expected_output_note": "['p1', 'p2', 'p3']\n['p1', 'p2', 'p3']\n[['Budi', 70.0], ['Cici', 90.0]]\n[['Budi', 70.0], ['Cici', 90.0]]\n['nama', 'umur', 'kota']\n['p3', 'p4']",
+              "explanation": "Slice label menyertakan p3 dan slice kolom label menyertakan kota. Slice posisi berhenti sebelum angka akhir."
+            }
+          ],
+          "quick_check": {
+            "question": "loc memilih berdasarkan?",
+            "options": [
+              "Label",
+              "Posisi"
+            ],
+            "answer_index": 0,
+            "explanation": "Label indeks dan kolom.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "List label dan list posisi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## List label dan list posisi\n\nDi dalam `loc` atau `iloc` boleh diberikan list untuk memilih baris atau kolom tertentu dalam urutan yang Anda tulis. List label yang tidak ada pada indeks menimbulkan `KeyError`, dan posisi di luar jangkauan menimbulkan `IndexError`. Urutan list menentukan urutan hasil, sehingga cara ini juga dipakai untuk menyusun ulang kolom."
+            },
+            {
+              "type": "text",
+              "markdown": "## at dan iat\n\nUntuk mengakses atau mengubah satu sel, `at` dan `iat` lebih cepat daripada `loc` dan `iloc`. `at` memakai label baris dan kolom, `iat` memakai posisi baris dan kolom. Keduanya hanya menerima satu sel, bukan slice atau list. Dalam perulangan yang menyentuh banyak sel satu per satu, perbedaan kecepatan terasa, meskipun idealnya perulangan seperti itu diganti operasi vectorized."
+            },
+            {
+              "type": "code_example",
+              "filename": "at_iat.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.at['p3', 'skor'])\nprint(df.iat[2, 3])\nprint(df.loc[['p4', 'p1'], 'nama'].tolist())\nprint(df.iloc[[0, -1], 1].tolist())\nprint(df.columns.get_loc('skor'), df.index.get_loc('p3'))\ntry:\n    df.loc['p9']\nexcept KeyError:\n    print('keyerror')",
+              "expected_output_note": "90.0\n90.0\n['Dedi', 'Ani']\n[20, 30]\n3 2\nkeyerror",
+              "explanation": "At dan iat membaca satu sel. List memilih sesuai urutan, dan label tak dikenal menimbulkan KeyError. Get_loc menerjemahkan label menjadi posisi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan memakai yang mana\n\nGunakan `loc` bila Anda memikirkan data dengan nama: baris untuk pelanggan tertentu, kolom untuk fitur tertentu. Gunakan `iloc` bila Anda memikirkan posisi: lima baris pertama, kolom terakhir, setiap baris kedua. Kode berbasis label lebih tahan terhadap perubahan urutan data, sedangkan kode berbasis posisi rapuh bila kolom bertambah atau urutan berubah, jadi utamakan label bila memungkinkan."
+            }
+          ],
+          "quick_check": {
+            "question": "df.iloc[0:3] mengembalikan?",
+            "options": [
+              "Empat baris",
+              "Tiga baris"
+            ],
+            "answer_index": 1,
+            "explanation": "Akhir tidak termasuk.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Pemilihan dengan langkah",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pemilihan dengan langkah\n\nSlice dengan langkah juga bekerja pada kedua pintu. `df.iloc[::2]` mengambil setiap baris kedua mulai dari baris pertama, dan `df.iloc[::-1]` membalik urutan baris. `df.loc[::2]` pada indeks label bekerja dengan cara yang sama berdasarkan urutan penyimpanan. Gunakan ini untuk sampel berurutan sederhana, bukan untuk sampel acak yang butuh pengacakan."
+            },
+            {
+              "type": "text",
+              "markdown": "## head dan tail\n\nMetode `head(n)` dan `tail(n)` mengambil n baris pertama dan terakhir, setara dengan `iloc[:n]` dan `iloc[-n:]`. Nilai bawaannya lima. Keduanya sering dipakai untuk melihat sekilas isi data. Untuk menjajaki file besar, ingat bahwa `head` tidak menjamin urutan acak, sehingga baris awal belum tentu mewakili keseluruhan data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menugaskan nilai\n\n`loc`, `iloc`, `at`, dan `iat` juga dapat berada di sisi kiri tanda sama dengan untuk mengubah isi. Penugasan `df.loc['p1', 'umur'] = 21` mengubah satu sel, dan `df.iloc[0, 3] = 85.0` melakukan hal sama lewat posisi. Penugasan dengan satu pemilih yang tegas inilah cara yang benar mengubah data, berbeda dari penugasan berantai yang dibahas pada pelajaran berikutnya."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Ingat perbedaannya",
+              "markdown": "Slice loc menyertakan ujung akhir, slice iloc tidak. Utamakan loc dengan label agar kode tahan terhadap perubahan urutan."
+            }
+          ],
+          "quick_check": {
+            "question": "df.loc['p1':'p3'] mengembalikan?",
+            "options": [
+              "Tiga baris",
+              "Dua baris"
+            ],
+            "answer_index": 0,
+            "explanation": "Menyertakan p3.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `nama_baris(df, label)` yang mengembalikan isi kolom `nama` pada baris berlabel `label`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef nama_baris(df, label):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_baris(df, 'p2')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nassert nama_baris(df, 'p2') == 'Budi'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_baris(df, 'p4')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_baris(df, 'p4') == 'Dedi'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_baris(df, 'p1')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_baris(df, 'p1') == 'Ani'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "nama_baris(df.iloc[::-1], 'p3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_baris(df.iloc[::-1], 'p3') == 'Cici'"
+              }
+            ]
+          },
+          "hint": "Pakai loc dengan label baris dan nama kolom.",
+          "solution": "import pandas as pd\n\ndef nama_baris(df, label):\n    return df.loc[label, 'nama']",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-02-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `blok_label(df, a, b, kolom)` yang mengembalikan, sebagai list Python, nilai `kolom` (nama kolom atau list nama kolom) untuk baris berlabel `a` sampai `b` inklusif.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef blok_label(df, a, b, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "blok_label(df, 'p2', 'p3', ['nama', 'skor'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nassert blok_label(df, 'p2', 'p3', ['nama', 'skor']) == [['Budi', 70.0], ['Cici', 90.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "blok_label(df, 'p1', 'p2', 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert blok_label(df, 'p1', 'p2', 'umur') == [20, 25]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "blok_label(df, 'p4', 'p4', 'nama')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert blok_label(df, 'p4', 'p4', 'nama') == ['Dedi']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "blok_label(df, 'p1', 'p4', 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert blok_label(df, 'p1', 'p4', 'kota') == ['A', 'B', 'A', 'C']"
+              }
+            ]
+          },
+          "hint": "Slice label pada loc menyertakan ujung akhir.",
+          "solution": "import pandas as pd\n\ndef blok_label(df, a, b, kolom):\n    return df.loc[a:b, kolom].values.tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `blok_posisi(df, r0, r1, c0, c1)` yang mengembalikan, sebagai list Python, blok tabel dari baris posisi `r0` sampai sebelum `r1` dan kolom posisi `c0` sampai sebelum `c1`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef blok_posisi(df, r0, r1, c0, c1):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "blok_posisi(df, 1, 3, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nassert blok_posisi(df, 1, 3, 0, 1) == [['Budi'], ['Cici']]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "blok_posisi(df, 0, 2, 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert blok_posisi(df, 0, 2, 1, 2) == [[20], [25]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "blok_posisi(df, 3, 4, 3, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert blok_posisi(df, 3, 4, 3, 4) == [[60.0]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "blok_posisi(df, 0, 0, 0, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert blok_posisi(df, 0, 0, 0, 4) == []"
+              }
+            ]
+          },
+          "hint": "Slice iloc pada kedua sumbu.",
+          "solution": "import pandas as pd\n\ndef blok_posisi(df, r0, r1, c0, c1):\n    return df.iloc[r0:r1, c0:c1].values.tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `selang_kolom(df, kolom)` yang mengembalikan, sebagai list Python, nilai kolom `kolom` pada setiap baris kedua mulai dari baris pertama, berdasarkan posisi.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef selang_kolom(df, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selang_kolom(df, 'umur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nassert selang_kolom(df, 'umur') == [20, 22]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selang_kolom(df, 'nama')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selang_kolom(df, 'nama') == ['Ani', 'Cici']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selang_kolom(df.iloc[::-1], 'nama')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selang_kolom(df.iloc[::-1], 'nama') == ['Dedi', 'Budi']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "selang_kolom(df.iloc[:3], 'skor')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selang_kolom(df.iloc[:3], 'skor') == [80.0, 90.0]"
+              }
+            ]
+          },
+          "hint": "Ambil kolom lalu iloc dengan langkah dua.",
+          "solution": "import pandas as pd\n\ndef selang_kolom(df, kolom):\n    return df[kolom].iloc[::2].tolist()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "loc memilih berdasarkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Label",
+              "description": ""
+            },
+            {
+              "label": "Posisi",
+              "description": ""
+            },
+            {
+              "label": "Tipe",
+              "description": ""
+            },
+            {
+              "label": "Nilai",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Label.",
+          "explanation": "Label indeks dan kolom."
+        },
+        {
+          "q": "df.iloc[0:3] mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tiga baris",
+              "description": ""
+            },
+            {
+              "label": "Empat baris",
+              "description": ""
+            },
+            {
+              "label": "Dua baris",
+              "description": ""
+            },
+            {
+              "label": "Satu baris",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tiga.",
+          "explanation": "Akhir tidak termasuk."
+        },
+        {
+          "q": "df.loc['p1':'p3'] mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tiga baris",
+              "description": ""
+            },
+            {
+              "label": "Dua baris",
+              "description": ""
+            },
+            {
+              "label": "Satu baris",
+              "description": ""
+            },
+            {
+              "label": "Empat baris",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Inklusif.",
+          "explanation": "Menyertakan p3."
+        },
+        {
+          "q": "Akses satu sel tercepat?",
+          "code": null,
+          "options": [
+            {
+              "label": "at atau iat",
+              "description": ""
+            },
+            {
+              "label": "loc list",
+              "description": ""
+            },
+            {
+              "label": "iloc slice",
+              "description": ""
+            },
+            {
+              "label": "head",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "at.",
+          "explanation": "Satu sel."
+        },
+        {
+          "q": "Label tak dikenal pada loc menimbulkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "KeyError",
+              "description": ""
+            },
+            {
+              "label": "IndexError",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "NaN",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Key.",
+          "explanation": "Label tidak ada."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira slice loc tidak menyertakan ujung akhir. Lebih baik: Slice loc menyertakan ujung akhir.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira slice loc tidak menyertakan ujung akhir.",
+          "fix": "Slice loc menyertakan ujung akhir."
+        },
+        {
+          "mistake": "Memakai posisi pada tabel yang urutannya sering berubah.",
+          "fix": "Pakai label dengan loc."
+        },
+        {
+          "mistake": "Mengira satu baris tetap bertipe asli tiap kolom.",
+          "fix": "Satu baris dipaksa ke tipe umum."
+        }
+      ],
+      "summary": [
+        "loc memilih dengan label dan iloc dengan posisi.",
+        "Slice loc menyertakan ujung akhir, slice iloc tidak.",
+        "at dan iat mengakses satu sel dengan cepat.",
+        "Pilih label bila memungkinkan agar kode tahan perubahan urutan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# loc dan iloc untuk baris dan kolom"
+          },
+          {
+            "type": "text",
+            "source": "Loc memakai label p2 dan nama, iloc memakai posisi satu dan nol, keduanya memilih sel yang sama. Titik dua berarti seluruh sumbu."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.loc['p2', 'nama'])\nprint(df.iloc[1, 0])\nprint(df.loc['p2'].to_dict())\nprint(df.loc[:, 'umur'].tolist())\nprint(df.iloc[:, -1].tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Slice label menyertakan p3 dan slice kolom label menyertakan kota. Slice posisi berhenti sebelum angka akhir."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.loc['p1':'p3'].index.tolist())\nprint(df.iloc[0:3].index.tolist())\nprint(df.loc['p2':'p3', ['nama', 'skor']].values.tolist())\nprint(df.iloc[1:3, [0, 3]].values.tolist())\nprint(df.loc[:, 'nama':'kota'].columns.tolist())\nprint(df.iloc[-2:].index.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "At dan iat membaca satu sel. List memilih sesuai urutan, dan label tak dikenal menimbulkan KeyError. Get_loc menerjemahkan label menjadi posisi."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.at['p3', 'skor'])\nprint(df.iat[2, 3])\nprint(df.loc[['p4', 'p1'], 'nama'].tolist())\nprint(df.iloc[[0, -1], 1].tolist())\nprint(df.columns.get_loc('skor'), df.index.get_loc('p3'))\ntry:\n    df.loc['p9']\nexcept KeyError:\n    print('keyerror')"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-02-2",
+      "title": "Filter boolean dan penugasan bersyarat",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menyaring baris dengan mask boolean",
+        "Menggabungkan syarat dengan operator logika",
+        "Memakai isin, between, dan str untuk syarat umum",
+        "Mengubah nilai bersyarat dengan loc tanpa peringatan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Menyaring berdasarkan isi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menyaring berdasarkan isi\n\nPemilihan paling sering dalam analisis data adalah menyaring baris berdasarkan isinya: pelanggan yang umurnya di atas dua puluh lima, transaksi yang gagal, produk dengan stok kurang dari sepuluh. Caranya sama seperti pada NumPy: buat mask boolean dari perbandingan, lalu gunakan mask itu untuk memilih baris. Pada pandas, mask adalah Series boolean yang indeksnya sejajar dengan tabel."
+            },
+            {
+              "type": "code_example",
+              "filename": "filter_dasar.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nm = df['skor'] > 65\nprint(m.tolist())\nprint(df.loc[m, 'nama'].tolist())\nprint(df[m].shape)\nprint(int(m.sum()), float(m.mean()))\nprint(df.loc[~m, 'nama'].tolist())",
+              "expected_output_note": "[True, True, True, False]\n['Ani', 'Budi', 'Cici']\n(3, 4)\n3 0.75\n['Dedi']",
+              "explanation": "Mask berasal dari perbandingan satu kolom. Jumlah mask menghitung baris lolos, dan tilde membalik pilihan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menggabungkan syarat\n\nGabungkan beberapa syarat dengan `&` untuk dan, `|` untuk atau, dan `~` untuk bukan. Seperti pada NumPy, tiap perbandingan harus diapit kurung karena `&` lebih diutamakan daripada operator perbandingan. Kata `and` dan `or` tidak dapat dipakai pada Series dan menimbulkan galat nilai ambigu. Menyimpan tiap syarat dalam variabel bernama membuat ekspresi panjang mudah dibaca."
+            },
+            {
+              "type": "text",
+              "markdown": "## Syarat umum\n\nMetode `isin` memeriksa keanggotaan dalam list, `between` memeriksa rentang inklusif, dan `str.contains`, `str.startswith`, serta `str.endswith` memeriksa pola teks. Metode `isna` dan `notna` memeriksa nilai hilang. Semuanya mengembalikan Series boolean yang dapat digabung dengan operator logika, sehingga hampir semua pertanyaan seleksi dapat dinyatakan dengan beberapa baris."
+            },
+            {
+              "type": "code_example",
+              "filename": "filter_gabung.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.loc[(df['umur'] >= 22) & (df['kota'] == 'A'), 'nama'].tolist())\nprint(df.loc[(df['umur'] < 22) | (df['skor'] < 65), 'nama'].tolist())\nprint(df.loc[df['kota'].isin(['A', 'C']), 'nama'].tolist())\nprint(df.loc[df['umur'].between(22, 25), 'nama'].tolist())\nprint(df.loc[df['nama'].str.startswith('C'), 'nama'].tolist())\nprint(df.loc[lambda d: d['skor'] > 75, 'nama'].tolist())",
+              "expected_output_note": "['Cici']\n['Ani', 'Dedi']\n['Ani', 'Cici', 'Dedi']\n['Budi', 'Cici']\n['Cici']\n['Ani', 'Cici']",
+              "explanation": "Dua syarat digabung dengan kurung. Isin, between, dan metode teks membuat mask khusus, dan fungsi lambda membaca tabel saat itu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hasil kosong\n\nBila tidak ada baris yang memenuhi syarat, hasilnya tabel kosong dengan kolom yang sama, bukan galat. Periksa dengan atribut `empty` atau `len`. Hasil ringkasan seperti `max` pada Series kosong menghasilkan NaN atau galat, jadi periksa lebih dulu bila bagian kode berikutnya bergantung pada adanya data."
+            }
+          ],
+          "quick_check": {
+            "question": "Menggabungkan syarat dengan?",
+            "options": [
+              "& dan |",
+              "and dan or"
+            ],
+            "answer_index": 0,
+            "explanation": "Operator elemen.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mengubah nilai bersyarat",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengubah nilai bersyarat\n\nCara yang benar mengubah nilai pada baris tertentu adalah `df.loc[mask, 'kolom'] = nilai`, satu pemilih tunggal yang memuat baris dan kolom sekaligus. Cara ini memodifikasi tabel asal secara langsung dan tegas. Bentuk berantai seperti `df[mask]['kolom'] = nilai` tidak bekerja dengan andal: ia mengubah salinan sementara dan tabel asal tetap tidak berubah, disertai peringatan."
+            },
+            {
+              "type": "code_example",
+              "filename": "penugasan_bersyarat.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nd2 = df.copy()\nd2.loc[d2['skor'] < 65, 'skor'] = 65.0\nprint(d2['skor'].tolist())\nprint(df['skor'].tolist())\nd2.loc[d2['kota'] == 'A', 'kota'] = 'Z'\nprint(d2['kota'].tolist())\nd2['kat'] = 'rendah'\nd2.loc[d2['skor'] >= 80, 'kat'] = 'tinggi'\nprint(d2['kat'].tolist())",
+              "expected_output_note": "[80.0, 70.0, 90.0, 65.0]\n[80.0, 70.0, 90.0, 60.0]\n['Z', 'B', 'Z', 'C']\n['tinggi', 'rendah', 'tinggi', 'rendah']",
+              "explanation": "Loc dengan mask mengubah baris terpilih pada salinan, sementara tabel asal tetap utuh. Kolom kategori dibuat dengan nilai bawaan lalu ditimpa bersyarat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Penugasan berantai\n\nPeringatan SettingWithCopy atau ChainedAssignment muncul ketika Anda mengubah hasil dari pemilihan sebelumnya. Penyebabnya adalah pandas tidak menjamin apakah pemilihan pertama mengembalikan tampilan atau salinan. Pada pandas versi baru dengan aturan copy-on-write, penugasan berantai tidak pernah memengaruhi tabel asal. Aturan praktisnya: satu langkah, satu `loc`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Salinan eksplisit\n\nBila Anda memang ingin bekerja pada bagian tabel secara terpisah, buat salinan eksplisit dengan `.copy()`: `kecil = df[df['umur'] > 21].copy()`. Setelah itu mengubah `kecil` tidak memengaruhi `df` dan tidak menimbulkan peringatan. Kebiasaan ini menjelaskan niat kode dan menghindari bug halus ketika tabel asal berubah di tempat lain."
+            },
+            {
+              "type": "text",
+              "markdown": "## where dan mask\n\nMetode `where(cond, other)` mempertahankan nilai bila syarat benar dan menggantinya dengan `other` bila salah, sedangkan `mask` melakukan kebalikannya. Keduanya mengembalikan objek baru dan berguna untuk mengganti nilai tanpa menugaskan. Untuk memilih antara dua nilai berdasarkan syarat, `np.where` pada kolom sering lebih ringkas, dan `np.select` menangani banyak kategori."
+            }
+          ],
+          "quick_check": {
+            "question": "isin memeriksa?",
+            "options": [
+              "Rentang",
+              "Keanggotaan dalam list"
+            ],
+            "answer_index": 1,
+            "explanation": "Anggota.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kolom kategori dari syarat",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kolom kategori dari syarat\n\nPola umum: buat kolom baru berisi label berdasarkan syarat pada kolom lain. Untuk dua kategori, pakai `np.where(syarat, 'a', 'b')`. Untuk banyak kategori berurutan, pakai `np.select` atau `pd.cut` bila batasnya berupa rentang numerik. Menyimpan hasil sebagai tipe `category` menghemat memori dan membuat pengelompokan berikutnya lebih cepat."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Satu langkah",
+              "markdown": "Gunakan satu loc untuk mengubah bagian tabel. Penugasan berantai seperti df[mask]['kolom'] = nilai tidak mengubah tabel asal."
+            },
+            {
+              "type": "text",
+              "markdown": "## Bahaya nilai hilang pada mask\n\nMask dari kolom yang memuat NaN menghasilkan False pada baris tersebut untuk perbandingan seperti lebih besar, sehingga baris bernilai hilang diam-diam keluar dari hasil. Bila itu bukan yang Anda inginkan, tangani nilai hilang secara eksplisit dengan `isna` atau `fillna` sebelum menyaring. Selalu bandingkan jumlah baris sebelum dan sesudah filter agar tidak ada kehilangan yang tak disadari."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menghitung hasil filter\n\nSetelah menyaring, pertanyaan lanjutan hampir selalu tentang jumlah dan proporsi: berapa baris yang lolos, berapa persen dari total. `len(hasil)` atau `mask.sum()` memberi jumlah dan `mask.mean()` memberi proporsi. Biasakan melaporkan keduanya bersama angka ringkasan, karena rata-rata dari hanya dua baris punya arti sangat berbeda dari rata-rata ribuan baris."
+            },
+            {
+              "type": "text",
+              "markdown": "## Filter bertingkat\n\nUntuk logika rumit, pecah syarat menjadi beberapa mask bernama lalu gabungkan. Misalnya `dewasa = df['umur'] >= 18`, `aktif = df['status'] == 'aktif'`, lalu `df.loc[dewasa & aktif]`. Nama variabel menjelaskan makna bisnis tiap syarat, mudah diuji terpisah, dan dipakai ulang. Cara ini jauh lebih mudah dirawat daripada satu ekspresi panjang berkurung bertumpuk."
+            }
+          ],
+          "quick_check": {
+            "question": "Cara benar mengubah baris terpilih?",
+            "options": [
+              "df.loc[mask, 'kolom'] = nilai",
+              "df[mask]['kolom'] = nilai"
+            ],
+            "answer_index": 0,
+            "explanation": "Satu loc.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `nama_lulus(df, batas)` yang mengembalikan list `nama` untuk baris dengan `skor` sekurang-kurangnya `batas`, memakai `loc`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef nama_lulus(df, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_lulus(df, 75)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nassert nama_lulus(df, 75) == ['Ani', 'Cici']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_lulus(df, 60)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_lulus(df, 60) == ['Ani', 'Budi', 'Cici', 'Dedi']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_lulus(df, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_lulus(df, 100) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "nama_lulus(df, 90)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_lulus(df, 90) == ['Cici']"
+              }
+            ]
+          },
+          "hint": "Mask skor dibandingkan dengan batas lalu loc dengan kolom nama.",
+          "solution": "import pandas as pd\n\ndef nama_lulus(df, batas):\n    return df.loc[df['skor'] >= batas, 'nama'].tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-02-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `nama_kombinasi(df, umur_min, kota)` yang mengembalikan list `nama` untuk baris dengan `umur` sekurang-kurangnya `umur_min` dan `kota` yang termasuk dalam list `kota`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef nama_kombinasi(df, umur_min, kota):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_kombinasi(df, 22, ['A'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nassert nama_kombinasi(df, 22, ['A']) == ['Cici']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_kombinasi(df, 20, ['A', 'C'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_kombinasi(df, 20, ['A', 'C']) == ['Ani', 'Cici', 'Dedi']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_kombinasi(df, 40, ['A', 'B', 'C'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_kombinasi(df, 40, ['A', 'B', 'C']) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "nama_kombinasi(df, 0, ['B'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_kombinasi(df, 0, ['B']) == ['Budi']"
+              }
+            ]
+          },
+          "hint": "Gabungkan dua mask dengan ampersand dan kurung.",
+          "solution": "import pandas as pd\n\ndef nama_kombinasi(df, umur_min, kota):\n    mask = (df['umur'] >= umur_min) & df['kota'].isin(kota)\n    return df.loc[mask, 'nama'].tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `batasi_skor(df, minimum)` yang mengembalikan salinan `df` dengan semua `skor` di bawah `minimum` diganti `minimum`.",
+          "note": "Tabel asli tidak boleh berubah.",
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef batasi_skor(df, minimum):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "r['skor'].tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nr = batasi_skor(df, 65.0)\nassert r['skor'].tolist() == [80.0, 70.0, 90.0, 65.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "df['skor'].tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert df['skor'].tolist() == [80.0, 70.0, 90.0, 60.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "batasi_skor(df, 0.0)['skor'].tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batasi_skor(df, 0.0)['skor'].tolist() == df['skor'].tolist()"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "batasi_skor(df, 100.0)['skor'].tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batasi_skor(df, 100.0)['skor'].tolist() == [100.0] * 4"
+              }
+            ]
+          },
+          "hint": "Salin lalu loc dengan mask pada kolom skor.",
+          "solution": "import pandas as pd\n\ndef batasi_skor(df, minimum):\n    hasil = df.copy()\n    hasil.loc[hasil['skor'] < minimum, 'skor'] = minimum\n    return hasil",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `beri_kategori(df, batas)` yang mengembalikan salinan `df` dengan kolom baru `kat` bernilai `'tinggi'` bila `skor` sekurang-kurangnya `batas` dan `'rendah'` bila tidak.",
+          "note": "Tabel asli tidak boleh berubah.",
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef beri_kategori(df, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "r['kat'].tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nr = beri_kategori(df, 80)\nassert r['kat'].tolist() == ['tinggi', 'rendah', 'tinggi', 'rendah']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 'kat' not in df.columns"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "beri_kategori(df, 0)['kat'].tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert beri_kategori(df, 0)['kat'].tolist() == ['tinggi'] * 4"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "beri_kategori(df, 100)['kat'].tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert beri_kategori(df, 100)['kat'].tolist() == ['rendah'] * 4"
+              }
+            ]
+          },
+          "hint": "Beri nilai bawaan rendah lalu timpa bersyarat dengan loc.",
+          "solution": "import pandas as pd\n\ndef beri_kategori(df, batas):\n    hasil = df.copy()\n    hasil['kat'] = 'rendah'\n    hasil.loc[hasil['skor'] >= batas, 'kat'] = 'tinggi'\n    return hasil",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Menggabungkan syarat dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "& dan |",
+              "description": ""
+            },
+            {
+              "label": "and dan or",
+              "description": ""
+            },
+            {
+              "label": "+ dan -",
+              "description": ""
+            },
+            {
+              "label": "== dan !=",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ampersand.",
+          "explanation": "Operator elemen."
+        },
+        {
+          "q": "isin memeriksa?",
+          "code": null,
+          "options": [
+            {
+              "label": "Keanggotaan dalam list",
+              "description": ""
+            },
+            {
+              "label": "Rentang",
+              "description": ""
+            },
+            {
+              "label": "Nilai hilang",
+              "description": ""
+            },
+            {
+              "label": "Tipe",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dalam.",
+          "explanation": "Anggota."
+        },
+        {
+          "q": "Cara benar mengubah baris terpilih?",
+          "code": null,
+          "options": [
+            {
+              "label": "df.loc[mask, 'kolom'] = nilai",
+              "description": ""
+            },
+            {
+              "label": "df[mask]['kolom'] = nilai",
+              "description": ""
+            },
+            {
+              "label": "df.mask = nilai",
+              "description": ""
+            },
+            {
+              "label": "df.set(mask)",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu langkah.",
+          "explanation": "Satu loc."
+        },
+        {
+          "q": "Filter tanpa hasil memberi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tabel kosong",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kosong.",
+          "explanation": "Kolom tetap ada."
+        },
+        {
+          "q": "between memeriksa?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rentang inklusif",
+              "description": ""
+            },
+            {
+              "label": "Awalan teks",
+              "description": ""
+            },
+            {
+              "label": "Nilai hilang",
+              "description": ""
+            },
+            {
+              "label": "Duplikat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Rentang.",
+          "explanation": "Batas bawah dan atas."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai and atau or antar syarat. Lebih baik: Pakai & dan | dengan kurung.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai and atau or antar syarat.",
+          "fix": "Pakai & dan | dengan kurung."
+        },
+        {
+          "mistake": "Mengubah hasil filter dengan penugasan berantai.",
+          "fix": "Pakai satu loc atau copy eksplisit."
+        },
+        {
+          "mistake": "Mengira filter tanpa hasil menimbulkan galat.",
+          "fix": "Hasilnya tabel kosong, periksa dengan empty."
+        }
+      ],
+      "summary": [
+        "Mask boolean dari perbandingan menyaring baris tabel.",
+        "Gabungkan syarat dengan &, |, dan ~ berkurung.",
+        "isin, between, dan metode str membuat syarat umum.",
+        "Ubah nilai bersyarat dengan satu loc, bukan penugasan berantai."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Filter boolean dan penugasan bersyarat"
+          },
+          {
+            "type": "text",
+            "source": "Mask berasal dari perbandingan satu kolom. Jumlah mask menghitung baris lolos, dan tilde membalik pilihan."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nm = df['skor'] > 65\nprint(m.tolist())\nprint(df.loc[m, 'nama'].tolist())\nprint(df[m].shape)\nprint(int(m.sum()), float(m.mean()))\nprint(df.loc[~m, 'nama'].tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Dua syarat digabung dengan kurung. Isin, between, dan metode teks membuat mask khusus, dan fungsi lambda membaca tabel saat itu."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.loc[(df['umur'] >= 22) & (df['kota'] == 'A'), 'nama'].tolist())\nprint(df.loc[(df['umur'] < 22) | (df['skor'] < 65), 'nama'].tolist())\nprint(df.loc[df['kota'].isin(['A', 'C']), 'nama'].tolist())\nprint(df.loc[df['umur'].between(22, 25), 'nama'].tolist())\nprint(df.loc[df['nama'].str.startswith('C'), 'nama'].tolist())\nprint(df.loc[lambda d: d['skor'] > 75, 'nama'].tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Loc dengan mask mengubah baris terpilih pada salinan, sementara tabel asal tetap utuh. Kolom kategori dibuat dengan nilai bawaan lalu ditimpa bersyarat."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nd2 = df.copy()\nd2.loc[d2['skor'] < 65, 'skor'] = 65.0\nprint(d2['skor'].tolist())\nprint(df['skor'].tolist())\nd2.loc[d2['kota'] == 'A', 'kota'] = 'Z'\nprint(d2['kota'].tolist())\nd2['kat'] = 'rendah'\nd2.loc[d2['skor'] >= 80, 'kat'] = 'tinggi'\nprint(d2['kat'].tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B2-02-3",
+      "title": "Indeks, reindex, dan jebakan pemilihan",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Memahami bahwa label indeks bertahan setelah filter",
+        "Memakai reset_index, reindex, dan sort_index",
+        "Mencari baris dengan idxmax dan nlargest",
+        "Mengakses data dengan aman bila label mungkin tidak ada"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Indeks yang bertahan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Indeks yang bertahan\n\nSatu fakta sering mengejutkan pemula: setelah menyaring baris, indeks asli tetap menempel pada baris yang tersisa. Tabel yang awalnya berindeks nol sampai sembilan, setelah difilter, dapat berindeks dua, lima, dan tujuh. Akibatnya `loc[0]` mungkin tidak ada lagi, sedangkan `iloc[0]` mengambil baris pertama yang tersisa. Memahami ini mencegah kekeliruan antara label dan posisi."
+            },
+            {
+              "type": "code_example",
+              "filename": "indeks_bertahan.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\nr = pd.DataFrame({'v': [1, 2, 3, 4]})\nrf = r[r['v'] > 1]\nprint(rf.index.tolist())\nprint(rf.loc[1, 'v'], rf.iloc[0, 0])\nprint(rf.reset_index(drop=True).index.tolist())\nprint(rf.reset_index(drop=True).loc[0, 'v'])\ntry:\n    rf.loc[0]\nexcept KeyError:\n    print('keyerror')",
+              "expected_output_note": "[1, 2, 3]\n2 2\n[0, 1, 2]\n2\nkeyerror",
+              "explanation": "Setelah filter, label satu masih ada tetapi nol tidak. Reset_index dengan drop membuat nomor urut baru."
+            },
+            {
+              "type": "text",
+              "markdown": "## reset_index\n\nMetode `reset_index(drop=True)` menomori ulang baris mulai dari nol dan membuang indeks lama. Tanpa `drop=True`, indeks lama menjadi kolom baru bernama `index`. Gunakan setelah penyaringan atau penggabungan bila Anda ingin nomor urut bersih, dan bila label lama tidak lagi bermakna. Namun jangan reset bila indeks lama membawa informasi penting."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mencari baris ekstrem\n\nFungsi `idxmax` dan `idxmin` pada Series mengembalikan label baris dengan nilai terbesar atau terkecil, yang dapat langsung dipakai pada `loc`. Metode `nlargest(n, kolom)` dan `nsmallest` mengembalikan n baris dengan nilai kolom terbesar atau terkecil sebagai tabel utuh. Keduanya lebih ringkas dan lebih cepat daripada mengurutkan seluruh tabel hanya untuk mengambil beberapa baris teratas."
+            },
+            {
+              "type": "code_example",
+              "filename": "baris_ekstrem.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.loc[df['skor'].idxmax(), 'nama'])\nprint(df.nlargest(2, 'skor').index.tolist())\nprint(df.nsmallest(1, 'umur')['nama'].tolist())\nprint(df.sort_values('skor').index.tolist())\nprint(df.sort_values('skor').iloc[0].name)\nprint(df.sort_index(ascending=False).index.tolist())",
+              "expected_output_note": "Cici\n['p3', 'p1']\n['Ani']\n['p4', 'p2', 'p1', 'p3']\np4\n['p4', 'p3', 'p2', 'p1']",
+              "explanation": "Idxmax memberi label yang dipakai loc. Nlargest mengambil baris teratas, dan setelah diurutkan nama baris tetap membawa labelnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## reindex\n\nMetode `reindex(labels)` menyusun ulang tabel mengikuti daftar label yang Anda berikan. Label yang tidak ada pada tabel menghasilkan baris NaN, dan label yang tidak disebutkan dibuang. Ini berbeda dari `loc` dengan list yang menimbulkan galat untuk label hilang. Reindex berguna untuk menyelaraskan beberapa tabel pada kerangka yang sama, misalnya semua tanggal dalam sebulan."
+            },
+            {
+              "type": "code_example",
+              "filename": "reindex_dasar.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nr = df.reindex(['p4', 'p1'])\nprint(r.index.tolist())\nprint(int(df.reindex(['p1', 'p9']).isna().sum().sum()))\nprint(df.reindex(['p1', 'p9']).index.tolist())\nprint(df.reindex(columns=['skor', 'nama']).columns.tolist())",
+              "expected_output_note": "['p4', 'p1']\n4\n['p1', 'p9']\n['skor', 'nama']",
+              "explanation": "Reindex menyusun ulang menurut label, dan label baru p9 menghasilkan empat sel hilang untuk empat kolom."
+            }
+          ],
+          "quick_check": {
+            "question": "Setelah filter indeks lama?",
+            "options": [
+              "Bertahan",
+              "Hilang"
+            ],
+            "answer_index": 0,
+            "explanation": "Label menempel.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Akses aman",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Akses aman\n\nBila label atau kolom mungkin tidak ada, periksa dulu dengan `in`: `label in df.index` dan `kolom in df.columns`. Untuk Series, `get(label, default)` mengembalikan nilai bawaan bila label tidak ada. Pada DataFrame, `get(kolom, default)` bekerja untuk kolom. Pemeriksaan ini menggantikan blok try dan except dan membuat niat kode jelas."
+            },
+            {
+              "type": "code_example",
+              "filename": "akses_aman.py",
+              "runnable": true,
+              "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.get('umur').tolist())\nprint(df.get('zzz', 'tak ada'))\nprint('umur' in df, 'p1' in df.index, 'p9' in df.index)\nprint(df['skor'].get('p9', -1))\nprint(df.loc[df['kota'] == 'Q', 'nama'].tolist(), df[df['kota'] == 'Q'].empty)",
+              "expected_output_note": "[20, 25, 22, 30]\ntak ada\nTrue True False\n-1\n[] True",
+              "explanation": "Get memberi nilai bawaan untuk kolom atau label yang tidak ada. In memeriksa keberadaan, dan filter kosong ditandai empty."
+            },
+            {
+              "type": "text",
+              "markdown": "## Indeks duplikat\n\nIndeks pandas boleh berisi label berulang. Pada kasus itu `loc[label]` mengembalikan semua baris yang cocok sebagai tabel, bukan satu baris. Kode yang mengharapkan satu baris dapat rusak diam-diam. Periksa `df.index.is_unique` sebelum mengandalkan label sebagai kunci, dan gunakan `duplicated` untuk menemukan pengulangannya. Bila perlu kunci unik, buat kolom kunci eksplisit."
+            },
+            {
+              "type": "text",
+              "markdown": "## Posisi dan label bercampur\n\nKesalahan umum: memakai angka pada kurung siku langsung, misalnya `df[0]`, yang mencari kolom berlabel nol dan bukan baris pertama. Pada Series dengan indeks bilangan bulat, `s[0]` mencari label nol, tidak selalu posisi. Biasakan memakai `loc` atau `iloc` secara eksplisit sehingga niat kode tidak ambigu dan hasilnya tidak berubah ketika indeks berubah."
+            }
+          ],
+          "quick_check": {
+            "question": "reset_index(drop=True) menghasilkan?",
+            "options": [
+              "Indeks sama",
+              "Nomor urut baru"
+            ],
+            "answer_index": 1,
+            "explanation": "Nol sampai n.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Ringkasan modul",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah belajar memilih sel, baris, dan kolom dengan loc dan iloc, menyaring dengan mask, mengubah nilai bersyarat dengan satu loc, serta mengenali jebakan indeks yang bertahan. Aturan pegangan: label untuk makna, posisi untuk urutan, satu loc untuk penugasan, dan reset_index setelah filter bila nomor urut bersih diperlukan. Modul berikutnya membahas filtering, sorting, dan query secara lebih mendalam."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Indeks bertahan",
+              "markdown": "Setelah memfilter, indeks lama bertahan. Bedakan label (loc) dan posisi (iloc), dan reset_index bila perlu nomor urut baru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih dengan urutan kustom\n\nUntuk menyusun baris dalam urutan kustom, gunakan `loc` dengan list label atau `reindex`. Misalnya menampilkan hari dalam urutan Senin sampai Minggu, bukan urutan abjad. Alternatifnya, ubah kolom menjadi tipe kategori berurutan dengan `pd.Categorical` sehingga `sort_values` mengikuti urutan yang Anda tentukan. Cara terakhir membuat urutan konsisten di seluruh analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih elemen acak\n\nMetode `sample(n, random_state=seed)` mengambil n baris acak yang dapat diulang, dan `frac` mengambil sebagian proporsi. Ini lebih baik daripada `head` untuk melihat sekilas isi data karena baris awal sering tidak mewakili keseluruhan. Selalu tetapkan `random_state` agar sampel yang sama muncul saat analisis dijalankan ulang, sesuai prinsip reproduksibilitas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membandingkan dua tabel\n\nUntuk mencari baris yang ada di satu tabel tetapi tidak di yang lain, gunakan `isin` pada indeks atau kolom kunci. Misalnya `a.loc[~a.index.isin(b.index)]` memberi baris yang hanya ada di a. Perbandingan berbasis label seperti ini aman karena tidak bergantung pada urutan baris, dan menjadi dasar sebelum membahas penggabungan tabel pada modul berikutnya."
+            }
+          ],
+          "quick_check": {
+            "question": "idxmax mengembalikan?",
+            "options": [
+              "Label",
+              "Nilai"
+            ],
+            "answer_index": 0,
+            "explanation": "Label terbesar.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B2-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `reindeks_hilang(df, labels)` yang menyusun ulang `df` mengikuti list `labels` dengan `reindex` dan mengembalikan jumlah sel hilang pada hasilnya sebagai int.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef reindeks_hilang(df, labels):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "reindeks_hilang(df, ['p1', 'p9'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nassert reindeks_hilang(df, ['p1', 'p9']) == 4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "reindeks_hilang(df, ['p1', 'p2'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert reindeks_hilang(df, ['p1', 'p2']) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "reindeks_hilang(df, ['x', 'y', 'z'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert reindeks_hilang(df, ['x', 'y', 'z']) == 12"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "type(reindeks_hilang(df, ['p1']))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert type(reindeks_hilang(df, ['p1'])) is int"
+              }
+            ]
+          },
+          "hint": "reindex lalu jumlahkan isna dua kali.",
+          "solution": "import pandas as pd\n\ndef reindeks_hilang(df, labels):\n    return int(df.reindex(labels).isna().sum().sum())",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-02-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `nama_skor_tertinggi(df)` yang mengembalikan `nama` pada baris dengan `skor` terbesar, memakai `idxmax` dan `loc`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef nama_skor_tertinggi(df):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_skor_tertinggi(df)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nassert nama_skor_tertinggi(df) == 'Cici'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_skor_tertinggi(df.iloc[::-1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_skor_tertinggi(df.iloc[::-1]) == 'Cici'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_skor_tertinggi(df.iloc[:2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_skor_tertinggi(df.iloc[:2]) == 'Ani'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "nama_skor_tertinggi(df.iloc[3:])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_skor_tertinggi(df.iloc[3:]) == 'Dedi'"
+              }
+            ]
+          },
+          "hint": "idxmax memberi label, loc mengambil nama.",
+          "solution": "import pandas as pd\n\ndef nama_skor_tertinggi(df):\n    return df.loc[df['skor'].idxmax(), 'nama']",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `label_setelah_filter(df, umur_min)` yang menyaring baris dengan `umur` sekurang-kurangnya `umur_min` lalu mengembalikan tuple berisi list label indeks hasil filter dan list indeks setelah `reset_index(drop=True)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef label_setelah_filter(df, umur_min):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "label_setelah_filter(df, 22)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nassert label_setelah_filter(df, 22) == (['p2', 'p3', 'p4'], [0, 1, 2])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "label_setelah_filter(df, 30)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert label_setelah_filter(df, 30) == (['p4'], [0])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "label_setelah_filter(df, 99)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert label_setelah_filter(df, 99) == ([], [])"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "label_setelah_filter(df, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert label_setelah_filter(df, 0)[0] == ['p1', 'p2', 'p3', 'p4']"
+              }
+            ]
+          },
+          "hint": "Filter lalu ambil index dan index setelah reset_index.",
+          "solution": "import pandas as pd\n\ndef label_setelah_filter(df, umur_min):\n    f = df[df['umur'] >= umur_min]\n    return (f.index.tolist(), f.reset_index(drop=True).index.tolist())",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B2-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `aman_ambil(df, label, kolom, default)` yang mengembalikan nilai sel pada baris `label` dan kolom `kolom`, atau `default` bila label atau kolom tidak ada, tanpa memakai try dan except.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import pandas as pd\n\ndef aman_ambil(df, label, kolom, default):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import pandas as pd",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "aman_ambil(df, 'p2', 'nama', 'x')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "df = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\nassert aman_ambil(df, 'p2', 'nama', 'x') == 'Budi'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "aman_ambil(df, 'p9', 'nama', 'x')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aman_ambil(df, 'p9', 'nama', 'x') == 'x'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "aman_ambil(df, 'p1', 'zzz', -1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aman_ambil(df, 'p1', 'zzz', -1) == -1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "aman_ambil(df, 'p3', 'skor', 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aman_ambil(df, 'p3', 'skor', 0) == 90.0"
+              }
+            ]
+          },
+          "hint": "Periksa keberadaan label dan kolom dengan in sebelum at.",
+          "solution": "import pandas as pd\n\ndef aman_ambil(df, label, kolom, default):\n    if label in df.index and kolom in df.columns:\n        return df.at[label, kolom]\n    return default",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Setelah filter indeks lama?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bertahan",
+              "description": ""
+            },
+            {
+              "label": "Hilang",
+              "description": ""
+            },
+            {
+              "label": "Diacak",
+              "description": ""
+            },
+            {
+              "label": "Menjadi kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Menempel.",
+          "explanation": "Label menempel."
+        },
+        {
+          "q": "reset_index(drop=True) menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nomor urut baru",
+              "description": ""
+            },
+            {
+              "label": "Indeks sama",
+              "description": ""
+            },
+            {
+              "label": "Kolom baru",
+              "description": ""
+            },
+            {
+              "label": "Tabel kosong",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baru.",
+          "explanation": "Nol sampai n."
+        },
+        {
+          "q": "idxmax mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Label",
+              "description": ""
+            },
+            {
+              "label": "Nilai",
+              "description": ""
+            },
+            {
+              "label": "Posisi",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Label.",
+          "explanation": "Label terbesar."
+        },
+        {
+          "q": "reindex pada label tak ada memberi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris NaN",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Dibuang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NaN.",
+          "explanation": "Baris hilang."
+        },
+        {
+          "q": "Cara aman memeriksa label?",
+          "code": null,
+          "options": [
+            {
+              "label": "label in df.index",
+              "description": ""
+            },
+            {
+              "label": "df.label",
+              "description": ""
+            },
+            {
+              "label": "df[label]",
+              "description": ""
+            },
+            {
+              "label": "df.loc[label]",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "in.",
+          "explanation": "In."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira loc[0] selalu baris pertama. Lebih baik: Setelah filter, gunakan iloc atau reset_index.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira loc[0] selalu baris pertama.",
+          "fix": "Setelah filter, gunakan iloc atau reset_index."
+        },
+        {
+          "mistake": "Memakai df[0] untuk baris pertama.",
+          "fix": "Pakai df.iloc[0]."
+        },
+        {
+          "mistake": "Mengandalkan label tanpa memeriksa keunikan.",
+          "fix": "Cek index.is_unique."
+        }
+      ],
+      "summary": [
+        "Indeks lama bertahan setelah filter, bedakan label dan posisi.",
+        "reset_index, sort_index, dan reindex mengatur ulang indeks.",
+        "idxmax dan nlargest menemukan baris ekstrem.",
+        "Periksa keberadaan label dan kolom sebelum akses."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Indeks, reindex, dan jebakan pemilihan"
+          },
+          {
+            "type": "text",
+            "source": "Setelah filter, label satu masih ada tetapi nol tidak. Reset_index dengan drop membuat nomor urut baru."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\nr = pd.DataFrame({'v': [1, 2, 3, 4]})\nrf = r[r['v'] > 1]\nprint(rf.index.tolist())\nprint(rf.loc[1, 'v'], rf.iloc[0, 0])\nprint(rf.reset_index(drop=True).index.tolist())\nprint(rf.reset_index(drop=True).loc[0, 'v'])\ntry:\n    rf.loc[0]\nexcept KeyError:\n    print('keyerror')"
+          },
+          {
+            "type": "text",
+            "source": "Idxmax memberi label yang dipakai loc. Nlargest mengambil baris teratas, dan setelah diurutkan nama baris tetap membawa labelnya."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.loc[df['skor'].idxmax(), 'nama'])\nprint(df.nlargest(2, 'skor').index.tolist())\nprint(df.nsmallest(1, 'umur')['nama'].tolist())\nprint(df.sort_values('skor').index.tolist())\nprint(df.sort_values('skor').iloc[0].name)\nprint(df.sort_index(ascending=False).index.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Reindex menyusun ulang menurut label, dan label baru p9 menghasilkan empat sel hilang untuk empat kolom."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nr = df.reindex(['p4', 'p1'])\nprint(r.index.tolist())\nprint(int(df.reindex(['p1', 'p9']).isna().sum().sum()))\nprint(df.reindex(['p1', 'p9']).index.tolist())\nprint(df.reindex(columns=['skor', 'nama']).columns.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Get memberi nilai bawaan untuk kolom atau label yang tidak ada. In memeriksa keberadaan, dan filter kosong ditandai empty."
+          },
+          {
+            "type": "code",
+            "source": "import pandas as pd\n\ndf = pd.DataFrame({\n    'nama': ['Ani', 'Budi', 'Cici', 'Dedi'],\n    'umur': [20, 25, 22, 30],\n    'kota': ['A', 'B', 'A', 'C'],\n    'skor': [80.0, 70.0, 90.0, 60.0],\n}, index=['p1', 'p2', 'p3', 'p4'])\n\nprint(df.get('umur').tolist())\nprint(df.get('zzz', 'tak ada'))\nprint('umur' in df, 'p1' in df.index, 'p9' in df.index)\nprint(df['skor'].get('p9', -1))\nprint(df.loc[df['kota'] == 'Q', 'nama'].tolist(), df[df['kota'] == 'Q'].empty)"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

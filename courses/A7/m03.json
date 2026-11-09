@@ -1,0 +1,1628 @@
+{
+  "schema_version": 2,
+  "course_id": "A7",
+  "module_no": 3,
+  "title": "Merge, konflik, dan kolaborasi",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menjelaskan jenis merge dan menemukan merge base",
+    "Membaca dan menyelesaikan konflik penggabungan",
+    "Memakai remote dengan fetch, pull, dan push secara aman"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A7-03-1",
+    "exercise_id": "A7-03-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def gabung_file(basis, a, b):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A7-03-1",
+      "title": "Merge: fast-forward dan tiga arah",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membedakan fast-forward, merge commit, dan keadaan sudah terbaru",
+        "Menemukan merge base dua cabang",
+        "Menggabungkan snapshot file dengan aturan tiga arah",
+        "Menjelaskan kapan penggabungan menimbulkan konflik"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Menyatukan kembali dua jalur",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menyatukan kembali dua jalur\n\nCabang membuat pekerjaan paralel menjadi mudah, dan **merge** menyatukan hasilnya. Perintah `git merge fitur` yang dijalankan dari cabang `main` memasukkan pekerjaan cabang `fitur` ke `main`. Bagian menariknya adalah bagaimana Git memutuskan apa yang masuk dan bagaimana ia mengenali bentrokan.\n\nSemua keputusan itu bertumpu pada graf commit yang sudah kita pelajari. Merge bukan penyalinan file, melainkan operasi yang membandingkan tiga snapshot dan menghasilkan satu commit baru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fast-forward\n\nKasus paling sederhana terjadi ketika `main` tidak bergerak sejak cabang `fitur` dibuat. Commit ujung `main` adalah leluhur ujung `fitur`, sehingga tidak ada yang perlu digabung. Git cukup memajukan penunjuk `main` ke ujung `fitur`, yang disebut **fast-forward**. Tidak ada commit baru dibuat dan riwayat tetap garis lurus.\n\nGit menolak membuat commit merge ketika fast-forward cukup, kecuali kita meminta lewat opsi `--no-ff`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merge commit\n\nBila kedua cabang sama-sama bergerak, fast-forward tidak mungkin. Git membuat **merge commit**, yaitu commit baru dengan dua induk: ujung cabang kita dan ujung cabang yang digabung. Snapshot-nya adalah hasil penggabungan perubahan kedua sisi.\n\nMerge commit mengikat dua jalur riwayat sehingga graf tidak lagi garis lurus. Itulah sebabnya riwayat proyek yang aktif tampak seperti rel kereta dengan percabangan dan pertemuan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merge base\n\nUntuk menggabungkan dengan cerdas, Git perlu tahu dari mana kedua jalur berpisah. Titik itu disebut **merge base**, yaitu leluhur bersama terdekat dari kedua ujung cabang. Perubahan tiap sisi dihitung relatif terhadap merge base: apa yang kita ubah sejak berpisah, dan apa yang mereka ubah sejak berpisah.\n\nTanpa merge base, Git tidak dapat membedakan perubahan dari keadaan awal. Itulah mengapa penggabungan disebut tiga arah: basis, sisi kita, dan sisi mereka."
+            },
+            {
+              "type": "code_example",
+              "filename": "merge_base.py",
+              "runnable": true,
+              "code": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal'},\n    'c2': {'parent': 'c1', 'pesan': 'dua'},\n    'c3': {'parent': 'c2', 'pesan': 'main'},\n    'c4': {'parent': 'c2', 'pesan': 'fitur'},\n    'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n}\n\ndef merge_base(commits, a, b):\n    milik_b = set()\n    sekarang = b\n    while sekarang is not None:\n        milik_b.add(sekarang)\n        sekarang = commits[sekarang]['parent']\n    sekarang = a\n    while sekarang is not None:\n        if sekarang in milik_b:\n            return sekarang\n        sekarang = commits[sekarang]['parent']\n    return None\n\nprint(merge_base(commits, 'c3', 'c5'))\nprint(merge_base(commits, 'c2', 'c5'))\nprint(merge_base(commits, 'c3', 'c3'))\nprint(merge_base(commits, 'c5', 'c1'))",
+              "expected_output_note": "c2\nc2\nc3\nc1",
+              "explanation": "Cabang main dan fitur berpisah di commit kedua. Bila satu ujung adalah leluhur yang lain, merge base adalah ujung yang lebih lama."
+            }
+          ],
+          "quick_check": {
+            "question": "Fast-forward terjadi bila?",
+            "options": [
+              "Cabang tujuan adalah leluhur cabang sumber",
+              "Ada konflik"
+            ],
+            "answer_index": 0,
+            "explanation": "Cukup memajukan penunjuk.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Menentukan jenis merge",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menentukan jenis merge\n\nDari merge base kita dapat menyimpulkan jenis penggabungan. Bila merge base sama dengan ujung cabang yang hendak digabung, semuanya sudah ada di cabang kita dan tidak ada yang perlu dilakukan. Bila merge base sama dengan ujung cabang kita, fast-forward cukup. Selain itu, dibutuhkan merge commit sungguhan.\n\nTiga keadaan ini adalah seluruh keputusan awal `git merge`. Sisanya adalah menggabungkan isi file."
+            },
+            {
+              "type": "code_example",
+              "filename": "jenis_merge.py",
+              "runnable": true,
+              "code": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal'},\n    'c2': {'parent': 'c1', 'pesan': 'dua'},\n    'c3': {'parent': 'c2', 'pesan': 'main'},\n    'c4': {'parent': 'c2', 'pesan': 'fitur'},\n    'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n}\n\ndef merge_base(commits, a, b):\n    milik_b = set()\n    sekarang = b\n    while sekarang is not None:\n        milik_b.add(sekarang)\n        sekarang = commits[sekarang]['parent']\n    sekarang = a\n    while sekarang is not None:\n        if sekarang in milik_b:\n            return sekarang\n        sekarang = commits[sekarang]['parent']\n    return None\n\ndef jenis_merge(commits, a, b):\n    dasar = merge_base(commits, a, b)\n    if dasar == b:\n        return 'sudah terbaru'\n    if dasar == a:\n        return 'fast-forward'\n    return 'merge commit'\n\nprint(jenis_merge(commits, 'c2', 'c5'))\nprint(jenis_merge(commits, 'c3', 'c5'))\nprint(jenis_merge(commits, 'c5', 'c2'))",
+              "expected_output_note": "fast-forward\nmerge commit\nsudah terbaru",
+              "explanation": "Menggabungkan fitur ke commit kedua cukup fast-forward. Menggabungkannya ke main yang sudah bergerak butuh merge commit, dan menggabungkan leluhur tidak mengubah apa-apa."
+            },
+            {
+              "type": "text",
+              "markdown": "## Penggabungan tiga arah pada file\n\nUntuk setiap file, Git membandingkan tiga versi: basis, sisi kita, dan sisi mereka. Bila kedua sisi sama, pakai itu. Bila hanya sisi mereka yang berubah dari basis, ambil versi mereka. Bila hanya sisi kita yang berubah, pertahankan versi kita. Bila kedua sisi berubah dengan cara berbeda, terjadi **konflik** yang harus diselesaikan manusia.\n\nAturan sederhana ini menyelesaikan sebagian besar penggabungan otomatis, dan hanya perubahan yang benar-benar bertabrakan yang diserahkan kepada kita."
+            },
+            {
+              "type": "code_example",
+              "filename": "gabung_file.py",
+              "runnable": true,
+              "code": "def gabung_file(basis, a, b):\n    hasil = {}\n    konflik = []\n    for nama in sorted(set(basis) | set(a) | set(b)):\n        v0, va, vb = basis.get(nama), a.get(nama), b.get(nama)\n        if va == vb:\n            pilih = va\n        elif va == v0:\n            pilih = vb\n        elif vb == v0:\n            pilih = va\n        else:\n            konflik.append(nama)\n            continue\n        if pilih is not None:\n            hasil[nama] = pilih\n    return (hasil, konflik)\n\nbasis = {'a.py': '1', 'b.py': '1', 'c.py': '1'}\nkita = {'a.py': '2', 'b.py': '1', 'c.py': '2'}\nmereka = {'a.py': '1', 'b.py': '2', 'c.py': '3', 'd.py': 'baru'}\nprint(gabung_file(basis, kita, mereka))\nprint(gabung_file(basis, {'a.py': '1', 'c.py': '1'}, basis))",
+              "expected_output_note": "({'a.py': '2', 'b.py': '2', 'd.py': 'baru'}, ['c.py'])\n({'a.py': '1', 'c.py': '1'}, [])",
+              "explanation": "File a hanya berubah di sisi kita, b hanya di sisi mereka, dan d ditambah mereka. File c diubah kedua sisi secara berbeda sehingga konflik. Penghapusan satu sisi diterima bila sisi lain tidak mengubahnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Merge commit memiliki?",
+            "options": [
+              "Satu induk",
+              "Dua induk"
+            ],
+            "answer_index": 1,
+            "explanation": "Menyatukan dua jalur.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Perintah merge",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Perintah merge\n\n```bash\ngit switch main\ngit merge fitur\ngit merge --no-ff fitur\ngit merge --abort\ngit branch -d fitur\n```\n\nPindah dulu ke cabang yang akan menerima, lalu jalankan `git merge` dengan nama cabang sumber. Opsi `--abort` membatalkan penggabungan yang sedang berlangsung dan mengembalikan keadaan semula, berguna ketika konflik terasa terlalu rumit untuk diselesaikan sekarang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merge atau rebase\n\nAda cara lain mengintegrasikan perubahan: **rebase**. Alih-alih membuat merge commit, rebase memutar ulang commit cabang kita di atas ujung cabang tujuan, menghasilkan riwayat garis lurus. Hasilnya rapi, tetapi commit yang diputar ulang mendapat hash baru, jadi rebase menulis ulang riwayat.\n\nAturan praktis: rebase untuk merapikan pekerjaan lokal sebelum dibagikan, merge untuk menggabungkan pekerjaan yang sudah dibagikan. Tim berbeda memilih konvensi berbeda, jadi ikuti kesepakatan tim Anda."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Persiapan merge",
+              "markdown": "Sebelum merge, pastikan working directory bersih dan cabang tujuan terbaru. Penggabungan di atas pekerjaan yang belum dicommit mempersulit pembatalan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merge dan riwayat yang terbaca\n\nSetelah penggabungan selesai, cabang fitur biasanya dihapus karena tugasnya selesai. Commit-commitnya tidak hilang, sebab masih terjangkau lewat merge commit. Yang hilang hanyalah nama cabang, sehingga daftar cabang tetap ringkas."
+            }
+          ],
+          "quick_check": {
+            "question": "Merge base adalah?",
+            "options": [
+              "Leluhur bersama terdekat",
+              "Commit terbaru"
+            ],
+            "answer_index": 0,
+            "explanation": "Titik berpisah.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A7-03-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bisa_fast_forward(commits, a, b)` yang mengembalikan `True` bila commit `a` adalah leluhur dari `b` (atau sama dengan `b`) sehingga menggabungkan `b` ke `a` cukup fast-forward, dan `False` bila tidak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def bisa_fast_forward(commits, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bisa_fast_forward(k, 'c2', 'c5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _k():\n    return {\n        'c1': {'parent': None, 'pesan': 'awal'},\n        'c2': {'parent': 'c1', 'pesan': 'dua'},\n        'c3': {'parent': 'c2', 'pesan': 'main'},\n        'c4': {'parent': 'c2', 'pesan': 'fitur'},\n        'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n    }\nk = _k()\nassert bisa_fast_forward(k, 'c2', 'c5') is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bisa_fast_forward(k, 'c3', 'c5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_fast_forward(k, 'c3', 'c5') is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bisa_fast_forward(k, 'c5', 'c2')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_fast_forward(k, 'c5', 'c2') is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bisa_fast_forward(k, 'c4', 'c4')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_fast_forward(k, 'c4', 'c4') is True"
+              }
+            ]
+          },
+          "hint": "Telusuri induk dari b dan cari a.",
+          "solution": "def bisa_fast_forward(commits, a, b):\n    sekarang = b\n    while sekarang is not None:\n        if sekarang == a:\n            return True\n        sekarang = commits[sekarang]['parent']\n    return False",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-03-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `merge_base(commits, a, b)` yang mengembalikan id leluhur bersama terdekat dari commit `a` dan `b` (commit sendiri dihitung sebagai leluhurnya), atau `None` bila tidak ada.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def merge_base(commits, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "merge_base(k, 'c3', 'c5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _k():\n    return {\n        'c1': {'parent': None, 'pesan': 'awal'},\n        'c2': {'parent': 'c1', 'pesan': 'dua'},\n        'c3': {'parent': 'c2', 'pesan': 'main'},\n        'c4': {'parent': 'c2', 'pesan': 'fitur'},\n        'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n    }\nk = _k()\nassert merge_base(k, 'c3', 'c5') == 'c2'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "merge_base(k, 'c2', 'c5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert merge_base(k, 'c2', 'c5') == 'c2'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "merge_base(k, 'c3', 'c3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert merge_base(k, 'c3', 'c3') == 'c3'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "merge_base(k, 'x1', 'c5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "k['x1'] = {'parent': None, 'pesan': 'lain'}\nassert merge_base(k, 'x1', 'c5') is None"
+              }
+            ]
+          },
+          "hint": "Kumpulkan leluhur b lalu telusuri a sampai menemukan yang ada di himpunan itu.",
+          "solution": "def merge_base(commits, a, b):\n    milik_b = set()\n    sekarang = b\n    while sekarang is not None:\n        milik_b.add(sekarang)\n        sekarang = commits[sekarang]['parent']\n    sekarang = a\n    while sekarang is not None:\n        if sekarang in milik_b:\n            return sekarang\n        sekarang = commits[sekarang]['parent']\n    return None",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-03-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `jenis_merge(commits, a, b)` untuk menggabungkan `b` ke `a`.",
+          "note": "Kembalikan `'sudah terbaru'` bila `b` leluhur `a` (atau sama), `'fast-forward'` bila `a` leluhur `b`, dan `'merge commit'` selain itu.",
+          "filename": "solution.py",
+          "starter_code": "def jenis_merge(commits, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jenis_merge(k, 'c2', 'c5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _k():\n    return {\n        'c1': {'parent': None, 'pesan': 'awal'},\n        'c2': {'parent': 'c1', 'pesan': 'dua'},\n        'c3': {'parent': 'c2', 'pesan': 'main'},\n        'c4': {'parent': 'c2', 'pesan': 'fitur'},\n        'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n    }\nk = _k()\nassert jenis_merge(k, 'c2', 'c5') == 'fast-forward'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jenis_merge(k, 'c3', 'c5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_merge(k, 'c3', 'c5') == 'merge commit'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jenis_merge(k, 'c5', 'c2')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_merge(k, 'c5', 'c2') == 'sudah terbaru'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jenis_merge(k, 'c3', 'c3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_merge(k, 'c3', 'c3') == 'sudah terbaru'"
+              }
+            ]
+          },
+          "hint": "Cari merge base lalu bandingkan dengan a dan b.",
+          "solution": "def merge_base(commits, a, b):\n    milik_b = set()\n    sekarang = b\n    while sekarang is not None:\n        milik_b.add(sekarang)\n        sekarang = commits[sekarang]['parent']\n    sekarang = a\n    while sekarang is not None:\n        if sekarang in milik_b:\n            return sekarang\n        sekarang = commits[sekarang]['parent']\n    return None\n\n\ndef jenis_merge(commits, a, b):\n    dasar = merge_base(commits, a, b)\n    if dasar == b:\n        return 'sudah terbaru'\n    if dasar == a:\n        return 'fast-forward'\n    return 'merge commit'",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-03-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `gabung_file(basis, a, b)` yang menerima tiga dict `{nama: isi}` (basis, sisi kita, sisi mereka) dan mengembalikan tuple `(hasil, konflik)`.",
+          "note": "Per file: bila `a` dan `b` sama pakai itu, bila hanya `b` berubah dari basis pakai `b`, bila hanya `a` berubah pakai `a`, selain itu masukkan nama ke list `konflik` terurut. File yang nilainya akhirnya tidak ada tidak dimasukkan ke `hasil`.",
+          "filename": "solution.py",
+          "starter_code": "def gabung_file(basis, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "gabung_file(basis, kita, mereka)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "basis = {'a': '1', 'b': '1', 'c': '1'}\nkita = {'a': '2', 'b': '1', 'c': '2'}\nmereka = {'a': '1', 'b': '2', 'c': '3', 'd': 'baru'}\nassert gabung_file(basis, kita, mereka) == ({'a': '2', 'b': '2', 'd': 'baru'}, ['c'])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "gabung_file(basis, {'a': '1', 'c': '1'}, basis)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gabung_file(basis, {'a': '1', 'c': '1'}, basis) == ({'a': '1', 'c': '1'}, [])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "gabung_file({}, {'x': '1'}, {'x': '2'})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gabung_file({}, {'x': '1'}, {'x': '2'}) == ({}, ['x'])"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "gabung_file({'x': '1'}, {}, {})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gabung_file({'x': '1'}, {}, {}) == ({}, [])"
+              }
+            ]
+          },
+          "hint": "Bandingkan versi basis, kita, dan mereka untuk setiap nama file.",
+          "solution": "def gabung_file(basis, a, b):\n    hasil = {}\n    konflik = []\n    for nama in sorted(set(basis) | set(a) | set(b)):\n        v0, va, vb = basis.get(nama), a.get(nama), b.get(nama)\n        if va == vb:\n            pilih = va\n        elif va == v0:\n            pilih = vb\n        elif vb == v0:\n            pilih = va\n        else:\n            konflik.append(nama)\n            continue\n        if pilih is not None:\n            hasil[nama] = pilih\n    return (hasil, konflik)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Fast-forward terjadi bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "Cabang tujuan adalah leluhur cabang sumber",
+              "description": ""
+            },
+            {
+              "label": "Ada konflik",
+              "description": ""
+            },
+            {
+              "label": "Cabang dihapus",
+              "description": ""
+            },
+            {
+              "label": "Tag dibuat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Leluhur.",
+          "explanation": "Cukup memajukan penunjuk."
+        },
+        {
+          "q": "Merge commit memiliki?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dua induk",
+              "description": ""
+            },
+            {
+              "label": "Satu induk",
+              "description": ""
+            },
+            {
+              "label": "Tanpa induk",
+              "description": ""
+            },
+            {
+              "label": "Tiga induk",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dua.",
+          "explanation": "Menyatukan dua jalur."
+        },
+        {
+          "q": "Merge base adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Leluhur bersama terdekat",
+              "description": ""
+            },
+            {
+              "label": "Commit terbaru",
+              "description": ""
+            },
+            {
+              "label": "Cabang utama",
+              "description": ""
+            },
+            {
+              "label": "Tag pertama",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bersama.",
+          "explanation": "Titik berpisah."
+        },
+        {
+          "q": "Konflik terjadi bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kedua sisi mengubah bagian sama secara berbeda",
+              "description": ""
+            },
+            {
+              "label": "Satu sisi berubah",
+              "description": ""
+            },
+            {
+              "label": "File dihapus semua",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada perubahan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Berbeda.",
+          "explanation": "Bentrok."
+        },
+        {
+          "q": "Rebase menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Riwayat garis lurus dengan hash baru",
+              "description": ""
+            },
+            {
+              "label": "Merge commit",
+              "description": ""
+            },
+            {
+              "label": "Tag",
+              "description": ""
+            },
+            {
+              "label": "Cabang baru",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lurus.",
+          "explanation": "Menulis ulang riwayat."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira merge selalu membuat commit baru. Lebih baik: Bila fast-forward cukup, hanya penunjuk yang maju.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira merge selalu membuat commit baru.",
+          "fix": "Bila fast-forward cukup, hanya penunjuk yang maju."
+        },
+        {
+          "mistake": "Menggabungkan tanpa tahu merge base.",
+          "fix": "Perubahan dihitung relatif terhadap leluhur bersama."
+        },
+        {
+          "mistake": "Melakukan rebase pada riwayat yang sudah dibagikan.",
+          "fix": "Rebase hanya untuk pekerjaan lokal."
+        }
+      ],
+      "summary": [
+        "Merge dapat berupa fast-forward, merge commit, atau tidak perlu apa-apa.",
+        "Merge base adalah leluhur bersama yang menjadi acuan perubahan.",
+        "Penggabungan tiga arah menyelesaikan otomatis perubahan yang tidak bertabrakan.",
+        "Rebase menulis ulang riwayat, jadi hanya untuk pekerjaan lokal."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Merge: fast-forward dan tiga arah"
+          },
+          {
+            "type": "text",
+            "source": "Cabang main dan fitur berpisah di commit kedua. Bila satu ujung adalah leluhur yang lain, merge base adalah ujung yang lebih lama."
+          },
+          {
+            "type": "code",
+            "source": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal'},\n    'c2': {'parent': 'c1', 'pesan': 'dua'},\n    'c3': {'parent': 'c2', 'pesan': 'main'},\n    'c4': {'parent': 'c2', 'pesan': 'fitur'},\n    'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n}\n\ndef merge_base(commits, a, b):\n    milik_b = set()\n    sekarang = b\n    while sekarang is not None:\n        milik_b.add(sekarang)\n        sekarang = commits[sekarang]['parent']\n    sekarang = a\n    while sekarang is not None:\n        if sekarang in milik_b:\n            return sekarang\n        sekarang = commits[sekarang]['parent']\n    return None\n\nprint(merge_base(commits, 'c3', 'c5'))\nprint(merge_base(commits, 'c2', 'c5'))\nprint(merge_base(commits, 'c3', 'c3'))\nprint(merge_base(commits, 'c5', 'c1'))"
+          },
+          {
+            "type": "text",
+            "source": "Menggabungkan fitur ke commit kedua cukup fast-forward. Menggabungkannya ke main yang sudah bergerak butuh merge commit, dan menggabungkan leluhur tidak mengubah apa-apa."
+          },
+          {
+            "type": "code",
+            "source": "commits = {\n    'c1': {'parent': None, 'pesan': 'awal'},\n    'c2': {'parent': 'c1', 'pesan': 'dua'},\n    'c3': {'parent': 'c2', 'pesan': 'main'},\n    'c4': {'parent': 'c2', 'pesan': 'fitur'},\n    'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n}\n\ndef merge_base(commits, a, b):\n    milik_b = set()\n    sekarang = b\n    while sekarang is not None:\n        milik_b.add(sekarang)\n        sekarang = commits[sekarang]['parent']\n    sekarang = a\n    while sekarang is not None:\n        if sekarang in milik_b:\n            return sekarang\n        sekarang = commits[sekarang]['parent']\n    return None\n\ndef jenis_merge(commits, a, b):\n    dasar = merge_base(commits, a, b)\n    if dasar == b:\n        return 'sudah terbaru'\n    if dasar == a:\n        return 'fast-forward'\n    return 'merge commit'\n\nprint(jenis_merge(commits, 'c2', 'c5'))\nprint(jenis_merge(commits, 'c3', 'c5'))\nprint(jenis_merge(commits, 'c5', 'c2'))"
+          },
+          {
+            "type": "text",
+            "source": "File a hanya berubah di sisi kita, b hanya di sisi mereka, dan d ditambah mereka. File c diubah kedua sisi secara berbeda sehingga konflik. Penghapusan satu sisi diterima bila sisi lain tidak mengubahnya."
+          },
+          {
+            "type": "code",
+            "source": "def gabung_file(basis, a, b):\n    hasil = {}\n    konflik = []\n    for nama in sorted(set(basis) | set(a) | set(b)):\n        v0, va, vb = basis.get(nama), a.get(nama), b.get(nama)\n        if va == vb:\n            pilih = va\n        elif va == v0:\n            pilih = vb\n        elif vb == v0:\n            pilih = va\n        else:\n            konflik.append(nama)\n            continue\n        if pilih is not None:\n            hasil[nama] = pilih\n    return (hasil, konflik)\n\nbasis = {'a.py': '1', 'b.py': '1', 'c.py': '1'}\nkita = {'a.py': '2', 'b.py': '1', 'c.py': '2'}\nmereka = {'a.py': '1', 'b.py': '2', 'c.py': '3', 'd.py': 'baru'}\nprint(gabung_file(basis, kita, mereka))\nprint(gabung_file(basis, {'a.py': '1', 'c.py': '1'}, basis))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A7-03-2",
+      "title": "Konflik: membaca dan menyelesaikannya",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengenali penanda konflik pada file",
+        "Menggabungkan teks per baris dan menghasilkan penanda konflik",
+        "Menyelesaikan konflik dengan memilih salah satu sisi atau keduanya",
+        "Menerapkan langkah aman saat menghadapi konflik"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Konflik bukan bencana",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Konflik bukan bencana\n\nKonflik terdengar menakutkan, tetapi sebenarnya hanya cara Git berkata bahwa ia tidak dapat memutuskan sendiri. Dua orang mengubah baris yang sama dengan cara berbeda, dan Git menyerahkan keputusan kepada manusia. Ia tidak menghapus apa pun: kedua versi disimpan di file dengan penanda khusus.\n\nKonflik adalah bagian normal dari kerja tim. Yang membedakan pengguna berpengalaman adalah ketenangan: mereka tahu cara membaca penanda dan menyelesaikannya langkah demi langkah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Penanda konflik\n\nKetika konflik terjadi, Git menulis kedua versi ke dalam file dengan tiga penanda. Baris `<<<<<<< HEAD` membuka bagian milik sisi kita, baris `=======` memisahkan, dan baris `>>>>>>> nama-cabang` menutup bagian milik cabang yang digabung.\n\n```text\n<<<<<<< HEAD\nrata-rata = 12\n=======\nrata-rata = 15\n>>>>>>> fitur\n```\n\nTugas kita adalah mengedit bagian itu menjadi isi akhir yang diinginkan dan menghapus ketiga penanda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Penggabungan per baris\n\nPada tingkat baris, aturan tiga arah sama seperti pada tingkat file. Bila kedua sisi mengubah baris yang sama dengan isi berbeda, terjadi konflik. Bila hanya satu sisi mengubahnya, perubahan itu diterima. Git sungguhan memakai algoritma diff untuk menyelaraskan baris yang bergeser, tetapi model kita menyederhanakannya dengan mengasumsikan jumlah baris sama.\n\nAsumsi itu cukup untuk memahami prinsipnya: perubahan di baris berbeda digabung otomatis, perubahan di baris yang sama berbenturan."
+            },
+            {
+              "type": "code_example",
+              "filename": "gabung_baris.py",
+              "runnable": true,
+              "code": "basis = 'judul\\nrata-rata = 10\\nbatas = 5'\nkita = 'judul\\nrata-rata = 12\\nbatas = 5'\nmereka = 'judul baru\\nrata-rata = 15\\nbatas = 5'\n\ndef gabung_baris(basis, a, b, nama='fitur'):\n    x0, xa, xb = basis.splitlines(), a.splitlines(), b.splitlines()\n    if not (len(x0) == len(xa) == len(xb)):\n        raise ValueError('jumlah baris berbeda')\n    hasil = []\n    konflik = 0\n    for v0, va, vb in zip(x0, xa, xb):\n        if va == vb:\n            hasil.append(va)\n        elif va == v0:\n            hasil.append(vb)\n        elif vb == v0:\n            hasil.append(va)\n        else:\n            hasil += ['<<<<<<< HEAD', va, '=======', vb, '>>>>>>> ' + nama]\n            konflik += 1\n    return ('\\n'.join(hasil), konflik)\n\nteks, n = gabung_baris(basis, kita, mereka)\nprint(n)\nprint(teks)",
+              "expected_output_note": "1\njudul baru\n<<<<<<< HEAD\nrata-rata = 12\n=======\nrata-rata = 15\n>>>>>>> fitur\nbatas = 5",
+              "explanation": "Judul hanya diubah di sisi mereka sehingga diterima otomatis. Baris rata-rata diubah kedua sisi berbeda sehingga ditulis dengan penanda konflik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Langkah menyelesaikan konflik\n\nPertama, jalankan `git status` untuk melihat file mana yang berkonflik. Kedua, buka tiap file, cari penanda, dan putuskan isi akhir: ambil versi kita, versi mereka, gabungan keduanya, atau tulis baru. Ketiga, hapus semua penanda. Keempat, jalankan `git add` pada file itu untuk menandainya selesai, lalu `git commit` untuk menyelesaikan penggabungan.\n\nBanyak editor dan alat grafis menampilkan konflik berdampingan sehingga keputusan lebih mudah. Apa pun alatnya, hasil akhirnya tetap teks tanpa penanda."
+            },
+            {
+              "type": "code_example",
+              "filename": "selesaikan_konflik.py",
+              "runnable": true,
+              "code": "def selesaikan(teks, pilihan):\n    hasil = []\n    mode = None\n    indeks = 0\n    for b in teks.splitlines():\n        if b.startswith('<<<<<<<'):\n            mode = 'kita'\n        elif b.startswith('=======') and mode == 'kita':\n            mode = 'mereka'\n        elif b.startswith('>>>>>>>') and mode == 'mereka':\n            mode = None\n            indeks += 1\n        elif mode is None:\n            hasil.append(b)\n        else:\n            p = pilihan[indeks]\n            if p == 'keduanya' or p == mode:\n                hasil.append(b)\n    return '\\n'.join(hasil)\n\nteks = 'a\\n<<<<<<< HEAD\\nkita\\n=======\\nmereka\\n>>>>>>> fitur\\nz'\nprint(selesaikan(teks, ['kita']).splitlines())\nprint(selesaikan(teks, ['mereka']).splitlines())\nprint(selesaikan(teks, ['keduanya']).splitlines())",
+              "expected_output_note": "['a', 'kita', 'z']\n['a', 'mereka', 'z']\n['a', 'kita', 'mereka', 'z']",
+              "explanation": "Memilih sisi kita, sisi mereka, atau keduanya menghasilkan teks bersih tanpa penanda konflik."
+            }
+          ],
+          "quick_check": {
+            "question": "Penanda pembuka konflik?",
+            "options": [
+              "<<<<<<< HEAD",
+              "======="
+            ],
+            "answer_index": 0,
+            "explanation": "Membuka bagian sisi kita.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mendeteksi sisa penanda",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mendeteksi sisa penanda\n\nKesalahan klasik adalah mencommit file yang masih berisi penanda konflik. Kode seperti itu tidak akan berjalan, dan lebih buruk lagi, penanda dapat tersimpan di riwayat tanpa disadari. Periksa dengan mencari awalan `<<<<<<<` dan `>>>>>>>` sebelum commit.\n\nBanyak tim memasang pemeriksaan otomatis yang menolak commit yang masih memuat penanda. Pemeriksaan kecil seperti ini menyelamatkan banyak waktu."
+            },
+            {
+              "type": "code_example",
+              "filename": "ada_konflik.py",
+              "runnable": true,
+              "code": "def ada_konflik(teks):\n    baris = teks.splitlines()\n    return any(b.startswith('<<<<<<<') for b in baris) and any(b.startswith('>>>>>>>') for b in baris)\n\nprint(ada_konflik('a\\n<<<<<<< HEAD\\nx\\n=======\\ny\\n>>>>>>> f'))\nprint(ada_konflik('a\\nb\\nc'))\nprint(ada_konflik('perbandingan a >>>>>>> b'))",
+              "expected_output_note": "True\nFalse\nFalse",
+              "explanation": "Pemeriksaan hanya menganggap konflik bila ada penanda pembuka dan penutup di awal baris, sehingga teks biasa yang kebetulan mengandung tanda lebih besar tidak salah dikenali."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mencegah konflik\n\nKonflik tidak dapat dihindari sepenuhnya, tetapi dapat dikurangi. Sering-seringlah menarik perubahan terbaru dari cabang utama, sehingga cabang kita tidak menyimpang terlalu jauh. Bagi pekerjaan agar orang berbeda mengerjakan file berbeda. Komunikasikan bila akan mengubah berkas yang dipakai bersama.\n\nFormat kode otomatis yang konsisten juga membantu, karena perbedaan spasi dan tanda kutip yang tidak penting tidak lagi menimbulkan konflik palsu."
+            }
+          ],
+          "quick_check": {
+            "question": "Garis pemisah dua versi?",
+            "options": [
+              "<<<<<<<",
+              "======="
+            ],
+            "answer_index": 1,
+            "explanation": "Di tengah.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Konflik pada notebook dan data",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Konflik pada notebook dan data\n\nFile notebook Jupyter berisi JSON dengan banyak metadata dan keluaran, sehingga dua orang yang menjalankan sel yang sama memicu konflik besar walau isi kodenya tidak berubah. Cara mengurangi: bersihkan keluaran sebelum commit, dan simpan logika penting di skrip atau modul yang diimpor notebook.\n\nFile data biner tidak dapat digabung per baris sama sekali. Untuk itu, tentukan siapa yang berwenang mengubahnya, atau simpan di luar repositori."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Sisa penanda",
+              "markdown": "Jangan mencommit file yang masih memuat penanda konflik. Cari awalan penanda sebelum commit."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memahami maksud kedua sisi\n\nMenyelesaikan konflik bukan sekadar memilih salah satu baris. Pahami mengapa kedua orang mengubahnya. Mungkin kedua perubahan benar dan perlu digabungkan, mungkin salah satu sudah usang, atau mungkin keduanya perlu diganti dengan penyelesaian baru. Bila ragu, tanyakan kepada rekan yang mengubahnya.\n\nPenyelesaian yang dibuat tanpa memahami maksud sering melahirkan bug halus yang baru muncul berminggu-minggu kemudian."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menguji setelah menyelesaikan\n\nSetelah konflik diselesaikan, jalankan kode atau analisis sebelum commit. Teks yang tampak benar belum tentu berjalan benar, terutama bila dua perubahan yang masing-masing valid ternyata tidak cocok bila digabung. Pengujian singkat setelah merge adalah asuransi murah terhadap kejutan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Alat bantu penyelesaian\n\nBanyak editor kode menyorot konflik dan menyediakan tombol untuk menerima perubahan kita, perubahan mereka, atau keduanya. Alat tiga panel menampilkan basis, kedua sisi, dan hasil akhir sekaligus. Alat ini mempercepat pekerjaan, tetapi keputusan tetap berada di tangan kita."
+            }
+          ],
+          "quick_check": {
+            "question": "Setelah menyelesaikan konflik, jalankan?",
+            "options": [
+              "git add lalu git commit",
+              "git reset"
+            ],
+            "answer_index": 0,
+            "explanation": "Menandai selesai.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A7-03-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ada_konflik(teks)` yang mengembalikan `True` bila ada baris yang diawali `<<<<<<<` dan ada baris yang diawali `>>>>>>>`, dan `False` bila tidak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def ada_konflik(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ada_konflik('a\\n<<<<<<< HEAD\\nx\\n=======\\ny\\n...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ada_konflik('a\\n<<<<<<< HEAD\\nx\\n=======\\ny\\n>>>>>>> f') is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ada_konflik('a\\nb')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ada_konflik('a\\nb') is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ada_konflik('x >>>>>>> y')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ada_konflik('x >>>>>>> y') is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ada_konflik('<<<<<<< HEAD')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ada_konflik('<<<<<<< HEAD') is False"
+              }
+            ]
+          },
+          "hint": "Periksa awalan setiap baris dengan startswith.",
+          "solution": "def ada_konflik(teks):\n    baris = teks.splitlines()\n    return any(b.startswith('<<<<<<<') for b in baris) and any(b.startswith('>>>>>>>') for b in baris)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-03-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `gabung_baris(basis, a, b, nama='fitur')` untuk teks dengan jumlah baris sama (jika berbeda lemparkan `ValueError`).",
+          "note": "Per baris: bila `a` dan `b` sama pakai itu, bila hanya `b` berubah dari basis pakai `b`, bila hanya `a` berubah pakai `a`, selain itu tulis lima baris `<<<<<<< HEAD`, baris `a`, `=======`, baris `b`, dan `>>>>>>> ` diikuti `nama`. Kembalikan tuple `(teks_gabungan, jumlah_konflik)` dengan baris digabung `\\n`.",
+          "filename": "solution.py",
+          "starter_code": "def gabung_baris(basis, a, b, nama='fitur'):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "basis = 'j\\nr = 10\\nb = 5'\nkita = 'j\\nr = 12\\nb = 5'\nmereka = 'j2\\nr = 15\\nb = 5'\nteks, n = gabung_baris(basis, kita, mereka)\nassert n == 1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert teks == 'j2\\n<<<<<<< HEAD\\nr = 12\\n=======\\nr = 15\\n>>>>>>> fitur\\nb = 5'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "gabung_baris(basis, basis, basis)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gabung_baris(basis, basis, basis) == (basis, 0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "gabung_baris(basis, kita, basis, 'x')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gabung_baris(basis, kita, basis, 'x') == (kita, 0)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "try:\n    gabung_baris('a', 'a\\nb', 'a')\n    ditolak = False\nexcept ValueError:\n    ditolak = True\nassert ditolak is True"
+              }
+            ]
+          },
+          "hint": "Periksa jumlah baris, lalu proses tiga baris sejajar dengan zip.",
+          "solution": "def gabung_baris(basis, a, b, nama='fitur'):\n    x0, xa, xb = basis.splitlines(), a.splitlines(), b.splitlines()\n    if not (len(x0) == len(xa) == len(xb)):\n        raise ValueError('jumlah baris berbeda')\n    hasil = []\n    konflik = 0\n    for v0, va, vb in zip(x0, xa, xb):\n        if va == vb:\n            hasil.append(va)\n        elif va == v0:\n            hasil.append(vb)\n        elif vb == v0:\n            hasil.append(va)\n        else:\n            hasil += ['<<<<<<< HEAD', va, '=======', vb, '>>>>>>> ' + nama]\n            konflik += 1\n    return ('\\n'.join(hasil), konflik)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-03-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `selesaikan(teks, pilihan)` yang menghapus penanda konflik dari `teks` dan menyisakan bagian yang dipilih.",
+          "note": "`pilihan` adalah list dengan satu elemen per konflik, berisi `'kita'`, `'mereka'`, atau `'keduanya'`. Baris di luar konflik selalu dipertahankan. Kembalikan teks dengan baris digabung `\\n`.",
+          "filename": "solution.py",
+          "starter_code": "def selesaikan(teks, pilihan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selesaikan(t, ['kita'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = 'a\\n<<<<<<< HEAD\\nkita\\n=======\\nmereka\\n>>>>>>> f\\nz'\nassert selesaikan(t, ['kita']) == 'a\\nkita\\nz'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selesaikan(t, ['mereka'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan(t, ['mereka']) == 'a\\nmereka\\nz'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selesaikan(t, ['keduanya'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan(t, ['keduanya']) == 'a\\nkita\\nmereka\\nz'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "selesaikan('x\\ny', [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan('x\\ny', []) == 'x\\ny'"
+              }
+            ]
+          },
+          "hint": "Lacak mode kita atau mereka saat membaca baris antar penanda.",
+          "solution": "def selesaikan(teks, pilihan):\n    hasil = []\n    mode = None\n    indeks = 0\n    for b in teks.splitlines():\n        if b.startswith('<<<<<<<'):\n            mode = 'kita'\n        elif b.startswith('=======') and mode == 'kita':\n            mode = 'mereka'\n        elif b.startswith('>>>>>>>') and mode == 'mereka':\n            mode = None\n            indeks += 1\n        elif mode is None:\n            hasil.append(b)\n        else:\n            p = pilihan[indeks]\n            if p == 'keduanya' or p == mode:\n                hasil.append(b)\n    return '\\n'.join(hasil)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-03-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `selesaikan_banyak(teks, pilihan)` untuk teks dengan beberapa konflik, memakai logika yang sama dengan `selesaikan` (satu pilihan per konflik berurutan).",
+          "note": "Fungsi harus melempar `ValueError` bila jumlah konflik di teks tidak sama dengan panjang `pilihan`.",
+          "filename": "solution.py",
+          "starter_code": "def selesaikan_banyak(teks, pilihan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selesaikan_banyak(t, ['kita', 'mereka'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = 'a\\n<<<<<<< HEAD\\n1\\n=======\\n2\\n>>>>>>> f\\nb\\n<<<<<<< HEAD\\n3\\n=======\\n4\\n>>>>>>> f\\nz'\nassert selesaikan_banyak(t, ['kita', 'mereka']) == 'a\\n1\\nb\\n4\\nz'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selesaikan_banyak(t, ['keduanya', 'kita'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan_banyak(t, ['keduanya', 'kita']) == 'a\\n1\\n2\\nb\\n3\\nz'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selesaikan_banyak(t, salah)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "for salah in (['kita'], ['kita', 'kita', 'kita']):\n    try:\n        selesaikan_banyak(t, salah)\n        ditolak = False\n    except ValueError:\n        ditolak = True\n    assert ditolak is True"
+              }
+            ]
+          },
+          "hint": "Hitung jumlah penanda pembuka dan cocokkan dengan panjang pilihan sebelum memproses.",
+          "solution": "def selesaikan_banyak(teks, pilihan):\n    jumlah = sum(1 for b in teks.splitlines() if b.startswith('<<<<<<<'))\n    if jumlah != len(pilihan):\n        raise ValueError('jumlah pilihan tidak sama')\n    hasil = []\n    mode = None\n    indeks = 0\n    for b in teks.splitlines():\n        if b.startswith('<<<<<<<'):\n            mode = 'kita'\n        elif b.startswith('=======') and mode == 'kita':\n            mode = 'mereka'\n        elif b.startswith('>>>>>>>') and mode == 'mereka':\n            mode = None\n            indeks += 1\n        elif mode is None:\n            hasil.append(b)\n        else:\n            p = pilihan[indeks]\n            if p == 'keduanya' or p == mode:\n                hasil.append(b)\n    return '\\n'.join(hasil)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Penanda pembuka konflik?",
+          "code": null,
+          "options": [
+            {
+              "label": "<<<<<<< HEAD",
+              "description": ""
+            },
+            {
+              "label": "=======",
+              "description": ""
+            },
+            {
+              "label": ">>>>>>>",
+              "description": ""
+            },
+            {
+              "label": "#####",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kurung kiri.",
+          "explanation": "Membuka bagian sisi kita."
+        },
+        {
+          "q": "Garis pemisah dua versi?",
+          "code": null,
+          "options": [
+            {
+              "label": "=======",
+              "description": ""
+            },
+            {
+              "label": "<<<<<<<",
+              "description": ""
+            },
+            {
+              "label": ">>>>>>>",
+              "description": ""
+            },
+            {
+              "label": "-------",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sama dengan.",
+          "explanation": "Di tengah."
+        },
+        {
+          "q": "Setelah menyelesaikan konflik, jalankan?",
+          "code": null,
+          "options": [
+            {
+              "label": "git add lalu git commit",
+              "description": ""
+            },
+            {
+              "label": "git reset",
+              "description": ""
+            },
+            {
+              "label": "git clone",
+              "description": ""
+            },
+            {
+              "label": "git init",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Add.",
+          "explanation": "Menandai selesai."
+        },
+        {
+          "q": "Konflik di notebook sering akibat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Keluaran dan metadata",
+              "description": ""
+            },
+            {
+              "label": "Nama file",
+              "description": ""
+            },
+            {
+              "label": "Ukuran disk",
+              "description": ""
+            },
+            {
+              "label": "Nama cabang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Keluaran.",
+          "explanation": "JSON besar."
+        },
+        {
+          "q": "Cara mengurangi konflik?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sering menarik perubahan terbaru",
+              "description": ""
+            },
+            {
+              "label": "Menunda merge",
+              "description": ""
+            },
+            {
+              "label": "Mengubah file sama bersamaan",
+              "description": ""
+            },
+            {
+              "label": "Menghapus riwayat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sering.",
+          "explanation": "Cabang tidak menyimpang jauh."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Panik dan menghapus file saat melihat konflik. Lebih baik: Baca penanda dan pilih isi akhir.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Panik dan menghapus file saat melihat konflik.",
+          "fix": "Baca penanda dan pilih isi akhir."
+        },
+        {
+          "mistake": "Mencommit file yang masih berpenanda.",
+          "fix": "Cari awalan penanda sebelum commit."
+        },
+        {
+          "mistake": "Membiarkan cabang menyimpang berminggu-minggu.",
+          "fix": "Tarik perubahan terbaru sering-sering."
+        }
+      ],
+      "summary": [
+        "Konflik muncul ketika kedua sisi mengubah bagian yang sama secara berbeda.",
+        "Penanda konflik memisahkan versi kita dan versi mereka.",
+        "Selesaikan dengan memilih isi akhir, menghapus penanda, add, lalu commit.",
+        "Kurangi konflik dengan integrasi sering dan pembagian kerja."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Konflik: membaca dan menyelesaikannya"
+          },
+          {
+            "type": "text",
+            "source": "Judul hanya diubah di sisi mereka sehingga diterima otomatis. Baris rata-rata diubah kedua sisi berbeda sehingga ditulis dengan penanda konflik."
+          },
+          {
+            "type": "code",
+            "source": "basis = 'judul\\nrata-rata = 10\\nbatas = 5'\nkita = 'judul\\nrata-rata = 12\\nbatas = 5'\nmereka = 'judul baru\\nrata-rata = 15\\nbatas = 5'\n\ndef gabung_baris(basis, a, b, nama='fitur'):\n    x0, xa, xb = basis.splitlines(), a.splitlines(), b.splitlines()\n    if not (len(x0) == len(xa) == len(xb)):\n        raise ValueError('jumlah baris berbeda')\n    hasil = []\n    konflik = 0\n    for v0, va, vb in zip(x0, xa, xb):\n        if va == vb:\n            hasil.append(va)\n        elif va == v0:\n            hasil.append(vb)\n        elif vb == v0:\n            hasil.append(va)\n        else:\n            hasil += ['<<<<<<< HEAD', va, '=======', vb, '>>>>>>> ' + nama]\n            konflik += 1\n    return ('\\n'.join(hasil), konflik)\n\nteks, n = gabung_baris(basis, kita, mereka)\nprint(n)\nprint(teks)"
+          },
+          {
+            "type": "text",
+            "source": "Memilih sisi kita, sisi mereka, atau keduanya menghasilkan teks bersih tanpa penanda konflik."
+          },
+          {
+            "type": "code",
+            "source": "def selesaikan(teks, pilihan):\n    hasil = []\n    mode = None\n    indeks = 0\n    for b in teks.splitlines():\n        if b.startswith('<<<<<<<'):\n            mode = 'kita'\n        elif b.startswith('=======') and mode == 'kita':\n            mode = 'mereka'\n        elif b.startswith('>>>>>>>') and mode == 'mereka':\n            mode = None\n            indeks += 1\n        elif mode is None:\n            hasil.append(b)\n        else:\n            p = pilihan[indeks]\n            if p == 'keduanya' or p == mode:\n                hasil.append(b)\n    return '\\n'.join(hasil)\n\nteks = 'a\\n<<<<<<< HEAD\\nkita\\n=======\\nmereka\\n>>>>>>> fitur\\nz'\nprint(selesaikan(teks, ['kita']).splitlines())\nprint(selesaikan(teks, ['mereka']).splitlines())\nprint(selesaikan(teks, ['keduanya']).splitlines())"
+          },
+          {
+            "type": "text",
+            "source": "Pemeriksaan hanya menganggap konflik bila ada penanda pembuka dan penutup di awal baris, sehingga teks biasa yang kebetulan mengandung tanda lebih besar tidak salah dikenali."
+          },
+          {
+            "type": "code",
+            "source": "def ada_konflik(teks):\n    baris = teks.splitlines()\n    return any(b.startswith('<<<<<<<') for b in baris) and any(b.startswith('>>>>>>>') for b in baris)\n\nprint(ada_konflik('a\\n<<<<<<< HEAD\\nx\\n=======\\ny\\n>>>>>>> f'))\nprint(ada_konflik('a\\nb\\nc'))\nprint(ada_konflik('perbandingan a >>>>>>> b'))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A7-03-3",
+      "title": "Kolaborasi: remote, push, dan pull",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan repositori jarak jauh dan cabang pelacak",
+        "Membedakan fetch, pull, dan push",
+        "Menghitung berapa commit lokal di depan dan di belakang remote",
+        "Menjelaskan alur kerja pull request dan etika kolaborasi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Repositori jarak jauh",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Repositori jarak jauh\n\nSampai sekarang kita bekerja dengan satu repositori lokal. Kolaborasi menambahkan **remote**, yaitu salinan repositori yang tersimpan di server, misalnya GitHub atau GitLab. Remote utama biasanya bernama `origin`. Setiap anggota tim memiliki salinan lokal lengkap dan menyinkronkannya dengan remote.\n\nKarena setiap salinan memuat seluruh riwayat, Git bersifat terdistribusi: kita dapat bekerja tanpa internet dan baru menyinkronkan ketika siap."
+            },
+            {
+              "type": "text",
+              "markdown": "## Cabang pelacak\n\nCabang `origin/main` di salinan lokal bukan cabang yang kita edit, melainkan **cabang pelacak**: catatan lokal tentang posisi `main` di remote terakhir kali kita berkomunikasi. Ia hanya bergerak ketika kita menyinkronkan, bukan ketika orang lain melakukan push.\n\nDengan membandingkan `main` lokal dengan `origin/main`, kita dapat tahu apakah kita di depan, di belakang, atau sudah menyimpang dari remote."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fetch, pull, dan push\n\n`git fetch` mengunduh commit baru dari remote dan memperbarui cabang pelacak, tanpa mengubah pekerjaan kita. `git pull` adalah fetch diikuti merge cabang pelacak ke cabang aktif. `git push` mengirim commit lokal ke remote.\n\n```bash\ngit clone https://contoh.id/proyek.git\ngit fetch origin\ngit pull origin main\ngit push origin main\n```\n\nPemula sering langsung memakai pull. Kebiasaan yang lebih hati-hati adalah fetch dahulu, lihat apa yang masuk, baru gabungkan."
+            },
+            {
+              "type": "code_example",
+              "filename": "fetch.py",
+              "runnable": true,
+              "code": "def fetch(lokal, remote):\n    baru = sorted(i for i in remote['commits'] if i not in lokal['commits'])\n    for i in baru:\n        lokal['commits'][i] = remote['commits'][i]\n    for nama, tip in remote['cabang'].items():\n        lokal['cabang']['origin/' + nama] = tip\n    return baru\n\nlokal = {'commits': {'c1': {'parent': None, 'pesan': 'a'}}, 'cabang': {'main': 'c1'}}\nremote = {'commits': {'c1': {'parent': None, 'pesan': 'a'}, 'c2': {'parent': 'c1', 'pesan': 'b'}}, 'cabang': {'main': 'c2'}}\nprint(fetch(lokal, remote))\nprint(lokal['cabang'])\nprint(fetch(lokal, remote))",
+              "expected_output_note": "['c2']\n{'main': 'c1', 'origin/main': 'c2'}\n[]",
+              "explanation": "Fetch membawa commit baru dan memajukan origin/main, tetapi main lokal tidak berubah. Fetch kedua tidak menemukan apa-apa baru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Di depan dan di belakang\n\nSetelah fetch, kita dapat menghitung selisih antara cabang lokal dan pelacaknya. **Ahead** adalah jumlah commit yang kita miliki tetapi belum ada di remote, dan **behind** adalah jumlah commit di remote yang belum kita miliki. Keduanya muncul di `git status` sebagai kalimat seperti \"ahead by 2 commits\".\n\nBila behind nol dan ahead positif, push akan lancar. Bila keduanya positif, riwayat menyimpang dan kita harus menggabungkan dulu."
+            },
+            {
+              "type": "code_example",
+              "filename": "ahead_behind.py",
+              "runnable": true,
+              "code": "def ahead_behind(commits, a, b):\n    def telusur(ident):\n        hasil = set()\n        sekarang = ident\n        while sekarang is not None:\n            hasil.add(sekarang)\n            sekarang = commits[sekarang]['parent']\n        return hasil\n    sa, sb = telusur(a), telusur(b)\n    return (len(sa - sb), len(sb - sa))\n\ncommits = {\n    'c1': {'parent': None},\n    'c2': {'parent': 'c1'},\n    'c3': {'parent': 'c2'},\n    'c4': {'parent': 'c2'},\n    'c5': {'parent': 'c4'},\n}\nprint(ahead_behind(commits, 'c3', 'c5'))\nprint(ahead_behind(commits, 'c5', 'c3'))\nprint(ahead_behind(commits, 'c2', 'c5'))\nprint(ahead_behind(commits, 'c3', 'c3'))",
+              "expected_output_note": "(1, 2)\n(2, 1)\n(0, 2)\n(0, 0)",
+              "explanation": "Cabang lokal di commit ketiga berada satu commit di depan dan dua commit di belakang remote di commit kelima, sehingga riwayatnya menyimpang."
+            }
+          ],
+          "quick_check": {
+            "question": "Remote utama biasanya bernama?",
+            "options": [
+              "origin",
+              "master"
+            ],
+            "answer_index": 0,
+            "explanation": "Nama bawaan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Push ditolak",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Push ditolak\n\nServer menolak push bila akan menghilangkan commit milik orang lain. Secara teknis, push hanya diterima bila ujung remote adalah leluhur ujung kita, sehingga remote cukup maju cepat. Bila tidak, kita harus fetch, menggabungkan perubahan mereka ke pekerjaan kita, lalu push lagi.\n\nPenolakan ini melindungi kerja tim. Godaan memakai `git push --force` untuk memaksa harus dilawan, karena ia menimpa pekerjaan orang lain."
+            },
+            {
+              "type": "code_example",
+              "filename": "push.py",
+              "runnable": true,
+              "code": "def push(lokal, remote, cabang):\n    tip = lokal['cabang'][cabang]\n    tip_remote = remote['cabang'].get(cabang)\n    boleh = tip_remote is None\n    sekarang = tip\n    while sekarang is not None and not boleh:\n        if sekarang == tip_remote:\n            boleh = True\n        sekarang = lokal['commits'][sekarang]['parent']\n    if not boleh:\n        raise ValueError('ditolak: tarik dan gabung dulu')\n    remote['commits'].update(lokal['commits'])\n    remote['cabang'][cabang] = tip\n    return tip\n\nk = {\n    'c1': {'parent': None},\n    'c2': {'parent': 'c1'},\n    'c3': {'parent': 'c2'},\n    'c4': {'parent': 'c2'},\n}\nlokal = {'commits': k, 'cabang': {'main': 'c4'}}\nremote = {'commits': {i: k[i] for i in ('c1', 'c2')}, 'cabang': {'main': 'c2'}}\nprint(push(lokal, remote, 'main'))\nprint(sorted(remote['commits']))\nremote2 = {'commits': {i: k[i] for i in ('c1', 'c2', 'c3')}, 'cabang': {'main': 'c3'}}\ntry:\n    push(lokal, remote2, 'main')\nexcept ValueError as e:\n    print(e)",
+              "expected_output_note": "c4\n['c1', 'c2', 'c3', 'c4']\nditolak: tarik dan gabung dulu",
+              "explanation": "Push berhasil ketika remote hanya tertinggal, tetapi ditolak ketika remote punya commit yang tidak kita miliki."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pull request dan tinjauan kode\n\nDi platform seperti GitHub, kolaborasi biasanya lewat **pull request**. Kita mendorong cabang fitur ke remote, lalu membuka permintaan agar cabang itu digabung ke `main`. Rekan tim meninjau diff, memberi komentar, dan menyetujui, baru kemudian penggabungan dilakukan.\n\nTinjauan kode menangkap kesalahan lebih awal dan menyebarkan pengetahuan. Untuk analisis data, ia memastikan logika perhitungan angka penting dilihat oleh lebih dari satu pasang mata."
+            }
+          ],
+          "quick_check": {
+            "question": "git fetch?",
+            "options": [
+              "Mengirim commit",
+              "Mengunduh commit tanpa mengubah cabang kita"
+            ],
+            "answer_index": 1,
+            "explanation": "Hanya mengunduh.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Etika kolaborasi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Etika kolaborasi\n\nBeberapa kebiasaan membuat kerja tim lancar. Tarik perubahan terbaru sebelum mulai bekerja. Buat commit kecil dengan pesan jelas. Jangan mendorong langsung ke cabang utama bila tim memakai pull request. Jangan menulis ulang riwayat yang sudah dibagikan. Dan jangan pernah mendorong rahasia atau data pribadi.\n\nEtika ini sederhana tetapi menentukan: tim yang disiplin menghabiskan waktu untuk pekerjaan, bukan untuk memperbaiki kekacauan riwayat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fork dan kontribusi terbuka\n\nPada proyek sumber terbuka, kita biasanya tidak punya izin menulis ke repositori utama. Solusinya adalah **fork**, yaitu menyalin repositori ke akun kita di server, bekerja di salinan itu, lalu mengajukan pull request ke repositori asli. Pemelihara memutuskan apakah perubahan diterima.\n\nMekanisme ini memungkinkan ribuan orang berkontribusi tanpa memberi mereka kendali atas proyek, dan menjadi dasar kolaborasi terbuka di dunia perangkat lunak dan sains data."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Push paksa",
+              "markdown": "Hindari git push --force pada cabang bersama. Ia dapat menimpa pekerjaan rekan tim."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menyinkronkan dengan teratur\n\nRutinitas sederhana mencegah banyak masalah: tarik di awal hari, dorong di akhir sesi kerja. Dengan begitu cadangan pekerjaan selalu ada di remote, dan rekan tim melihat kemajuan Anda lebih cepat. Pekerjaan yang hanya ada di satu laptop adalah pekerjaan yang berisiko hilang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Cabang pelacak dan nama\n\nSaat cabang lokal dibuat dari cabang remote, Git dapat mengatur hubungan pelacakan sehingga status dan pull tahu pasangannya. Hubungan itu diatur dengan opsi `-u` saat push pertama. Setelahnya, perintah push dan pull tidak lagi memerlukan nama remote dan cabang secara eksplisit."
+            }
+          ],
+          "quick_check": {
+            "question": "git pull sama dengan?",
+            "options": [
+              "fetch lalu merge",
+              "push lalu fetch"
+            ],
+            "answer_index": 0,
+            "explanation": "Dua langkah.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A7-03-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ahead_behind(commits, a, b)` yang mengembalikan tuple `(ahead, behind)`: `ahead` adalah jumlah commit yang terjangkau dari `a` tetapi tidak dari `b`, dan `behind` sebaliknya.",
+          "note": "Penelusuran mengikuti `parent`.",
+          "filename": "solution.py",
+          "starter_code": "def ahead_behind(commits, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ahead_behind(k, 'c3', 'c5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _k():\n    return {\n        'c1': {'parent': None, 'pesan': 'awal'},\n        'c2': {'parent': 'c1', 'pesan': 'dua'},\n        'c3': {'parent': 'c2', 'pesan': 'main'},\n        'c4': {'parent': 'c2', 'pesan': 'fitur'},\n        'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n    }\nk = _k()\nassert ahead_behind(k, 'c3', 'c5') == (1, 2)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ahead_behind(k, 'c5', 'c3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ahead_behind(k, 'c5', 'c3') == (2, 1)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ahead_behind(k, 'c3', 'c3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ahead_behind(k, 'c3', 'c3') == (0, 0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ahead_behind(k, 'c2', 'c5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ahead_behind(k, 'c2', 'c5') == (0, 2)"
+              }
+            ]
+          },
+          "hint": "Kumpulkan himpunan leluhur masing-masing lalu hitung selisih himpunan.",
+          "solution": "def ahead_behind(commits, a, b):\n    def telusur(ident):\n        hasil = set()\n        sekarang = ident\n        while sekarang is not None:\n            hasil.add(sekarang)\n            sekarang = commits[sekarang]['parent']\n        return hasil\n    sa, sb = telusur(a), telusur(b)\n    return (len(sa - sb), len(sb - sa))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-03-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bisa_push(commits, lokal, remote)` yang mengembalikan `True` bila `remote` adalah `None` (cabang baru) atau merupakan leluhur dari `lokal` (termasuk sama), dan `False` bila tidak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def bisa_push(commits, lokal, remote):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bisa_push(k, 'c5', 'c4')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _k():\n    return {\n        'c1': {'parent': None, 'pesan': 'awal'},\n        'c2': {'parent': 'c1', 'pesan': 'dua'},\n        'c3': {'parent': 'c2', 'pesan': 'main'},\n        'c4': {'parent': 'c2', 'pesan': 'fitur'},\n        'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n    }\nk = _k()\nassert bisa_push(k, 'c5', 'c4') is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bisa_push(k, 'c3', 'c5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_push(k, 'c3', 'c5') is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bisa_push(k, 'c3', 'c3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_push(k, 'c3', 'c3') is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bisa_push(k, 'c3', None)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_push(k, 'c3', None) is True"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "bisa_push(k, 'c3', 'c4')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_push(k, 'c3', 'c4') is False"
+              }
+            ]
+          },
+          "hint": "Telusuri induk dari lokal dan cari remote, atau kembalikan True bila remote kosong.",
+          "solution": "def bisa_push(commits, lokal, remote):\n    if remote is None:\n        return True\n    sekarang = lokal\n    while sekarang is not None:\n        if sekarang == remote:\n            return True\n        sekarang = commits[sekarang]['parent']\n    return False",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-03-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `fetch(lokal, remote)` yang menyalin ke `lokal['commits']` semua commit di `remote['commits']` yang belum ada, mengatur `lokal['cabang']['origin/' + nama]` untuk setiap cabang remote ke ujungnya, dan mengembalikan list terurut id commit yang baru disalin.",
+          "note": "Cabang lokal lain tidak boleh berubah.",
+          "filename": "solution.py",
+          "starter_code": "def fetch(lokal, remote):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "fetch(lokal, remote)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _lokal():\n    k = {\n        'c1': {'parent': None, 'pesan': 'awal'},\n        'c2': {'parent': 'c1', 'pesan': 'dua'},\n        'c4': {'parent': 'c2', 'pesan': 'fitur'},\n        'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n    }\n    return {'commits': k, 'cabang': {'main': 'c5'}}\ndef _remote(tip, ids):\n    semua = {\n        'c1': {'parent': None, 'pesan': 'awal'},\n        'c2': {'parent': 'c1', 'pesan': 'dua'},\n        'c3': {'parent': 'c2', 'pesan': 'main'},\n    }\n    return {'commits': {i: semua[i] for i in ids}, 'cabang': {'main': tip}}\nlokal = _lokal()\nremote = _remote('c3', ['c1', 'c2', 'c3'])\nassert fetch(lokal, remote) == ['c3']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert lokal['cabang']['origin/main'] == 'c3'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert lokal['cabang']['main'] == 'c5'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 'c3' in lokal['commits']"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "fetch(lokal, remote)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fetch(lokal, remote) == []"
+              }
+            ]
+          },
+          "hint": "Salin commit yang belum ada lalu catat ujung tiap cabang remote dengan awalan origin/.",
+          "solution": "def fetch(lokal, remote):\n    baru = sorted(i for i in remote['commits'] if i not in lokal['commits'])\n    for i in baru:\n        lokal['commits'][i] = remote['commits'][i]\n    for nama, tip in remote['cabang'].items():\n        lokal['cabang']['origin/' + nama] = tip\n    return baru",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A7-03-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `push(lokal, remote, cabang)` yang mengirim cabang `cabang` dari `lokal` ke `remote` (keduanya dict berkunci `commits` dan `cabang`).",
+          "note": "Push diterima hanya bila cabang belum ada di remote atau ujung remote adalah leluhur (atau sama dengan) ujung lokal. Bila diterima, salin semua commit lokal ke remote, atur ujung cabang remote, dan kembalikan ujungnya. Bila ditolak, lemparkan `ValueError` tanpa mengubah remote.",
+          "filename": "solution.py",
+          "starter_code": "def push(lokal, remote, cabang):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "push(lokal, remote, 'main')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _lokal():\n    k = {\n        'c1': {'parent': None, 'pesan': 'awal'},\n        'c2': {'parent': 'c1', 'pesan': 'dua'},\n        'c4': {'parent': 'c2', 'pesan': 'fitur'},\n        'c5': {'parent': 'c4', 'pesan': 'fitur lagi'},\n    }\n    return {'commits': k, 'cabang': {'main': 'c5'}}\ndef _remote(tip, ids):\n    semua = {\n        'c1': {'parent': None, 'pesan': 'awal'},\n        'c2': {'parent': 'c1', 'pesan': 'dua'},\n        'c3': {'parent': 'c2', 'pesan': 'main'},\n    }\n    return {'commits': {i: semua[i] for i in ids}, 'cabang': {'main': tip}}\nlokal = _lokal()\nremote = _remote('c2', ['c1', 'c2'])\nassert push(lokal, remote, 'main') == 'c5'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert remote['cabang']['main'] == 'c5'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 'c4' in remote['commits'] and 'c5' in remote['commits']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r2 = _remote('c3', ['c1', 'c2', 'c3'])\ntry:\n    push(lokal, r2, 'main')\n    ditolak = False\nexcept ValueError:\n    ditolak = True\nassert ditolak is True"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r2['cabang']['main'] == 'c3' and 'c4' not in r2['commits']"
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "push(lokal, r2, 'fitur')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "lokal['cabang']['fitur'] = 'c4'\nassert push(lokal, r2, 'fitur') == 'c4'"
+              },
+              {
+                "id": 7,
+                "name": "Kasus 7",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r2['cabang']['fitur'] == 'c4'"
+              }
+            ]
+          },
+          "hint": "Periksa apakah ujung remote ada di jalur induk lokal sebelum menyalin dan memindah penunjuk.",
+          "solution": "def push(lokal, remote, cabang):\n    tip = lokal['cabang'][cabang]\n    tip_remote = remote['cabang'].get(cabang)\n    boleh = tip_remote is None\n    sekarang = tip\n    while sekarang is not None and not boleh:\n        if sekarang == tip_remote:\n            boleh = True\n        sekarang = lokal['commits'][sekarang]['parent']\n    if not boleh:\n        raise ValueError('ditolak: tarik dan gabung dulu')\n    remote['commits'].update(lokal['commits'])\n    remote['cabang'][cabang] = tip\n    return tip",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Remote utama biasanya bernama?",
+          "code": null,
+          "options": [
+            {
+              "label": "origin",
+              "description": ""
+            },
+            {
+              "label": "master",
+              "description": ""
+            },
+            {
+              "label": "remote1",
+              "description": ""
+            },
+            {
+              "label": "server",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Asal.",
+          "explanation": "Nama bawaan."
+        },
+        {
+          "q": "git fetch?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mengunduh commit tanpa mengubah cabang kita",
+              "description": ""
+            },
+            {
+              "label": "Mengirim commit",
+              "description": ""
+            },
+            {
+              "label": "Menggabung otomatis",
+              "description": ""
+            },
+            {
+              "label": "Menghapus cabang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Unduh.",
+          "explanation": "Hanya mengunduh."
+        },
+        {
+          "q": "git pull sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "fetch lalu merge",
+              "description": ""
+            },
+            {
+              "label": "push lalu fetch",
+              "description": ""
+            },
+            {
+              "label": "commit lalu push",
+              "description": ""
+            },
+            {
+              "label": "reset lalu fetch",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Gabung.",
+          "explanation": "Dua langkah."
+        },
+        {
+          "q": "Push ditolak bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "Remote punya commit yang tidak kita miliki",
+              "description": ""
+            },
+            {
+              "label": "Pesan terlalu panjang",
+              "description": ""
+            },
+            {
+              "label": "Cabang baru",
+              "description": ""
+            },
+            {
+              "label": "File kecil",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Menyimpang.",
+          "explanation": "Riwayat menyimpang."
+        },
+        {
+          "q": "Pull request digunakan untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Meninjau dan menggabungkan perubahan",
+              "description": ""
+            },
+            {
+              "label": "Menghapus repo",
+              "description": ""
+            },
+            {
+              "label": "Membuat tag",
+              "description": ""
+            },
+            {
+              "label": "Mengompres riwayat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tinjau.",
+          "explanation": "Tinjauan kode."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai git push --force untuk mengatasi penolakan. Lebih baik: Fetch, gabungkan, lalu push.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai git push --force untuk mengatasi penolakan.",
+          "fix": "Fetch, gabungkan, lalu push."
+        },
+        {
+          "mistake": "Mengira origin/main selalu terkini.",
+          "fix": "Ia hanya diperbarui saat fetch atau pull."
+        },
+        {
+          "mistake": "Mendorong rahasia ke remote.",
+          "fix": "Gunakan .gitignore dan variabel lingkungan."
+        }
+      ],
+      "summary": [
+        "Remote adalah salinan repositori di server, dilacak lewat cabang origin.",
+        "Fetch mengunduh, pull menggabungkan, push mengirim.",
+        "Ahead dan behind menunjukkan posisi relatif terhadap remote.",
+        "Pull request dan etika kolaborasi menjaga kualitas kerja tim."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Kolaborasi: remote, push, dan pull"
+          },
+          {
+            "type": "text",
+            "source": "Fetch membawa commit baru dan memajukan origin/main, tetapi main lokal tidak berubah. Fetch kedua tidak menemukan apa-apa baru."
+          },
+          {
+            "type": "code",
+            "source": "def fetch(lokal, remote):\n    baru = sorted(i for i in remote['commits'] if i not in lokal['commits'])\n    for i in baru:\n        lokal['commits'][i] = remote['commits'][i]\n    for nama, tip in remote['cabang'].items():\n        lokal['cabang']['origin/' + nama] = tip\n    return baru\n\nlokal = {'commits': {'c1': {'parent': None, 'pesan': 'a'}}, 'cabang': {'main': 'c1'}}\nremote = {'commits': {'c1': {'parent': None, 'pesan': 'a'}, 'c2': {'parent': 'c1', 'pesan': 'b'}}, 'cabang': {'main': 'c2'}}\nprint(fetch(lokal, remote))\nprint(lokal['cabang'])\nprint(fetch(lokal, remote))"
+          },
+          {
+            "type": "text",
+            "source": "Cabang lokal di commit ketiga berada satu commit di depan dan dua commit di belakang remote di commit kelima, sehingga riwayatnya menyimpang."
+          },
+          {
+            "type": "code",
+            "source": "def ahead_behind(commits, a, b):\n    def telusur(ident):\n        hasil = set()\n        sekarang = ident\n        while sekarang is not None:\n            hasil.add(sekarang)\n            sekarang = commits[sekarang]['parent']\n        return hasil\n    sa, sb = telusur(a), telusur(b)\n    return (len(sa - sb), len(sb - sa))\n\ncommits = {\n    'c1': {'parent': None},\n    'c2': {'parent': 'c1'},\n    'c3': {'parent': 'c2'},\n    'c4': {'parent': 'c2'},\n    'c5': {'parent': 'c4'},\n}\nprint(ahead_behind(commits, 'c3', 'c5'))\nprint(ahead_behind(commits, 'c5', 'c3'))\nprint(ahead_behind(commits, 'c2', 'c5'))\nprint(ahead_behind(commits, 'c3', 'c3'))"
+          },
+          {
+            "type": "text",
+            "source": "Push berhasil ketika remote hanya tertinggal, tetapi ditolak ketika remote punya commit yang tidak kita miliki."
+          },
+          {
+            "type": "code",
+            "source": "def push(lokal, remote, cabang):\n    tip = lokal['cabang'][cabang]\n    tip_remote = remote['cabang'].get(cabang)\n    boleh = tip_remote is None\n    sekarang = tip\n    while sekarang is not None and not boleh:\n        if sekarang == tip_remote:\n            boleh = True\n        sekarang = lokal['commits'][sekarang]['parent']\n    if not boleh:\n        raise ValueError('ditolak: tarik dan gabung dulu')\n    remote['commits'].update(lokal['commits'])\n    remote['cabang'][cabang] = tip\n    return tip\n\nk = {\n    'c1': {'parent': None},\n    'c2': {'parent': 'c1'},\n    'c3': {'parent': 'c2'},\n    'c4': {'parent': 'c2'},\n}\nlokal = {'commits': k, 'cabang': {'main': 'c4'}}\nremote = {'commits': {i: k[i] for i in ('c1', 'c2')}, 'cabang': {'main': 'c2'}}\nprint(push(lokal, remote, 'main'))\nprint(sorted(remote['commits']))\nremote2 = {'commits': {i: k[i] for i in ('c1', 'c2', 'c3')}, 'cabang': {'main': 'c3'}}\ntry:\n    push(lokal, remote2, 'main')\nexcept ValueError as e:\n    print(e)"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

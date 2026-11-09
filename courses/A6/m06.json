@@ -1,0 +1,1572 @@
+{
+  "schema_version": 2,
+  "course_id": "A6",
+  "module_no": 6,
+  "title": "Window function",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menghitung agregat per kelompok tanpa menghilangkan baris",
+    "Membuat peringkat dan membandingkan antar periode",
+    "Menghitung total berjalan, rata-rata bergerak, dan kelompok NTILE"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A6-06-1",
+    "exercise_id": "A6-06-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def di_atas_rata_wilayah(c):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A6-06-1",
+      "title": "Konsep window function dan PARTITION BY",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menjelaskan perbedaan window function dan GROUP BY",
+        "Menulis klausa OVER dengan PARTITION BY",
+        "Menghitung total dan persentase per kelompok tanpa menghilangkan baris",
+        "Memakai window function di dalam subquery untuk menyaring hasilnya"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Masalah yang tidak terjawab GROUP BY",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Masalah yang tidak terjawab GROUP BY\n\n`GROUP BY` meringkas banyak baris menjadi satu baris per kelompok. Itu tepat untuk laporan total, tetapi sering kita butuh keduanya sekaligus: detail tiap baris dan ringkasan kelompoknya. Misalnya, tampilkan setiap penjualan beserta total penjualan salesnya, supaya kita bisa menghitung berapa persen kontribusinya.\n\nDengan `GROUP BY` kita harus menjalankan dua query lalu menggabungkannya lewat JOIN atau subquery berkorelasi. **Window function** menyelesaikannya dalam satu query: ia menghitung agregat atas sekumpulan baris terkait, tetapi tetap mempertahankan setiap baris asli di hasil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tabel contoh\n\nPada modul ini kita memakai tabel `penjualan` dengan kolom `id`, `sales`, `wilayah`, `bulan`, dan `nilai`. Ada tiga sales, yaitu Ani dan Citra di wilayah Barat serta Budi di wilayah Timur, masing-masing dengan data tiga bulan. Total seluruh nilai adalah 1360.\n\nTabel kecil ini sengaja dibuat agar semua hasil dapat dihitung dengan tangan. Cobalah memeriksa beberapa angka sendiri sebelum menjalankan kode, sebab kebiasaan memverifikasi hasil query adalah keterampilan terpenting analis data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Klausa OVER\n\nSebuah fungsi menjadi window function ketika diikuti klausa `OVER (...)`. Contoh `SUM(nilai) OVER ()` menjumlahkan nilai seluruh baris, dan hasilnya dicantumkan di setiap baris. Kurung kosong berarti jendelanya adalah seluruh himpunan hasil.\n\nHampir semua fungsi agregat dapat dipakai sebagai window function: `SUM`, `AVG`, `COUNT`, `MIN`, dan `MAX`. Bedanya dengan agregat biasa, tidak ada pengurangan baris. Jumlah baris keluaran sama persis dengan jumlah baris masukan."
+            },
+            {
+              "type": "code_example",
+              "filename": "over_kosong.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = 'SELECT id, nilai, SUM(nilai) OVER () FROM penjualan ORDER BY id'\nrows = c.execute(q).fetchall()\nprint(rows[:3])\nprint(len(rows))",
+              "expected_output_note": "[(1, 100, 1360), (2, 150, 1360), (3, 120, 1360)]\n9",
+              "explanation": "Total 1360 muncul di setiap baris sementara jumlah baris tetap sembilan."
+            },
+            {
+              "type": "text",
+              "markdown": "## PARTITION BY\n\n`PARTITION BY` membagi baris menjadi kelompok, dan fungsi dihitung terpisah di tiap kelompok. `SUM(nilai) OVER (PARTITION BY sales)` memberikan total per sales pada setiap baris milik sales itu. Ia mirip `GROUP BY` dari sisi pembagian kelompok, tetapi tanpa meruntuhkan baris.\n\nAnggap partisi sebagai jendela yang bergeser: untuk tiap baris, jendelanya hanya berisi baris sekelompok. Itu sebabnya fungsi ini dinamai window function."
+            },
+            {
+              "type": "code_example",
+              "filename": "partition_by.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT sales, bulan, nilai, SUM(nilai) OVER (PARTITION BY sales)\nFROM penjualan ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "('Ani', 1, 100, 370)\n('Ani', 2, 150, 370)\n('Ani', 3, 120, 370)\n('Budi', 1, 200, 600)\n('Budi', 2, 180, 600)\n('Budi', 3, 220, 600)\n('Citra', 1, 150, 390)\n('Citra', 2, 150, 390)\n('Citra', 3, 90, 390)",
+              "explanation": "Setiap baris membawa total salesnya sendiri: 370 untuk Ani, 600 untuk Budi, dan 390 untuk Citra."
+            }
+          ],
+          "quick_check": {
+            "question": "Window function ditandai oleh?",
+            "options": [
+              "Klausa OVER",
+              "Klausa HAVING"
+            ],
+            "answer_index": 0,
+            "explanation": "OVER menentukan jendela.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Persentase dari total kelompok",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Persentase dari total kelompok\n\nKarena detail dan total berada di baris yang sama, menghitung proporsi menjadi mudah: `nilai / SUM(nilai) OVER (PARTITION BY sales)`. Kalikan dengan 100.0, bukan 100, agar pembagian bertipe desimal. Pembagian bilangan bulat di SQLite memotong pecahan, jadi `150 / 370` menjadi nol.\n\nPola persen dari total ini sangat sering dipakai: kontribusi produk terhadap penjualan kategorinya, porsi tiap wilayah, atau bagian tiap bulan dari total tahunan."
+            },
+            {
+              "type": "code_example",
+              "filename": "persen_total.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT sales, nilai,\n       ROUND(100.0 * nilai / SUM(nilai) OVER (PARTITION BY sales), 1)\nFROM penjualan ORDER BY id\n'''\nprint([r[2] for r in c.execute(q).fetchall()])\nprint(c.execute('SELECT 150 / 370, 150 * 1.0 / 370').fetchone())",
+              "expected_output_note": "[27.0, 40.5, 32.4, 33.3, 30.0, 36.7, 38.5, 38.5, 23.1]\n(0, 0.40540540540540543)",
+              "explanation": "Persen dihitung per sales, dan contoh terakhir mengingatkan bahwa pembagian bilangan bulat di SQLite bernilai nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Beda dengan GROUP BY\n\nAda tiga perbedaan utama. Pertama, `GROUP BY` mengurangi baris, window function tidak. Kedua, kolom yang dipilih bersama `GROUP BY` harus kolom pengelompokan atau agregat, sedangkan window function bebas ditampilkan bersama kolom apa pun. Ketiga, window function dievaluasi setelah `WHERE`, `GROUP BY`, dan `HAVING`, tepat sebelum `ORDER BY`.\n\nUrutan evaluasi inilah penyebab window function tidak boleh dipakai langsung di `WHERE`. Untuk menyaring berdasarkan hasilnya, bungkus dalam subquery atau CTE."
+            }
+          ],
+          "quick_check": {
+            "question": "Dibanding GROUP BY, window function?",
+            "options": [
+              "Menghapus duplikat",
+              "Mempertahankan semua baris"
+            ],
+            "answer_index": 1,
+            "explanation": "Baris tidak berkurang.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Menyaring hasil window function",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menyaring hasil window function\n\nMisalnya kita ingin baris yang nilainya di atas rata-rata wilayahnya. Rata-rata wilayah dihitung dengan `AVG(nilai) OVER (PARTITION BY wilayah)`, tetapi `WHERE nilai > AVG(...) OVER (...)` ditolak karena window belum dihitung saat `WHERE` berjalan.\n\nSolusinya membungkus query dalam subquery di `FROM` atau CTE, lalu menyaring di luar. Pola dua lapis ini akan kita pakai berulang untuk pemeringkatan dan perbandingan."
+            },
+            {
+              "type": "code_example",
+              "filename": "saring_window.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id FROM (\n    SELECT id, nilai, AVG(nilai) OVER (PARTITION BY wilayah) AS rata\n    FROM penjualan\n)\nWHERE nilai > rata\nORDER BY id\n'''\nprint([r[0] for r in c.execute(q).fetchall()])",
+              "expected_output_note": "[2, 6, 7, 8]",
+              "explanation": "Baris dua tujuh dan delapan di atas rata-rata wilayah Barat, dan baris enam di atas rata-rata wilayah Timur."
+            },
+            {
+              "type": "text",
+              "markdown": "## Beberapa window dalam satu query\n\nSatu query boleh memuat beberapa window function dengan partisi berbeda. Kita dapat menampilkan total per sales, total per wilayah, dan total keseluruhan berdampingan, lalu menghitung berbagai persentase sekaligus.\n\nKarena tiap window dihitung independen, tidak ada pengaruh antar kolom. Bila partisinya sama dan dipakai berulang, SQL menyediakan klausa `WINDOW` bernama agar definisinya tidak ditulis ulang, tetapi menuliskannya langsung sudah cukup untuk sebagian besar kebutuhan."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Tidak di WHERE",
+              "markdown": "Window function tidak boleh muncul di WHERE. Bungkus query dalam subquery atau CTE lalu saring di lapisan luar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan memakai window function\n\nGunakan window function setiap kali kebutuhan melibatkan perbandingan sebuah baris dengan kelompoknya: persen dari total, selisih dari rata-rata, atau posisi dalam kelompok. Pola-pola ini sebelumnya memerlukan JOIN ke subquery agregat yang panjang dan mudah salah.\n\nDengan window function, logika yang sama menjadi satu ekspresi yang terbaca langsung di daftar kolom. Hasilnya query lebih pendek, lebih jelas, dan sering lebih cepat."
+            }
+          ],
+          "quick_check": {
+            "question": "PARTITION BY berfungsi?",
+            "options": [
+              "Membagi baris menjadi kelompok",
+              "Mengurutkan hasil"
+            ],
+            "answer_index": 0,
+            "explanation": "Perhitungan per kelompok.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-06-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `nilai_dan_total(c)` yang mengembalikan list tuple `(id, nilai, total)` untuk semua baris `penjualan`, terurut menurut id, dengan `total` adalah jumlah seluruh nilai memakai `SUM() OVER ()`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef nilai_dan_total(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nr = nilai_dan_total(c)\nassert len(r) == 9"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[0] == (1, 100, 1360)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(r)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO penjualan VALUES (10, 'Dedi', 'Timur', 4, 40)\")\nr = nilai_dan_total(c)\nassert len(r) == 10 and r[-1] == (10, 40, 1400)"
+              }
+            ]
+          },
+          "hint": "Pakai SUM(nilai) OVER () pada setiap baris.",
+          "solution": "import sqlite3\n\ndef nilai_dan_total(c):\n    q = 'SELECT id, nilai, SUM(nilai) OVER () FROM penjualan ORDER BY id'\n    return c.execute(q).fetchall()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-06-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `total_per_sales(c)` yang mengembalikan list tuple `(id, total_sales)` terurut menurut id, dengan `total_sales` adalah jumlah nilai seluruh baris milik sales yang sama.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef total_per_sales(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nr = total_per_sales(c)\nassert r[0] == (1, 370)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[3] == (4, 600)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[8] == (9, 390)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "total_per_sales(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO penjualan VALUES (10, 'Ani', 'Barat', 4, 30)\")\nassert total_per_sales(c)[0] == (1, 400)"
+              }
+            ]
+          },
+          "hint": "Gunakan PARTITION BY sales.",
+          "solution": "import sqlite3\n\ndef total_per_sales(c):\n    q = 'SELECT id, SUM(nilai) OVER (PARTITION BY sales) FROM penjualan ORDER BY id'\n    return c.execute(q).fetchall()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-06-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `persen_sales(c, sales)` yang mengembalikan list persentase kontribusi tiap bulan terhadap total sales tersebut, dibulatkan 1 desimal, terurut menurut bulan.",
+          "note": "Sales tak dikenal menghasilkan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef persen_sales(c, sales):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "persen_sales(c, 'Ani')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nassert persen_sales(c, 'Ani') == [27.0, 40.5, 32.4]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "persen_sales(c, 'Budi')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_sales(c, 'Budi') == [33.3, 30.0, 36.7]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "persen_sales(c, 'Citra')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_sales(c, 'Citra') == [38.5, 38.5, 23.1]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "persen_sales(c, 'Zed')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen_sales(c, 'Zed') == []"
+              }
+            ]
+          },
+          "hint": "Kalikan 100.0 dan bagi dengan SUM OVER PARTITION BY sales.",
+          "solution": "import sqlite3\n\ndef persen_sales(c, sales):\n    q = '''\n    SELECT ROUND(100.0 * nilai / SUM(nilai) OVER (PARTITION BY sales), 1)\n    FROM penjualan WHERE sales = ? ORDER BY bulan\n    '''\n    return [r[0] for r in c.execute(q, (sales,)).fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-06-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `di_atas_rata_wilayah(c)` yang mengembalikan list id baris dengan `nilai` lebih besar dari rata-rata `nilai` wilayahnya, terurut menurut id.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef di_atas_rata_wilayah(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "di_atas_rata_wilayah(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nassert di_atas_rata_wilayah(c) == [2, 6, 7, 8]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "di_atas_rata_wilayah(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO penjualan VALUES (10, 'Dedi', 'Timur', 4, 300)\")\nassert di_atas_rata_wilayah(c) == [2, 7, 8, 10]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "di_atas_rata_wilayah(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('DELETE FROM penjualan WHERE id = 10')\nassert di_atas_rata_wilayah(c) == [2, 6, 7, 8]"
+              }
+            ]
+          },
+          "hint": "Hitung AVG OVER PARTITION BY wilayah di subquery lalu saring di luar.",
+          "solution": "import sqlite3\n\ndef di_atas_rata_wilayah(c):\n    q = '''\n    SELECT id FROM (\n        SELECT id, nilai, AVG(nilai) OVER (PARTITION BY wilayah) AS rata FROM penjualan\n    )\n    WHERE nilai > rata ORDER BY id\n    '''\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Window function ditandai oleh?",
+          "code": null,
+          "options": [
+            {
+              "label": "Klausa OVER",
+              "description": ""
+            },
+            {
+              "label": "Klausa HAVING",
+              "description": ""
+            },
+            {
+              "label": "Kata WINDOW di FROM",
+              "description": ""
+            },
+            {
+              "label": "Tanda kurung ganda",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Over.",
+          "explanation": "OVER menentukan jendela."
+        },
+        {
+          "q": "Dibanding GROUP BY, window function?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mempertahankan semua baris",
+              "description": ""
+            },
+            {
+              "label": "Menghapus duplikat",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menggabungkan tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baris.",
+          "explanation": "Baris tidak berkurang."
+        },
+        {
+          "q": "PARTITION BY berfungsi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membagi baris menjadi kelompok",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan hasil",
+              "description": ""
+            },
+            {
+              "label": "Membatasi jumlah baris",
+              "description": ""
+            },
+            {
+              "label": "Menggabungkan kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kelompok.",
+          "explanation": "Perhitungan per kelompok."
+        },
+        {
+          "q": "Untuk menyaring hasil window function?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bungkus dalam subquery",
+              "description": ""
+            },
+            {
+              "label": "Pakai WHERE langsung",
+              "description": ""
+            },
+            {
+              "label": "Pakai DISTINCT",
+              "description": ""
+            },
+            {
+              "label": "Pakai LIMIT",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bungkus.",
+          "explanation": "Window dihitung setelah WHERE."
+        },
+        {
+          "q": "OVER () dengan kurung kosong berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Seluruh hasil satu jendela",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada jendela",
+              "description": ""
+            },
+            {
+              "label": "Satu baris",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Semua.",
+          "explanation": "Semua baris."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai window function di WHERE. Lebih baik: Bungkus dalam subquery atau CTE lalu saring di luar.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai window function di WHERE.",
+          "fix": "Bungkus dalam subquery atau CTE lalu saring di luar."
+        },
+        {
+          "mistake": "Membagi bilangan bulat untuk persen.",
+          "fix": "Kalikan 100.0 agar hasil desimal."
+        },
+        {
+          "mistake": "Mengira window function mengurangi baris seperti GROUP BY.",
+          "fix": "Jumlah baris tetap sama."
+        }
+      ],
+      "summary": [
+        "Window function menghitung agregat tanpa menghilangkan baris.",
+        "PARTITION BY membagi baris menjadi kelompok untuk tiap perhitungan.",
+        "Persentase dari total mudah dihitung karena detail dan total sebaris.",
+        "Saring hasil window function lewat subquery atau CTE."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Konsep window function dan PARTITION BY"
+          },
+          {
+            "type": "text",
+            "source": "Total 1360 muncul di setiap baris sementara jumlah baris tetap sembilan."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = 'SELECT id, nilai, SUM(nilai) OVER () FROM penjualan ORDER BY id'\nrows = c.execute(q).fetchall()\nprint(rows[:3])\nprint(len(rows))"
+          },
+          {
+            "type": "text",
+            "source": "Setiap baris membawa total salesnya sendiri: 370 untuk Ani, 600 untuk Budi, dan 390 untuk Citra."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT sales, bulan, nilai, SUM(nilai) OVER (PARTITION BY sales)\nFROM penjualan ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          },
+          {
+            "type": "text",
+            "source": "Persen dihitung per sales, dan contoh terakhir mengingatkan bahwa pembagian bilangan bulat di SQLite bernilai nol."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT sales, nilai,\n       ROUND(100.0 * nilai / SUM(nilai) OVER (PARTITION BY sales), 1)\nFROM penjualan ORDER BY id\n'''\nprint([r[2] for r in c.execute(q).fetchall()])\nprint(c.execute('SELECT 150 / 370, 150 * 1.0 / 370').fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Baris dua tujuh dan delapan di atas rata-rata wilayah Barat, dan baris enam di atas rata-rata wilayah Timur."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id FROM (\n    SELECT id, nilai, AVG(nilai) OVER (PARTITION BY wilayah) AS rata\n    FROM penjualan\n)\nWHERE nilai > rata\nORDER BY id\n'''\nprint([r[0] for r in c.execute(q).fetchall()])"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-06-2",
+      "title": "Peringkat dan fungsi navigasi",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Membedakan ROW_NUMBER, RANK, dan DENSE_RANK",
+        "Mengambil baris teratas per kelompok",
+        "Memakai LAG dan LEAD untuk membandingkan dengan baris sebelumnya",
+        "Menghitung selisih antar periode"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "ORDER BY di dalam OVER",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## ORDER BY di dalam OVER\n\nSelain `PARTITION BY`, klausa `OVER` menerima `ORDER BY` yang mengatur urutan baris di dalam jendela. Untuk fungsi peringkat dan navigasi, urutan ini wajib karena makna peringkat atau baris sebelumnya bergantung padanya. Urutan di dalam `OVER` tidak sama dengan `ORDER BY` di ujung query, yang hanya mengatur tampilan akhir.\n\nKeduanya independen. Kita bisa meranking berdasarkan nilai menurun di dalam window sambil menampilkan hasil terurut menurut id. Selalu tambahkan `ORDER BY` akhir bila urutan keluaran penting."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tiga fungsi peringkat\n\n`ROW_NUMBER()` memberi nomor urut unik 1, 2, 3 tanpa peduli seri. `RANK()` memberi peringkat yang sama untuk nilai seri lalu melompati nomor berikutnya, sehingga muncul 1, 2, 2, 4. `DENSE_RANK()` juga menyamakan seri tetapi tidak melompat, menghasilkan 1, 2, 2, 3.\n\nPilihan tergantung makna. Untuk memilih tepat satu baris per kelompok, gunakan `ROW_NUMBER`. Untuk papan peringkat yang adil terhadap seri, gunakan `RANK` atau `DENSE_RANK`."
+            },
+            {
+              "type": "code_example",
+              "filename": "tiga_peringkat.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id,\n       ROW_NUMBER() OVER (ORDER BY nilai DESC, id),\n       RANK() OVER (ORDER BY nilai DESC),\n       DENSE_RANK() OVER (ORDER BY nilai DESC)\nFROM penjualan ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "(1, 8, 8, 6)\n(2, 4, 4, 4)\n(3, 7, 7, 5)\n(4, 2, 2, 2)\n(5, 3, 3, 3)\n(6, 1, 1, 1)\n(7, 5, 4, 4)\n(8, 6, 4, 4)\n(9, 9, 9, 7)",
+              "explanation": "Baris dua tujuh dan delapan sama-sama bernilai 150 sehingga RANK memberi tiga kali empat lalu melompat ke sembilan, sedangkan DENSE_RANK berhenti di tujuh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menangani seri secara eksplisit\n\n`ROW_NUMBER` selalu memberi nomor berbeda, tetapi urutan antar baris seri tidak terdefinisi kecuali kita menambahkan pembeda di `ORDER BY`. Pada contoh, `ORDER BY nilai DESC, id` membuat baris tujuh selalu lebih dulu dari delapan. Tanpa `id`, hasil bisa berubah antar eksekusi.\n\nKebiasaan baik: tambahkan kolom unik sebagai pemutus seri bila Anda memakai `ROW_NUMBER`, supaya laporan bersifat deterministik dan dapat diuji."
+            },
+            {
+              "type": "text",
+              "markdown": "## Baris teratas per kelompok\n\nSalah satu penggunaan paling berharga adalah mengambil N baris teratas dari tiap kelompok, misalnya bulan terbaik tiap sales. Beri nomor dengan `ROW_NUMBER() OVER (PARTITION BY sales ORDER BY nilai DESC, bulan)`, lalu di lapisan luar saring `rn = 1`.\n\nIni hampir mustahil dilakukan rapi dengan `GROUP BY` saja, karena kolom pendamping seperti bulan tidak ikut agregat. Pola ini begitu umum sehingga layak dihafal."
+            },
+            {
+              "type": "code_example",
+              "filename": "top_per_kelompok.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT sales, bulan FROM (\n    SELECT sales, bulan,\n           ROW_NUMBER() OVER (PARTITION BY sales ORDER BY nilai DESC, bulan) AS rn\n    FROM penjualan\n)\nWHERE rn = 1 ORDER BY sales\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Ani', 2), ('Budi', 3), ('Citra', 1)]",
+              "explanation": "Bulan terbaik Ani adalah dua dan Budi tiga, sedangkan Citra seri di bulan satu dan dua sehingga bulan lebih awal yang dipilih."
+            }
+          ],
+          "quick_check": {
+            "question": "Fungsi yang memberi nomor unik tanpa seri?",
+            "options": [
+              "ROW_NUMBER",
+              "RANK"
+            ],
+            "answer_index": 0,
+            "explanation": "Selalu berbeda.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "LAG dan LEAD",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## LAG dan LEAD\n\n`LAG(kolom, n, default)` mengambil nilai dari n baris sebelumnya dalam jendela, dan `LEAD` dari n baris sesudahnya. Argumen n bawaannya satu, dan default dipakai ketika baris tidak ada, yang bila dihilangkan menghasilkan `NULL`.\n\nKeduanya membutuhkan `ORDER BY` di dalam `OVER` agar jelas mana yang sebelum dan sesudah. Bersama `PARTITION BY`, baris pertama tiap kelompok tidak punya pendahulu sehingga mendapat default."
+            },
+            {
+              "type": "code_example",
+              "filename": "lag_lead.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, nilai, LAG(nilai) OVER (PARTITION BY sales ORDER BY bulan)\nFROM penjualan ORDER BY id\n'''\nprint([r[2] for r in c.execute(q).fetchall()])\nq = '''\nSELECT id, LEAD(nilai) OVER (PARTITION BY sales ORDER BY bulan)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])",
+              "expected_output_note": "[None, 100, 150, None, 200, 180, None, 150, 150]\n[150, 120, None, 180, 220, None, 150, 90, None]",
+              "explanation": "Bulan pertama tiap sales tidak punya bulan sebelumnya sehingga LAG bernilai NULL, dan bulan terakhir tidak punya LEAD."
+            },
+            {
+              "type": "text",
+              "markdown": "## Selisih antar periode\n\nPertumbuhan dihitung sebagai nilai sekarang dikurangi nilai periode sebelumnya, yang tepat dengan `nilai - LAG(nilai) OVER (...)`. Untuk baris pertama LAG bernilai `NULL` sehingga selisihnya `NULL`. Beri default sama dengan nilai itu sendiri, `LAG(nilai, 1, nilai)`, bila ingin selisih nol di awal.\n\nPilih perlakuan awal dengan sadar. `NULL` menyatakan tidak ada pembanding, sedangkan nol menyatakan tidak ada perubahan. Dua makna itu berbeda dalam laporan."
+            },
+            {
+              "type": "code_example",
+              "filename": "selisih_periode.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, nilai - LAG(nilai, 1, nilai) OVER (PARTITION BY sales ORDER BY bulan)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])",
+              "expected_output_note": "[0, 50, -30, 0, -20, 40, 0, 0, -60]",
+              "explanation": "Selisih bulanan tiap sales dengan nol pada bulan pertama sebagai nilai awal."
+            }
+          ],
+          "quick_check": {
+            "question": "RANK untuk nilai 10, 8, 8, 5 menghasilkan?",
+            "options": [
+              "1, 2, 2, 3",
+              "1, 2, 2, 4"
+            ],
+            "answer_index": 1,
+            "explanation": "Melompat setelah seri.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Persen pertumbuhan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Persen pertumbuhan\n\nDari selisih mudah diturunkan persen pertumbuhan: selisih dibagi nilai sebelumnya. Waspadai pembagian oleh nol dan nilai `NULL`. Bungkus penyebut dengan `NULLIF(x, 0)` agar pembagian dengan nol menghasilkan `NULL` alih-alih galat.\n\nPertumbuhan bulan ke bulan dan tahun ke tahun adalah metrik standar dalam laporan bisnis, dan `LAG` dengan offset 12 untuk data bulanan memberikan perbandingan tahun ke tahun."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Pemutus seri",
+              "markdown": "Tambahkan kolom unik sebagai pemutus seri pada ORDER BY di dalam OVER agar hasil ROW_NUMBER deterministik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Papan peringkat yang adil\n\nDalam kompetisi, nilai seri harus diperlakukan adil. Dua pemain dengan skor sama pantas menempati peringkat yang sama. `RANK` dan `DENSE_RANK` melakukannya, sedangkan `ROW_NUMBER` memaksa salah satu menjadi lebih tinggi tanpa dasar yang jelas.\n\nKarena itu, pilih fungsi berdasarkan makna bisnisnya. Bila yang dibutuhkan satu wakil per kelompok, gunakan `ROW_NUMBER`. Bila yang dibutuhkan urutan yang adil terhadap seri, gunakan dua fungsi lainnya dan jelaskan perbedaannya kepada pembaca laporan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Offset dan nilai default pada LAG\n\n`LAG` menerima offset yang lebih besar dari satu. `LAG(nilai, 3)` mengambil nilai tiga baris sebelumnya, sehingga pada data bulanan `LAG(nilai, 12)` membandingkan dengan bulan yang sama tahun lalu. Nilai default sebagai argumen ketiga mengisi baris yang tidak punya pendahulu.\n\nPeriksa selalu baris awal tiap kelompok pada hasil perbandingan. Di sanalah kesalahan paling sering bersembunyi, karena nilai `NULL` atau default mengubah rata-rata dan jumlah yang dihitung kemudian."
+            }
+          ],
+          "quick_check": {
+            "question": "DENSE_RANK untuk nilai 10, 8, 8, 5 menghasilkan?",
+            "options": [
+              "1, 2, 2, 3",
+              "1, 2, 2, 4"
+            ],
+            "answer_index": 0,
+            "explanation": "Tidak melompat.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-06-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `peringkat_global(c)` yang mengembalikan dict `{id: peringkat}` memakai `RANK()` dengan urutan `nilai` menurun di seluruh tabel.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef peringkat_global(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nd = peringkat_global(c)\nassert d[6] == 1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert d[7] == 4 and d[8] == 4"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert d[9] == 9"
+              }
+            ]
+          },
+          "hint": "RANK() OVER (ORDER BY nilai DESC).",
+          "solution": "import sqlite3\n\ndef peringkat_global(c):\n    q = 'SELECT id, RANK() OVER (ORDER BY nilai DESC) FROM penjualan'\n    return dict(c.execute(q).fetchall())",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-06-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `peringkat_padat(c)` yang mengembalikan dict `{id: peringkat}` memakai `DENSE_RANK()` dengan urutan `nilai` menurun di seluruh tabel.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef peringkat_padat(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nd = peringkat_padat(c)\nassert d[1] == 6"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert d[9] == 7"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert d[7] == 4 and d[8] == 4"
+              }
+            ]
+          },
+          "hint": "DENSE_RANK tidak melompat setelah seri.",
+          "solution": "import sqlite3\n\ndef peringkat_padat(c):\n    q = 'SELECT id, DENSE_RANK() OVER (ORDER BY nilai DESC) FROM penjualan'\n    return dict(c.execute(q).fetchall())",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-06-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bulan_terbaik(c)` yang mengembalikan list tuple `(sales, bulan)` berisi bulan dengan `nilai` tertinggi tiap sales, terurut menurut sales.",
+          "note": "Bila seri, pilih bulan lebih awal.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef bulan_terbaik(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bulan_terbaik(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nassert bulan_terbaik(c) == [('Ani', 2), ('Budi', 3), ('Citra', 1)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bulan_terbaik(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO penjualan VALUES (10, 'Ani', 'Barat', 4, 500)\")\nassert bulan_terbaik(c)[0] == ('Ani', 4)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bulan_terbaik(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO penjualan VALUES (11, 'Budi', 'Timur', 4, 220)\")\nassert bulan_terbaik(c)[1] == ('Budi', 3)"
+              }
+            ]
+          },
+          "hint": "ROW_NUMBER dengan PARTITION BY sales lalu saring nomor satu.",
+          "solution": "import sqlite3\n\ndef bulan_terbaik(c):\n    q = '''\n    SELECT sales, bulan FROM (\n        SELECT sales, bulan,\n               ROW_NUMBER() OVER (PARTITION BY sales ORDER BY nilai DESC, bulan) AS rn\n        FROM penjualan\n    )\n    WHERE rn = 1 ORDER BY sales\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-06-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `selisih_bulanan(c)` yang mengembalikan list tuple `(id, selisih)` terurut menurut id, dengan `selisih` adalah `nilai` dikurangi `nilai` bulan sebelumnya milik sales yang sama, dan nol pada bulan pertama.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef selisih_bulanan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selisih_bulanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nassert selisih_bulanan(c) == [(1, 0), (2, 50), (3, -30), (4, 0), (5, -20), (6, 40), (7, 0), (8, 0), (9, -60)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selisih_bulanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO penjualan VALUES (10, 'Ani', 'Barat', 4, 200)\")\nassert selisih_bulanan(c)[-1] == (10, 80)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selisih_bulanan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO penjualan VALUES (11, 'Dedi', 'Timur', 1, 70)\")\nassert selisih_bulanan(c)[-1] == (11, 0)"
+              }
+            ]
+          },
+          "hint": "LAG dengan default nilai itu sendiri dan PARTITION BY sales ORDER BY bulan.",
+          "solution": "import sqlite3\n\ndef selisih_bulanan(c):\n    q = '''\n    SELECT id, nilai - LAG(nilai, 1, nilai) OVER (PARTITION BY sales ORDER BY bulan)\n    FROM penjualan ORDER BY id\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Fungsi yang memberi nomor unik tanpa seri?",
+          "code": null,
+          "options": [
+            {
+              "label": "ROW_NUMBER",
+              "description": ""
+            },
+            {
+              "label": "RANK",
+              "description": ""
+            },
+            {
+              "label": "DENSE_RANK",
+              "description": ""
+            },
+            {
+              "label": "NTILE",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Row.",
+          "explanation": "Selalu berbeda."
+        },
+        {
+          "q": "RANK untuk nilai 10, 8, 8, 5 menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "1, 2, 2, 4",
+              "description": ""
+            },
+            {
+              "label": "1, 2, 2, 3",
+              "description": ""
+            },
+            {
+              "label": "1, 2, 3, 4",
+              "description": ""
+            },
+            {
+              "label": "1, 1, 2, 3",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lompat.",
+          "explanation": "Melompat setelah seri."
+        },
+        {
+          "q": "DENSE_RANK untuk nilai 10, 8, 8, 5 menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "1, 2, 2, 3",
+              "description": ""
+            },
+            {
+              "label": "1, 2, 2, 4",
+              "description": ""
+            },
+            {
+              "label": "1, 2, 3, 4",
+              "description": ""
+            },
+            {
+              "label": "1, 1, 1, 1",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Padat.",
+          "explanation": "Tidak melompat."
+        },
+        {
+          "q": "LAG mengambil nilai dari?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris sebelumnya",
+              "description": ""
+            },
+            {
+              "label": "Baris sesudahnya",
+              "description": ""
+            },
+            {
+              "label": "Baris pertama",
+              "description": ""
+            },
+            {
+              "label": "Baris terakhir",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sebelum.",
+          "explanation": "Sebelum."
+        },
+        {
+          "q": "Baris pertama kelompok pada LAG tanpa default bernilai?",
+          "code": null,
+          "options": [
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "Sama dengan nilai",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kosong.",
+          "explanation": "Tidak ada pendahulu."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai ROW_NUMBER tanpa pemutus seri. Lebih baik: Tambahkan kolom unik di ORDER BY.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai ROW_NUMBER tanpa pemutus seri.",
+          "fix": "Tambahkan kolom unik di ORDER BY."
+        },
+        {
+          "mistake": "Mengira RANK tidak melompat.",
+          "fix": "RANK melompat setelah seri, DENSE_RANK tidak."
+        },
+        {
+          "mistake": "Lupa ORDER BY di dalam OVER untuk LAG.",
+          "fix": "LAG dan LEAD membutuhkan urutan."
+        }
+      ],
+      "summary": [
+        "ROW_NUMBER, RANK, dan DENSE_RANK berbeda dalam menangani seri.",
+        "Top N per kelompok memakai ROW_NUMBER lalu saring di lapisan luar.",
+        "LAG dan LEAD membandingkan baris dengan tetangganya.",
+        "Tentukan perlakuan baris pertama dengan nilai default."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Peringkat dan fungsi navigasi"
+          },
+          {
+            "type": "text",
+            "source": "Baris dua tujuh dan delapan sama-sama bernilai 150 sehingga RANK memberi tiga kali empat lalu melompat ke sembilan, sedangkan DENSE_RANK berhenti di tujuh."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id,\n       ROW_NUMBER() OVER (ORDER BY nilai DESC, id),\n       RANK() OVER (ORDER BY nilai DESC),\n       DENSE_RANK() OVER (ORDER BY nilai DESC)\nFROM penjualan ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          },
+          {
+            "type": "text",
+            "source": "Bulan terbaik Ani adalah dua dan Budi tiga, sedangkan Citra seri di bulan satu dan dua sehingga bulan lebih awal yang dipilih."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT sales, bulan FROM (\n    SELECT sales, bulan,\n           ROW_NUMBER() OVER (PARTITION BY sales ORDER BY nilai DESC, bulan) AS rn\n    FROM penjualan\n)\nWHERE rn = 1 ORDER BY sales\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Bulan pertama tiap sales tidak punya bulan sebelumnya sehingga LAG bernilai NULL, dan bulan terakhir tidak punya LEAD."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, nilai, LAG(nilai) OVER (PARTITION BY sales ORDER BY bulan)\nFROM penjualan ORDER BY id\n'''\nprint([r[2] for r in c.execute(q).fetchall()])\nq = '''\nSELECT id, LEAD(nilai) OVER (PARTITION BY sales ORDER BY bulan)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])"
+          },
+          {
+            "type": "text",
+            "source": "Selisih bulanan tiap sales dengan nol pada bulan pertama sebagai nilai awal."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, nilai - LAG(nilai, 1, nilai) OVER (PARTITION BY sales ORDER BY bulan)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-06-3",
+      "title": "Frame, total berjalan, dan NTILE",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan frame ROWS BETWEEN",
+        "Menghitung total berjalan dan rata-rata bergerak",
+        "Membagi data menjadi kelompok sama besar dengan NTILE",
+        "Memakai FIRST_VALUE dan menghindari jebakan seri pada frame bawaan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Frame jendela",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Frame jendela\n\nDi dalam partisi, **frame** menentukan baris mana yang ikut dihitung untuk baris saat ini. Ia ditulis setelah `ORDER BY` di dalam `OVER`, misalnya `ROWS BETWEEN 1 PRECEDING AND CURRENT ROW` yang berarti baris sebelumnya dan baris saat ini.\n\nPenanda batasnya adalah `UNBOUNDED PRECEDING` untuk awal partisi, `n PRECEDING`, `CURRENT ROW`, `n FOLLOWING`, dan `UNBOUNDED FOLLOWING` untuk akhir partisi. Dengan kombinasi ini kita dapat menyusun jendela geser sesuai kebutuhan analisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Frame bawaan saat ada ORDER BY\n\nBila `ORDER BY` ada di dalam `OVER` dan frame tidak ditulis, bawaannya adalah dari awal partisi sampai baris saat ini. Itulah sebabnya `SUM(nilai) OVER (PARTITION BY sales ORDER BY bulan)` menghasilkan total berjalan, bukan total seluruh partisi.\n\nTanpa `ORDER BY`, frame mencakup seluruh partisi, sehingga `SUM(...) OVER (PARTITION BY sales)` memberi total kelompok. Dua perilaku bawaan ini sering membingungkan pemula, jadi hafalkan."
+            },
+            {
+              "type": "code_example",
+              "filename": "total_berjalan.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, SUM(nilai) OVER (PARTITION BY sales ORDER BY bulan)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])\nq = '''\nSELECT id, SUM(nilai) OVER (ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])",
+              "expected_output_note": "[100, 250, 370, 200, 380, 600, 150, 300, 390]\n[100, 250, 370, 570, 750, 970, 1120, 1270, 1360]",
+              "explanation": "Total berjalan per sales di baris pertama, dan total berjalan seluruh tabel di baris kedua yang berakhir pada 1360."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rata-rata bergerak\n\nRata-rata bergerak menghaluskan fluktuasi dengan merata-ratakan beberapa periode terakhir. Untuk dua bulan terakhir, pakai `AVG(nilai) OVER (PARTITION BY sales ORDER BY bulan ROWS BETWEEN 1 PRECEDING AND CURRENT ROW)`. Di awal partisi hanya ada satu baris sehingga rata-ratanya dari baris itu saja.\n\nUkuran jendela menentukan kehalusan. Jendela kecil mengikuti data erat, jendela besar lebih halus tetapi tertinggal terhadap perubahan terbaru."
+            },
+            {
+              "type": "code_example",
+              "filename": "rata_bergerak.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, AVG(nilai) OVER (\n    PARTITION BY sales ORDER BY bulan\n    ROWS BETWEEN 1 PRECEDING AND CURRENT ROW\n)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])",
+              "expected_output_note": "[100.0, 125.0, 135.0, 200.0, 190.0, 200.0, 150.0, 150.0, 120.0]",
+              "explanation": "Bulan pertama memakai dirinya sendiri, sedangkan bulan berikutnya merata-ratakan bulan itu dengan bulan sebelumnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Frame bawaan dengan ORDER BY?",
+            "options": [
+              "Awal partisi sampai baris saat ini",
+              "Seluruh partisi"
+            ],
+            "answer_index": 0,
+            "explanation": "Menjadi total berjalan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "ROWS dan RANGE",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## ROWS dan RANGE\n\n`ROWS` menghitung berdasarkan posisi baris fisik, sedangkan `RANGE` berdasarkan nilai kolom pengurut sehingga baris seri dianggap satu kesatuan. Frame bawaan saat ada `ORDER BY` sebenarnya `RANGE`, bukan `ROWS`.\n\nAkibatnya, bila ada nilai seri pada kolom pengurut, baris-baris seri itu mendapat total berjalan yang sama. Untuk total berjalan yang benar-benar baris demi baris, tulis `ROWS` secara eksplisit dan tambahkan pembeda unik di `ORDER BY`."
+            },
+            {
+              "type": "code_example",
+              "filename": "range_seri.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, SUM(nilai) OVER (ORDER BY nilai)\nFROM penjualan WHERE sales = 'Citra' ORDER BY id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[(7, 390), (8, 390), (9, 90)]",
+              "explanation": "Dua baris seri bernilai 150 sama-sama mendapat 390 karena RANGE menggabungkan baris seri."
+            },
+            {
+              "type": "text",
+              "markdown": "## NTILE\n\n`NTILE(n)` membagi baris terurut menjadi n kelompok sama besar dan memberi nomor kelompok 1 sampai n. Untuk sembilan baris dan `NTILE(3)`, tiap kelompok berisi tiga baris. Bila tidak habis dibagi, kelompok awal mendapat satu baris lebih banyak.\n\nKegunaannya untuk membuat kuartil, desil, atau segmen pelanggan seperti kelompok tinggi, sedang, dan rendah. Tambahkan pembeda unik di `ORDER BY` agar penugasan kelompok stabil."
+            },
+            {
+              "type": "code_example",
+              "filename": "ntile.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, NTILE(3) OVER (ORDER BY nilai, id)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])",
+              "expected_output_note": "[1, 2, 1, 3, 3, 3, 2, 2, 1]",
+              "explanation": "Tiga baris bernilai terendah masuk kelompok satu, tiga tertinggi masuk kelompok tiga."
+            },
+            {
+              "type": "text",
+              "markdown": "## FIRST_VALUE dan LAST_VALUE\n\n`FIRST_VALUE(kolom)` mengambil nilai baris pertama frame, berguna sebagai pembanding awal: seberapa jauh nilai sekarang dari bulan pertama. Pada frame bawaan hasilnya baris pertama partisi sesuai urutan.\n\n`LAST_VALUE` lebih licin. Frame bawaan berakhir di baris saat ini, sehingga `LAST_VALUE` mengembalikan nilai baris itu sendiri. Untuk mendapatkan nilai terakhir partisi, tulis frame `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`."
+            },
+            {
+              "type": "code_example",
+              "filename": "first_value.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, nilai - FIRST_VALUE(nilai) OVER (PARTITION BY sales ORDER BY bulan)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])",
+              "expected_output_note": "[0, 50, 20, 0, -20, 20, 0, 0, -60]",
+              "explanation": "Selisih setiap bulan terhadap bulan pertama sales yang sama."
+            }
+          ],
+          "quick_check": {
+            "question": "ROWS BETWEEN 1 PRECEDING AND CURRENT ROW mencakup?",
+            "options": [
+              "Satu baris",
+              "Dua baris"
+            ],
+            "answer_index": 1,
+            "explanation": "Sebelumnya dan sekarang.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih alat yang tepat",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih alat yang tepat\n\nUntuk ringkasan per kelompok yang meruntuhkan baris, pakai `GROUP BY`. Untuk detail bersama ringkasan, pakai window function. Untuk peringkat dan top N, pakai `ROW_NUMBER`, `RANK`, atau `DENSE_RANK`. Untuk perbandingan antar periode, pakai `LAG` dan `LEAD`. Untuk kumulatif dan rata-rata bergerak, pakai frame.\n\nWindow function mengganti banyak subquery berkorelasi yang lambat dan sulit dibaca. Menguasainya adalah lompatan besar dari SQL dasar menuju analisis yang sesungguhnya."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Frame eksplisit",
+              "markdown": "Tulis frame ROWS secara eksplisit untuk total berjalan agar tidak terkena perilaku RANGE pada baris seri."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa frame dengan data kecil\n\nFrame mudah disalahpahami, jadi biasakan mengujinya pada data kecil yang hasilnya bisa dihitung dengan tangan. Jalankan query pada tiga atau empat baris, tuliskan perkiraan jawaban di kertas, lalu bandingkan dengan keluaran. Bila berbeda, hampir pasti ada salah paham tentang batas frame atau tentang seri.\n\nSetelah yakin, barulah terapkan pada data besar. Kebiasaan ini mencegah laporan keuangan yang tampak benar tetapi diam-diam menjumlahkan baris yang salah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kinerja window function\n\nWindow function umumnya efisien karena data diurutkan sekali per partisi. Indeks pada kolom partisi dan pengurut dapat mempercepat langkah pengurutan itu. Hindari mendefinisikan banyak window dengan urutan berbeda pada tabel raksasa, sebab tiap urutan berbeda memerlukan pengurutan tersendiri.\n\nBila beberapa kolom memakai partisi dan urutan yang sama, mesin basis data dapat berbagi satu pengurutan. Menyamakan definisi window antar kolom adalah optimasi sederhana yang sering berarti."
+            }
+          ],
+          "quick_check": {
+            "question": "NTILE(4) membagi menjadi?",
+            "options": [
+              "Empat kelompok sama besar",
+              "Empat baris"
+            ],
+            "answer_index": 0,
+            "explanation": "Kuartil.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-06-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `kumulatif_sales(c, sales)` yang mengembalikan list total berjalan `nilai` per bulan untuk sales tersebut, terurut menurut bulan.",
+          "note": "Sales tak dikenal menghasilkan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef kumulatif_sales(c, sales):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kumulatif_sales(c, 'Ani')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nassert kumulatif_sales(c, 'Ani') == [100, 250, 370]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kumulatif_sales(c, 'Budi')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kumulatif_sales(c, 'Budi') == [200, 380, 600]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kumulatif_sales(c, 'Citra')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kumulatif_sales(c, 'Citra') == [150, 300, 390]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kumulatif_sales(c, 'Zed')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kumulatif_sales(c, 'Zed') == []"
+              }
+            ]
+          },
+          "hint": "SUM OVER dengan PARTITION BY sales ORDER BY bulan.",
+          "solution": "import sqlite3\n\ndef kumulatif_sales(c, sales):\n    q = '''\n    SELECT SUM(nilai) OVER (\n        ORDER BY bulan ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n    )\n    FROM penjualan WHERE sales = ? ORDER BY bulan\n    '''\n    return [r[0] for r in c.execute(q, (sales,)).fetchall()]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-06-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_bergerak(c, sales)` yang mengembalikan list rata-rata bergerak dua bulan (bulan ini dan sebelumnya) `nilai` untuk sales tersebut, terurut menurut bulan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef rata_bergerak(c, sales):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_bergerak(c, 'Ani')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nassert rata_bergerak(c, 'Ani') == [100.0, 125.0, 135.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_bergerak(c, 'Budi')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_bergerak(c, 'Budi') == [200.0, 190.0, 200.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_bergerak(c, 'Citra')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_bergerak(c, 'Citra') == [150.0, 150.0, 120.0]"
+              }
+            ]
+          },
+          "hint": "AVG dengan ROWS BETWEEN 1 PRECEDING AND CURRENT ROW.",
+          "solution": "import sqlite3\n\ndef rata_bergerak(c, sales):\n    q = '''\n    SELECT AVG(nilai) OVER (\n        ORDER BY bulan ROWS BETWEEN 1 PRECEDING AND CURRENT ROW\n    )\n    FROM penjualan WHERE sales = ? ORDER BY bulan\n    '''\n    return [r[0] for r in c.execute(q, (sales,)).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-06-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kelompok_tiga(c)` yang mengembalikan list kelompok `NTILE(3)` untuk setiap baris, terurut menurut id, dengan baris diurutkan menurut `nilai` naik lalu `id` naik.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef kelompok_tiga(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kelompok_tiga(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nassert kelompok_tiga(c) == [1, 2, 1, 3, 3, 3, 2, 2, 1]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kelompok_tiga(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('DELETE FROM penjualan WHERE id = 9')\nassert kelompok_tiga(c)[-1] == 2"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(kelompok_tiga(c))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(kelompok_tiga(c)) == 8"
+              }
+            ]
+          },
+          "hint": "NTILE(3) OVER (ORDER BY nilai, id).",
+          "solution": "import sqlite3\n\ndef kelompok_tiga(c):\n    q = 'SELECT NTILE(3) OVER (ORDER BY nilai, id) FROM penjualan ORDER BY id'\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-06-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `selisih_dari_awal(c)` yang mengembalikan list selisih `nilai` terhadap `nilai` bulan pertama sales yang sama untuk setiap baris, terurut menurut id.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef selisih_dari_awal(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selisih_dari_awal(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\n    INSERT INTO penjualan VALUES\n    (1, 'Ani', 'Barat', 1, 100),\n    (2, 'Ani', 'Barat', 2, 150),\n    (3, 'Ani', 'Barat', 3, 120),\n    (4, 'Budi', 'Timur', 1, 200),\n    (5, 'Budi', 'Timur', 2, 180),\n    (6, 'Budi', 'Timur', 3, 220),\n    (7, 'Citra', 'Barat', 1, 150),\n    (8, 'Citra', 'Barat', 2, 150),\n    (9, 'Citra', 'Barat', 3, 90);\n    ''')\n    return c\nc = _db()\nassert selisih_dari_awal(c) == [0, 50, 20, 0, -20, 20, 0, 0, -60]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selisih_dari_awal(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO penjualan VALUES (10, 'Ani', 'Barat', 4, 130)\")\nassert selisih_dari_awal(c)[-1] == 30"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selisih_dari_awal(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO penjualan VALUES (11, 'Dedi', 'Timur', 1, 70)\")\nassert selisih_dari_awal(c)[-1] == 0"
+              }
+            ]
+          },
+          "hint": "FIRST_VALUE dengan PARTITION BY sales ORDER BY bulan.",
+          "solution": "import sqlite3\n\ndef selisih_dari_awal(c):\n    q = '''\n    SELECT nilai - FIRST_VALUE(nilai) OVER (PARTITION BY sales ORDER BY bulan)\n    FROM penjualan ORDER BY id\n    '''\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Frame bawaan dengan ORDER BY?",
+          "code": null,
+          "options": [
+            {
+              "label": "Awal partisi sampai baris saat ini",
+              "description": ""
+            },
+            {
+              "label": "Seluruh partisi",
+              "description": ""
+            },
+            {
+              "label": "Hanya baris saat ini",
+              "description": ""
+            },
+            {
+              "label": "Satu baris sebelum",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Berjalan.",
+          "explanation": "Menjadi total berjalan."
+        },
+        {
+          "q": "ROWS BETWEEN 1 PRECEDING AND CURRENT ROW mencakup?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dua baris",
+              "description": ""
+            },
+            {
+              "label": "Satu baris",
+              "description": ""
+            },
+            {
+              "label": "Tiga baris",
+              "description": ""
+            },
+            {
+              "label": "Seluruh partisi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dua.",
+          "explanation": "Sebelumnya dan sekarang."
+        },
+        {
+          "q": "NTILE(4) membagi menjadi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Empat kelompok sama besar",
+              "description": ""
+            },
+            {
+              "label": "Empat baris",
+              "description": ""
+            },
+            {
+              "label": "Empat kolom",
+              "description": ""
+            },
+            {
+              "label": "Empat tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Empat.",
+          "explanation": "Kuartil."
+        },
+        {
+          "q": "RANGE memperlakukan baris seri sebagai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu kesatuan",
+              "description": ""
+            },
+            {
+              "label": "Terpisah",
+              "description": ""
+            },
+            {
+              "label": "Dibuang",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Seri.",
+          "explanation": "Total sama."
+        },
+        {
+          "q": "FIRST_VALUE berguna untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membandingkan dengan nilai awal",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menghapus baris",
+              "description": ""
+            },
+            {
+              "label": "Menggabungkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Awal.",
+          "explanation": "Pembanding awal."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira SUM OVER dengan ORDER BY menjumlahkan seluruh partisi. Lebih baik: Ia menjadi total berjalan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira SUM OVER dengan ORDER BY menjumlahkan seluruh partisi.",
+          "fix": "Ia menjadi total berjalan."
+        },
+        {
+          "mistake": "Memakai LAST_VALUE tanpa frame penuh.",
+          "fix": "Tulis ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING."
+        },
+        {
+          "mistake": "Mengabaikan seri pada frame RANGE bawaan.",
+          "fix": "Pakai ROWS dan pembeda unik."
+        }
+      ],
+      "summary": [
+        "Frame menentukan baris yang ikut dihitung di dalam partisi.",
+        "Dengan ORDER BY, SUM OVER menjadi total berjalan.",
+        "ROWS lebih dapat diprediksi daripada RANGE bila ada seri.",
+        "NTILE membagi data menjadi kelompok sama besar."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Frame, total berjalan, dan NTILE"
+          },
+          {
+            "type": "text",
+            "source": "Total berjalan per sales di baris pertama, dan total berjalan seluruh tabel di baris kedua yang berakhir pada 1360."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, SUM(nilai) OVER (PARTITION BY sales ORDER BY bulan)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])\nq = '''\nSELECT id, SUM(nilai) OVER (ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])"
+          },
+          {
+            "type": "text",
+            "source": "Bulan pertama memakai dirinya sendiri, sedangkan bulan berikutnya merata-ratakan bulan itu dengan bulan sebelumnya."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, AVG(nilai) OVER (\n    PARTITION BY sales ORDER BY bulan\n    ROWS BETWEEN 1 PRECEDING AND CURRENT ROW\n)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])"
+          },
+          {
+            "type": "text",
+            "source": "Dua baris seri bernilai 150 sama-sama mendapat 390 karena RANGE menggabungkan baris seri."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, SUM(nilai) OVER (ORDER BY nilai)\nFROM penjualan WHERE sales = 'Citra' ORDER BY id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Tiga baris bernilai terendah masuk kelompok satu, tiga tertinggi masuk kelompok tiga."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, NTILE(3) OVER (ORDER BY nilai, id)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])"
+          },
+          {
+            "type": "text",
+            "source": "Selisih setiap bulan terhadap bulan pertama sales yang sama."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE penjualan (id INTEGER PRIMARY KEY, sales TEXT, wilayah TEXT, bulan INTEGER, nilai INTEGER);\nINSERT INTO penjualan VALUES\n(1, 'Ani', 'Barat', 1, 100),\n(2, 'Ani', 'Barat', 2, 150),\n(3, 'Ani', 'Barat', 3, 120),\n(4, 'Budi', 'Timur', 1, 200),\n(5, 'Budi', 'Timur', 2, 180),\n(6, 'Budi', 'Timur', 3, 220),\n(7, 'Citra', 'Barat', 1, 150),\n(8, 'Citra', 'Barat', 2, 150),\n(9, 'Citra', 'Barat', 3, 90);\n''')\n\nq = '''\nSELECT id, nilai - FIRST_VALUE(nilai) OVER (PARTITION BY sales ORDER BY bulan)\nFROM penjualan ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

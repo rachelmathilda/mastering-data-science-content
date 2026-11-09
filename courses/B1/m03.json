@@ -1,0 +1,1652 @@
+{
+  "schema_version": 2,
+  "course_id": "B1",
+  "module_no": 3,
+  "title": "Broadcasting",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menerapkan aturan broadcasting dan memprediksi shape",
+    "Memakai pola pemusatan, standarisasi, tabel pasangan, dan jarak",
+    "Menghindari jebakan arah dan memeriksa shape secara sistematis"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "B1-03-1",
+    "exercise_id": "B1-03-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def ulang_baris(v, n):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "B1-03-1",
+      "title": "Aturan broadcasting",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan apa itu broadcasting dan mengapa berguna",
+        "Menerapkan aturan penyelarasan shape dari kanan",
+        "Memprediksi shape hasil dan mengenali galat",
+        "Memakai broadcast_shapes dan broadcast_to"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Operasi antar array berbeda bentuk",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Operasi antar array berbeda bentuk\n\nSejauh ini kita mengoperasikan array berbentuk sama atau array dengan satu skalar. Namun sering kita perlu mengurangi rata-rata kolom dari seluruh matriks, atau mengalikan tiap kolom dengan bobot berbeda. Menulis perulangan untuk itu lambat dan panjang. **Broadcasting** adalah aturan NumPy yang memungkinkan array berbeda bentuk dioperasikan langsung, dengan array yang lebih kecil seolah-olah diulang untuk menyesuaikan yang lebih besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Skalar sebagai kasus paling sederhana\n\nKasus broadcasting paling dikenal adalah skalar dan array. Menulis `a * 2` mengalikan setiap elemen dengan dua, seolah-olah dua diulang menjadi array berbentuk sama. Kata seolah-olah penting: NumPy tidak benar-benar membuat salinan berulang di memori. Ia mengatur cara membaca data agar elemen yang sama dibaca berkali-kali, sehingga broadcasting hemat memori dan cepat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Vektor dan matriks\n\nVektor dapat dijumlahkan ke setiap baris matriks selama panjangnya sama dengan jumlah kolom. Vektor tiga elemen ditambahkan ke matriks dua kali tiga akan diulang untuk tiap baris. Sementara itu, matriks dua kali satu ditambahkan ke matriks dua kali tiga akan diulang untuk tiap kolom. Arah pengulangan ditentukan oleh sumbu yang berukuran satu."
+            },
+            {
+              "type": "code_example",
+              "filename": "broadcast_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\na = np.array([1, 2, 3])\nm = np.arange(6).reshape(2, 3)\nprint((a * 2).tolist())\nprint((m + a).tolist())\nprint((m + np.array([[10], [20]])).tolist())",
+              "expected_output_note": "[2, 4, 6]\n[[1, 3, 5], [4, 6, 8]]\n[[10, 11, 12], [23, 24, 25]]",
+              "explanation": "Vektor diulang tiap baris, sedangkan kolom berukuran satu diulang tiap kolom."
+            },
+            {
+              "type": "text",
+              "markdown": "## Aturan penyelarasan\n\nNumPy membandingkan shape dari sumbu paling kanan ke kiri. Pada tiap pasangan sumbu, dua ukuran harus sama, atau salah satunya satu. Ukuran satu direntangkan mengikuti pasangannya. Bila satu array memiliki lebih sedikit sumbu, shape-nya dilengkapi angka satu di sisi kiri. Bila ada pasangan yang berbeda dan tidak ada yang satu, operasi gagal dengan `ValueError`."
+            }
+          ],
+          "quick_check": {
+            "question": "Aturan broadcasting dibaca dari?",
+            "options": [
+              "Kanan ke kiri",
+              "Kiri ke kanan"
+            ],
+            "answer_index": 0,
+            "explanation": "Sumbu paling kanan dulu.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Contoh langkah demi langkah",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Contoh langkah demi langkah\n\nMisalkan shape tiga kali satu ditambah shape satu kali empat. Bandingkan dari kanan: satu dengan empat menjadi empat, lalu tiga dengan satu menjadi tiga. Hasilnya shape tiga kali empat. Contoh lain: shape dua, tiga, empat dengan shape tiga kali satu. Yang kedua dilengkapi menjadi satu, tiga, satu, lalu hasilnya dua, tiga, empat. Latihan menelusuri seperti ini membuat prediksi shape menjadi refleks."
+            },
+            {
+              "type": "code_example",
+              "filename": "aturan_shape.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nprint(np.broadcast_shapes((3, 1), (1, 4)))\nprint(np.broadcast_shapes((2, 3, 4), (3, 1)))\nprint(np.broadcast_shapes((5,), (5, 1)))\nc = np.array([[0], [10], [20]])\nr = np.array([1, 2, 3])\nprint((c + r).tolist())\nprint((c + r).shape)",
+              "expected_output_note": "(3, 4)\n(2, 3, 4)\n(5, 5)\n[[1, 2, 3], [11, 12, 13], [21, 22, 23]]\n(3, 3)",
+              "explanation": "Kolom dan baris bila dijumlahkan membentuk tabel penuh. Vektor lima dan kolom lima menghasilkan matriks lima kali lima."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ketika gagal\n\nBila dua shape tidak cocok, NumPy melaporkan galat yang menyebut kedua shape. Contohnya shape tiga dan shape empat tidak dapat dioperasikan karena sumbu kanan berbeda dan tidak ada yang satu. Begitu pula dua kali tiga dengan dua: dua dilengkapi menjadi satu kali dua, lalu sumbu kanan tiga melawan dua gagal. Galat ini sering muncul dan membaca pesannya dengan teliti biasanya langsung menunjuk sumbu yang salah."
+            },
+            {
+              "type": "code_example",
+              "filename": "broadcast_gagal.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef cek(s1, s2):\n    try:\n        np.broadcast_shapes(s1, s2)\n        return 'cocok'\n    except ValueError:\n        return 'gagal'\n\nprint(cek((3,), (4,)))\nprint(cek((2, 3), (2,)))\nprint(cek((2, 3), (2, 1)))\nprint(cek((1,), (7, 5)))",
+              "expected_output_note": "gagal\ngagal\ncocok\ncocok",
+              "explanation": "Vektor dua tidak cocok dengan matriks dua kali tiga, tetapi kolom dua kali satu cocok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menambah sumbu dengan newaxis\n\nSering kali array punya shape yang salah arah, misalnya vektor yang kita inginkan sebagai kolom. Indeks `None`, juga ditulis `np.newaxis`, menambah sumbu berukuran satu pada posisi itu. Vektor tiga elemen menjadi kolom tiga kali satu dengan `v[:, None]` dan menjadi baris satu kali tiga dengan `v[None, :]`. Teknik ini kunci untuk membangun tabel dari dua vektor."
+            }
+          ],
+          "quick_check": {
+            "question": "Shape (3,1) dan (1,4) menghasilkan?",
+            "options": [
+              "(3, 1)",
+              "(3, 4)"
+            ],
+            "answer_index": 1,
+            "explanation": "Tiap sumbu direntangkan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "broadcast_to",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## broadcast_to\n\nFungsi `np.broadcast_to(a, shape)` merentangkan array ke shape tertentu secara eksplisit. Hasilnya read-only view dengan langkah memori nol pada sumbu yang diulang, membuktikan bahwa tidak ada data yang disalin. Bila Anda perlu mengubah hasilnya, panggil `.copy()` untuk membuat salinan nyata. Fungsi ini berguna untuk menguji aturan dan untuk membuat matriks berulang."
+            },
+            {
+              "type": "code_example",
+              "filename": "broadcast_to.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nv = np.array([1, 2, 3])\nb = np.broadcast_to(v, (2, 3))\nprint(b.tolist())\nprint(b.strides)\nc = b.copy()\nc[0, 0] = 99\nprint(c.tolist())\nprint(v.tolist())",
+              "expected_output_note": "[[1, 2, 3], [1, 2, 3]]\n(0, 8)\n[[99, 2, 3], [1, 2, 3]]\n[1, 2, 3]",
+              "explanation": "Langkah nol menunjukkan baris yang sama dibaca ulang tanpa salinan. Salinan nyata dapat diubah bebas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengapa ini penting\n\nBroadcasting menghapus hampir semua perulangan ganda dalam kode numerik. Menormalkan data, menghitung jarak, memberi bobot, dan membuat tabel semua dapat ditulis dalam satu ekspresi. Kode menjadi lebih pendek, lebih cepat karena dijalankan di C, dan lebih dekat dengan notasi matematika. Dua pelajaran berikutnya menunjukkan pola-pola praktis dan cara menghindari jebakan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Cara memeriksa cepat",
+              "markdown": "Tulis shape di sebelah kanan ke kiri dan lengkapi dengan satu di kiri. Bila tiap pasangan sama atau ada satu, operasi berhasil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dimensi ukuran satu\n\nSumbu berukuran satu adalah satu-satunya yang boleh direntangkan, jadi mengenali mereka penting. Array berbentuk tiga kali satu kadang disebut vektor kolom, dan satu kali tiga vektor baris. Keduanya berisi tiga angka, tetapi berperilaku berbeda saat dioperasikan. Vektor satu dimensi berbentuk tiga dianggap seperti satu kali tiga saat dilengkapi di kiri."
+            },
+            {
+              "type": "text",
+              "markdown": "## Operasi apa saja bisa\n\nBroadcasting berlaku untuk semua operasi elemen demi elemen, bukan hanya penjumlahan. Pengurangan, perkalian, pembagian, pangkat, perbandingan, dan operasi logika semuanya mengikuti aturan yang sama. Anda cukup mengingat satu aturan penyelarasan, lalu menerapkannya pada seluruh fungsi universal yang dibahas pada modul berikutnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Shape (3,) dan (4,)?",
+            "options": [
+              "Gagal",
+              "(4,)"
+            ],
+            "answer_index": 0,
+            "explanation": "Tidak sama dan tidak ada satu.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-03-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bentuk_hasil(s1, s2)` yang mengembalikan tuple shape hasil broadcasting dua shape, memakai `np.broadcast_shapes`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef bentuk_hasil(s1, s2):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bentuk_hasil((3, 1), (1, 4))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bentuk_hasil((3, 1), (1, 4)) == (3, 4)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bentuk_hasil((2, 3, 4), (3, 1))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bentuk_hasil((2, 3, 4), (3, 1)) == (2, 3, 4)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bentuk_hasil((5,), (5, 1))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bentuk_hasil((5,), (5, 1)) == (5, 5)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bentuk_hasil((), (2, 2))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bentuk_hasil((), (2, 2)) == (2, 2)"
+              }
+            ]
+          },
+          "hint": "Panggil np.broadcast_shapes dengan kedua shape.",
+          "solution": "import numpy as np\n\ndef bentuk_hasil(s1, s2):\n    return np.broadcast_shapes(s1, s2)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-03-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bisa_broadcast(s1, s2)` yang mengembalikan `True` bila dua shape kompatibel untuk broadcasting dan `False` bila tidak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef bisa_broadcast(s1, s2):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bisa_broadcast((3, 1), (1, 4))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_broadcast((3, 1), (1, 4)) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bisa_broadcast((3,), (4,))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_broadcast((3,), (4,)) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bisa_broadcast((2, 3), (2,))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_broadcast((2, 3), (2,)) is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bisa_broadcast((2, 3), (2, 1))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_broadcast((2, 3), (2, 1)) is True"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "bisa_broadcast((1,), (7, 5))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_broadcast((1,), (7, 5)) is True"
+              }
+            ]
+          },
+          "hint": "Tangkap ValueError dari np.broadcast_shapes.",
+          "solution": "import numpy as np\n\ndef bisa_broadcast(s1, s2):\n    try:\n        np.broadcast_shapes(s1, s2)\n        return True\n    except ValueError:\n        return False",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-03-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tabel_jumlah(kolom, baris)` yang menerima dua list bilangan dan mengembalikan, sebagai list Python, tabel yang sel baris ke-i kolom ke-j berisi `kolom[i] + baris[j]`, tanpa perulangan Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef tabel_jumlah(kolom, baris):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tabel_jumlah([0, 10, 20], [1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_jumlah([0, 10, 20], [1, 2, 3]) == [[1, 2, 3], [11, 12, 13], [21, 22, 23]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tabel_jumlah([1], [1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_jumlah([1], [1, 2]) == [[2, 3]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tabel_jumlah([1, 2], [5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_jumlah([1, 2], [5]) == [[6], [7]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tabel_jumlah([], [1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_jumlah([], [1, 2]) == []"
+              }
+            ]
+          },
+          "hint": "Ubah kolom menjadi tiga kali satu dengan None.",
+          "solution": "import numpy as np\n\ndef tabel_jumlah(kolom, baris):\n    return (np.array(kolom)[:, None] + np.array(baris)).tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-03-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ulang_baris(v, n)` yang mengembalikan array dua dimensi berisi `n` baris, tiap barisnya salinan vektor `v`.",
+          "note": "Hasilnya harus dapat diubah tanpa memengaruhi `v`.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef ulang_baris(v, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "v = np.array([1, 2, 3])\nr = ulang_baris(v, 2)\nassert r.shape == (2, 3)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r[0, 0] = 99\nassert r[1, 0] == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "v.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert v.tolist() == [1, 2, 3]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ulang_baris(v, 3).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ulang_baris(v, 3).tolist() == [[1, 2, 3]] * 3"
+              }
+            ]
+          },
+          "hint": "Rentangkan dengan broadcast_to lalu salin agar bisa ditulis.",
+          "solution": "import numpy as np\n\ndef ulang_baris(v, n):\n    return np.broadcast_to(v, (n, len(v))).copy()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Aturan broadcasting dibaca dari?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kanan ke kiri",
+              "description": ""
+            },
+            {
+              "label": "Kiri ke kanan",
+              "description": ""
+            },
+            {
+              "label": "Tengah",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kanan.",
+          "explanation": "Sumbu paling kanan dulu."
+        },
+        {
+          "q": "Shape (3,1) dan (1,4) menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "(3, 4)",
+              "description": ""
+            },
+            {
+              "label": "(3, 1)",
+              "description": ""
+            },
+            {
+              "label": "(1, 4)",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu direntangkan.",
+          "explanation": "Tiap sumbu direntangkan."
+        },
+        {
+          "q": "Shape (3,) dan (4,)?",
+          "code": null,
+          "options": [
+            {
+              "label": "Gagal",
+              "description": ""
+            },
+            {
+              "label": "(4,)",
+              "description": ""
+            },
+            {
+              "label": "(3,)",
+              "description": ""
+            },
+            {
+              "label": "(12,)",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Beda.",
+          "explanation": "Tidak sama dan tidak ada satu."
+        },
+        {
+          "q": "v[:, None] menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kolom",
+              "description": ""
+            },
+            {
+              "label": "Baris",
+              "description": ""
+            },
+            {
+              "label": "Skalar",
+              "description": ""
+            },
+            {
+              "label": "Matriks identitas",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom.",
+          "explanation": "Sumbu baru di akhir."
+        },
+        {
+          "q": "broadcast_to menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "View read-only",
+              "description": ""
+            },
+            {
+              "label": "Salinan",
+              "description": ""
+            },
+            {
+              "label": "List",
+              "description": ""
+            },
+            {
+              "label": "Skalar",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "View.",
+          "explanation": "Langkah nol."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira array diulang di memori. Lebih baik: Broadcasting mengatur cara baca, bukan menyalin.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira array diulang di memori.",
+          "fix": "Broadcasting mengatur cara baca, bukan menyalin."
+        },
+        {
+          "mistake": "Menambah vektor panjang dua ke matriks dua kali tiga.",
+          "fix": "Ubah vektor menjadi kolom dua kali satu."
+        },
+        {
+          "mistake": "Mengubah hasil broadcast_to.",
+          "fix": "Salin dulu dengan copy."
+        }
+      ],
+      "summary": [
+        "Broadcasting memungkinkan operasi antar array berbeda shape.",
+        "Shape diselaraskan dari kanan, tiap pasangan harus sama atau satu.",
+        "Sumbu baru dibuat dengan None atau np.newaxis.",
+        "broadcast_to merentangkan tanpa menyalin data."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Aturan broadcasting"
+          },
+          {
+            "type": "text",
+            "source": "Vektor diulang tiap baris, sedangkan kolom berukuran satu diulang tiap kolom."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\na = np.array([1, 2, 3])\nm = np.arange(6).reshape(2, 3)\nprint((a * 2).tolist())\nprint((m + a).tolist())\nprint((m + np.array([[10], [20]])).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Kolom dan baris bila dijumlahkan membentuk tabel penuh. Vektor lima dan kolom lima menghasilkan matriks lima kali lima."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nprint(np.broadcast_shapes((3, 1), (1, 4)))\nprint(np.broadcast_shapes((2, 3, 4), (3, 1)))\nprint(np.broadcast_shapes((5,), (5, 1)))\nc = np.array([[0], [10], [20]])\nr = np.array([1, 2, 3])\nprint((c + r).tolist())\nprint((c + r).shape)"
+          },
+          {
+            "type": "text",
+            "source": "Vektor dua tidak cocok dengan matriks dua kali tiga, tetapi kolom dua kali satu cocok."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef cek(s1, s2):\n    try:\n        np.broadcast_shapes(s1, s2)\n        return 'cocok'\n    except ValueError:\n        return 'gagal'\n\nprint(cek((3,), (4,)))\nprint(cek((2, 3), (2,)))\nprint(cek((2, 3), (2, 1)))\nprint(cek((1,), (7, 5)))"
+          },
+          {
+            "type": "text",
+            "source": "Langkah nol menunjukkan baris yang sama dibaca ulang tanpa salinan. Salinan nyata dapat diubah bebas."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nv = np.array([1, 2, 3])\nb = np.broadcast_to(v, (2, 3))\nprint(b.tolist())\nprint(b.strides)\nc = b.copy()\nc[0, 0] = 99\nprint(c.tolist())\nprint(v.tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B1-03-2",
+      "title": "Pola broadcasting yang sering dipakai",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memusatkan dan menormalkan data per kolom",
+        "Memakai keepdims agar hasil ringkasan cocok untuk broadcasting",
+        "Membangun tabel dari dua vektor",
+        "Menghitung jarak antar semua pasangan titik"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari aturan ke pekerjaan nyata",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari aturan ke pekerjaan nyata\n\nSetelah memahami aturan, saatnya melihat pola yang muncul hampir di setiap proyek data. Empat pola utama adalah mengurangi atau membagi dengan ringkasan per kolom atau baris, memberi bobot per kolom, membangun tabel dari dua vektor, dan menghitung jarak antar titik. Semuanya memanfaatkan satu ide: ubah shape sehingga sumbu yang ingin direntangkan berukuran satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memusatkan per kolom\n\nData matriks biasanya menyimpan satu sampel per baris dan satu fitur per kolom. Untuk memusatkan tiap fitur di sekitar nol, kurangi rata-rata kolom dari seluruh matriks. Rata-rata dengan `axis=0` menghasilkan vektor sepanjang jumlah kolom, dan vektor itu otomatis diulang pada tiap baris. Sumbu nol adalah sumbu yang diringkas, jadi ia hilang dari hasil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Standarisasi\n\nStandarisasi, atau skor z, memusatkan lalu membagi dengan simpangan baku kolom. Hasilnya tiap fitur punya rata-rata nol dan simpangan baku satu, sehingga fitur berskala berbeda dapat dibandingkan setara. Banyak algoritma pembelajaran mesin, seperti regresi dengan regularisasi dan k-nearest neighbors, bekerja jauh lebih baik pada data yang telah distandarisasi."
+            },
+            {
+              "type": "code_example",
+              "filename": "standarisasi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nX = np.array([[1., 2.], [3., 6.], [5., 10.]])\nmu = X.mean(axis=0)\nsd = X.std(axis=0)\nprint(mu.tolist())\nprint((X - mu).tolist())\nprint(((X - mu) / sd).round(3).tolist())",
+              "expected_output_note": "[3.0, 6.0]\n[[-2.0, -4.0], [0.0, 0.0], [2.0, 4.0]]\n[[-1.225, -1.225], [0.0, 0.0], [1.225, 1.225]]",
+              "explanation": "Rata-rata kolom dikurangkan ke tiap baris. Setelah dibagi simpangan baku, kedua kolom yang berskala berbeda menjadi identik."
+            },
+            {
+              "type": "text",
+              "markdown": "## keepdims\n\nRingkasan per baris punya masalah: hasil `X.sum(axis=1)` berbentuk vektor tiga elemen, padahal untuk dibagi ke matriks tiga kali dua ia harus berupa kolom tiga kali satu. Argumen `keepdims=True` mempertahankan sumbu yang diringkas dengan ukuran satu, sehingga hasil langsung kompatibel. Ini cara paling bersih menghindari kesalahan arah dan lebih aman daripada menambah sumbu manual."
+            },
+            {
+              "type": "code_example",
+              "filename": "keepdims.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nX = np.array([[1., 2.], [3., 6.], [5., 10.]])\nprint(X.sum(axis=1).shape)\nprint(X.sum(axis=1, keepdims=True).shape)\nprint((X / X.sum(axis=1, keepdims=True)).round(3).tolist())\nM2 = np.arange(6).reshape(2, 3)\nprint((M2 - M2.mean(axis=1, keepdims=True)).tolist())\nprint((M2 - M2.mean(axis=0)).tolist())",
+              "expected_output_note": "(3,)\n(3, 1)\n[[0.333, 0.667], [0.333, 0.667], [0.333, 0.667]]\n[[-1.0, 0.0, 1.0], [-1.0, 0.0, 1.0]]\n[[-1.5, -1.5, -1.5], [1.5, 1.5, 1.5]]",
+              "explanation": "Keepdims menjaga sumbu sehingga pembagian per baris benar. Pemusatan per baris dan per kolom memberi hasil berbeda."
+            }
+          ],
+          "quick_check": {
+            "question": "Memusatkan kolom memakai?",
+            "options": [
+              "X - X.mean(axis=0)",
+              "X - X.mean()"
+            ],
+            "answer_index": 0,
+            "explanation": "Rata-rata per kolom.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Bobot per kolom",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bobot per kolom\n\nMemberi bobot pada tiap fitur cukup dengan mengalikan matriks dengan vektor bobot sepanjang jumlah kolom. Setiap baris dikalikan elemen demi elemen dengan bobot yang sama. Pola serupa dipakai untuk mengubah satuan kolom berbeda, misalnya satu kolom dikali seribu dan kolom lain dikali satu. Vektor bobot dapat disimpan dan dipakai ulang untuk data baru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tabel dari dua vektor\n\nMengubah satu vektor menjadi kolom dan membiarkan yang lain sebagai baris membuat operasi apa pun berlaku untuk semua pasangan. Perkalian menghasilkan tabel perkalian, penjumlahan menghasilkan tabel jumlah, dan perbandingan menghasilkan matriks boolean. Fungsi `np.add.outer` dan `np.multiply.outer` melakukan hal yang sama dengan nama yang lebih eksplisit."
+            },
+            {
+              "type": "code_example",
+              "filename": "tabel_pasangan.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nk = np.arange(1, 4)\nprint((k[:, None] * k).tolist())\nprint(np.add.outer([1, 2], [10, 20, 30]).tolist())\nprint((np.array([1, 2, 3]) > np.array([[0], [2]])).tolist())\nw = np.array([0.5, 1, 2])\nprint((np.array([[2, 4, 6], [1, 1, 1]]) * w).tolist())",
+              "expected_output_note": "[[1, 2, 3], [2, 4, 6], [3, 6, 9]]\n[[11, 21, 31], [12, 22, 32]]\n[[True, True, True], [False, False, True]]\n[[1.0, 4.0, 12.0], [0.5, 1.0, 2.0]]",
+              "explanation": "Satu kolom dan satu baris menghasilkan tabel semua pasangan. Bobot per kolom diterapkan ke setiap baris."
+            },
+            {
+              "type": "text",
+              "markdown": "## Jarak antar titik\n\nMenghitung jarak antara setiap pasangan dari n titik dalam dua dimensi biasanya memerlukan perulangan ganda. Dengan broadcasting, ubah titik menjadi shape n, satu, dua dan satu, n, dua. Pengurangan menghasilkan selisih berbentuk n, n, dua untuk semua pasangan. Kuadratkan, jumlahkan sepanjang sumbu terakhir, dan akarkan untuk mendapat matriks jarak n kali n."
+            },
+            {
+              "type": "code_example",
+              "filename": "jarak_pasangan.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nP = np.array([[0, 0], [3, 4], [6, 8]])\nselisih = P[:, None, :] - P[None, :, :]\nprint(selisih.shape)\nD = np.sqrt((selisih ** 2).sum(axis=-1))\nprint(D.tolist())\nprint(bool((D == D.T).all()))",
+              "expected_output_note": "(3, 3, 2)\n[[0.0, 5.0, 10.0], [5.0, 0.0, 5.0], [10.0, 5.0, 0.0]]\nTrue",
+              "explanation": "Selisih semua pasangan dibentuk tanpa perulangan, dan matriks jarak simetris dengan diagonal nol."
+            }
+          ],
+          "quick_check": {
+            "question": "keepdims=True berguna untuk?",
+            "options": [
+              "Mempercepat",
+              "Menjaga sumbu ukuran satu"
+            ],
+            "answer_index": 1,
+            "explanation": "Siap untuk broadcasting.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Peringatan memori",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Peringatan memori\n\nPola jarak membuat array perantara berukuran n kali n kali d. Untuk sepuluh ribu titik, itu seratus juta elemen per dimensi dan dapat menghabiskan memori. Broadcasting menghemat penyalinan input, tetapi hasil perantara tetap nyata. Untuk data besar, proses per potongan atau gunakan fungsi khusus seperti yang disediakan scipy untuk jarak pasangan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan pelajaran\n\nHampir semua pola praktis adalah kombinasi ringkasan dengan keepdims dan operasi aritmetika. Memusatkan dan menstandarkan, membobot kolom, membuat tabel pasangan, dan menghitung jarak semua ditulis dalam satu hingga tiga baris. Kuncinya selalu sama: pastikan sumbu yang ingin diulang berukuran satu."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Kebiasaan aman",
+              "markdown": "Gunakan keepdims=True pada ringkasan yang akan dioperasikan kembali dengan array asal. Ini menghindari kesalahan arah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih sumbu ringkasan\n\nKesalahan sumbu sering terjadi karena arti angka sumbu tidak intuitif. Sumbu nol adalah arah turun melintasi baris, sehingga ringkasan dengan sumbu nol memberi satu angka per kolom. Sumbu satu adalah arah ke kanan melintasi kolom, sehingga memberi satu angka per baris. Cara mengingat: sumbu yang disebut adalah yang menghilang dari hasil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Normalisasi min-max\n\nSelain standarisasi, normalisasi min-max menskalakan tiap kolom ke rentang nol sampai satu dengan rumus nilai dikurangi minimum kolom lalu dibagi rentang kolom. Kedua ringkasan dihitung dengan sumbu nol dan dioperasikan langsung dengan matriks. Hati-hati pada kolom konstan karena rentangnya nol dan pembagian menjadi tidak terdefinisi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pembagian dengan nol\n\nStandarisasi pada kolom yang seluruh nilainya sama menghasilkan simpangan baku nol dan hasil tidak terhingga atau tidak terdefinisi. Tangani dengan mengganti simpangan baku nol menjadi satu sebelum membagi, atau menghapus kolom konstan lebih dulu. Kolom tanpa variasi memang tidak membawa informasi untuk model, jadi menghapusnya biasanya aman."
+            }
+          ],
+          "quick_check": {
+            "question": "Tabel semua pasangan butuh?",
+            "options": [
+              "Satu kolom dan satu baris",
+              "Dua matriks sama"
+            ],
+            "answer_index": 0,
+            "explanation": "Sumbu berbeda.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-03-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pusatkan_kolom(X)` yang mengurangi rata-rata tiap kolom dari matriks `X` dan mengembalikan matriks hasilnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef pusatkan_kolom(X):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "r.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "X = np.array([[1., 2.], [3., 6.], [5., 10.]])\nr = pusatkan_kolom(X)\nassert r.tolist() == [[-2.0, -4.0], [0.0, 0.0], [2.0, 4.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "np.allclose(r.mean(axis=0), 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(r.mean(axis=0), 0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r.shape == X.shape"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert X[0, 0] == 1.0"
+              }
+            ]
+          },
+          "hint": "Kurangi X dengan X.mean(axis=0).",
+          "solution": "import numpy as np\n\ndef pusatkan_kolom(X):\n    return X - X.mean(axis=0)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-03-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `proporsi_baris(X)` yang membagi tiap elemen matriks `X` dengan jumlah barisnya, sehingga tiap baris berjumlah satu.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef proporsi_baris(X):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "np.allclose(r.sum(axis=1), 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "X = np.array([[1., 2.], [3., 6.], [5., 10.]])\nr = proporsi_baris(X)\nassert np.allclose(r.sum(axis=1), 1)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "np.allclose(r[0], [1 / 3, 2 / 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(r[0], [1 / 3, 2 / 3])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r.shape == (3, 2)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "np.allclose(proporsi_baris(np.array([[1., 1.,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(proporsi_baris(np.array([[1., 1., 2.]])), [[0.25, 0.25, 0.5]])"
+              }
+            ]
+          },
+          "hint": "Jumlahkan dengan axis=1 dan keepdims=True lalu bagi.",
+          "solution": "import numpy as np\n\ndef proporsi_baris(X):\n    return X / X.sum(axis=1, keepdims=True)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-03-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tabel_kali(n)` yang mengembalikan tabel perkalian 1 sampai `n` sebagai list Python berukuran `n` kali `n`, tanpa perulangan Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef tabel_kali(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tabel_kali(3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_kali(3) == [[1, 2, 3], [2, 4, 6], [3, 6, 9]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tabel_kali(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_kali(1) == [[1]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tabel_kali(4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_kali(4)[3] == [4, 8, 12, 16]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tabel_kali(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel_kali(0) == []"
+              }
+            ]
+          },
+          "hint": "Kalikan kolom 1 sampai n dengan baris yang sama.",
+          "solution": "import numpy as np\n\ndef tabel_kali(n):\n    k = np.arange(1, n + 1)\n    return (k[:, None] * k).tolist()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-03-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `jarak_pasangan(P)` yang menerima matriks `P` berukuran `n` kali `d` berisi titik-titik dan mengembalikan matriks jarak Euclid `n` kali `n` antar semua pasangan, tanpa perulangan Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef jarak_pasangan(P):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "P = np.array([[0, 0], [3, 4], [6, 8]])\nD = jarak_pasangan(P)\nassert D.shape == (3, 3)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "np.allclose(D, [[0, 5, 10], [5, 0, 5], [10, 5...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(D, [[0, 5, 10], [5, 0, 5], [10, 5, 0]])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "np.allclose(D, D.T)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(D, D.T)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "np.allclose(jarak_pasangan(np.array([[1.0], [...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(jarak_pasangan(np.array([[1.0], [4.0]])), [[0, 3], [3, 0]])"
+              }
+            ]
+          },
+          "hint": "Bentuk selisih n, n, d dengan dua sumbu baru lalu akarkan jumlah kuadrat.",
+          "solution": "import numpy as np\n\ndef jarak_pasangan(P):\n    selisih = P[:, None, :] - P[None, :, :]\n    return np.sqrt((selisih ** 2).sum(axis=-1))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Memusatkan kolom memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "X - X.mean(axis=0)",
+              "description": ""
+            },
+            {
+              "label": "X - X.mean()",
+              "description": ""
+            },
+            {
+              "label": "X / X.max",
+              "description": ""
+            },
+            {
+              "label": "X.T",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "axis=0.",
+          "explanation": "Rata-rata per kolom."
+        },
+        {
+          "q": "keepdims=True berguna untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menjaga sumbu ukuran satu",
+              "description": ""
+            },
+            {
+              "label": "Mempercepat",
+              "description": ""
+            },
+            {
+              "label": "Mengubah tipe",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Jaga.",
+          "explanation": "Siap untuk broadcasting."
+        },
+        {
+          "q": "Tabel semua pasangan butuh?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu kolom dan satu baris",
+              "description": ""
+            },
+            {
+              "label": "Dua matriks sama",
+              "description": ""
+            },
+            {
+              "label": "Satu skalar",
+              "description": ""
+            },
+            {
+              "label": "Dua list",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom dan baris.",
+          "explanation": "Sumbu berbeda."
+        },
+        {
+          "q": "Selisih semua titik berbentuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "n, n, d",
+              "description": ""
+            },
+            {
+              "label": "n, d",
+              "description": ""
+            },
+            {
+              "label": "n, n",
+              "description": ""
+            },
+            {
+              "label": "d, d",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pasangan.",
+          "explanation": "Dua sumbu titik."
+        },
+        {
+          "q": "Standarisasi menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata nol dan simpangan baku satu",
+              "description": ""
+            },
+            {
+              "label": "Nilai antara nol dan satu",
+              "description": ""
+            },
+            {
+              "label": "Nilai bulat",
+              "description": ""
+            },
+            {
+              "label": "Data terurut",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Nol dan satu.",
+          "explanation": "Skor z."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membagi per baris tanpa keepdims. Lebih baik: Gunakan keepdims=True agar arah benar.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membagi per baris tanpa keepdims.",
+          "fix": "Gunakan keepdims=True agar arah benar."
+        },
+        {
+          "mistake": "Mengurangi rata-rata baris dari kolom.",
+          "fix": "Pakai axis=0 untuk kolom dan axis=1 untuk baris."
+        },
+        {
+          "mistake": "Menghitung jarak semua pasangan pada data raksasa.",
+          "fix": "Proses per potongan atau pakai scipy."
+        }
+      ],
+      "summary": [
+        "Pemusatan dan standarisasi memakai ringkasan per kolom.",
+        "keepdims menjaga sumbu agar ringkasan kompatibel.",
+        "Tabel pasangan dibuat dari satu kolom dan satu baris.",
+        "Jarak antar titik memakai selisih berbentuk n, n, d."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Pola broadcasting yang sering dipakai"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata kolom dikurangkan ke tiap baris. Setelah dibagi simpangan baku, kedua kolom yang berskala berbeda menjadi identik."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nX = np.array([[1., 2.], [3., 6.], [5., 10.]])\nmu = X.mean(axis=0)\nsd = X.std(axis=0)\nprint(mu.tolist())\nprint((X - mu).tolist())\nprint(((X - mu) / sd).round(3).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Keepdims menjaga sumbu sehingga pembagian per baris benar. Pemusatan per baris dan per kolom memberi hasil berbeda."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nX = np.array([[1., 2.], [3., 6.], [5., 10.]])\nprint(X.sum(axis=1).shape)\nprint(X.sum(axis=1, keepdims=True).shape)\nprint((X / X.sum(axis=1, keepdims=True)).round(3).tolist())\nM2 = np.arange(6).reshape(2, 3)\nprint((M2 - M2.mean(axis=1, keepdims=True)).tolist())\nprint((M2 - M2.mean(axis=0)).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Satu kolom dan satu baris menghasilkan tabel semua pasangan. Bobot per kolom diterapkan ke setiap baris."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nk = np.arange(1, 4)\nprint((k[:, None] * k).tolist())\nprint(np.add.outer([1, 2], [10, 20, 30]).tolist())\nprint((np.array([1, 2, 3]) > np.array([[0], [2]])).tolist())\nw = np.array([0.5, 1, 2])\nprint((np.array([[2, 4, 6], [1, 1, 1]]) * w).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Selisih semua pasangan dibentuk tanpa perulangan, dan matriks jarak simetris dengan diagonal nol."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nP = np.array([[0, 0], [3, 4], [6, 8]])\nselisih = P[:, None, :] - P[None, :, :]\nprint(selisih.shape)\nD = np.sqrt((selisih ** 2).sum(axis=-1))\nprint(D.tolist())\nprint(bool((D == D.T).all()))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "B1-03-3",
+      "title": "Jebakan, debugging, dan performa broadcasting",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengenali kesalahan arah antara vektor dan kolom",
+        "Membuat one-hot dan matriks perbandingan dengan broadcasting",
+        "Menjelaskan mengapa broadcasting cepat dan hemat memori",
+        "Memeriksa shape secara sistematis saat hasil mengejutkan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Broadcasting yang salah diam-diam",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Broadcasting yang salah diam-diam\n\nBahaya terbesar broadcasting bukan galat, melainkan hasil yang salah tanpa pesan. Bila vektor panjang tiga dan kolom tiga kali satu dijumlahkan, kita mendapat matriks tiga kali tiga, bukan vektor tiga elemen yang mungkin kita kira. Program berjalan mulus dan angka tampak masuk akal, tetapi ukuran dan nilainya keliru. Karena itu memeriksa shape adalah kebiasaan wajib."
+            },
+            {
+              "type": "code_example",
+              "filename": "salah_arah.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nv = np.array([1, 2, 3])\nk = np.array([[10], [20], [30]])\nprint((v + k).shape)\nprint((v + v).shape)\nprint((v + k.ravel()).shape)\ny = np.array([1, 2, 3])\npred = np.array([[1], [2], [4]])\nprint((y == pred).shape)\nprint((y == pred.ravel()).tolist())",
+              "expected_output_note": "(3, 3)\n(3,)\n(3,)\n(3, 3)\n[True, True, False]",
+              "explanation": "Vektor dan kolom menghasilkan matriks penuh. Membandingkan label dengan prediksi berbentuk kolom menghasilkan matriks, bukan hasil per elemen yang diinginkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh klasik\n\nKesalahan paling terkenal terjadi pada evaluasi model. Label asli berbentuk vektor tiga elemen, sedangkan prediksi keluar dari model sebagai kolom tiga kali satu. Membandingkan keduanya dengan sama dengan menghasilkan matriks tiga kali tiga, dan rata-ratanya jauh dari akurasi sebenarnya. Solusinya meratakan salah satunya dengan `ravel` atau `reshape` agar keduanya berbentuk sama sebelum dibandingkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Strategi debugging\n\nBila hasil mengejutkan, cetak shape setiap operan dan hasil setiap langkah. Tuliskan shape yang Anda harapkan sebelum menjalankan, lalu bandingkan. Tambahkan assert pada shape di titik-titik penting, misalnya `assert pred.shape == y.shape`. Assert murah dan menangkap kesalahan di tempat kejadian, bukan beberapa langkah kemudian ketika sumber masalah sudah sulit dilacak."
+            },
+            {
+              "type": "text",
+              "markdown": "## One-hot dengan broadcasting\n\nRepresentasi one-hot mengubah label kategori menjadi vektor berisi satu pada posisi kelas dan nol di tempat lain. Dengan broadcasting, bandingkan label berbentuk kolom dengan deret kelas berbentuk baris. Hasilnya matriks boolean berukuran jumlah sampel kali jumlah kelas, dan konversi ke bilangan bulat menghasilkan matriks one-hot tanpa perulangan."
+            },
+            {
+              "type": "code_example",
+              "filename": "one_hot.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nlab = np.array([0, 2, 1, 2])\noh = (lab[:, None] == np.arange(3)).astype(int)\nprint(oh.tolist())\nprint(oh.sum(axis=0).tolist())\nprint(oh.argmax(axis=1).tolist())",
+              "expected_output_note": "[[1, 0, 0], [0, 0, 1], [0, 1, 0], [0, 0, 1]]\n[1, 1, 2]\n[0, 2, 1, 2]",
+              "explanation": "Satu perbandingan menghasilkan matriks one-hot. Jumlah kolom memberi frekuensi tiap kelas dan argmax mengembalikan label."
+            }
+          ],
+          "quick_check": {
+            "question": "Vektor (3,) plus kolom (3,1) menghasilkan?",
+            "options": [
+              "(3, 3)",
+              "(3,)"
+            ],
+            "answer_index": 0,
+            "explanation": "Keduanya direntangkan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Perbandingan banyak ambang",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Perbandingan banyak ambang\n\nPola serupa menguji beberapa ambang sekaligus. Dengan data sebagai baris dan ambang sebagai kolom, satu perbandingan menghasilkan matriks yang menunjukkan data mana yang melewati ambang mana. Jumlah sepanjang sumbu data memberi banyaknya elemen yang lolos untuk tiap ambang. Ini dasar menghitung kurva presisi dan recall pada berbagai ambang keputusan."
+            },
+            {
+              "type": "code_example",
+              "filename": "banyak_ambang.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([1, 2, 3])\nambang = np.array([0, 2])\nhasil = x[None, :] > ambang[:, None]\nprint(hasil.tolist())\nprint(hasil.sum(axis=1).tolist())\nskor = np.array([0.2, 0.8, 0.5, 0.9])\nprint((skor[None, :] >= np.array([0.5, 0.9])[:, None]).sum(axis=1).tolist())",
+              "expected_output_note": "[[True, True, True], [False, False, True]]\n[3, 1]\n[3, 1]",
+              "explanation": "Satu ekspresi menguji dua ambang sekaligus. Jumlah per baris memberi banyaknya yang lolos tiap ambang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengapa cepat\n\nPerulangan Python mengeksekusi satu instruksi interpreter per elemen, dan tiap elemen adalah objek lengkap. Broadcasting menjalankan perulangan di dalam kode C yang dikompilasi, bekerja langsung pada memori berurutan. Selisih kecepatannya sering puluhan hingga ratusan kali. Tambahan keuntungannya, kode menjadi lebih pendek dan lebih mirip rumus matematika sehingga lebih mudah diverifikasi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Batas broadcasting\n\nBroadcasting bukan obat segala masalah. Bila hasil perantara berukuran raksasa, seperti pada jarak semua pasangan dengan data besar, memori dapat habis. Bila logika tiap elemen bergantung pada elemen sebelumnya, seperti rekursi, vectorization sulit dilakukan. Pada kasus itu pertimbangkan pemrosesan per potongan, alat seperti numba, atau algoritma yang tidak membentuk hasil perantara besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Daftar periksa\n\nSebelum mempercayai hasil broadcasting, jawab empat pertanyaan. Berapa shape setiap operan? Berapa shape hasil yang diharapkan? Sumbu mana yang direntangkan? Apakah ada ringkasan yang kehilangan sumbu dan perlu keepdims? Menjawab keempatnya hanya butuh satu menit dan menyelamatkan Anda dari jam-jam mencari angka yang salah."
+            }
+          ],
+          "quick_check": {
+            "question": "One-hot dibuat dengan?",
+            "options": [
+              "Label + 1",
+              "Label kolom == arange(k)"
+            ],
+            "answer_index": 1,
+            "explanation": "Bandingkan kolom dan baris.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Ringkasan modul",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ringkasan modul\n\nAnda telah mempelajari aturan penyelarasan dari kanan, pola pemusatan, standarisasi, tabel pasangan, dan jarak, serta jebakan arah yang senyap. Dengan kebiasaan memeriksa shape dan memakai keepdims, broadcasting menjadi alat yang aman. Modul berikutnya membahas operasi vectorized dan ufunc yang menjadi dasar perhitungan elemen demi elemen."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Galat senyap",
+              "markdown": "Broadcasting yang salah arah tidak menimbulkan galat, hanya hasil yang keliru. Periksa shape dan tambahkan assert di titik penting."
+            },
+            {
+              "type": "text",
+              "markdown": "## Uji dengan contoh kecil\n\nSebelum menerapkan ekspresi broadcasting pada data besar, ujilah pada contoh kecil yang hasilnya dapat Anda hitung dengan tangan, misalnya matriks dua kali tiga. Bandingkan dengan perulangan lambat yang jelas benar. Bila keduanya sama pada beberapa kasus, termasuk kasus tepi seperti satu baris atau satu kolom, kepercayaan pada kode meningkat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca pesan galat\n\nPesan galat broadcasting menyebut dua shape yang tidak cocok, misalnya operands could not be broadcast together with shapes dua koma tiga dan dua. Tuliskan keduanya sejajar dari kanan lalu cari pasangan yang berbeda dan bukan satu. Sumbu itulah yang perlu diubah, biasanya dengan menambah sumbu baru atau mengubah ringkasan menjadi keepdims."
+            },
+            {
+              "type": "text",
+              "markdown": "## Gaya penulisan yang jelas\n\nBeri nama variabel yang menyiratkan bentuknya, seperti kolom_bobot atau baris_rata, dan tuliskan komentar shape di sebelah dokumentasi fungsi. Orang yang membaca kode, termasuk Anda sendiri nanti, dapat memahami ekspresi broadcasting tanpa menelusuri ulang setiap shape."
+            }
+          ],
+          "quick_check": {
+            "question": "Cara menangkap salah arah?",
+            "options": [
+              "Assert pada shape",
+              "Menghapus data"
+            ],
+            "answer_index": 0,
+            "explanation": "Periksa di tempat.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "B1-03-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `one_hot(label, k)` yang menerima list label bilangan bulat dari 0 sampai `k - 1` dan mengembalikan matriks one-hot sebagai list Python bertipe bilangan bulat, tanpa perulangan Python.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef one_hot(label, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "one_hot([0, 2, 1, 2], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert one_hot([0, 2, 1, 2], 3) == [[1, 0, 0], [0, 0, 1], [0, 1, 0], [0, 0, 1]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "one_hot([1], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert one_hot([1], 2) == [[0, 1]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "one_hot([], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert one_hot([], 3) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "np.array(one_hot([0, 1, 2], 3)).sum()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.array(one_hot([0, 1, 2], 3)).sum() == 3"
+              }
+            ]
+          },
+          "hint": "Bandingkan label kolom dengan arange(k) lalu ubah ke int.",
+          "solution": "import numpy as np\n\ndef one_hot(label, k):\n    return (np.array(label)[:, None] == np.arange(k)).astype(int).tolist()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-03-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bandingkan_ambang(x, ambang)` yang mengembalikan matriks boolean sebagai list Python dengan baris untuk tiap ambang dan kolom untuk tiap elemen `x`, bernilai `True` bila `x[j] > ambang[i]`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef bandingkan_ambang(x, ambang):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bandingkan_ambang([1, 2, 3], [0, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bandingkan_ambang([1, 2, 3], [0, 2]) == [[True, True, True], [False, False, True]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bandingkan_ambang([5], [1, 9])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bandingkan_ambang([5], [1, 9]) == [[True], [False]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "np.array(bandingkan_ambang([1, 2, 3, 4], [2, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.array(bandingkan_ambang([1, 2, 3, 4], [2, 3, 4])).shape == (3, 4)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bandingkan_ambang([1, 2], [3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bandingkan_ambang([1, 2], [3]) == [[False, False]]"
+              }
+            ]
+          },
+          "hint": "Ubah x menjadi baris dan ambang menjadi kolom.",
+          "solution": "import numpy as np\n\ndef bandingkan_ambang(x, ambang):\n    return (np.array(x)[None, :] > np.array(ambang)[:, None]).tolist()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-03-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `skala_kolom(X, w)` yang mengalikan tiap kolom matriks `X` dengan elemen vektor `w` yang bersesuaian dan mengembalikan matriks hasilnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef skala_kolom(X, w):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "skala_kolom(X, w).tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "X = np.array([[2, 4, 6], [1, 1, 1]])\nw = np.array([0.5, 1, 2])\nassert skala_kolom(X, w).tolist() == [[1.0, 4.0, 12.0], [0.5, 1.0, 2.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "skala_kolom(np.ones((2, 2)), np.array([3, 4])...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert skala_kolom(np.ones((2, 2)), np.array([3, 4])).tolist() == [[3.0, 4.0], [3.0, 4.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "skala_kolom(X, np.ones(3))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert skala_kolom(X, np.ones(3)).shape == (2, 3)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "skala_kolom(np.zeros((1, 3)), w).sum()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert skala_kolom(np.zeros((1, 3)), w).sum() == 0"
+              }
+            ]
+          },
+          "hint": "Kalikan langsung dengan vektor bobot.",
+          "solution": "import numpy as np\n\ndef skala_kolom(X, w):\n    return X * w",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "B1-03-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `kurangi_rata_baris(M)` yang mengurangi rata-rata tiap baris dari baris itu sendiri dan mengembalikan matriks hasilnya, sehingga tiap baris berjumlah nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef kurangi_rata_baris(M):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import numpy as np",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "r.tolist()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "M = np.arange(6).reshape(2, 3)\nr = kurangi_rata_baris(M)\nassert r.tolist() == [[-1.0, 0.0, 1.0], [-1.0, 0.0, 1.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "np.allclose(r.sum(axis=1), 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(r.sum(axis=1), 0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r.shape == M.shape"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "np.allclose(kurangi_rata_baris(np.array([[2.,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert np.allclose(kurangi_rata_baris(np.array([[2., 4.], [10., 20.]])), [[-1, 1], [-5, 5]])"
+              }
+            ]
+          },
+          "hint": "Hitung rata-rata sumbu satu dengan keepdims lalu kurangkan.",
+          "solution": "import numpy as np\n\ndef kurangi_rata_baris(M):\n    return M - M.mean(axis=1, keepdims=True)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Vektor (3,) plus kolom (3,1) menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "(3, 3)",
+              "description": ""
+            },
+            {
+              "label": "(3,)",
+              "description": ""
+            },
+            {
+              "label": "(3, 1)",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Matriks.",
+          "explanation": "Keduanya direntangkan."
+        },
+        {
+          "q": "One-hot dibuat dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Label kolom == arange(k)",
+              "description": ""
+            },
+            {
+              "label": "Label + 1",
+              "description": ""
+            },
+            {
+              "label": "Label * k",
+              "description": ""
+            },
+            {
+              "label": "Label.T",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bandingkan.",
+          "explanation": "Bandingkan kolom dan baris."
+        },
+        {
+          "q": "Cara menangkap salah arah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Assert pada shape",
+              "description": ""
+            },
+            {
+              "label": "Menghapus data",
+              "description": ""
+            },
+            {
+              "label": "Mengubah tipe",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Assert.",
+          "explanation": "Periksa di tempat."
+        },
+        {
+          "q": "Broadcasting cepat karena?",
+          "code": null,
+          "options": [
+            {
+              "label": "Perulangan di kode C",
+              "description": ""
+            },
+            {
+              "label": "Memakai GPU otomatis",
+              "description": ""
+            },
+            {
+              "label": "Menyalin data",
+              "description": ""
+            },
+            {
+              "label": "Memakai list",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "C.",
+          "explanation": "Dikompilasi."
+        },
+        {
+          "q": "Batas broadcasting?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hasil perantara besar",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            },
+            {
+              "label": "Hanya skalar",
+              "description": ""
+            },
+            {
+              "label": "Hanya vektor",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Perantara.",
+          "explanation": "Memori."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menjumlahkan vektor dan kolom lalu mengira hasilnya vektor. Lebih baik: Periksa shape, ratakan salah satunya bila perlu.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menjumlahkan vektor dan kolom lalu mengira hasilnya vektor.",
+          "fix": "Periksa shape, ratakan salah satunya bila perlu."
+        },
+        {
+          "mistake": "Membandingkan label dengan prediksi berbentuk kolom.",
+          "fix": "Samakan shape sebelum membandingkan."
+        },
+        {
+          "mistake": "Memakai broadcasting pada data raksasa tanpa memikirkan memori.",
+          "fix": "Proses per potongan."
+        }
+      ],
+      "summary": [
+        "Broadcasting yang salah arah menghasilkan hasil keliru tanpa galat.",
+        "One-hot dan perbandingan ambang dapat dibuat tanpa perulangan.",
+        "Broadcasting cepat karena perulangan berjalan di kode C.",
+        "Periksa shape dan assert di titik penting."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Jebakan, debugging, dan performa broadcasting"
+          },
+          {
+            "type": "text",
+            "source": "Vektor dan kolom menghasilkan matriks penuh. Membandingkan label dengan prediksi berbentuk kolom menghasilkan matriks, bukan hasil per elemen yang diinginkan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nv = np.array([1, 2, 3])\nk = np.array([[10], [20], [30]])\nprint((v + k).shape)\nprint((v + v).shape)\nprint((v + k.ravel()).shape)\ny = np.array([1, 2, 3])\npred = np.array([[1], [2], [4]])\nprint((y == pred).shape)\nprint((y == pred.ravel()).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Satu perbandingan menghasilkan matriks one-hot. Jumlah kolom memberi frekuensi tiap kelas dan argmax mengembalikan label."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nlab = np.array([0, 2, 1, 2])\noh = (lab[:, None] == np.arange(3)).astype(int)\nprint(oh.tolist())\nprint(oh.sum(axis=0).tolist())\nprint(oh.argmax(axis=1).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Satu ekspresi menguji dua ambang sekaligus. Jumlah per baris memberi banyaknya yang lolos tiap ambang."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([1, 2, 3])\nambang = np.array([0, 2])\nhasil = x[None, :] > ambang[:, None]\nprint(hasil.tolist())\nprint(hasil.sum(axis=1).tolist())\nskor = np.array([0.2, 0.8, 0.5, 0.9])\nprint((skor[None, :] >= np.array([0.5, 0.9])[:, None]).sum(axis=1).tolist())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

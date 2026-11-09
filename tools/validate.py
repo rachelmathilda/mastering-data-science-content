@@ -10,14 +10,15 @@ from pathlib import Path
 
 ALLOWED = {
     "numpy", "pandas", "scipy", "sklearn", "matplotlib", "seaborn", "statsmodels", "networkx", "sqlite3",
-    "math", "random", "json", "re", "itertools", "collections", "statistics", "datetime", "io", "csv",
+    "math", "random", "json", "re", "itertools", "difflib", "collections", "statistics", "datetime", "io", "csv",
     "string", "functools", "heapq", "bisect", "struct", "hashlib", "time", "textwrap", "dataclasses",
     "typing", "copy", "operator", "decimal", "fractions", "zlib", "base64", "warnings", "enum", "abc",
     "array", "pprint", "contextlib", "uuid", "calendar", "secrets",
 }
 BLOCK_TYPES = {"text", "code_example", "code_static", "callout", "analogy"}
 MIN = {"text": 4, "code_example": 3, "exercise": 4}
-MIN_WORDS = 650
+import os
+MIN_WORDS = int(os.environ.get("MDS_MIN_WORDS", "650"))
 TIMEOUT = 40
 
 

@@ -1,0 +1,1568 @@
+{
+  "schema_version": 2,
+  "course_id": "A6",
+  "module_no": 7,
+  "title": "Fungsi tanggal dan teks",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Mengekstrak dan mengelompokkan data berdasarkan waktu",
+    "Menghitung tanggal dengan benar tanpa jebakan luapan",
+    "Membersihkan dan memecah teks sebelum analisis"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A6-07-1",
+    "exercise_id": "A6-07-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def jumlah_per_hari(c):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A6-07-1",
+      "title": "Tanggal ISO, strftime, dan pengelompokan waktu",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan mengapa SQLite menyimpan tanggal sebagai teks ISO",
+        "Mengekstrak tahun, bulan, dan hari dengan strftime",
+        "Mengelompokkan data per bulan dan per hari dalam minggu",
+        "Menyaring rentang tanggal dengan batas setengah terbuka"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Tanggal di SQLite",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tanggal di SQLite\n\nSQLite tidak punya tipe tanggal khusus. Tanggal disimpan sebagai teks, angka, atau bilangan Julian, dan fungsi tanggal bawaan memahami ketiganya. Praktik terbaik adalah memakai **teks ISO 8601**, yaitu `YYYY-MM-DD` untuk tanggal dan `YYYY-MM-DD HH:MM:SS` untuk tanggal dengan waktu.\n\nFormat ISO punya sifat penting: urutan alfabetnya sama dengan urutan kronologisnya. Karena itu `ORDER BY tanggal` dan perbandingan `tanggal >= '2026-02-01'` bekerja benar tanpa konversi. Format seperti `15/01/2026` merusak sifat itu dan harus dihindari."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tabel contoh\n\nModul ini memakai tabel `transaksi` dengan kolom `id`, `nama`, `email`, `tanggal`, dan `jumlah`. Ada lima baris dari Januari sampai Maret 2026. Nama dan email sengaja ditulis tidak seragam: ada huruf kecil, huruf besar, dan spasi di tepi, sebagaimana data nyata yang kotor.\n\nPelajaran pertama dan kedua membahas tanggal, dan pelajaran ketiga membahas teks. Keduanya kerap dipakai bersamaan saat membersihkan data sebelum dianalisis."
+            },
+            {
+              "type": "text",
+              "markdown": "## strftime\n\n`strftime(format, nilai)` mengubah tanggal menjadi teks sesuai format. Kode yang sering dipakai: `%Y` tahun empat digit, `%m` bulan dua digit, `%d` hari dua digit, `%w` hari dalam minggu dari 0 untuk Minggu sampai 6 untuk Sabtu, dan `%j` hari ke berapa dalam tahun.\n\nHasilnya selalu teks, bahkan untuk kode numerik. Bila perlu angka, bungkus dengan `CAST(... AS INTEGER)`. Lupa hal ini menimbulkan perbandingan teks yang aneh, misalnya `'10' < '9'` bernilai benar."
+            },
+            {
+              "type": "code_example",
+              "filename": "strftime_dasar.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, strftime('%Y', tanggal), strftime('%m', tanggal), strftime('%d', tanggal)\nFROM transaksi ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)\nprint(c.execute(\"SELECT '10' < '9', 10 < 9\").fetchone())",
+              "expected_output_note": "(1, '2026', '01', '15')\n(2, '2026', '01', '31')\n(3, '2026', '02', '10')\n(4, '2026', '02', '28')\n(5, '2026', '03', '05')\n(1, 0)",
+              "explanation": "Hasil strftime berupa teks, sehingga perbandingan teks sepuluh dan sembilan bernilai benar sedangkan perbandingan angkanya salah."
+            }
+          ],
+          "quick_check": {
+            "question": "Format tanggal terbaik di SQLite?",
+            "options": [
+              "Teks ISO 8601",
+              "DD/MM/YYYY"
+            ],
+            "answer_index": 0,
+            "explanation": "Urutan alfabet sama dengan kronologis.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Mengelompokkan per bulan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengelompokkan per bulan\n\nLaporan periodik hampir selalu mengelompokkan per bulan. Cukup ambil `strftime('%Y-%m', tanggal)` dan jadikan kunci `GROUP BY`. Menyertakan tahun penting: tanpa itu, Januari 2025 dan Januari 2026 tercampur menjadi satu kelompok.\n\nAlias kolom boleh dipakai di `GROUP BY` dan `ORDER BY` pada SQLite. Format `YYYY-MM` juga terurut kronologis secara alfabet sehingga `ORDER BY` langsung benar."
+            },
+            {
+              "type": "code_example",
+              "filename": "group_bulan.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT strftime('%Y-%m', tanggal) AS bulan, SUM(jumlah), COUNT(*)\nFROM transaksi GROUP BY bulan ORDER BY bulan\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('2026-01', 300, 2), ('2026-02', 230, 2), ('2026-03', 120, 1)]",
+              "explanation": "Total dan banyak transaksi per bulan: Januari 300 dari dua transaksi, Februari 230, dan Maret 120."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hari dalam minggu\n\nPola mingguan, seperti hari tersibuk, dapat dilihat dengan `strftime('%w', tanggal)`. Kodenya angka dari nol sampai enam, dan nol adalah hari Minggu. Hasilnya teks, jadi ubah ke bilangan bulat bila ingin membandingkan atau memakai sebagai kunci numerik.\n\nIngat bahwa urutan hari dimulai dari Minggu. Bila laporan harus dimulai dari Senin, geser dengan `(CAST(strftime('%w', tanggal) AS INTEGER) + 6) % 7`."
+            },
+            {
+              "type": "code_example",
+              "filename": "hari_minggu.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT CAST(strftime('%w', tanggal) AS INTEGER) AS hari, SUM(jumlah)\nFROM transaksi GROUP BY hari ORDER BY hari\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[(2, 150), (4, 220), (6, 280)]",
+              "explanation": "Penjualan terkumpul pada hari Selasa, Kamis, dan Sabtu sesuai kode dua, empat, dan enam."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menyaring rentang tanggal\n\nCara paling aman menyaring satu bulan adalah batas **setengah terbuka**: `tanggal >= '2026-02-01' AND tanggal < '2026-03-01'`. Batas bawah termasuk dan batas atas tidak. Cara ini berfungsi baik untuk tanggal murni maupun untuk tanggal dengan waktu.\n\n`BETWEEN '2026-02-01' AND '2026-02-28'` terlihat ringkas tetapi berbahaya: bila kolom memuat waktu seperti `2026-02-28 15:30:00`, nilai itu lebih besar dari `'2026-02-28'` sehingga transaksi sore hari terlewat."
+            },
+            {
+              "type": "code_example",
+              "filename": "rentang_tanggal.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id FROM transaksi\nWHERE tanggal >= '2026-02-01' AND tanggal < '2026-03-01' ORDER BY id\n'''\nprint([r[0] for r in c.execute(q).fetchall()])\nc.execute(\"INSERT INTO transaksi VALUES (6, 'X', 'x@mail.com', '2026-02-28 15:30:00', 10)\")\nq1 = \"SELECT id FROM transaksi WHERE tanggal BETWEEN '2026-02-01' AND '2026-02-28' ORDER BY id\"\nq2 = \"SELECT id FROM transaksi WHERE tanggal >= '2026-02-01' AND tanggal < '2026-03-01' ORDER BY id\"\nprint([r[0] for r in c.execute(q1).fetchall()])\nprint([r[0] for r in c.execute(q2).fetchall()])",
+              "expected_output_note": "[3, 4]\n[3, 4]\n[3, 4, 6]",
+              "explanation": "BETWEEN melewatkan transaksi enam yang bertanggal dua puluh delapan pukul 15:30, sedangkan batas setengah terbuka menangkapnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Kode strftime untuk bulan dua digit?",
+            "options": [
+              "%M",
+              "%m"
+            ],
+            "answer_index": 1,
+            "explanation": "%m bulan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Menyimpan tanggal dengan benar",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menyimpan tanggal dengan benar\n\nSimpan tanggal sebagai teks ISO di kolom bertipe `TEXT` dan jangan mencampur dengan format lain. Satu baris berformat salah dapat merusak pengurutan dan fungsi tanggal, yang akan mengembalikan `NULL` untuk teks tak dikenali. Bila data berasal dari sumber luar, normalkan formatnya saat impor.\n\nPertimbangkan pula zona waktu. Cara praktis adalah menyimpan waktu dalam UTC lalu mengonversinya saat ditampilkan. Mencampur zona waktu dalam satu kolom adalah sumber galat yang sulit dilacak."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Batas setengah terbuka",
+              "markdown": "Jangan memakai BETWEEN untuk tanggal yang bisa memuat waktu. Pakai batas bawah termasuk dan batas atas tidak termasuk."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tanggal dengan waktu\n\nKolom yang memuat waktu, seperti `2026-02-28 15:30:00`, tetap berformat ISO dan tetap terurut benar. Untuk mengambil bagian tanggalnya saja, pakai `date(kolom)` atau `substr(kolom, 1, 10)`. Mengelompokkan per hari berarti mengelompokkan menurut `date(kolom)`, bukan menurut teks lengkap berikut waktunya.\n\nKelalaian umum adalah membandingkan kolom ber-waktu dengan tanggal murni memakai tanda sama dengan. Nilai `2026-02-28 15:30:00` tidak sama dengan `2026-02-28`, sehingga baris itu tidak ditemukan."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil strftime bertipe?",
+            "options": [
+              "Teks",
+              "Bilangan bulat"
+            ],
+            "answer_index": 0,
+            "explanation": "Selalu teks.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-07-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bulan_dari(c)` yang mengembalikan list teks `YYYY-MM` dari kolom `tanggal` semua transaksi, terurut menurut id.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef bulan_dari(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bulan_dari(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert bulan_dari(c) == ['2026-01', '2026-01', '2026-02', '2026-02', '2026-03']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bulan_dari(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (6, 'X', 'x@mail.com', '2025-12-31', 5)\")\nassert bulan_dari(c)[-1] == '2025-12'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(bulan_dari(c))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(bulan_dari(c)) == 6"
+              }
+            ]
+          },
+          "hint": "Pakai strftime dengan format %Y-%m.",
+          "solution": "import sqlite3\n\ndef bulan_dari(c):\n    q = \"SELECT strftime('%Y-%m', tanggal) FROM transaksi ORDER BY id\"\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-07-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `total_per_bulan(c)` yang mengembalikan list tuple `(bulan, total_jumlah)` dengan bulan berformat `YYYY-MM`, terurut kronologis.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef total_per_bulan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_per_bulan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert total_per_bulan(c) == [('2026-01', 300), ('2026-02', 230), ('2026-03', 120)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_per_bulan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (6, 'X', 'x@mail.com', '2026-03-20', 30)\")\nassert total_per_bulan(c)[-1] == ('2026-03', 150)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_per_bulan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (7, 'Y', 'y@mail.com', '2025-03-20', 7)\")\nassert total_per_bulan(c)[0] == ('2025-03', 7)"
+              }
+            ]
+          },
+          "hint": "GROUP BY strftime tahun dan bulan.",
+          "solution": "import sqlite3\n\ndef total_per_bulan(c):\n    q = '''\n    SELECT strftime('%Y-%m', tanggal) AS bulan, SUM(jumlah)\n    FROM transaksi GROUP BY bulan ORDER BY bulan\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-07-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `transaksi_bulan(c, awal)` yang menerima tanggal awal bulan berformat `YYYY-MM-01` dan mengembalikan list id transaksi pada bulan itu, terurut menurut id, memakai batas setengah terbuka dan `date(awal, '+1 month')`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef transaksi_bulan(c, awal):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "transaksi_bulan(c, '2026-02-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert transaksi_bulan(c, '2026-02-01') == [3, 4]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "transaksi_bulan(c, '2026-01-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transaksi_bulan(c, '2026-01-01') == [1, 2]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "transaksi_bulan(c, '2026-03-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transaksi_bulan(c, '2026-03-01') == [5]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "transaksi_bulan(c, '2026-04-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transaksi_bulan(c, '2026-04-01') == []"
+              }
+            ]
+          },
+          "hint": "Batas atas adalah date(awal, '+1 month') dan tidak termasuk.",
+          "solution": "import sqlite3\n\ndef transaksi_bulan(c, awal):\n    q = \"SELECT id FROM transaksi WHERE tanggal >= ? AND tanggal < date(?, '+1 month') ORDER BY id\"\n    return [r[0] for r in c.execute(q, (awal, awal)).fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-07-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `jumlah_per_hari(c)` yang mengembalikan dict `{kode_hari: total_jumlah}` dengan `kode_hari` bilangan bulat dari `strftime('%w')` (0 Minggu sampai 6 Sabtu).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef jumlah_per_hari(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_per_hari(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert jumlah_per_hari(c) == {2: 150, 4: 220, 6: 280}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_per_hari(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (6, 'X', 'x@mail.com', '2026-03-08', 40)\")\nassert jumlah_per_hari(c)[0] == 40"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_per_hari(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (7, 'Y', 'y@mail.com', '2026-03-12', 10)\")\nassert jumlah_per_hari(c)[4] == 230"
+              }
+            ]
+          },
+          "hint": "Ubah hasil strftime menjadi bilangan bulat dengan CAST lalu GROUP BY.",
+          "solution": "import sqlite3\n\ndef jumlah_per_hari(c):\n    q = '''\n    SELECT CAST(strftime('%w', tanggal) AS INTEGER) AS hari, SUM(jumlah)\n    FROM transaksi GROUP BY hari\n    '''\n    return dict(c.execute(q).fetchall())",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Format tanggal terbaik di SQLite?",
+          "code": null,
+          "options": [
+            {
+              "label": "Teks ISO 8601",
+              "description": ""
+            },
+            {
+              "label": "DD/MM/YYYY",
+              "description": ""
+            },
+            {
+              "label": "Nama bulan",
+              "description": ""
+            },
+            {
+              "label": "Angka acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "ISO.",
+          "explanation": "Urutan alfabet sama dengan kronologis."
+        },
+        {
+          "q": "Kode strftime untuk bulan dua digit?",
+          "code": null,
+          "options": [
+            {
+              "label": "%m",
+              "description": ""
+            },
+            {
+              "label": "%M",
+              "description": ""
+            },
+            {
+              "label": "%b",
+              "description": ""
+            },
+            {
+              "label": "%d",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kecil.",
+          "explanation": "%m bulan."
+        },
+        {
+          "q": "Hasil strftime bertipe?",
+          "code": null,
+          "options": [
+            {
+              "label": "Teks",
+              "description": ""
+            },
+            {
+              "label": "Bilangan bulat",
+              "description": ""
+            },
+            {
+              "label": "Tanggal",
+              "description": ""
+            },
+            {
+              "label": "Boolean",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Teks.",
+          "explanation": "Selalu teks."
+        },
+        {
+          "q": "Kode %w bernilai nol untuk hari?",
+          "code": null,
+          "options": [
+            {
+              "label": "Minggu",
+              "description": ""
+            },
+            {
+              "label": "Senin",
+              "description": ""
+            },
+            {
+              "label": "Sabtu",
+              "description": ""
+            },
+            {
+              "label": "Jumat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Awal minggu.",
+          "explanation": "Minggu sampai Sabtu 0 sampai 6."
+        },
+        {
+          "q": "Batas aman rentang bulan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Setengah terbuka",
+              "description": ""
+            },
+            {
+              "label": "BETWEEN dua tanggal",
+              "description": ""
+            },
+            {
+              "label": "LIKE",
+              "description": ""
+            },
+            {
+              "label": "Tanpa batas",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Setengah.",
+          "explanation": "Tangkap waktu pada hari terakhir."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menyimpan tanggal dengan format 15/01/2026. Lebih baik: Simpan sebagai teks ISO YYYY-MM-DD.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menyimpan tanggal dengan format 15/01/2026.",
+          "fix": "Simpan sebagai teks ISO YYYY-MM-DD."
+        },
+        {
+          "mistake": "Memakai BETWEEN untuk kolom yang memuat waktu.",
+          "fix": "Pakai batas bawah termasuk dan batas atas tidak."
+        },
+        {
+          "mistake": "Mengelompokkan per bulan tanpa tahun.",
+          "fix": "Gunakan format %Y-%m."
+        }
+      ],
+      "summary": [
+        "Simpan tanggal sebagai teks ISO agar urutan alfabet sama dengan kronologis.",
+        "strftime mengekstrak bagian tanggal sebagai teks.",
+        "Kelompokkan per bulan dengan format tahun dan bulan.",
+        "Gunakan batas setengah terbuka untuk rentang tanggal."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Tanggal ISO, strftime, dan pengelompokan waktu"
+          },
+          {
+            "type": "text",
+            "source": "Hasil strftime berupa teks, sehingga perbandingan teks sepuluh dan sembilan bernilai benar sedangkan perbandingan angkanya salah."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, strftime('%Y', tanggal), strftime('%m', tanggal), strftime('%d', tanggal)\nFROM transaksi ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)\nprint(c.execute(\"SELECT '10' < '9', 10 < 9\").fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Total dan banyak transaksi per bulan: Januari 300 dari dua transaksi, Februari 230, dan Maret 120."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT strftime('%Y-%m', tanggal) AS bulan, SUM(jumlah), COUNT(*)\nFROM transaksi GROUP BY bulan ORDER BY bulan\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Penjualan terkumpul pada hari Selasa, Kamis, dan Sabtu sesuai kode dua, empat, dan enam."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT CAST(strftime('%w', tanggal) AS INTEGER) AS hari, SUM(jumlah)\nFROM transaksi GROUP BY hari ORDER BY hari\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "BETWEEN melewatkan transaksi enam yang bertanggal dua puluh delapan pukul 15:30, sedangkan batas setengah terbuka menangkapnya."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id FROM transaksi\nWHERE tanggal >= '2026-02-01' AND tanggal < '2026-03-01' ORDER BY id\n'''\nprint([r[0] for r in c.execute(q).fetchall()])\nc.execute(\"INSERT INTO transaksi VALUES (6, 'X', 'x@mail.com', '2026-02-28 15:30:00', 10)\")\nq1 = \"SELECT id FROM transaksi WHERE tanggal BETWEEN '2026-02-01' AND '2026-02-28' ORDER BY id\"\nq2 = \"SELECT id FROM transaksi WHERE tanggal >= '2026-02-01' AND tanggal < '2026-03-01' ORDER BY id\"\nprint([r[0] for r in c.execute(q1).fetchall()])\nprint([r[0] for r in c.execute(q2).fetchall()])"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-07-2",
+      "title": "Aritmetika tanggal dan jebakannya",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menambah dan mengurangi hari, bulan, dan tahun dengan date",
+        "Mencari awal dan akhir bulan",
+        "Menghitung selisih hari dengan julianday",
+        "Mengenali tanggal tidak valid dan jebakan luapan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Fungsi date dan modifier",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi date dan modifier\n\n`date(nilai, modifier, ...)` menghasilkan tanggal ISO setelah menerapkan satu atau lebih **modifier** berurutan. Modifier yang umum: `'+7 days'`, `'-1 month'`, `'+1 year'`, `'start of month'`, `'start of year'`, dan `'weekday 1'` untuk maju ke Senin berikutnya.\n\nModifier diterapkan dari kiri ke kanan sehingga urutannya berpengaruh. Karena itu `date(x, 'start of month', '+1 month', '-1 day')` menghasilkan hari terakhir bulan itu: mulai dari awal bulan, maju sebulan, mundur sehari."
+            },
+            {
+              "type": "code_example",
+              "filename": "modifier_date.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, date(tanggal, '+7 days'), date(tanggal, '+1 month')\nFROM transaksi ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "(1, '2026-01-22', '2026-02-15')\n(2, '2026-02-07', '2026-03-03')\n(3, '2026-02-17', '2026-03-10')\n(4, '2026-03-07', '2026-03-28')\n(5, '2026-03-12', '2026-04-05')",
+              "explanation": "Menambah tujuh hari dan satu bulan. Perhatikan baris dua: tiga puluh satu Januari ditambah satu bulan menjadi tiga Maret, bukan akhir Februari."
+            },
+            {
+              "type": "text",
+              "markdown": "## Jebakan akhir bulan\n\nMenambah satu bulan pada tanggal 31 Januari menghasilkan 31 Februari yang tidak ada. SQLite tidak menolaknya tetapi meluapkannya ke bulan berikutnya, sehingga hasilnya 3 Maret pada tahun 2026. Banyak pemula mengira hasilnya 28 Februari.\n\nBila Anda membutuhkan akhir bulan berikutnya, jangan memakai `+1 month` pada tanggal akhir bulan. Gunakan pola awal bulan, tambah satu bulan, lalu kurangi sehari agar selalu tepat."
+            },
+            {
+              "type": "code_example",
+              "filename": "awal_akhir_bulan.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nprint(c.execute(\"SELECT date('2026-01-31', '+1 month')\").fetchone())\nq = '''\nSELECT id, date(tanggal, 'start of month'),\n       date(tanggal, 'start of month', '+1 month', '-1 day')\nFROM transaksi ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "('2026-03-03',)\n(1, '2026-01-01', '2026-01-31')\n(2, '2026-01-01', '2026-01-31')\n(3, '2026-02-01', '2026-02-28')\n(4, '2026-02-01', '2026-02-28')\n(5, '2026-03-01', '2026-03-31')",
+              "explanation": "Awal dan akhir bulan dihitung benar tanpa terjebak luapan, termasuk Februari yang berakhir pada dua puluh delapan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Selisih hari dengan julianday\n\n`julianday(tanggal)` mengubah tanggal menjadi bilangan Julian, yaitu jumlah hari sejak titik acuan kuno, sebagai bilangan desimal. Selisih dua bilangan Julian adalah selisih hari. Bungkus dengan `CAST(... AS INTEGER)` atau `ROUND` untuk mendapatkan hari bulat.\n\nGunakan pola ini untuk usia akun, lama pengiriman, atau jumlah hari sejak transaksi terakhir. Selisih bertanda: bila tanggal pertama lebih akhir, hasilnya negatif."
+            },
+            {
+              "type": "code_example",
+              "filename": "julianday_selisih.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, CAST(julianday('2026-03-31') - julianday(tanggal) AS INTEGER)\nFROM transaksi ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])\nprint(c.execute(\"SELECT CAST(julianday('2026-03-01') - julianday('2026-03-05') AS INTEGER)\").fetchone())",
+              "expected_output_note": "[75, 59, 49, 31, 26]\n(-4,)",
+              "explanation": "Jarak setiap transaksi ke tiga puluh satu Maret dalam hari, dan selisih negatif bila urutan dibalik."
+            }
+          ],
+          "quick_check": {
+            "question": "date('2026-01-31', '+1 month') menghasilkan?",
+            "options": [
+              "2026-03-03",
+              "2026-02-28"
+            ],
+            "answer_index": 0,
+            "explanation": "Meluap ke Maret.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tanggal tidak valid",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tanggal tidak valid\n\nFungsi tanggal mengembalikan `NULL` untuk teks yang tidak dapat dibaca sama sekali, misalnya `'bukan'` atau bulan ketiga belas. Tetapi tanggal dengan hari berlebih seperti `'2026-02-30'` tidak ditolak: ia diluapkan menjadi `'2026-03-02'`.\n\nUntuk memeriksa validitas yang ketat, bandingkan `date(s)` dengan `s` itu sendiri. Bila berbeda atau `NULL`, string itu bukan tanggal ISO yang valid. Pemeriksaan ini berguna saat membersihkan data impor."
+            },
+            {
+              "type": "code_example",
+              "filename": "tanggal_valid.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nprint(c.execute(\"SELECT date('2026-02-30'), date('bukan'), date('2026-13-01')\").fetchone())\nfor s in ['2026-02-28', '2026-02-30', 'bukan']:\n    print(s, bool(c.execute('SELECT date(?) = ?', (s, s)).fetchone()[0]))",
+              "expected_output_note": "('2026-03-02', None, None)\n2026-02-28 True\n2026-02-30 False\nbukan False",
+              "explanation": "Hari berlebih diluapkan alih-alih ditolak, dan perbandingan date dengan teks asli menangkap kedua jenis tanggal rusak."
+            },
+            {
+              "type": "text",
+              "markdown": "## Maju ke hari tertentu\n\nModifier `weekday N` memajukan tanggal ke hari ke-N berikutnya, dengan nol Minggu dan satu Senin. Bila tanggal itu sudah jatuh pada hari tersebut, ia tidak berubah. Ini berguna untuk menghitung tenggat berikutnya yang selalu jatuh pada Senin.\n\nGabungkan dengan modifier lain, misalnya `date(x, '+7 days', 'weekday 1')`, untuk mendapatkan Senin pertama sesudah satu minggu. Selalu uji dengan beberapa tanggal contoh sebelum mempercayai rumus waktu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tanggal sekarang\n\n`date('now')` menghasilkan tanggal hari ini dalam UTC, dan `datetime('now')` menyertakan waktu. Tambahkan modifier `'localtime'` untuk waktu setempat. Karena hasilnya berubah tiap hari, query yang memakai `'now'` tidak dapat diuji dengan hasil tetap.\n\nUntuk pengujian dan laporan yang dapat diulang, kirim tanggal acuan sebagai parameter alih-alih memakai `'now'` di dalam query. Dengan begitu hasilnya deterministik dan mudah diverifikasi."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Luapan akhir bulan",
+              "markdown": "Menambah satu bulan pada tanggal 29 sampai 31 dapat meluap ke bulan berikutnya. Untuk akhir bulan pakai awal bulan, tambah satu bulan, kurangi satu hari."
+            }
+          ],
+          "quick_check": {
+            "question": "Selisih hari dihitung dengan?",
+            "options": [
+              "strftime",
+              "julianday"
+            ],
+            "answer_index": 1,
+            "explanation": "Bilangan Julian.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Usia dan masa berlaku",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Usia dan masa berlaku\n\nSelisih hari bermanfaat untuk banyak pertanyaan bisnis: sudah berapa hari sejak pelanggan terakhir membeli, berapa hari lagi langganan berakhir, atau berapa lama tiket tertunda. Hitung dengan `julianday(acuan) - julianday(tanggal)` dan beri tanggal acuan sebagai parameter agar hasil dapat diulang.\n\nUntuk usia dalam tahun, jangan membagi hari dengan 365 begitu saja karena tahun kabisat menggeser hasil. Bandingkan bagian tahun dan koreksi bila ulang tahun tahun ini belum tiba."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menyusun kalender dengan CTE rekursif\n\nData sering memiliki hari tanpa transaksi, sehingga grafik harian berlubang. Solusinya membangun tabel kalender dengan CTE rekursif yang menambah satu hari tiap langkah, lalu menggabungkannya dengan LEFT JOIN ke data. Hari tanpa transaksi muncul dengan jumlah kosong yang dapat diganti nol dengan COALESCE.\n\nTeknik ini menggabungkan beberapa pelajaran sebelumnya: CTE rekursif, LEFT JOIN, dan fungsi tanggal. Ia sangat umum dalam laporan deret waktu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Zona waktu dan konsistensi\n\nFungsi tanggal SQLite bekerja dalam UTC kecuali diberi modifier `'localtime'`. Bila sebagian data tercatat dalam waktu lokal dan sebagian dalam UTC, hasil penjumlahan per hari menjadi salah karena transaksi larut malam jatuh ke hari berbeda.\n\nTetapkan satu konvensi sejak awal, idealnya menyimpan UTC, dan dokumentasikan. Konversi hanya saat menampilkan. Konsistensi di sini lebih penting daripada pilihan zona yang dipakai."
+            }
+          ],
+          "quick_check": {
+            "question": "Akhir bulan dihitung dengan?",
+            "options": [
+              "Awal bulan, tambah satu bulan, kurangi satu hari",
+              "Tambah 30 hari"
+            ],
+            "answer_index": 0,
+            "explanation": "Selalu tepat.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-07-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `tambah_hari(c, tgl, n)` yang mengembalikan teks tanggal `tgl` ditambah `n` hari (n boleh negatif) memakai `date`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef tambah_hari(c, tgl, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tambah_hari(c, '2026-01-31', 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert tambah_hari(c, '2026-01-31', 1) == '2026-02-01'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tambah_hari(c, '2026-02-28', 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_hari(c, '2026-02-28', 1) == '2026-03-01'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tambah_hari(c, '2026-03-05', -5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_hari(c, '2026-03-05', -5) == '2026-02-28'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tambah_hari(c, '2026-03-05', 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_hari(c, '2026-03-05', 0) == '2026-03-05'"
+              }
+            ]
+          },
+          "hint": "Susun modifier dengan n || ' days'.",
+          "solution": "import sqlite3\n\ndef tambah_hari(c, tgl, n):\n    return c.execute(\"SELECT date(?, ? || ' days')\", (tgl, n)).fetchone()[0]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-07-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `selisih_hari(c, a, b)` yang mengembalikan bilangan bulat jumlah hari dari tanggal `a` sampai tanggal `b` (negatif bila `b` lebih awal).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef selisih_hari(c, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selisih_hari(c, '2026-01-15', '2026-03-31')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert selisih_hari(c, '2026-01-15', '2026-03-31') == 75"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selisih_hari(c, '2026-03-01', '2026-03-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari(c, '2026-03-01', '2026-03-01') == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selisih_hari(c, '2026-03-05', '2026-03-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari(c, '2026-03-05', '2026-03-01') == -4"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "selisih_hari(c, '2026-01-01', '2027-01-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari(c, '2026-01-01', '2027-01-01') == 365"
+              }
+            ]
+          },
+          "hint": "Kurangkan dua julianday lalu ubah ke bilangan bulat.",
+          "solution": "import sqlite3\n\ndef selisih_hari(c, a, b):\n    q = 'SELECT CAST(ROUND(julianday(?) - julianday(?)) AS INTEGER)'\n    return c.execute(q, (b, a)).fetchone()[0]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-07-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `akhir_bulan(c)` yang mengembalikan list tuple `(id, akhir_bulan)` untuk semua transaksi, terurut menurut id, dengan `akhir_bulan` adalah hari terakhir bulan dari `tanggal`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef akhir_bulan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nr = akhir_bulan(c)\nassert r[0] == (1, '2026-01-31')"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[2] == (3, '2026-02-28')"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[4] == (5, '2026-03-31')"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "akhir_bulan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (6, 'X', 'x@mail.com', '2028-02-10', 1)\")\nassert akhir_bulan(c)[-1] == (6, '2028-02-29')"
+              }
+            ]
+          },
+          "hint": "Awal bulan, tambah satu bulan, kurangi satu hari.",
+          "solution": "import sqlite3\n\ndef akhir_bulan(c):\n    q = \"SELECT id, date(tanggal, 'start of month', '+1 month', '-1 day') FROM transaksi ORDER BY id\"\n    return c.execute(q).fetchall()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-07-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `tanggal_valid(c, s)` yang mengembalikan `True` hanya bila teks `s` adalah tanggal ISO valid yang ketat, artinya `date(s)` sama persis dengan `s`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef tanggal_valid(c, s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tanggal_valid(c, '2026-02-28')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert tanggal_valid(c, '2026-02-28') is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tanggal_valid(c, '2026-02-30')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanggal_valid(c, '2026-02-30') is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tanggal_valid(c, 'bukan')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanggal_valid(c, 'bukan') is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tanggal_valid(c, '2028-02-29')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanggal_valid(c, '2028-02-29') is True"
+              }
+            ]
+          },
+          "hint": "Bandingkan date(s) dengan s dan ubah hasil NULL menjadi False.",
+          "solution": "import sqlite3\n\ndef tanggal_valid(c, s):\n    r = c.execute('SELECT date(?) = ?', (s, s)).fetchone()[0]\n    return bool(r)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "date('2026-01-31', '+1 month') menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "2026-03-03",
+              "description": ""
+            },
+            {
+              "label": "2026-02-28",
+              "description": ""
+            },
+            {
+              "label": "2026-02-31",
+              "description": ""
+            },
+            {
+              "label": "NULL",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Luapan.",
+          "explanation": "Meluap ke Maret."
+        },
+        {
+          "q": "Selisih hari dihitung dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "julianday",
+              "description": ""
+            },
+            {
+              "label": "strftime",
+              "description": ""
+            },
+            {
+              "label": "length",
+              "description": ""
+            },
+            {
+              "label": "round",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Julian.",
+          "explanation": "Bilangan Julian."
+        },
+        {
+          "q": "Akhir bulan dihitung dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Awal bulan, tambah satu bulan, kurangi satu hari",
+              "description": ""
+            },
+            {
+              "label": "Tambah 30 hari",
+              "description": ""
+            },
+            {
+              "label": "Tambah satu bulan saja",
+              "description": ""
+            },
+            {
+              "label": "Ambil hari 28",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Awal.",
+          "explanation": "Selalu tepat."
+        },
+        {
+          "q": "date('bukan') menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "Hari ini",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kosong.",
+          "explanation": "Teks tak dikenali."
+        },
+        {
+          "q": "Modifier diterapkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dari kiri ke kanan",
+              "description": ""
+            },
+            {
+              "label": "Dari kanan ke kiri",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Sekaligus",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Urut.",
+          "explanation": "Urutan berpengaruh."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menambah satu bulan pada tanggal 31 dan mengira hasilnya akhir bulan. Lebih baik: Pakai awal bulan, tambah satu bulan, kurangi satu hari.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menambah satu bulan pada tanggal 31 dan mengira hasilnya akhir bulan.",
+          "fix": "Pakai awal bulan, tambah satu bulan, kurangi satu hari."
+        },
+        {
+          "mistake": "Menganggap date menolak tanggal 30 Februari.",
+          "fix": "Ia meluapkan ke Maret, jadi bandingkan dengan teks asli."
+        },
+        {
+          "mistake": "Memakai 'now' di query yang harus diuji.",
+          "fix": "Kirim tanggal acuan sebagai parameter."
+        }
+      ],
+      "summary": [
+        "Modifier date diterapkan berurutan dan urutannya berpengaruh.",
+        "Penambahan bulan pada tanggal akhir bulan dapat meluap.",
+        "julianday memudahkan selisih hari.",
+        "Validasi ketat membandingkan date(s) dengan s."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Aritmetika tanggal dan jebakannya"
+          },
+          {
+            "type": "text",
+            "source": "Menambah tujuh hari dan satu bulan. Perhatikan baris dua: tiga puluh satu Januari ditambah satu bulan menjadi tiga Maret, bukan akhir Februari."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, date(tanggal, '+7 days'), date(tanggal, '+1 month')\nFROM transaksi ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          },
+          {
+            "type": "text",
+            "source": "Awal dan akhir bulan dihitung benar tanpa terjebak luapan, termasuk Februari yang berakhir pada dua puluh delapan."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nprint(c.execute(\"SELECT date('2026-01-31', '+1 month')\").fetchone())\nq = '''\nSELECT id, date(tanggal, 'start of month'),\n       date(tanggal, 'start of month', '+1 month', '-1 day')\nFROM transaksi ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          },
+          {
+            "type": "text",
+            "source": "Jarak setiap transaksi ke tiga puluh satu Maret dalam hari, dan selisih negatif bila urutan dibalik."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, CAST(julianday('2026-03-31') - julianday(tanggal) AS INTEGER)\nFROM transaksi ORDER BY id\n'''\nprint([r[1] for r in c.execute(q).fetchall()])\nprint(c.execute(\"SELECT CAST(julianday('2026-03-01') - julianday('2026-03-05') AS INTEGER)\").fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Hari berlebih diluapkan alih-alih ditolak, dan perbandingan date dengan teks asli menangkap kedua jenis tanggal rusak."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nprint(c.execute(\"SELECT date('2026-02-30'), date('bukan'), date('2026-13-01')\").fetchone())\nfor s in ['2026-02-28', '2026-02-30', 'bukan']:\n    print(s, bool(c.execute('SELECT date(?) = ?', (s, s)).fetchone()[0]))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-07-3",
+      "title": "Fungsi teks dan pembersihan data",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memakai UPPER, LOWER, TRIM, dan LENGTH",
+        "Memotong teks dengan SUBSTR dan INSTR",
+        "Menyusun teks dengan penggabungan dan PRINTF",
+        "Membersihkan data kotor sebelum pengelompokan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Data teks yang kotor",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Data teks yang kotor\n\nData teks di dunia nyata jarang rapi. Nama ditulis dengan huruf besar dan kecil acak, email memuat huruf kapital, dan spasi berlebih menempel di tepi. Bila data seperti ini langsung dikelompokkan, `kantor.co.id` dan `KANTOR.CO.ID` menjadi dua kelompok berbeda.\n\nKarena itu pembersihan teks adalah langkah awal analisis. SQL menyediakan fungsi yang cukup untuk sebagian besar kebutuhan: ubah huruf, pangkas spasi, potong bagian, cari posisi, dan ganti isi."
+            },
+            {
+              "type": "text",
+              "markdown": "## UPPER, LOWER, TRIM, LENGTH\n\n`UPPER` dan `LOWER` mengubah huruf besar atau kecil, dan pada SQLite hanya berlaku untuk huruf ASCII. `TRIM` membuang spasi di kedua tepi, `LTRIM` hanya kiri, `RTRIM` hanya kanan. `LENGTH` menghitung jumlah karakter.\n\nUrutan penting: `LENGTH(TRIM(nama))` menghitung panjang setelah dipangkas, sedangkan `LENGTH(nama)` menghitung juga spasi tepi. Perbedaan dua hitungan itu justru cara cepat mendeteksi spasi tak diinginkan."
+            },
+            {
+              "type": "code_example",
+              "filename": "teks_dasar.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, UPPER(nama), LOWER(email), LENGTH(nama), LENGTH(TRIM(nama))\nFROM transaksi ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)",
+              "expected_output_note": "(1, 'ANI PUTRI', 'ani@mail.com', 9, 9)\n(2, 'BUDI SANTOSO', 'budi@kantor.co.id', 12, 12)\n(3, 'CITRA DEWI', 'citra@mail.com', 10, 10)\n(4, ' DEWI LESTARI ', 'dewi@kantor.co.id', 14, 12)\n(5, 'EKO PRASETYO', 'eko@mail.com', 12, 12)",
+              "explanation": "Hanya baris empat yang panjangnya berubah setelah TRIM, menandakan spasi di tepi."
+            },
+            {
+              "type": "text",
+              "markdown": "## SUBSTR dan INSTR\n\n`SUBSTR(teks, mulai, panjang)` mengambil potongan, dengan posisi dimulai dari satu. Posisi negatif menghitung dari belakang, dan panjang boleh dihilangkan untuk mengambil sampai akhir. `INSTR(teks, cari)` mengembalikan posisi kemunculan pertama, atau nol bila tidak ada.\n\nKeduanya bersama-sama memecah teks pada pemisah. Domain email adalah potongan setelah tanda `@`: `SUBSTR(email, INSTR(email, '@') + 1)`. Bagian sebelum `@` adalah `SUBSTR(email, 1, INSTR(email, '@') - 1)`."
+            },
+            {
+              "type": "code_example",
+              "filename": "substr_instr.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, SUBSTR(email, 1, INSTR(email, '@') - 1),\n       SUBSTR(email, INSTR(email, '@') + 1)\nFROM transaksi ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)\nprint(c.execute(\"SELECT INSTR('abc', 'z'), SUBSTR('abcdef', 2, 3), SUBSTR('abcdef', -3)\").fetchone())",
+              "expected_output_note": "(1, 'ani', 'mail.com')\n(2, 'BUDI', 'kantor.co.id')\n(3, 'citra', 'mail.com')\n(4, 'dewi', 'kantor.co.id')\n(5, 'eko', 'mail.com')\n(0, 'bcd', 'def')",
+              "explanation": "Email dipecah menjadi nama pengguna dan domain, dan contoh terakhir menunjukkan INSTR nol saat tidak ketemu serta SUBSTR dari belakang."
+            }
+          ],
+          "quick_check": {
+            "question": "TRIM berfungsi?",
+            "options": [
+              "Membuang spasi di tepi",
+              "Mengubah huruf besar"
+            ],
+            "answer_index": 0,
+            "explanation": "Spasi tepi.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Menggabungkan teks",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menggabungkan teks\n\nOperator `||` menggabungkan teks. Waspadai `NULL`: `'a' || NULL` menghasilkan `NULL`, sehingga satu kolom kosong menghapus seluruh hasil gabungan. Gunakan `COALESCE(kolom, '')` untuk mengganti `NULL` dengan teks kosong sebelum menggabungkan.\n\n`REPLACE(teks, lama, baru)` mengganti semua kemunculan. Untuk format angka, `PRINTF('%05d', id)` memberi nol di depan sehingga satu menjadi `00001`, dan `PRINTF('%.1f', x)` membulatkan ke satu desimal."
+            },
+            {
+              "type": "code_example",
+              "filename": "gabung_teks.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, nama || ' <' || LOWER(email) || '>', REPLACE(email, '@', '[at]'), PRINTF('%05d', id)\nFROM transaksi WHERE id <= 2 ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)\nprint(c.execute(\"SELECT 'a' || NULL, 'a' || COALESCE(NULL, '')\").fetchone())",
+              "expected_output_note": "(1, 'Ani Putri <ani@mail.com>', 'ani[at]mail.com', '00001')\n(2, 'budi santoso <budi@kantor.co.id>', 'BUDI[at]kantor.co.id', '00002')\n(None, 'a')",
+              "explanation": "Penggabungan dan format teks bekerja, dan NULL menghapus seluruh hasil gabungan kecuali diganti COALESCE."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membersihkan sebelum mengelompokkan\n\nPola umum: normalkan dulu, kelompokkan kemudian. Domain email dinormalkan dengan `LOWER` sebelum dipakai di `GROUP BY`, sehingga `Mail.com` dan `mail.com` menjadi satu kelompok. Tanpa langkah ini, hitungan terpecah dan laporan menyesatkan.\n\nLakukan pembersihan dalam CTE atau subquery agar logikanya terpisah dari agregasi. Hasilnya query yang mudah diperiksa dan dapat dipakai ulang untuk kolom lain."
+            },
+            {
+              "type": "code_example",
+              "filename": "bersih_kelompok.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT LOWER(SUBSTR(email, INSTR(email, '@') + 1)) AS domain, COUNT(*), SUM(jumlah)\nFROM transaksi GROUP BY domain ORDER BY domain\n'''\nprint(c.execute(q).fetchall())\nc.execute(\"INSERT INTO transaksi VALUES (6, 'Fani', 'f@MAIL.com', '2026-03-30', 30)\")\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('kantor.co.id', 2, 280), ('mail.com', 3, 370)]\n[('kantor.co.id', 2, 280), ('mail.com', 4, 400)]",
+              "explanation": "Domain dengan huruf kapital tetap masuk kelompok mail.com karena dinormalkan lebih dulu."
+            },
+            {
+              "type": "text",
+              "markdown": "## LIKE dan pencarian pola\n\n`LIKE` memakai `%` untuk sembarang deret karakter dan `_` untuk satu karakter. Pada SQLite, `LIKE` tidak peka huruf besar untuk ASCII, sehingga `nama LIKE '%dewi%'` menemukan `Citra Dewi` dan ` Dewi Lestari `. Pada basis data lain perilaku ini berbeda.\n\nUntuk pencarian awalan yang tidak terpengaruh spasi, pangkas dulu: `LOWER(TRIM(nama)) LIKE 'd%'`. Pencarian dengan `%` di depan tidak dapat memanfaatkan indeks, jadi hati-hati pada tabel besar."
+            }
+          ],
+          "quick_check": {
+            "question": "INSTR mengembalikan nol bila?",
+            "options": [
+              "Teks kosong",
+              "Teks tidak ditemukan"
+            ],
+            "answer_index": 1,
+            "explanation": "Tidak ketemu.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mengambil kata pertama",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengambil kata pertama\n\nNama depan adalah bagian sebelum spasi pertama. Setelah memangkas, `SUBSTR(t, 1, INSTR(t || ' ', ' ') - 1)` mengambilnya, dengan trik menambahkan spasi di belakang agar nama satu kata tetap berhasil. Tanpa trik itu, `INSTR` mengembalikan nol dan hasilnya salah.\n\nTrik kecil seperti ini sering menyelamatkan query dari kasus tepi. Selalu uji dengan nama satu kata, kolom kosong, dan spasi berlebih."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Normalkan dulu",
+              "markdown": "Normalkan teks dengan LOWER dan TRIM sebelum GROUP BY atau JOIN agar variasi penulisan tidak memecah kelompok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa kualitas teks\n\nSebelum membersihkan, ukur dulu seberapa kotor datanya. Hitung baris yang panjangnya berubah setelah `TRIM`, baris yang emailnya tidak memuat `@`, dan baris dengan huruf kapital campur. Angka-angka ini memberi gambaran skala masalah dan membantu memutuskan aturan pembersihan.\n\nSimpan hasil pemeriksaan sebagai bagian dokumentasi. Bila data baru datang, jalankan pemeriksaan yang sama untuk memastikan kualitasnya tidak memburuk."
+            },
+            {
+              "type": "text",
+              "markdown": "## Batas fungsi teks bawaan\n\nFungsi teks SQLite sederhana. `UPPER` dan `LOWER` hanya memahami ASCII, sehingga huruf beraksen tidak berubah. Tidak ada fungsi bawaan untuk ekspresi reguler pada instalasi standar. Pembersihan rumit seperti memecah alamat atau menormalkan nama sering lebih mudah dilakukan di Python atau pandas.\n\nGunakan SQL untuk pembersihan ringan yang selaras dengan kueri, dan pindahkan pekerjaan rumit ke tahap pengolahan data berikutnya. Memilih alat yang tepat lebih penting daripada memaksakan satu alat."
+            }
+          ],
+          "quick_check": {
+            "question": "'a' || NULL menghasilkan?",
+            "options": [
+              "NULL",
+              "a"
+            ],
+            "answer_index": 0,
+            "explanation": "NULL menular.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-07-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `nama_bersih(c)` yang mengembalikan list nama yang sudah dipangkas spasi tepinya, terurut menurut id.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef nama_bersih(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_bersih(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert nama_bersih(c) == ['Ani Putri', 'budi santoso', 'Citra Dewi', 'Dewi Lestari', 'Eko Prasetyo']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_bersih(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (6, '  Fani  ', 'f@x.com', '2026-03-30', 1)\")\nassert nama_bersih(c)[-1] == 'Fani'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(nama_bersih(c))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(nama_bersih(c)) == 6"
+              }
+            ]
+          },
+          "hint": "Pakai TRIM pada kolom nama.",
+          "solution": "import sqlite3\n\ndef nama_bersih(c):\n    q = 'SELECT TRIM(nama) FROM transaksi ORDER BY id'\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-07-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `domain_email(c)` yang mengembalikan list domain email berhuruf kecil untuk semua transaksi, terurut menurut id.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef domain_email(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "domain_email(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert domain_email(c) == ['mail.com', 'kantor.co.id', 'mail.com', 'kantor.co.id', 'mail.com']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "domain_email(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (6, 'F', 'f@MAIL.COM', '2026-03-30', 1)\")\nassert domain_email(c)[-1] == 'mail.com'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(domain_email(c))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(domain_email(c)) == 6"
+              }
+            ]
+          },
+          "hint": "Ambil teks setelah tanda @ lalu ubah ke huruf kecil.",
+          "solution": "import sqlite3\n\ndef domain_email(c):\n    q = \"SELECT LOWER(SUBSTR(email, INSTR(email, '@') + 1)) FROM transaksi ORDER BY id\"\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-07-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `jumlah_per_domain(c)` yang mengembalikan list tuple `(domain, total_jumlah)` dengan domain berhuruf kecil, terurut menurut domain.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef jumlah_per_domain(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_per_domain(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert jumlah_per_domain(c) == [('kantor.co.id', 280), ('mail.com', 370)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_per_domain(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (6, 'F', 'f@MAIL.com', '2026-03-30', 30)\")\nassert jumlah_per_domain(c)[1] == ('mail.com', 400)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_per_domain(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (7, 'G', 'g@baru.id', '2026-03-31', 5)\")\nassert jumlah_per_domain(c)[0] == ('baru.id', 5)"
+              }
+            ]
+          },
+          "hint": "Normalkan domain dengan LOWER lalu GROUP BY.",
+          "solution": "import sqlite3\n\ndef jumlah_per_domain(c):\n    q = '''\n    SELECT LOWER(SUBSTR(email, INSTR(email, '@') + 1)) AS domain, SUM(jumlah)\n    FROM transaksi GROUP BY domain ORDER BY domain\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-07-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `nama_depan(c)` yang mengembalikan list kata pertama dari nama yang sudah dipangkas, terurut menurut id.",
+          "note": "Nama satu kata harus tetap berhasil.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef nama_depan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_depan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\n    INSERT INTO transaksi VALUES\n    (1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n    (2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n    (3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n    (4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n    (5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n    ''')\n    return c\nc = _db()\nassert nama_depan(c) == ['Ani', 'budi', 'Citra', 'Dewi', 'Eko']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_depan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (6, 'Fani', 'f@x.com', '2026-03-30', 1)\")\nassert nama_depan(c)[-1] == 'Fani'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_depan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO transaksi VALUES (7, '  Gita Rahma', 'g@x.com', '2026-03-31', 1)\")\nassert nama_depan(c)[-1] == 'Gita'"
+              }
+            ]
+          },
+          "hint": "Pangkas dulu lalu potong sebelum spasi pertama dengan menambahkan spasi di belakang.",
+          "solution": "import sqlite3\n\ndef nama_depan(c):\n    q = '''\n    SELECT SUBSTR(TRIM(nama), 1, INSTR(TRIM(nama) || ' ', ' ') - 1)\n    FROM transaksi ORDER BY id\n    '''\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "TRIM berfungsi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membuang spasi di tepi",
+              "description": ""
+            },
+            {
+              "label": "Mengubah huruf besar",
+              "description": ""
+            },
+            {
+              "label": "Memotong teks",
+              "description": ""
+            },
+            {
+              "label": "Mengganti teks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tepi.",
+          "explanation": "Spasi tepi."
+        },
+        {
+          "q": "INSTR mengembalikan nol bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "Teks tidak ditemukan",
+              "description": ""
+            },
+            {
+              "label": "Teks kosong",
+              "description": ""
+            },
+            {
+              "label": "Ada spasi",
+              "description": ""
+            },
+            {
+              "label": "Ada NULL",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Nol.",
+          "explanation": "Tidak ketemu."
+        },
+        {
+          "q": "'a' || NULL menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "a",
+              "description": ""
+            },
+            {
+              "label": "Kosong",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Menular.",
+          "explanation": "NULL menular."
+        },
+        {
+          "q": "Fungsi untuk memotong bagian teks?",
+          "code": null,
+          "options": [
+            {
+              "label": "SUBSTR",
+              "description": ""
+            },
+            {
+              "label": "TRIM",
+              "description": ""
+            },
+            {
+              "label": "UPPER",
+              "description": ""
+            },
+            {
+              "label": "REPLACE",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sub.",
+          "explanation": "Mulai dan panjang."
+        },
+        {
+          "q": "LOWER sebelum GROUP BY berguna untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menyatukan variasi huruf",
+              "description": ""
+            },
+            {
+              "label": "Mempercepat",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menghapus NULL",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Huruf.",
+          "explanation": "Normalisasi."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengelompokkan teks tanpa menormalkan huruf. Lebih baik: Gunakan LOWER dan TRIM terlebih dahulu.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengelompokkan teks tanpa menormalkan huruf.",
+          "fix": "Gunakan LOWER dan TRIM terlebih dahulu."
+        },
+        {
+          "mistake": "Menggabungkan kolom yang bisa NULL dengan ||.",
+          "fix": "Bungkus dengan COALESCE."
+        },
+        {
+          "mistake": "Memotong nama satu kata tanpa trik spasi.",
+          "fix": "Tambahkan spasi di belakang sebelum INSTR."
+        }
+      ],
+      "summary": [
+        "Normalkan teks dengan LOWER dan TRIM sebelum mengelompokkan.",
+        "SUBSTR dan INSTR memecah teks pada pemisah.",
+        "NULL pada penggabungan perlu COALESCE.",
+        "Uji kasus tepi seperti nama satu kata."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Fungsi teks dan pembersihan data"
+          },
+          {
+            "type": "text",
+            "source": "Hanya baris empat yang panjangnya berubah setelah TRIM, menandakan spasi di tepi."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, UPPER(nama), LOWER(email), LENGTH(nama), LENGTH(TRIM(nama))\nFROM transaksi ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)"
+          },
+          {
+            "type": "text",
+            "source": "Email dipecah menjadi nama pengguna dan domain, dan contoh terakhir menunjukkan INSTR nol saat tidak ketemu serta SUBSTR dari belakang."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, SUBSTR(email, 1, INSTR(email, '@') - 1),\n       SUBSTR(email, INSTR(email, '@') + 1)\nFROM transaksi ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)\nprint(c.execute(\"SELECT INSTR('abc', 'z'), SUBSTR('abcdef', 2, 3), SUBSTR('abcdef', -3)\").fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Penggabungan dan format teks bekerja, dan NULL menghapus seluruh hasil gabungan kecuali diganti COALESCE."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT id, nama || ' <' || LOWER(email) || '>', REPLACE(email, '@', '[at]'), PRINTF('%05d', id)\nFROM transaksi WHERE id <= 2 ORDER BY id\n'''\nfor r in c.execute(q).fetchall():\n    print(r)\nprint(c.execute(\"SELECT 'a' || NULL, 'a' || COALESCE(NULL, '')\").fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Domain dengan huruf kapital tetap masuk kelompok mail.com karena dinormalkan lebih dulu."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE transaksi (id INTEGER PRIMARY KEY, nama TEXT, email TEXT, tanggal TEXT, jumlah INTEGER);\nINSERT INTO transaksi VALUES\n(1, 'Ani Putri', 'ani@mail.com', '2026-01-15', 100),\n(2, 'budi santoso', 'BUDI@kantor.co.id', '2026-01-31', 200),\n(3, 'Citra Dewi', 'citra@mail.com', '2026-02-10', 150),\n(4, ' Dewi Lestari ', 'dewi@kantor.co.id', '2026-02-28', 80),\n(5, 'Eko Prasetyo', 'eko@mail.com', '2026-03-05', 120);\n''')\n\nq = '''\nSELECT LOWER(SUBSTR(email, INSTR(email, '@') + 1)) AS domain, COUNT(*), SUM(jumlah)\nFROM transaksi GROUP BY domain ORDER BY domain\n'''\nprint(c.execute(q).fetchall())\nc.execute(\"INSERT INTO transaksi VALUES (6, 'Fani', 'f@MAIL.com', '2026-03-30', 30)\")\nprint(c.execute(q).fetchall())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

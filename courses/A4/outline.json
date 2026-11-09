@@ -133,11 +133,16 @@
       "module_no": 8,
       "title": "Simulasi Monte Carlo",
       "file": "m08.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A4-08-1",
+        "exercise_id": "A4-08-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def simulasi_monty_hall(trial, seed, ganti):\n    ..."
+      }
     }
   ]
 }
