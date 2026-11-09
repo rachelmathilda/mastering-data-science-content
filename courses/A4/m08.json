@@ -1,0 +1,1580 @@
+{
+  "schema_version": 2,
+  "course_id": "A4",
+  "module_no": 8,
+  "title": "Simulasi Monte Carlo",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menaksir peluang dan integral dengan simulasi",
+    "Menaksir galat baku taksiran Monte Carlo",
+    "Memakai bootstrap, uji permutasi, dan simulasi keputusan"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A4-08-1",
+    "exercise_id": "A4-08-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def simulasi_monty_hall(trial, seed, ganti):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A4-08-1",
+      "title": "Menaksir peluang dengan simulasi",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan logika simulasi Monte Carlo",
+        "Menaksir peluang kejadian sebagai proporsi hasil simulasi",
+        "Menaksir nilai pi dengan titik acak",
+        "Menyimulasikan masalah ulang tahun dan Monty Hall"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Menghitung dengan mengulang",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menghitung dengan mengulang\n\nTidak semua peluang bisa dihitung dengan rumus. Sistem nyata seperti antrean, jaringan, atau permainan dengan banyak aturan terlalu rumit untuk dianalisis dengan tangan. Metode **Monte Carlo** mengambil jalan lain: jalankan percobaan acak itu di komputer berkali-kali dan lihat seberapa sering kejadian yang kita minati terjadi.\n\nDasarnya adalah hukum bilangan besar yang sudah kamu pelajari. Proporsi kejadian dalam banyak ulangan mendekati peluang sebenarnya. Nama Monte Carlo berasal dari kasino, merujuk pada unsur kebetulan, dan metode ini diciptakan saat proyek fisika nuklir pada pertengahan abad ke-20."
+            },
+            {
+              "type": "text",
+              "markdown": "## Resep dasar\n\nResepnya selalu tiga langkah. Pertama, tuliskan kode yang menyimulasikan satu kali percobaan dan mengembalikan benar atau salah untuk kejadian yang diminati. Kedua, ulangi `n` kali dengan angka acak independen. Ketiga, taksir peluang sebagai banyaknya benar dibagi `n`.\n\nGunakan generator acak dengan benih tetap, misalnya `random.Random(seed)`, supaya hasil dapat diulang dan dicek. Tanpa benih, hasil berubah tiap dijalankan dan sulit mencari bug. Dalam produksi benih bisa dibuat acak, tetapi saat pengembangan benih tetap adalah sahabat debugging."
+            },
+            {
+              "type": "code_example",
+              "filename": "mc_dadu.py",
+              "runnable": true,
+              "code": "import random\n\nr = random.Random(1)\nn = 20000\ntujuh = sum(r.randint(1, 6) + r.randint(1, 6) == 7 for _ in range(n))\nprint(abs(tujuh / n - 1 / 6) < 0.02)",
+              "expected_output_note": "True",
+              "explanation": "Proporsi jumlah tujuh dari dua puluh ribu lemparan dua dadu mendekati satu per enam."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menaksir pi\n\nContoh klasik: taburkan titik acak seragam di persegi satuan `[0, 1] x [0, 1]`. Seperempat lingkaran berjari-jari satu menempati wilayah dengan `x^2 + y^2 <= 1`, dengan luas `pi / 4`. Proporsi titik yang jatuh di dalam seperempat lingkaran mendekati `pi / 4`, sehingga `pi` dapat ditaksir dengan empat kali proporsi itu.\n\nContoh ini bukan cara efisien menghitung pi, karena galatnya hanya turun sebagai satu per akar `n`. Tetapi ia memperlihatkan ide inti: luas atau peluang yang sulit dihitung dapat ditaksir dengan menembakkan titik acak dan menghitung yang mengenai sasaran."
+            },
+            {
+              "type": "code_example",
+              "filename": "mc_pi.py",
+              "runnable": true,
+              "code": "import random\n\nr = random.Random(2)\nn = 200000\ndalam = sum(r.random() ** 2 + r.random() ** 2 <= 1 for _ in range(n))\nprint(abs(4 * dalam / n - 3.1416) < 0.05)",
+              "expected_output_note": "True",
+              "explanation": "Empat kali proporsi titik di dalam seperempat lingkaran memberi taksiran pi yang dekat dengan nilai sebenarnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Monte Carlo menaksir peluang dengan?",
+            "options": [
+              "Proporsi hasil simulasi",
+              "Rumus"
+            ],
+            "answer_index": 0,
+            "explanation": "Hukum bilangan besar.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Masalah ulang tahun lewat simulasi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Masalah ulang tahun lewat simulasi\n\nDi pelajaran sebelumnya kita menghitung peluang ulang tahun sama dengan rumus. Kini kita bisa menyimulasikannya tanpa rumus sama sekali: ambil `k` ulang tahun acak dari 365 hari dan periksa apakah ada duplikat dengan `len(set(...)) < k`. Ulangi banyak kali dan hitung proporsinya.\n\nKeunggulan simulasi di sini adalah mudah dimodifikasi. Bila kamu ingin menambah aturan, seperti tahun kabisat atau hari lahir yang tidak seragam, kodenya hanya perlu sedikit diubah, sedangkan rumus eksaknya mungkin tidak ada."
+            },
+            {
+              "type": "code_example",
+              "filename": "mc_ulang_tahun.py",
+              "runnable": true,
+              "code": "import random\n\nr = random.Random(3)\nk, n = 23, 20000\nsama = sum(len({r.randrange(365) for _ in range(k)}) < k for _ in range(n))\nprint(abs(sama / n - 0.5073) < 0.03)",
+              "expected_output_note": "True",
+              "explanation": "Simulasi untuk dua puluh tiga orang memberi peluang ulang tahun sama yang cocok dengan hitungan rumus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Masalah Monty Hall\n\nKamu memilih satu dari tiga pintu, satu menyembunyikan mobil. Pembawa acara yang tahu letak mobil membuka satu pintu lain yang kosong lalu menawarkan kamu berganti. Apakah berganti menguntungkan? Banyak orang menjawab peluangnya sama, setengah, tetapi jawaban benar: berganti menang dengan peluang dua pertiga.\n\nSimulasi menyelesaikan perdebatan ini tanpa argumen rumit. Tulis aturan persis seperti dalam soal, jalankan ribuan kali, dan hitung hasilnya. Simulasi yang jujur terhadap aturan lebih meyakinkan daripada intuisi yang bisa tertipu."
+            },
+            {
+              "type": "code_example",
+              "filename": "mc_monty_hall.py",
+              "runnable": true,
+              "code": "import random\n\nr = random.Random(4)\nn = 20000\nganti = tetap = 0\nfor _ in range(n):\n    mobil = r.randrange(3)\n    pilih = r.randrange(3)\n    buka = next(p for p in range(3) if p != pilih and p != mobil)\n    akhir = next(p for p in range(3) if p != pilih and p != buka)\n    ganti += akhir == mobil\n    tetap += pilih == mobil\nprint(abs(ganti / n - 2 / 3) < 0.03, abs(tetap / n - 1 / 3) < 0.03)",
+              "expected_output_note": "True True",
+              "explanation": "Berganti pintu menang sekitar dua pertiga kali dan bertahan menang sekitar sepertiga kali."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Benih acak",
+              "markdown": "Selalu pakai random.Random(seed) yang dibuat sekali dan dipakai ulang, bukan random.seed global di tengah fungsi. Itu membuat simulasi dapat diulang dan tidak saling mengganggu."
+            }
+          ],
+          "quick_check": {
+            "question": "Taksiran pi memakai?",
+            "options": [
+              "Faktorial",
+              "Titik acak dalam persegi"
+            ],
+            "answer_index": 1,
+            "explanation": "Luas seperempat lingkaran.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Simulasi sebagai alat verifikasi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Simulasi sebagai alat verifikasi\n\nSimulasi paling kuat bila dipakai berdampingan dengan teori. Untuk soal yang punya jawaban eksak, jalankan simulasi sebagai uji akal sehat: bila hasilnya jauh berbeda, ada kesalahan di rumus atau di kode. Untuk soal yang tidak punya jawaban eksak, simulasi adalah satu-satunya alat, dan keandalannya dinilai dari galat bakunya.\n\nKebiasaan ini membuat kamu tidak percaya begitu saja pada rumus maupun kode. Dua pendekatan independen yang sepakat memberi keyakinan jauh lebih besar daripada salah satu saja."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pembangkit bilangan acak\n\nKomputer tidak benar-benar acak. Fungsi acak memakai algoritma deterministik yang menghasilkan barisan bilangan yang secara statistik tampak acak, disebut pseudo-acak. Benih menentukan titik awal barisan: benih sama menghasilkan barisan sama. Untuk simulasi ilmiah ini justru keunggulan, karena hasilnya dapat direproduksi oleh orang lain.\n\nUntuk keamanan seperti kata sandi, pseudo-acak biasa tidak cukup karena dapat ditebak. Pakai modul khusus seperti secrets. Untuk simulasi Monte Carlo, generator standar sudah memadai selama kamu tidak menyalahgunakan benih yang sama untuk percobaan yang seharusnya independen."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tiga kesalahan pemula\n\nPertama, jumlah ulangan terlalu sedikit sehingga taksiran masih berderau. Kedua, menggunakan benih yang sama untuk dua simulasi yang seharusnya independen, yang membuat keduanya berkorelasi. Ketiga, tidak memeriksa hasil dengan kasus yang jawabannya diketahui. Menjalankan simulasi pada versi sederhana dengan jawaban pasti sebelum menyerang versi rumit adalah praktik yang sangat dianjurkan."
+            }
+          ],
+          "quick_check": {
+            "question": "Berganti pintu pada Monty Hall menang?",
+            "options": [
+              "2/3",
+              "1/3"
+            ],
+            "answer_index": 0,
+            "explanation": "Dua pertiga.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-08-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `taksir_peluang(kejadian, trial, seed)` yang membuat `random.Random(seed)`, memanggil `kejadian(r)` sebanyak `trial` kali, dan mengembalikan proporsi pemanggilan yang bernilai True.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import random\n\ndef taksir_peluang(kejadian, trial, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(taksir_peluang(lambda r: r.random() < 0.3...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(taksir_peluang(lambda r: r.random() < 0.3, 10000, 1) - 0.3) < 0.03"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(taksir_peluang(lambda r: r.randint(1, 6) ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(taksir_peluang(lambda r: r.randint(1, 6) + r.randint(1, 6) == 7, 20000, 2) - 1 / 6) < 0.02"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "taksir_peluang(lambda r: False, 100, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert taksir_peluang(lambda r: False, 100, 3) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "taksir_peluang(lambda r: True, 100, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert taksir_peluang(lambda r: True, 100, 3) == 1.0"
+              }
+            ]
+          },
+          "hint": "Buat satu generator lalu hitung berapa kali kejadian bernilai benar.",
+          "solution": "import random\n\ndef taksir_peluang(kejadian, trial, seed):\n    r = random.Random(seed)\n    return sum(1 for _ in range(trial) if kejadian(r)) / trial",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-08-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `taksir_pi(n, seed)` yang menaksir pi dengan `n` titik acak seragam di persegi satuan memakai `random.Random(seed)`, yaitu `4 * (banyak titik dengan x^2 + y^2 <= 1) / n`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import random\n\ndef taksir_pi(n, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(taksir_pi(100000, 1) - 3.1416)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(taksir_pi(100000, 1) - 3.1416) < 0.05"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(taksir_pi(50000, 2) - 3.1416)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(taksir_pi(50000, 2) - 3.1416) < 0.06"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "taksir_pi(10, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 0 <= taksir_pi(10, 3) <= 4"
+              }
+            ]
+          },
+          "hint": "Tarik x dan y dari generator lalu hitung titik yang berada dalam seperempat lingkaran.",
+          "solution": "import random\n\ndef taksir_pi(n, seed):\n    r = random.Random(seed)\n    dalam = 0\n    for _ in range(n):\n        x = r.random()\n        y = r.random()\n        if x * x + y * y <= 1:\n            dalam += 1\n    return 4 * dalam / n",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-08-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `simulasi_ulang_tahun(orang, trial, seed)` yang menaksir peluang minimal dua dari `orang` memiliki hari lahir sama (365 hari seragam) memakai `random.Random(seed)`, dan mengembalikan proporsinya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import random\n\ndef simulasi_ulang_tahun(orang, trial, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(simulasi_ulang_tahun(23, 20000, 1) - 0.5073)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_ulang_tahun(23, 20000, 1) - 0.5073) < 0.03"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(simulasi_ulang_tahun(60, 5000, 2) - 0.9941)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_ulang_tahun(60, 5000, 2) - 0.9941) < 0.02"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "simulasi_ulang_tahun(1, 100, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simulasi_ulang_tahun(1, 100, 3) == 0.0"
+              }
+            ]
+          },
+          "hint": "Ambil hari lahir acak untuk tiap orang dan periksa apakah ada duplikat memakai set.",
+          "solution": "import random\n\ndef simulasi_ulang_tahun(orang, trial, seed):\n    r = random.Random(seed)\n    sama = 0\n    for _ in range(trial):\n        hari = [r.randrange(365) for _ in range(orang)]\n        if len(set(hari)) < orang:\n            sama += 1\n    return sama / trial",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-08-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `simulasi_monty_hall(trial, seed, ganti)` yang menyimulasikan permainan tiga pintu dengan `random.Random(seed)` dan mengembalikan proporsi kemenangan.",
+          "note": "Pembawa acara membuka satu pintu kosong selain pilihan pemain. Bila `ganti` True pemain pindah ke pintu yang tersisa.",
+          "filename": "solution.py",
+          "starter_code": "import random\n\ndef simulasi_monty_hall(trial, seed, ganti):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(simulasi_monty_hall(20000, 1, True) - 2 / 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_monty_hall(20000, 1, True) - 2 / 3) < 0.03"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(simulasi_monty_hall(20000, 2, False) - 1 ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_monty_hall(20000, 2, False) - 1 / 3) < 0.03"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "abs(simulasi_monty_hall(10000, 5, True) + sim...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_monty_hall(10000, 5, True) + simulasi_monty_hall(10000, 5, False) - 1) < 0.06"
+              }
+            ]
+          },
+          "hint": "Tentukan pintu yang dibuka lalu hitung pintu akhir sesuai strategi.",
+          "solution": "import random\n\ndef simulasi_monty_hall(trial, seed, ganti):\n    r = random.Random(seed)\n    menang = 0\n    for _ in range(trial):\n        mobil = r.randrange(3)\n        pilih = r.randrange(3)\n        buka = next(p for p in range(3) if p != pilih and p != mobil)\n        akhir = next(p for p in range(3) if p != pilih and p != buka) if ganti else pilih\n        if akhir == mobil:\n            menang += 1\n    return menang / trial",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Monte Carlo menaksir peluang dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rumus",
+              "description": ""
+            },
+            {
+              "label": "Proporsi hasil simulasi",
+              "description": ""
+            },
+            {
+              "label": "Tebakan",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ulangi.",
+          "explanation": "Hukum bilangan besar."
+        },
+        {
+          "q": "Taksiran pi memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Titik acak dalam persegi",
+              "description": ""
+            },
+            {
+              "label": "Faktorial",
+              "description": ""
+            },
+            {
+              "label": "Deret",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Titik.",
+          "explanation": "Luas seperempat lingkaran."
+        },
+        {
+          "q": "Berganti pintu pada Monty Hall menang?",
+          "code": null,
+          "options": [
+            {
+              "label": "1/3",
+              "description": ""
+            },
+            {
+              "label": "1/2",
+              "description": ""
+            },
+            {
+              "label": "2/3",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Lebih dari setengah.",
+          "explanation": "Dua pertiga."
+        },
+        {
+          "q": "Galat simulasi turun sebagai?",
+          "code": null,
+          "options": [
+            {
+              "label": "1/n",
+              "description": ""
+            },
+            {
+              "label": "1/akar n",
+              "description": ""
+            },
+            {
+              "label": "n",
+              "description": ""
+            },
+            {
+              "label": "tetap",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Akar.",
+          "explanation": "Seperti rata-rata."
+        },
+        {
+          "q": "Mengapa benih tetap?",
+          "code": null,
+          "options": [
+            {
+              "label": "Agar hasil dapat diulang",
+              "description": ""
+            },
+            {
+              "label": "Agar lebih cepat",
+              "description": ""
+            },
+            {
+              "label": "Agar akurat",
+              "description": ""
+            },
+            {
+              "label": "Agar acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ulang.",
+          "explanation": "Memudahkan debugging."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Tidak memakai benih sehingga hasil tidak dapat diulang. Lebih baik: Pakai random.Random(seed).",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Tidak memakai benih sehingga hasil tidak dapat diulang.",
+          "fix": "Pakai random.Random(seed)."
+        },
+        {
+          "mistake": "Percaya satu simulasi pendek.",
+          "fix": "Periksa galat baku dan banyak ulangan."
+        },
+        {
+          "mistake": "Menyimulasikan aturan yang berbeda dari soal.",
+          "fix": "Tulis aturan persis seperti soal."
+        }
+      ],
+      "summary": [
+        "Monte Carlo menaksir peluang dengan proporsi hasil simulasi.",
+        "Titik acak menaksir luas dan nilai pi.",
+        "Simulasi memverifikasi dan menyelesaikan masalah tanpa rumus.",
+        "Benih tetap membuat simulasi dapat diulang."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Menaksir peluang dengan simulasi"
+          },
+          {
+            "type": "text",
+            "source": "Proporsi jumlah tujuh dari dua puluh ribu lemparan dua dadu mendekati satu per enam."
+          },
+          {
+            "type": "code",
+            "source": "import random\n\nr = random.Random(1)\nn = 20000\ntujuh = sum(r.randint(1, 6) + r.randint(1, 6) == 7 for _ in range(n))\nprint(abs(tujuh / n - 1 / 6) < 0.02)"
+          },
+          {
+            "type": "text",
+            "source": "Empat kali proporsi titik di dalam seperempat lingkaran memberi taksiran pi yang dekat dengan nilai sebenarnya."
+          },
+          {
+            "type": "code",
+            "source": "import random\n\nr = random.Random(2)\nn = 200000\ndalam = sum(r.random() ** 2 + r.random() ** 2 <= 1 for _ in range(n))\nprint(abs(4 * dalam / n - 3.1416) < 0.05)"
+          },
+          {
+            "type": "text",
+            "source": "Simulasi untuk dua puluh tiga orang memberi peluang ulang tahun sama yang cocok dengan hitungan rumus."
+          },
+          {
+            "type": "code",
+            "source": "import random\n\nr = random.Random(3)\nk, n = 23, 20000\nsama = sum(len({r.randrange(365) for _ in range(k)}) < k for _ in range(n))\nprint(abs(sama / n - 0.5073) < 0.03)"
+          },
+          {
+            "type": "text",
+            "source": "Berganti pintu menang sekitar dua pertiga kali dan bertahan menang sekitar sepertiga kali."
+          },
+          {
+            "type": "code",
+            "source": "import random\n\nr = random.Random(4)\nn = 20000\nganti = tetap = 0\nfor _ in range(n):\n    mobil = r.randrange(3)\n    pilih = r.randrange(3)\n    buka = next(p for p in range(3) if p != pilih and p != mobil)\n    akhir = next(p for p in range(3) if p != pilih and p != buka)\n    ganti += akhir == mobil\n    tetap += pilih == mobil\nprint(abs(ganti / n - 2 / 3) < 0.03, abs(tetap / n - 1 / 3) < 0.03)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-08-2",
+      "title": "Integrasi Monte Carlo dan galat taksiran",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menaksir integral sebagai ekspektasi dari titik acak",
+        "Menaksir galat baku taksiran Monte Carlo",
+        "Menghitung ukuran simulasi yang dibutuhkan",
+        "Menaksir luas wilayah dengan hit-or-miss"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Integral sebagai rata-rata",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Integral sebagai rata-rata\n\nIntegral `f` dari `a` sampai `b` dapat dilihat sebagai `(b - a)` kali nilai rata-rata `f` pada rentang itu. Bila `U` seragam pada `[a, b]`, maka rata-rata `f(U)` memiliki ekspektasi `integral / (b - a)`. Karena itu kita bisa menaksir integral dengan mengambil banyak titik acak seragam, menghitung `f` di tiap titik, merata-ratakan, dan mengalikan dengan lebar rentang.\n\nIni integrasi Monte Carlo. Untuk fungsi satu dimensi yang mulus, aturan titik tengah lebih akurat. Keunggulan Monte Carlo tampak pada dimensi tinggi, tempat grid teratur menjadi mustahil karena jumlah titik meledak, sedangkan galat Monte Carlo tetap turun sebagai satu per akar `n` tanpa peduli dimensi."
+            },
+            {
+              "type": "code_example",
+              "filename": "mc_integral.py",
+              "runnable": true,
+              "code": "import random\n\nr = random.Random(1)\nn = 100000\nest = sum(r.random() ** 2 for _ in range(n)) / n\nprint(abs(est - 1 / 3) < 0.01)",
+              "expected_output_note": "True",
+              "explanation": "Rata-rata x kuadrat di titik acak seragam mendekati sepertiga, yaitu integralnya dari nol sampai satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rentang umum\n\nUntuk rentang `[a, b]`, tarik `u = a + (b - a) * r.random()`, hitung `f(u)`, rata-ratakan, lalu kalikan dengan `b - a`. Integral `sin(x)` dari nol sampai pi bernilai tepat dua. Dengan seratus ribu titik, taksiran Monte Carlo biasanya berada dalam sekitar `0,01` dari dua.\n\nKeunggulan lain: tidak perlu turunan atau kehalusan fungsi. Selama kita dapat mengevaluasi `f`, kita dapat menaksir integralnya, bahkan bila `f` hasil simulasi lain atau model hitam."
+            },
+            {
+              "type": "code_example",
+              "filename": "mc_sin.py",
+              "runnable": true,
+              "code": "import math\nimport random\n\nr = random.Random(2)\nn = 100000\na, b = 0, math.pi\nest = (b - a) * sum(math.sin(a + (b - a) * r.random()) for _ in range(n)) / n\nprint(abs(est - 2) < 0.05)",
+              "expected_output_note": "True",
+              "explanation": "Taksiran integral sinus dari nol sampai pi berada dekat dua."
+            },
+            {
+              "type": "text",
+              "markdown": "## Galat baku taksiran\n\nTaksiran Monte Carlo adalah rata-rata sampel, sehingga galat bakunya `sigma / sqrt(n)` dengan `sigma` simpangan baku `f(U)` (dikali lebar rentang). Kita biasanya tidak tahu `sigma`, tetapi dapat menaksirnya dari simulasi yang sama dengan simpangan baku sampel. Maka setiap taksiran Monte Carlo seharusnya disertai galat bakunya.\n\nDengan galat baku, kita dapat memberi interval kepercayaan `taksiran ± 1,96 SE`. Laporan tanpa galat adalah angka tanpa konteks: pembaca tidak tahu apakah dua desimal terakhir bermakna atau hanya derau."
+            },
+            {
+              "type": "code_example",
+              "filename": "mc_galat.py",
+              "runnable": true,
+              "code": "import math\nimport random\nimport statistics\n\nr = random.Random(7)\nn = 50000\nnilai = [r.random() ** 2 for _ in range(n)]\nest = statistics.mean(nilai)\nse = statistics.stdev(nilai) / math.sqrt(n)\nprint(abs(est - 1 / 3) < 3 * se, se < 0.002)",
+              "expected_output_note": "True True",
+              "explanation": "Nilai sebenarnya berada dalam tiga galat baku dari taksiran, dan galat bakunya kecil untuk lima puluh ribu titik."
+            }
+          ],
+          "quick_check": {
+            "question": "Integrasi MC menaksir integral sebagai?",
+            "options": [
+              "Lebar kali rata-rata f",
+              "Jumlah f"
+            ],
+            "answer_index": 0,
+            "explanation": "Ekspektasi dari titik seragam.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Berapa banyak simulasi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Berapa banyak simulasi\n\nKarena `SE = sigma / sqrt(n)`, kita dapat merencanakan: untuk galat baku target `s`, butuh `n = (sigma / s)^2`. Fungsi `x^2` pada `[0, 1]` memiliki `sigma = sqrt(4/45)`, sekitar `0,298`. Galat baku `0,003` butuh sepuluh ribu titik, dan galat `0,0003` butuh satu juta titik.\n\nHubungan akar ini menjelaskan batas praktis Monte Carlo: satu digit tambahan presisi menuntut seratus kali lebih banyak komputasi. Karena itu teknik pengurangan varians, yang menurunkan `sigma`, sangat berharga pada simulasi mahal."
+            },
+            {
+              "type": "code_example",
+              "filename": "mc_ukuran.py",
+              "runnable": true,
+              "code": "import math\n\nsigma = math.sqrt(4 / 45)\nprint(round(sigma / math.sqrt(100), 4), round(sigma / math.sqrt(10000), 4))",
+              "expected_output_note": "0.0298 0.003",
+              "explanation": "Galat baku turun sepuluh kali lipat ketika jumlah titik naik seratus kali lipat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hit-or-miss untuk luas\n\nCara kedua menaksir luas wilayah tak beraturan: lingkupi dengan persegi panjang yang luasnya diketahui, taburkan titik acak seragam, dan hitung proporsi titik yang jatuh di wilayah. Luas wilayah sama dengan proporsi dikali luas persegi panjang. Ini generalisasi dari taksiran pi.\n\nCukup tulis fungsi syarat yang mengembalikan benar bila titik berada di wilayah. Tidak perlu rumus luas, bahkan untuk bentuk rumit seperti irisan beberapa lingkaran atau wilayah yang didefinisikan oleh model."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Selalu sertakan galat",
+              "markdown": "Laporkan taksiran Monte Carlo bersama galat bakunya, dan pilih jumlah simulasi dari galat target, bukan dari tebakan."
+            }
+          ],
+          "quick_check": {
+            "question": "Galat baku MC?",
+            "options": [
+              "sigma/n",
+              "sigma/akar n"
+            ],
+            "answer_index": 1,
+            "explanation": "Seperti rata-rata.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dimensi tinggi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dimensi tinggi\n\nPada dimensi `d`, grid dengan sepuluh titik per sumbu membutuhkan `10^d` titik, sehingga mustahil untuk `d` di atas sedikit. Galat Monte Carlo tetap `sigma / sqrt(n)` terlepas dari dimensi. Inilah mengapa Monte Carlo menjadi alat utama di fisika, keuangan, dan statistika Bayesian, tempat integral berdimensi puluhan hingga ribuan harus dihitung.\n\nNamun `sigma` sendiri dapat membesar pada dimensi tinggi bila fungsi hanya bernilai besar di wilayah sangat kecil. Di situ pengambilan sampel penting atau metode rantai Markov lebih cocok daripada titik seragam."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pengurangan varians\n\nKarena galat bergantung pada `sigma`, mengurangi `sigma` sama berharganya dengan menambah `n`. Salah satu teknik sederhana adalah variat antitetik: untuk tiap `u` yang ditarik, gunakan juga `1 - u`. Bila `f` monoton, `f(u)` dan `f(1 - u)` berkorelasi negatif sehingga rata-ratanya berfluktuasi lebih kecil daripada dua tarikan independen.\n\nTeknik lain adalah pengambilan sampel penting, yang menarik titik lebih sering di wilayah tempat fungsi bernilai besar lalu mengoreksi dengan bobot. Keduanya mengurangi varians tanpa menambah banyak komputasi, dan penting untuk simulasi yang mahal."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan memakai Monte Carlo\n\nPilih Monte Carlo ketika dimensi tinggi, aturan rumit, atau fungsi tidak mulus membuat metode analitik dan grid tidak praktis. Pilih metode deterministik seperti aturan titik tengah ketika dimensi rendah dan fungsi mulus, karena ia jauh lebih akurat untuk komputasi yang sama. Pemilihan alat yang tepat adalah bagian dari keterampilan, bukan sekadar menjalankan simulasi untuk semua hal."
+            }
+          ],
+          "quick_check": {
+            "question": "Untuk 10 kali lebih presisi butuh titik?",
+            "options": [
+              "100 kali",
+              "10 kali"
+            ],
+            "answer_index": 0,
+            "explanation": "Akar n.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-08-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `integral_mc(f, a, b, n, seed)` yang menaksir integral `f` pada `[a, b]` dengan `n` titik seragam dari `random.Random(seed)`: `(b - a) * rata-rata f(u)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import random\n\ndef integral_mc(f, a, b, n, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import math",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(integral_mc(lambda x: x * x, 0, 1, 100000...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(integral_mc(lambda x: x * x, 0, 1, 100000, 1) - 1 / 3) < 0.01"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(integral_mc(math.sin, 0, math.pi, 100000,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(integral_mc(math.sin, 0, math.pi, 100000, 2) - 2) < 0.05"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "integral_mc(lambda x: 3, 0, 2, 100, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert integral_mc(lambda x: 3, 0, 2, 100, 3) == 6.0"
+              }
+            ]
+          },
+          "hint": "Tarik titik seragam pada rentang dan rata-ratakan nilai fungsi.",
+          "solution": "import random\n\ndef integral_mc(f, a, b, n, seed):\n    r = random.Random(seed)\n    total = 0.0\n    for _ in range(n):\n        total += f(a + (b - a) * r.random())\n    return (b - a) * total / n",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-08-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `galat_baku_mc(f, a, b, n, seed)` yang mengembalikan tuple `(taksiran, se)` untuk integral `f` pada `[a, b]`.",
+          "note": "`se` adalah `(b - a) * stdev(f(u)) / sqrt(n)` dengan `statistics.stdev`.",
+          "filename": "solution.py",
+          "starter_code": "import math\nimport random\nimport statistics\n\ndef galat_baku_mc(f, a, b, n, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(se - 0.00298)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "est, se = galat_baku_mc(lambda x: x * x, 0, 1, 10000, 1)\nassert abs(se - 0.00298) < 0.0005"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(est - 1 / 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(est - 1 / 3) < 4 * se"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "est2, se2 = galat_baku_mc(lambda x: 5, 0, 3, 100, 2)\nassert est2 == 15.0 and se2 == 0.0"
+              }
+            ]
+          },
+          "hint": "Simpan semua nilai fungsi lalu hitung rata-rata dan simpangan bakunya.",
+          "solution": "import math\nimport random\nimport statistics\n\ndef galat_baku_mc(f, a, b, n, seed):\n    r = random.Random(seed)\n    nilai = [f(a + (b - a) * r.random()) for _ in range(n)]\n    est = (b - a) * statistics.mean(nilai)\n    se = (b - a) * statistics.stdev(nilai) / math.sqrt(n)\n    return (est, se)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-08-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `n_diperlukan(sigma, target_se)` yang mengembalikan banyaknya titik terkecil (bilangan bulat) agar `sigma / sqrt(n) <= target_se`, yaitu `ceil((sigma / target_se) ** 2)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef n_diperlukan(sigma, target_se):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "n_diperlukan(1, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert n_diperlukan(1, 0.1) == 100"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "n_diperlukan(2, 0.01)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert n_diperlukan(2, 0.01) == 40000"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "n_diperlukan(0.5, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert n_diperlukan(0.5, 0.05) == 100"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "n_diperlukan(3, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert n_diperlukan(3, 1) == 9"
+              }
+            ]
+          },
+          "hint": "Balikkan rumus galat baku untuk n dan bulatkan ke atas.",
+          "solution": "import math\n\ndef n_diperlukan(sigma, target_se):\n    return math.ceil((sigma / target_se) ** 2)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-08-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `luas_mc(syarat, xr, yr, n, seed)` yang menaksir luas wilayah dengan hit-or-miss.",
+          "note": "`xr` dan `yr` adalah tuple `(min, max)` persegi panjang pembungkus, `syarat(x, y)` bernilai True di dalam wilayah. Kembalikan proporsi titik di dalam dikali luas persegi panjang.",
+          "filename": "solution.py",
+          "starter_code": "import random\n\ndef luas_mc(syarat, xr, yr, n, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(luas_mc(lambda x, y: x * x + y * y <= 1, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(luas_mc(lambda x, y: x * x + y * y <= 1, (-1, 1), (-1, 1), 100000, 1) - 3.1416) < 0.05"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(luas_mc(lambda x, y: x < y, (0, 1), (0, 1...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(luas_mc(lambda x, y: x < y, (0, 1), (0, 1), 50000, 2) - 0.5) < 0.02"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "luas_mc(lambda x, y: True, (0, 2), (0, 3), 10...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_mc(lambda x, y: True, (0, 2), (0, 3), 100, 3) == 6.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "luas_mc(lambda x, y: False, (0, 2), (0, 3), 1...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_mc(lambda x, y: False, (0, 2), (0, 3), 100, 3) == 0.0"
+              }
+            ]
+          },
+          "hint": "Tarik x dan y seragam pada persegi panjang dan hitung proporsi yang memenuhi syarat.",
+          "solution": "import random\n\ndef luas_mc(syarat, xr, yr, n, seed):\n    r = random.Random(seed)\n    dalam = 0\n    for _ in range(n):\n        x = xr[0] + (xr[1] - xr[0]) * r.random()\n        y = yr[0] + (yr[1] - yr[0]) * r.random()\n        if syarat(x, y):\n            dalam += 1\n    return dalam / n * (xr[1] - xr[0]) * (yr[1] - yr[0])",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Integrasi MC menaksir integral sebagai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lebar kali rata-rata f",
+              "description": ""
+            },
+            {
+              "label": "Jumlah f",
+              "description": ""
+            },
+            {
+              "label": "Maks f",
+              "description": ""
+            },
+            {
+              "label": "Median f",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Rata-rata.",
+          "explanation": "Ekspektasi dari titik seragam."
+        },
+        {
+          "q": "Galat baku MC?",
+          "code": null,
+          "options": [
+            {
+              "label": "sigma/akar n",
+              "description": ""
+            },
+            {
+              "label": "sigma/n",
+              "description": ""
+            },
+            {
+              "label": "sigma",
+              "description": ""
+            },
+            {
+              "label": "n sigma",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Akar.",
+          "explanation": "Seperti rata-rata."
+        },
+        {
+          "q": "Untuk 10 kali lebih presisi butuh titik?",
+          "code": null,
+          "options": [
+            {
+              "label": "10 kali",
+              "description": ""
+            },
+            {
+              "label": "100 kali",
+              "description": ""
+            },
+            {
+              "label": "Sama",
+              "description": ""
+            },
+            {
+              "label": "2 kali",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kuadrat.",
+          "explanation": "Akar n."
+        },
+        {
+          "q": "Keunggulan MC di dimensi tinggi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Galat tak bergantung dimensi",
+              "description": ""
+            },
+            {
+              "label": "Selalu eksak",
+              "description": ""
+            },
+            {
+              "label": "Tanpa acak",
+              "description": ""
+            },
+            {
+              "label": "Lebih cepat grid",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dimensi.",
+          "explanation": "Tidak ada ledakan titik."
+        },
+        {
+          "q": "Hit-or-miss menaksir?",
+          "code": null,
+          "options": [
+            {
+              "label": "Luas dari proporsi titik",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            },
+            {
+              "label": "Varians",
+              "description": ""
+            },
+            {
+              "label": "Korelasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tembak titik.",
+          "explanation": "Proporsi kali luas pembungkus."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Melaporkan taksiran tanpa galat baku. Lebih baik: Sertakan SE atau interval.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Melaporkan taksiran tanpa galat baku.",
+          "fix": "Sertakan SE atau interval."
+        },
+        {
+          "mistake": "Mengira galat turun sebagai 1/n.",
+          "fix": "Turun sebagai satu per akar n."
+        },
+        {
+          "mistake": "Lupa mengalikan rata-rata dengan lebar rentang.",
+          "fix": "Integral sama dengan lebar kali rata-rata."
+        }
+      ],
+      "summary": [
+        "Integral adalah lebar kali rata-rata fungsi di titik acak.",
+        "Setiap taksiran MC perlu galat baku.",
+        "Satu digit presisi tambahan butuh seratus kali lebih banyak simulasi.",
+        "Hit-or-miss menaksir luas dari proporsi titik."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Integrasi Monte Carlo dan galat taksiran"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata x kuadrat di titik acak seragam mendekati sepertiga, yaitu integralnya dari nol sampai satu."
+          },
+          {
+            "type": "code",
+            "source": "import random\n\nr = random.Random(1)\nn = 100000\nest = sum(r.random() ** 2 for _ in range(n)) / n\nprint(abs(est - 1 / 3) < 0.01)"
+          },
+          {
+            "type": "text",
+            "source": "Taksiran integral sinus dari nol sampai pi berada dekat dua."
+          },
+          {
+            "type": "code",
+            "source": "import math\nimport random\n\nr = random.Random(2)\nn = 100000\na, b = 0, math.pi\nest = (b - a) * sum(math.sin(a + (b - a) * r.random()) for _ in range(n)) / n\nprint(abs(est - 2) < 0.05)"
+          },
+          {
+            "type": "text",
+            "source": "Nilai sebenarnya berada dalam tiga galat baku dari taksiran, dan galat bakunya kecil untuk lima puluh ribu titik."
+          },
+          {
+            "type": "code",
+            "source": "import math\nimport random\nimport statistics\n\nr = random.Random(7)\nn = 50000\nnilai = [r.random() ** 2 for _ in range(n)]\nest = statistics.mean(nilai)\nse = statistics.stdev(nilai) / math.sqrt(n)\nprint(abs(est - 1 / 3) < 3 * se, se < 0.002)"
+          },
+          {
+            "type": "text",
+            "source": "Galat baku turun sepuluh kali lipat ketika jumlah titik naik seratus kali lipat."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nsigma = math.sqrt(4 / 45)\nprint(round(sigma / math.sqrt(100), 4), round(sigma / math.sqrt(10000), 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-08-3",
+      "title": "Bootstrap, permutasi, dan simulasi keputusan",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menyusun interval kepercayaan dengan bootstrap",
+        "Menghitung nilai p dengan uji permutasi",
+        "Menyimulasikan keputusan persediaan di bawah ketidakpastian",
+        "Memilih keputusan optimal dari nilai harapan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Bootstrap",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bootstrap\n\nInterval kepercayaan klasik bergantung pada rumus galat baku, yang tidak selalu ada untuk statistik rumit seperti median atau korelasi. **Bootstrap** menggantinya dengan simulasi: anggap sampelmu adalah populasi, ambil sampel ulang berukuran sama **dengan pengembalian** dari sampel itu, hitung statistik, dan ulangi ribuan kali. Sebaran statistik hasil ulang menaksir sebaran statistik sebenarnya.\n\nGagasannya sederhana dan sangat umum. Selama sampel awal mewakili populasi, bootstrap memberi taksiran ketidakpastian untuk hampir semua statistik tanpa rumus matematika."
+            },
+            {
+              "type": "code_example",
+              "filename": "bootstrap.py",
+              "runnable": true,
+              "code": "import random\n\ndata = [12, 15, 14, 10, 18, 20, 11, 13, 16, 17]\nr = random.Random(3)\nrata = sorted(sum(r.choices(data, k=len(data))) / len(data) for _ in range(2000))\nlo, hi = rata[50], rata[1949]\nprint(lo < 14.6 < hi, 2 < hi - lo < 6)",
+              "expected_output_note": "True True",
+              "explanation": "Interval bootstrap memuat rata-rata sampel dan lebarnya sekitar empat, sesuai galat baku satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Interval persentil\n\nCara paling sederhana membentuk interval dari hasil bootstrap adalah memakai persentil. Urutkan statistik hasil ulang dan ambil nilai pada persentil ke-2,5 dan ke-97,5 untuk interval 95 persen. Tidak diperlukan asumsi normal, sehingga interval dapat asimetris bila sebaran statistiknya miring.\n\nBootstrap membutuhkan sampel asli yang cukup besar dan mewakili. Untuk sampel sangat kecil atau statistik yang sensitif terhadap nilai ekstrem seperti maksimum, bootstrap bisa menyesatkan. Seperti metode lain, ia bukan sihir tetapi alat yang berguna bila dipakai dengan kritis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Uji permutasi\n\nMisalkan dua kelompok memiliki rata-rata berbeda dan kita ingin tahu apakah perbedaan itu mungkin kebetulan. Bila tidak ada perbedaan nyata, label kelompok hanya penanda acak. **Uji permutasi** mengacak label berulang kali, menghitung selisih rata-rata tiap pengacakan, dan melihat seberapa sering selisih sebesar atau lebih besar dari yang teramati terjadi.\n\nProporsi itu adalah nilai p. Nilai p kecil berarti selisih teramati jarang muncul bila label tidak bermakna, sehingga ada alasan menduga perbedaan nyata. Uji ini tidak berasumsi distribusi tertentu, dan untuk sampel kecil kita bisa menghitung semua permutasi secara eksak."
+            },
+            {
+              "type": "code_example",
+              "filename": "uji_permutasi.py",
+              "runnable": true,
+              "code": "from itertools import combinations\n\nA = [5, 6, 7, 8, 9]\nB = [1, 2, 3, 4, 5]\nsemua = A + B\namati = sum(A) / 5 - sum(B) / 5\nlebih = total = 0\nfor idx in combinations(range(10), 5):\n    a = [semua[i] for i in idx]\n    b = [semua[i] for i in range(10) if i not in idx]\n    total += 1\n    if sum(a) / 5 - sum(b) / 5 >= amati - 1e-12:\n        lebih += 1\nprint(amati, lebih, total, round(lebih / total, 4))",
+              "expected_output_note": "4.0 2 252 0.0079",
+              "explanation": "Hanya dua dari dua ratus lima puluh dua pembagian yang menghasilkan selisih sebesar itu, sehingga nilai p sekitar nol koma nol nol delapan."
+            }
+          ],
+          "quick_check": {
+            "question": "Bootstrap mengambil sampel ulang?",
+            "options": [
+              "Dengan pengembalian",
+              "Tanpa pengembalian"
+            ],
+            "answer_index": 0,
+            "explanation": "Ukuran sama dengan data.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Simulasi keputusan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Simulasi keputusan\n\nMonte Carlo sangat berguna untuk keputusan di bawah ketidakpastian. Contoh persediaan: toko memesan `q` unit seharga 2 per unit dan menjual seharga 5 per unit. Permintaan harian tidak pasti, katakan seragam dari 1 sampai 10. Unit yang tidak laku hangus. Keuntungan hari itu `5 * min(q, permintaan) - 2 * q`.\n\nMemesan terlalu sedikit melewatkan penjualan dan terlalu banyak membuang uang. Keuntungan harapan sebagai fungsi `q` memberi jawaban jelas, dan dapat dihitung secara eksak maupun disimulasikan untuk aturan permintaan yang lebih rumit."
+            },
+            {
+              "type": "code_example",
+              "filename": "persediaan.py",
+              "runnable": true,
+              "code": "print([round(sum(5 * min(q, d) - 2 * q for d in range(1, 11)) / 10, 4) for q in range(5, 9)])",
+              "expected_output_note": "[10.0, 10.5, 10.5, 10.0]",
+              "explanation": "Keuntungan harapan tertinggi dicapai dengan memesan enam atau tujuh unit, dan menurun bila memesan lebih sedikit atau lebih banyak."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dari keuntungan ke keputusan\n\nDengan nilai harapan untuk tiap pilihan, keputusan optimal adalah yang memaksimalkannya. Pada contoh tadi, enam dan tujuh unit sama baik, dan kita bisa memilih yang lebih kecil untuk mengurangi modal tertahan. Intuisinya: tambahkan unit selama peluang unit itu terjual dikali margin lebih besar daripada biaya.\n\nSimulasi mengizinkan kita menambahkan realisme: permintaan berubah menurut hari, pemasok terlambat, barang kedaluwarsa. Setiap aturan baru hanya satu baris kode, sedangkan analisis eksak mungkin tak ada. Namun selalu laporkan ketidakpastian taksiran dan uji sensitivitas terhadap asumsi permintaan."
+            },
+            {
+              "type": "code_example",
+              "filename": "sim_persediaan.py",
+              "runnable": true,
+              "code": "import random\n\nr = random.Random(8)\nn = 20000\nq = 6\nuntung = sum(5 * min(q, r.randint(1, 10)) - 2 * q for _ in range(n)) / n\nprint(abs(untung - 10.5) < 0.3)",
+              "expected_output_note": "True",
+              "explanation": "Simulasi keuntungan harian dengan memesan enam unit mendekati nilai harapan sepuluh koma lima."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Sampah masuk",
+              "markdown": "Hasil simulasi keputusan hanya sebaik asumsi masukannya. Uji sensitivitas terhadap distribusi permintaan sebelum mempercayai rekomendasi."
+            }
+          ],
+          "quick_check": {
+            "question": "Uji permutasi mengacak?",
+            "options": [
+              "Data",
+              "Label kelompok"
+            ],
+            "answer_index": 1,
+            "explanation": "Di bawah hipotesis nol label tak bermakna.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Bootstrap untuk statistik apa pun",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bootstrap untuk statistik apa pun\n\nKeindahan bootstrap adalah generalitasnya. Untuk median, cukup ganti rata-rata dengan median pada setiap sampel ulang. Untuk korelasi, ambil sampel ulang pasangan data utuh lalu hitung korelasinya. Untuk rasio dua rata-rata atau akurasi model, polanya sama. Tidak perlu menurunkan rumus galat baku untuk tiap statistik baru.\n\nKehati-hatian tetap perlu: ambil sampel ulang unit yang independen. Bila data berasal dari kelompok seperti beberapa pengamatan per pengguna, ambil sampel ulang pengguna, bukan pengamatan, supaya struktur ketergantungan dipertahankan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Nilai p dan ukuran efek\n\nNilai p menjawab seberapa mengejutkan data bila tidak ada efek, bukan seberapa besar efeknya. Dengan sampel sangat besar, perbedaan yang remeh secara praktis pun bisa memiliki nilai p sangat kecil. Sebaliknya, efek besar pada sampel kecil bisa gagal menembus ambang. Karena itu laporkan selisih beserta interval kepercayaannya, bukan hanya nilai p.\n\nUji permutasi dan bootstrap sama-sama menghasilkan keduanya: nilai p dari pengacakan label dan interval dari sampel ulang. Gunakan keduanya bersama untuk gambaran yang utuh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Perencanaan dengan skenario\n\nSimulasi keputusan paling bernilai bila dipakai untuk membandingkan skenario. Ubah distribusi permintaan menjadi lebih tinggi, tambahkan keterlambatan pemasok, atau naikkan biaya, lalu lihat apakah keputusan optimal berubah. Bila keputusan stabil di berbagai skenario masuk akal, kamu bisa yakin. Bila berubah drastis, ketidakpastian asumsi merupakan risiko utama dan layak diselidiki lebih dulu daripada dioptimalkan lebih lanjut."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menutup modul probabilitas\n\nDengan modul ini kamu telah membangun jalur lengkap dari aturan dasar peluang, peluang bersyarat dan Bayes, variabel acak diskrit dan kontinu, distribusi umum, ekspektasi dan varians, hingga limit pusat dan simulasi. Semua ini fondasi statistika inferensial, pembelajaran mesin probabilistik, dan sains data berbasis eksperimen. Kursus berikutnya membangun di atasnya dengan statistika deskriptif dan inferensial."
+            }
+          ],
+          "quick_check": {
+            "question": "Nilai p adalah?",
+            "options": [
+              "Proporsi hasil seekstrem teramati di bawah nol",
+              "Peluang hipotesis benar"
+            ],
+            "answer_index": 0,
+            "explanation": "Di bawah asumsi tidak ada perbedaan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-08-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bootstrap_rata(data, b, seed)` yang memakai `random.Random(seed)` untuk menghasilkan list `b` rata-rata sampel ulang (`choices` dengan pengembalian, ukuran sama dengan data).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import random\n\ndef bootstrap_rata(data, b, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(h)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "d = [12, 15, 14, 10, 18, 20, 11, 13, 16, 17]\nh = bootstrap_rata(d, 2000, 1)\nassert len(h) == 2000"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "all(min(d) <= x <= max(d) for x in h)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert all(min(d) <= x <= max(d) for x in h)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "abs(sum(h) / len(h) - 14.6)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(sum(h) / len(h) - 14.6) < 0.3"
+              }
+            ]
+          },
+          "hint": "Ulangi b kali pengambilan sampel dengan pengembalian dan hitung rata-ratanya.",
+          "solution": "import random\n\ndef bootstrap_rata(data, b, seed):\n    r = random.Random(seed)\n    n = len(data)\n    return [sum(r.choices(data, k=n)) / n for _ in range(b)]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-08-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `interval_persentil(nilai, level=0.95)` yang mengurutkan `nilai` dan mengembalikan tuple `(bawah, atas)`.",
+          "note": "Dengan `alpha = 1 - level` dan `n = len(nilai)`, bawah adalah elemen urut ke `int(round(alpha / 2 * n, 6))` dan atas adalah elemen urut ke `min(n - 1, int(round((1 - alpha / 2) * n, 6)))`.",
+          "filename": "solution.py",
+          "starter_code": "def interval_persentil(nilai, level=0.95):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "interval_persentil(s, 0.9)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "s = list(range(1, 101))\nassert interval_persentil(s, 0.9) == (6, 96)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "interval_persentil(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_persentil(s) == (3, 98)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "interval_persentil([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_persentil([5]) == (5, 5)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "interval_persentil(list(range(1, 11)), 0.8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_persentil(list(range(1, 11)), 0.8) == (2, 10)"
+              }
+            ]
+          },
+          "hint": "Urutkan nilai lalu ambil indeks dari alpha dengan pembulatan agar tidak terkena galat desimal.",
+          "solution": "def interval_persentil(nilai, level=0.95):\n    s = sorted(nilai)\n    n = len(s)\n    alpha = 1 - level\n    lo = int(round(alpha / 2 * n, 6))\n    hi = min(n - 1, int(round((1 - alpha / 2) * n, 6)))\n    return (s[lo], s[hi])",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-08-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `nilai_harapan_persediaan(q, harga, biaya, maks)` yang mengembalikan keuntungan harapan memesan `q` unit bila permintaan seragam dari 1 sampai `maks`, dengan keuntungan `harga * min(q, d) - biaya * q`.",
+          "note": "Bulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def nilai_harapan_persediaan(q, harga, biaya, maks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nilai_harapan_persediaan(6, 5, 2, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_harapan_persediaan(6, 5, 2, 10) == 10.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nilai_harapan_persediaan(5, 5, 2, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_harapan_persediaan(5, 5, 2, 10) == 10.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nilai_harapan_persediaan(8, 5, 2, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_harapan_persediaan(8, 5, 2, 10) == 10.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "nilai_harapan_persediaan(0, 5, 2, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_harapan_persediaan(0, 5, 2, 10) == 0.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "nilai_harapan_persediaan(10, 5, 2, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_harapan_persediaan(10, 5, 2, 10) == 7.5"
+              }
+            ]
+          },
+          "hint": "Rata-ratakan keuntungan atas semua nilai permintaan yang sama mungkin.",
+          "solution": "def nilai_harapan_persediaan(q, harga, biaya, maks):\n    total = sum(harga * min(q, d) - biaya * q for d in range(1, maks + 1))\n    return round(total / maks, 4) + 0.0",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-08-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `q_optimal(harga, biaya, maks)` yang mengembalikan jumlah pesanan `q` dari `0` sampai `maks` dengan keuntungan harapan terbesar (permintaan seragam 1 sampai `maks`, keuntungan `harga * min(q, d) - biaya * q`).",
+          "note": "Bila seri, pilih `q` terkecil. Bandingkan keuntungan setelah dibulatkan ke 9 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def q_optimal(harga, biaya, maks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "q_optimal(5, 2, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert q_optimal(5, 2, 10) == 6"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "q_optimal(5, 1, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert q_optimal(5, 1, 10) == 8"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "q_optimal(5, 6, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert q_optimal(5, 6, 10) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "q_optimal(3, 2, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert q_optimal(3, 2, 4) == 2"
+              }
+            ]
+          },
+          "hint": "Hitung keuntungan harapan tiap q dan ambil maksimum dengan aturan seri ke q terkecil.",
+          "solution": "def q_optimal(harga, biaya, maks):\n    def ep(q):\n        return sum(harga * min(q, d) - biaya * q for d in range(1, maks + 1)) / maks\n    return max(range(maks + 1), key=lambda q: (round(ep(q), 9), -q))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Bootstrap mengambil sampel ulang?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tanpa pengembalian",
+              "description": ""
+            },
+            {
+              "label": "Dengan pengembalian",
+              "description": ""
+            },
+            {
+              "label": "Dari populasi baru",
+              "description": ""
+            },
+            {
+              "label": "Dari median",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kembali.",
+          "explanation": "Ukuran sama dengan data."
+        },
+        {
+          "q": "Uji permutasi mengacak?",
+          "code": null,
+          "options": [
+            {
+              "label": "Data",
+              "description": ""
+            },
+            {
+              "label": "Label kelompok",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Varians",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Label.",
+          "explanation": "Di bawah hipotesis nol label tak bermakna."
+        },
+        {
+          "q": "Nilai p adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Peluang hipotesis benar",
+              "description": ""
+            },
+            {
+              "label": "Proporsi hasil seekstrem teramati di bawah nol",
+              "description": ""
+            },
+            {
+              "label": "Ukuran efek",
+              "description": ""
+            },
+            {
+              "label": "Galat baku",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Seekstrem.",
+          "explanation": "Di bawah asumsi tidak ada perbedaan."
+        },
+        {
+          "q": "Keputusan optimal dari?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nilai harapan terbesar",
+              "description": ""
+            },
+            {
+              "label": "Nilai terkecil",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Harapan.",
+          "explanation": "Maksimalkan keuntungan harapan."
+        },
+        {
+          "q": "Interval persentil bootstrap memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Persentil 2,5 dan 97,5",
+              "description": ""
+            },
+            {
+              "label": "Min dan maks",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dua ekor.",
+          "explanation": "Untuk 95 persen."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Bootstrap tanpa pengembalian. Lebih baik: Ambil sampel ulang dengan pengembalian.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Bootstrap tanpa pengembalian.",
+          "fix": "Ambil sampel ulang dengan pengembalian."
+        },
+        {
+          "mistake": "Menyimpulkan dari nilai p kecil bahwa efek besar.",
+          "fix": "Nilai p tidak mengukur ukuran efek."
+        },
+        {
+          "mistake": "Mempercayai simulasi dengan asumsi masukan buruk.",
+          "fix": "Uji sensitivitas asumsi."
+        }
+      ],
+      "summary": [
+        "Bootstrap menaksir ketidakpastian dengan sampel ulang dengan pengembalian.",
+        "Uji permutasi menghitung nilai p dengan mengacak label.",
+        "Simulasi mengevaluasi keputusan dengan nilai harapan.",
+        "Hasil simulasi bergantung pada asumsi masukan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Bootstrap, permutasi, dan simulasi keputusan"
+          },
+          {
+            "type": "text",
+            "source": "Interval bootstrap memuat rata-rata sampel dan lebarnya sekitar empat, sesuai galat baku satu."
+          },
+          {
+            "type": "code",
+            "source": "import random\n\ndata = [12, 15, 14, 10, 18, 20, 11, 13, 16, 17]\nr = random.Random(3)\nrata = sorted(sum(r.choices(data, k=len(data))) / len(data) for _ in range(2000))\nlo, hi = rata[50], rata[1949]\nprint(lo < 14.6 < hi, 2 < hi - lo < 6)"
+          },
+          {
+            "type": "text",
+            "source": "Hanya dua dari dua ratus lima puluh dua pembagian yang menghasilkan selisih sebesar itu, sehingga nilai p sekitar nol koma nol nol delapan."
+          },
+          {
+            "type": "code",
+            "source": "from itertools import combinations\n\nA = [5, 6, 7, 8, 9]\nB = [1, 2, 3, 4, 5]\nsemua = A + B\namati = sum(A) / 5 - sum(B) / 5\nlebih = total = 0\nfor idx in combinations(range(10), 5):\n    a = [semua[i] for i in idx]\n    b = [semua[i] for i in range(10) if i not in idx]\n    total += 1\n    if sum(a) / 5 - sum(b) / 5 >= amati - 1e-12:\n        lebih += 1\nprint(amati, lebih, total, round(lebih / total, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Keuntungan harapan tertinggi dicapai dengan memesan enam atau tujuh unit, dan menurun bila memesan lebih sedikit atau lebih banyak."
+          },
+          {
+            "type": "code",
+            "source": "print([round(sum(5 * min(q, d) - 2 * q for d in range(1, 11)) / 10, 4) for q in range(5, 9)])"
+          },
+          {
+            "type": "text",
+            "source": "Simulasi keuntungan harian dengan memesan enam unit mendekati nilai harapan sepuluh koma lima."
+          },
+          {
+            "type": "code",
+            "source": "import random\n\nr = random.Random(8)\nn = 20000\nq = 6\nuntung = sum(5 * min(q, r.randint(1, 10)) - 2 * q for _ in range(n)) / n\nprint(abs(untung - 10.5) < 0.3)"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

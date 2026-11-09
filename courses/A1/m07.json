@@ -1,0 +1,1476 @@
+{
+  "schema_version": 2,
+  "course_id": "A1",
+  "module_no": 7,
+  "title": "File I/O, CSV, dan JSON",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Membaca dan menulis file teks dengan aman",
+    "Mengolah data tabular dengan modul csv",
+    "Mengubah data dari dan ke JSON"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A1-07-1",
+    "exercise_id": "A1-07-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def frekuensi_baris(f):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A1-07-1",
+      "title": "Membaca dan menulis file teks",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membuka file dengan open dan with serta memilih mode yang tepat",
+        "Membaca isi file dengan read, readline, readlines, dan penelusuran baris",
+        "Menulis dan menambah isi file dengan aman",
+        "Menangani encoding, baris baru, dan file besar dengan benar"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa file penting",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa file penting\n\nHampir semua proyek data dimulai dari file: log, laporan teks, ekspor basis data, atau hasil scraping. Program yang hanya bekerja dengan data di memori akan kehilangan semuanya saat berhenti. Dengan file, hasil kerjamu bertahan, bisa dibagikan, dan bisa dibaca program lain.\n\nPython membuka file dengan fungsi `open(nama, mode)`. Mode `\"r\"` membaca (bawaan), `\"w\"` menulis dan menghapus isi lama, `\"a\"` menambah di akhir, dan `\"x\"` membuat file baru serta gagal bila sudah ada. Tambahkan `\"b\"` untuk mode biner, misalnya gambar. Selalu tentukan `encoding=\"utf-8\"` untuk teks agar karakter non-Latin terbaca benar di semua sistem.\n\nCatatan: di aplikasi ini kode berjalan di lingkungan terisolasi, sehingga file yang kamu tulis ada di ruang sementara dan hilang saat kompiler diatur ulang. Pada komputer sungguhan, file tersimpan permanen."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pernyataan with\n\nFile yang dibuka harus ditutup agar data tertulis dengan benar dan sumber daya sistem dilepas. Cara paling aman adalah pernyataan `with open(...) as f:`. Blok `with` menutup file secara otomatis saat selesai, bahkan bila terjadi error di tengah jalan. Menutup manual dengan `f.close()` mudah terlupa dan menimbulkan bug yang sulit dilacak.\n\nSetelah blok `with` berakhir, objek file sudah tertutup dan tidak bisa dibaca lagi. Semua pembacaan harus dilakukan di dalam blok, atau isinya disimpan ke variabel selama blok masih terbuka. Biasakan menulis `with` setiap kali membuka file.\n\nPola ini disebut *context manager* dan dipakai juga untuk koneksi basis data, kunci, dan sumber daya lain. Memahaminya sekarang akan membantumu di banyak bagian Python berikutnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "tulis_baca.py",
+              "runnable": true,
+              "code": "with open(\"catatan.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"baris satu\\n\")\n    f.write(\"baris dua\\n\")\n    f.write(\"baris tiga\\n\")\n\nwith open(\"catatan.txt\", \"r\", encoding=\"utf-8\") as f:\n    isi = f.read()\nprint(repr(isi))\nprint(f.closed)\n\nwith open(\"catatan.txt\", \"a\", encoding=\"utf-8\") as f:\n    f.write(\"baris empat\\n\")\n\nwith open(\"catatan.txt\", encoding=\"utf-8\") as f:\n    print(len(f.read().splitlines()))",
+              "expected_output_note": "'baris satu\\nbaris dua\\nbaris tiga\\n'\nTrue\n4",
+              "explanation": "Mode `w` menulis baru, mode `a` menambah di akhir. Setelah blok `with` selesai file otomatis tertutup sehingga `f.closed` bernilai `True`."
+            }
+          ],
+          "quick_check": {
+            "question": "Mode yang menambah isi di akhir file?",
+            "options": [
+              "a",
+              "r"
+            ],
+            "answer_index": 0,
+            "explanation": "Mode a berarti append.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Cara membaca isi file",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Cara membaca isi file\n\n`f.read()` membaca seluruh isi sebagai satu string. `f.readline()` membaca satu baris termasuk karakter baris baru di akhirnya. `f.readlines()` membaca semua baris sebagai list string. Namun cara paling idiomatik dan hemat memori adalah menelusuri objek file langsung: `for baris in f:` memberi satu baris per putaran tanpa memuat seluruh file.\n\nSetiap baris yang dibaca masih membawa `\\n` di ujungnya, jadi biasanya kamu memanggil `.strip()` atau `.rstrip(\"\\n\")`. Lupa membuang baris baru adalah sumber bug klasik, misalnya saat membandingkan string atau mengubahnya menjadi angka.\n\nUntuk file besar sampai gigabyte, jangan pakai `read()` atau `readlines()` karena akan menghabiskan memori. Telusuri baris demi baris, yang pada dasarnya adalah generator seperti yang kamu pelajari sebelumnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "baca_baris.py",
+              "runnable": true,
+              "code": "with open(\"angka.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"10\\n20\\n\\n30\\n\")\n\nwith open(\"angka.txt\", encoding=\"utf-8\") as f:\n    print(repr(f.readline()))\n    print(f.readlines())\n\ntotal = 0\nwith open(\"angka.txt\", encoding=\"utf-8\") as f:\n    for baris in f:\n        baris = baris.strip()\n        if baris:\n            total += int(baris)\nprint(total)\n\nwith open(\"angka.txt\", encoding=\"utf-8\") as f:\n    nilai = [int(b) for b in f if b.strip()]\nprint(nilai, sum(nilai))",
+              "expected_output_note": "'10\\n'\n['20\\n', '\\n', '30\\n']\n60\n[10, 20, 30] 60",
+              "explanation": "Menelusuri file baris demi baris hemat memori. Tiap baris membawa karakter baris baru sehingga perlu `strip`, dan baris kosong dilewati dengan `if`."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Mode w menghapus",
+              "markdown": "Mode `\"w\"` langsung menghapus isi file lama begitu dibuka. Gunakan `\"a\"` bila ingin menambah, dan periksa nama file dua kali sebelum menulis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Encoding, baris baru, dan penanganan error\n\n**Encoding** menentukan cara karakter diubah menjadi byte. Standar yang aman hampir selalu `utf-8`. Bila file dibaca dengan encoding yang salah, kamu mendapat `UnicodeDecodeError` atau karakter rusak. Selalu tulis `encoding=\"utf-8\"` secara eksplisit agar perilaku sama di Windows, macOS, dan Linux.\n\nSaat membuka file yang tidak ada dengan mode `\"r\"`, Python menimbulkan `FileNotFoundError`. Tangkap dengan `try except` bila ketiadaan file adalah kemungkinan wajar, misalnya file konfigurasi opsional. Jangan menangkap semua error tanpa pandang bulu karena akan menyembunyikan bug sungguhan.\n\nFungsi `print` bisa menulis ke file dengan argumen `file=f`, dan secara otomatis menambah baris baru. Ini kadang lebih nyaman daripada `f.write` karena tidak perlu menulis `\\n` manual. Untuk menulis banyak baris sekaligus, gunakan `f.writelines(daftar)`, ingat bahwa ia tidak menambah baris baru sendiri."
+            },
+            {
+              "type": "code_example",
+              "filename": "encoding_error.py",
+              "runnable": true,
+              "code": "try:\n    open(\"tidak_ada.txt\", encoding=\"utf-8\")\nexcept FileNotFoundError:\n    print(\"file tidak ditemukan\")\n\nwith open(\"p.txt\", \"w\", encoding=\"utf-8\") as f:\n    print(\"satu\", file=f)\n    print(\"dua\", file=f)\n    f.writelines([\"tiga\\n\", \"empat\\n\"])\n\nwith open(\"p.txt\", encoding=\"utf-8\") as f:\n    print([b.rstrip(\"\\n\") for b in f])\n\nwith open(\"utf.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"café ☕\")\nwith open(\"utf.txt\", encoding=\"utf-8\") as f:\n    teks = f.read()\nprint(teks, len(teks))",
+              "expected_output_note": "file tidak ditemukan\n['satu', 'dua', 'tiga', 'empat']\ncafé ☕ 6",
+              "explanation": "`FileNotFoundError` ditangkap secara spesifik. `print(file=f)` menambah baris baru otomatis, `writelines` tidak. UTF-8 menjaga karakter khusus."
+            }
+          ],
+          "quick_check": {
+            "question": "Keuntungan utama with open?",
+            "options": [
+              "Lebih cepat",
+              "File ditutup otomatis"
+            ],
+            "answer_index": 1,
+            "explanation": "Blok with menutup file bahkan saat error.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Pola umum: ringkasan file teks",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pola umum: ringkasan file teks\n\nSatu tugas klasik adalah membaca file teks dan menghitung statistik sederhana: jumlah baris, jumlah kata, dan kata paling sering. Polanya selalu sama: buka dengan `with`, telusuri baris, bersihkan, lalu kumpulkan hasil di struktur data seperti dictionary penghitung.\n\nKarena latihan di aplikasi ini berjalan tanpa file eksternal, kamu akan memakai `io.StringIO`, objek yang berperilaku persis seperti file tetapi berada di memori. Fungsi yang kamu tulis menerima objek mirip-file sehingga bisa dipakai pada file sungguhan maupun StringIO tanpa perubahan. Desain seperti ini membuat fungsi mudah diuji.\n\nPrinsipnya: pisahkan logika dari sumber data. Fungsi yang menerima objek file atau iterable baris lebih fleksibel daripada fungsi yang membuka file di dalamnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Cara hemat memori membaca file besar?",
+            "options": [
+              "for baris in f",
+              "f.read()"
+            ],
+            "answer_index": 0,
+            "explanation": "Menelusuri file memberi satu baris per putaran.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-07-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `hitung_baris(f)` yang menerima objek mirip-file dan mengembalikan jumlah baris yang tidak kosong (setelah dibersihkan spasi).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def hitung_baris(f):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import io",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hitung_baris(io.StringIO(\"a\\nb\\n\\nc\\n\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_baris(io.StringIO(\"a\\nb\\n\\nc\\n\")) == 3"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hitung_baris(io.StringIO(\"\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_baris(io.StringIO(\"\")) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hitung_baris(io.StringIO(\" \\n x \\n\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_baris(io.StringIO(\"  \\n x \\n\")) == 1"
+              }
+            ]
+          },
+          "hint": "Telusuri f dan hitung baris yang strip-nya tidak kosong.",
+          "solution": "def hitung_baris(f):\n    return sum(1 for b in f if b.strip())",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-07-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_angka(f)` yang menerima objek mirip-file berisi satu bilangan bulat per baris dan mengembalikan jumlahnya.",
+          "note": "Baris kosong dilewati.",
+          "filename": "solution.py",
+          "starter_code": "def jumlah_angka(f):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import io",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_angka(io.StringIO(\"10\\n20\\n\\n30\\n\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_angka(io.StringIO(\"10\\n20\\n\\n30\\n\")) == 60"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_angka(io.StringIO(\"\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_angka(io.StringIO(\"\")) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_angka(io.StringIO(\"-5\\n5\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_angka(io.StringIO(\"-5\\n5\")) == 0"
+              }
+            ]
+          },
+          "hint": "Ubah tiap baris tak kosong menjadi int lalu jumlahkan.",
+          "solution": "def jumlah_angka(f):\n    return sum(int(b) for b in f if b.strip())",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-07-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kata_terpanjang(f)` yang menerima objek mirip-file dan mengembalikan kata terpanjang dari seluruh isi.",
+          "note": "Bila ada beberapa yang sama panjang, ambil yang pertama muncul. Bila kosong kembalikan string kosong.",
+          "filename": "solution.py",
+          "starter_code": "def kata_terpanjang(f):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import io",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kata_terpanjang(io.StringIO(\"a bb ccc\\ndd eee...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kata_terpanjang(io.StringIO(\"a bb ccc\\ndd eee\\n\")) == \"ccc\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kata_terpanjang(io.StringIO(\"\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kata_terpanjang(io.StringIO(\"\")) == \"\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kata_terpanjang(io.StringIO(\"ab cd\\n\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kata_terpanjang(io.StringIO(\"ab cd\\n\")) == \"ab\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kata_terpanjang(io.StringIO(\"x\\n\\nyyyy zz\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kata_terpanjang(io.StringIO(\"x\\n\\nyyyy zz\")) == \"yyyy\""
+              }
+            ]
+          },
+          "hint": "Kumpulkan kata dari semua baris lalu pakai max dengan key=len.",
+          "solution": "def kata_terpanjang(f):\n    kata = [k for b in f for k in b.split()]\n    return max(kata, key=len) if kata else \"\"",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-07-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `frekuensi_baris(f)` yang menerima objek mirip-file dan mengembalikan list tuple `(kata, jumlah)` untuk tiga kata paling sering di seluruh isi, huruf diseragamkan kecil.",
+          "note": "Urut jumlah menurun lalu kata naik bila sama.",
+          "filename": "solution.py",
+          "starter_code": "def frekuensi_baris(f):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import io",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "frekuensi_baris(t)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = io.StringIO(\"Kopi teh kopi\\nSusu TEH kopi\\n\")\nassert frekuensi_baris(t) == [(\"kopi\", 3), (\"teh\", 2), (\"susu\", 1)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "frekuensi_baris(io.StringIO(\"\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert frekuensi_baris(io.StringIO(\"\")) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "frekuensi_baris(io.StringIO(\"b a b a c\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert frekuensi_baris(io.StringIO(\"b a b a c\")) == [(\"a\", 2), (\"b\", 2), (\"c\", 1)]"
+              }
+            ]
+          },
+          "hint": "Hitung dengan dictionary lalu urutkan dengan key tuple negatif dan iris tiga.",
+          "solution": "def frekuensi_baris(f):\n    hitung = {}\n    for b in f:\n        for k in b.lower().split():\n            hitung[k] = hitung.get(k, 0) + 1\n    return sorted(hitung.items(), key=lambda p: (-p[1], p[0]))[:3]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Mode yang menambah isi di akhir file?",
+          "code": null,
+          "options": [
+            {
+              "label": "r",
+              "description": ""
+            },
+            {
+              "label": "w",
+              "description": ""
+            },
+            {
+              "label": "a",
+              "description": ""
+            },
+            {
+              "label": "x",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Singkatan append.",
+          "explanation": "Mode a berarti append."
+        },
+        {
+          "q": "Keuntungan utama with open?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lebih cepat",
+              "description": ""
+            },
+            {
+              "label": "File ditutup otomatis",
+              "description": ""
+            },
+            {
+              "label": "Tidak perlu nama file",
+              "description": ""
+            },
+            {
+              "label": "Mengunci file",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pikirkan sumber daya.",
+          "explanation": "Blok with menutup file bahkan saat error."
+        },
+        {
+          "q": "Cara hemat memori membaca file besar?",
+          "code": null,
+          "options": [
+            {
+              "label": "f.read()",
+              "description": ""
+            },
+            {
+              "label": "f.readlines()",
+              "description": ""
+            },
+            {
+              "label": "for baris in f",
+              "description": ""
+            },
+            {
+              "label": "list(f)",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Mirip generator.",
+          "explanation": "Menelusuri file memberi satu baris per putaran."
+        },
+        {
+          "q": "Error saat membuka file yang tidak ada dengan mode r?",
+          "code": null,
+          "options": [
+            {
+              "label": "KeyError",
+              "description": ""
+            },
+            {
+              "label": "FileNotFoundError",
+              "description": ""
+            },
+            {
+              "label": "ValueError",
+              "description": ""
+            },
+            {
+              "label": "IndexError",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Nama menjelaskan.",
+          "explanation": "FileNotFoundError ditimbulkan."
+        },
+        {
+          "q": "Encoding yang aman untuk teks?",
+          "code": null,
+          "options": [
+            {
+              "label": "ascii",
+              "description": ""
+            },
+            {
+              "label": "utf-8",
+              "description": ""
+            },
+            {
+              "label": "latin",
+              "description": ""
+            },
+            {
+              "label": "bin",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Standar universal.",
+          "explanation": "UTF-8 mendukung hampir semua karakter."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Lupa menutup file. Lebih baik: Pakai with agar file tertutup otomatis.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Lupa menutup file.",
+          "fix": "Pakai with agar file tertutup otomatis."
+        },
+        {
+          "mistake": "Memakai mode w padahal ingin menambah.",
+          "fix": "Pakai mode a untuk menambah di akhir."
+        },
+        {
+          "mistake": "Lupa membuang karakter baris baru.",
+          "fix": "Panggil strip atau rstrip pada tiap baris."
+        }
+      ],
+      "summary": [
+        "Gunakan with open agar file otomatis tertutup.",
+        "Mode r, w, a, dan x menentukan cara membuka file.",
+        "Telusuri file baris demi baris untuk file besar.",
+        "Tentukan encoding utf-8 dan tangani FileNotFoundError."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Membaca dan menulis file teks"
+          },
+          {
+            "type": "text",
+            "source": "Mode `w` menulis baru, mode `a` menambah di akhir. Setelah blok `with` selesai file otomatis tertutup sehingga `f.closed` bernilai `True`."
+          },
+          {
+            "type": "code",
+            "source": "with open(\"catatan.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"baris satu\\n\")\n    f.write(\"baris dua\\n\")\n    f.write(\"baris tiga\\n\")\n\nwith open(\"catatan.txt\", \"r\", encoding=\"utf-8\") as f:\n    isi = f.read()\nprint(repr(isi))\nprint(f.closed)\n\nwith open(\"catatan.txt\", \"a\", encoding=\"utf-8\") as f:\n    f.write(\"baris empat\\n\")\n\nwith open(\"catatan.txt\", encoding=\"utf-8\") as f:\n    print(len(f.read().splitlines()))"
+          },
+          {
+            "type": "text",
+            "source": "Menelusuri file baris demi baris hemat memori. Tiap baris membawa karakter baris baru sehingga perlu `strip`, dan baris kosong dilewati dengan `if`."
+          },
+          {
+            "type": "code",
+            "source": "with open(\"angka.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"10\\n20\\n\\n30\\n\")\n\nwith open(\"angka.txt\", encoding=\"utf-8\") as f:\n    print(repr(f.readline()))\n    print(f.readlines())\n\ntotal = 0\nwith open(\"angka.txt\", encoding=\"utf-8\") as f:\n    for baris in f:\n        baris = baris.strip()\n        if baris:\n            total += int(baris)\nprint(total)\n\nwith open(\"angka.txt\", encoding=\"utf-8\") as f:\n    nilai = [int(b) for b in f if b.strip()]\nprint(nilai, sum(nilai))"
+          },
+          {
+            "type": "text",
+            "source": "`FileNotFoundError` ditangkap secara spesifik. `print(file=f)` menambah baris baru otomatis, `writelines` tidak. UTF-8 menjaga karakter khusus."
+          },
+          {
+            "type": "code",
+            "source": "try:\n    open(\"tidak_ada.txt\", encoding=\"utf-8\")\nexcept FileNotFoundError:\n    print(\"file tidak ditemukan\")\n\nwith open(\"p.txt\", \"w\", encoding=\"utf-8\") as f:\n    print(\"satu\", file=f)\n    print(\"dua\", file=f)\n    f.writelines([\"tiga\\n\", \"empat\\n\"])\n\nwith open(\"p.txt\", encoding=\"utf-8\") as f:\n    print([b.rstrip(\"\\n\") for b in f])\n\nwith open(\"utf.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"café ☕\")\nwith open(\"utf.txt\", encoding=\"utf-8\") as f:\n    teks = f.read()\nprint(teks, len(teks))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-07-2",
+      "title": "Bekerja dengan CSV",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membaca dan menulis CSV dengan modul csv",
+        "Memakai DictReader dan DictWriter untuk data berlabel",
+        "Mengubah tipe data dan menangani nilai kosong dan koma di dalam sel",
+        "Meringkas data CSV dengan agregasi sederhana"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Format CSV",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Format CSV\n\n**CSV** (*comma-separated values*) adalah format tabel paling umum untuk pertukaran data. Setiap baris adalah satu rekaman dan nilai dalam baris dipisah koma. Baris pertama biasanya berisi nama kolom. Hampir semua alat, dari spreadsheet sampai basis data dan pandas, bisa membaca dan menulis CSV.\n\nKelihatannya sederhana, tetapi ada jebakan. Nilai yang mengandung koma harus dikutip dengan tanda kutip ganda, tanda kutip di dalam nilai harus digandakan, dan nilai bisa mengandung baris baru. Karena itu **jangan** mengurai CSV dengan `split(\",\")` buatan sendiri. Gunakan modul `csv` yang menangani semua aturan itu dengan benar.\n\nSemua nilai dari CSV dibaca sebagai string. Mengubahnya menjadi angka atau tanggal adalah tugasmu, dan di sinilah banyak bug muncul bila data mengandung sel kosong atau format tak terduga."
+            },
+            {
+              "type": "code_example",
+              "filename": "csv_reader.py",
+              "runnable": true,
+              "code": "import csv, io\n\nteks = \"nama,kota,skor\\nSari,Depok,85\\nBudi,\\\"Jakarta, Selatan\\\",90\\nCitra,Bandung,\\n\"\nfor baris in csv.reader(io.StringIO(teks)):\n    print(baris)\nprint(\"Jakarta, Selatan\".split(\",\"))",
+              "expected_output_note": "['nama', 'kota', 'skor']\n['Sari', 'Depok', '85']\n['Budi', 'Jakarta, Selatan', '90']\n['Citra', 'Bandung', '']\n['Jakarta', ' Selatan']",
+              "explanation": "`csv.reader` menangani nilai berkutip yang mengandung koma, sedangkan `split` memecahnya keliru. Semua nilai dibaca sebagai string dan sel kosong menjadi string kosong."
+            },
+            {
+              "type": "text",
+              "markdown": "## DictReader dan DictWriter\n\n`csv.DictReader` membaca tiap baris sebagai dictionary yang kuncinya diambil dari baris header. Ini jauh lebih terbaca daripada mengakses kolom lewat indeks, dan tidak rusak bila urutan kolom berubah. `csv.DictWriter` menulis dictionary menjadi baris CSV, dengan `fieldnames` menentukan urutan kolom dan `writeheader()` menulis baris header.\n\nSaat menulis ke file sungguhan, buka dengan `newline=\"\"` agar modul csv mengatur baris baru sendiri, sehingga tidak muncul baris kosong ganda di Windows. Untuk menulis ke memori, `io.StringIO` bekerja sama persis.\n\nPola kerja umum: baca dengan `DictReader`, ubah tipe tiap nilai, saring atau hitung, lalu tulis hasil dengan `DictWriter`. Ini versi mini dari alur baca, ubah, tulis yang akan kamu lakukan dengan pandas."
+            },
+            {
+              "type": "code_example",
+              "filename": "csv_dict.py",
+              "runnable": true,
+              "code": "import csv, io\n\nteks = \"nama,skor\\nSari,85\\nBudi,90\\nCitra,70\\n\"\nbaca = list(csv.DictReader(io.StringIO(teks)))\nprint(baca[0], baca[0][\"nama\"])\nfor r in baca:\n    r[\"skor\"] = int(r[\"skor\"])\nprint(sum(r[\"skor\"] for r in baca) / len(baca))\n\nkeluar = io.StringIO()\ntulis = csv.DictWriter(keluar, fieldnames=[\"nama\", \"skor\", \"lulus\"], lineterminator=\"\\n\")\ntulis.writeheader()\nfor r in baca:\n    tulis.writerow({**r, \"lulus\": r[\"skor\"] >= 75})\nprint(keluar.getvalue())",
+              "expected_output_note": "{'nama': 'Sari', 'skor': '85'} Sari\n81.66666666666667\nnama,skor,lulus\nSari,85,True\nBudi,90,True\nCitra,70,False",
+              "explanation": "`DictReader` membaca baris sebagai dictionary berkunci header. Nilai diubah ke `int` secara manual dan `DictWriter` menulis kolom baru."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Semua nilai adalah teks",
+              "markdown": "Semua nilai CSV dibaca sebagai string. `\"10\" + \"5\"` menghasilkan `\"105\"`, bukan 15. Ubah dulu dengan `int` atau `float`."
+            }
+          ],
+          "quick_check": {
+            "question": "Tipe nilai yang dibaca dari CSV?",
+            "options": [
+              "str",
+              "int"
+            ],
+            "answer_index": 0,
+            "explanation": "Semua nilai dibaca sebagai string.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Menangani sel kosong dan data kotor",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menangani sel kosong dan data kotor\n\nData nyata penuh sel kosong, spasi tersembunyi, dan nilai tidak valid seperti `\"n/a\"` atau `\"-\"`. Langkah aman adalah membungkus konversi dalam fungsi pembantu yang mengembalikan `None` bila gagal, lalu memutuskan secara sadar bagaimana memperlakukan `None`: dilewati, diisi nilai bawaan, atau menghentikan proses.\n\nJangan menelan semua error tanpa mencatat. Hitung berapa baris yang gagal dikonversi dan laporkan, karena jumlah data hilang memengaruhi kesimpulan analisismu. Mengabaikan diam-diam adalah cara tercepat mendapat hasil yang salah namun terlihat meyakinkan.\n\nPustaka pandas nanti menyediakan penanganan nilai hilang yang jauh lebih kaya, tetapi dasarnya sama: kenali nilai hilang, putuskan strateginya, dan dokumentasikan keputusan itu."
+            },
+            {
+              "type": "code_example",
+              "filename": "csv_kotor.py",
+              "runnable": true,
+              "code": "import csv, io\n\ndef ke_angka(s):\n    s = s.strip()\n    try:\n        return float(s)\n    except ValueError:\n        return None\n\nteks = \"id,harga\\n1,100\\n2,\\n3, 250 \\n4,n/a\\n5,75.5\\n\"\nbaris = list(csv.DictReader(io.StringIO(teks)))\nharga = [ke_angka(r[\"harga\"]) for r in baris]\nprint(harga)\nvalid = [h for h in harga if h is not None]\nprint(len(valid), len(baris) - len(valid), sum(valid) / len(valid))",
+              "expected_output_note": "[100.0, None, 250.0, None, 75.5]\n3 2 141.83333333333334",
+              "explanation": "Fungsi pembantu mengembalikan `None` untuk nilai tak valid. Jumlah baris yang gagal dihitung dan dilaporkan, bukan diabaikan diam-diam."
+            }
+          ],
+          "quick_check": {
+            "question": "Keunggulan DictReader?",
+            "options": [
+              "Lebih cepat",
+              "Baris menjadi dictionary berkunci header"
+            ],
+            "answer_index": 1,
+            "explanation": "Akses kolom lewat nama.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Agregasi sederhana dari CSV",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Agregasi sederhana dari CSV\n\nSetelah data dibaca dan dibersihkan, kamu bisa meringkasnya dengan pola dictionary yang sudah dikenal: kelompokkan baris menurut satu kolom lalu hitung jumlah, rata-rata, atau maksimum per kelompok. Ini setara dengan `groupby` di pandas atau `GROUP BY` di SQL.\n\nPola dasarnya: telusuri baris, ambil kunci kelompok, lalu akumulasikan nilai di dictionary. Untuk rata-rata, simpan jumlah dan banyaknya, lalu bagi di akhir. Hati-hati dengan pembagian nol bila kelompok bisa kosong.\n\nMeski pandas membuat ini sangat ringkas, memahami versi manualnya membuatmu mengerti apa yang sebenarnya terjadi dan membantumu men-debug hasil yang mengejutkan. Latihan berikut membangun ringkasan seperti itu dari data CSV dalam memori."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan CSV tidak cukup\n\nCSV hebat untuk tabel datar, tetapi tidak menyimpan tipe data, tidak punya skema, dan canggung untuk struktur bersarang. Tanggal bisa ditulis dalam puluhan format, angka desimal memakai titik atau koma tergantung wilayah, dan tidak ada cara baku menandai nilai hilang. Karena itu selalu periksa beberapa baris awal file baru sebelum memproses seluruhnya.\n\nUntuk data besar atau yang butuh tipe tegas, format lain seperti Parquet atau basis data lebih tepat. Namun CSV tetap menjadi bahasa pertukaran universal, jadi menguasainya adalah keharusan. Kebiasaan baik: simpan file mentah tanpa diubah, lakukan pembersihan dalam kode yang bisa diulang, dan tulis hasil bersih ke file terpisah.\n\nLatihan berikut memakai teks CSV dalam memori sehingga bisa dijalankan di mana saja. Perhatikan setiap kasus batas: file hanya berisi header, sel kosong, dan nilai berkutip."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa tidak memakai split koma?",
+            "options": [
+              "Nilai berkutip bisa mengandung koma",
+              "Lambat"
+            ],
+            "answer_index": 0,
+            "explanation": "Koma di dalam kutip tidak boleh memecah.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-07-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `baca_csv(teks)` yang mengembalikan list dictionary dari teks CSV berheader.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import csv, io\n\ndef baca_csv(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "baca_csv(t)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = \"a,b\\n1,2\\n3,4\\n\"\nassert baca_csv(t) == [{\"a\": \"1\", \"b\": \"2\"}, {\"a\": \"3\", \"b\": \"4\"}]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "baca_csv(\"a,b\\n\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baca_csv(\"a,b\\n\") == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "baca_csv('x,y\\n\"p,q\",z\\n')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert baca_csv('x,y\\n\"p,q\",z\\n') == [{\"x\": \"p,q\", \"y\": \"z\"}]"
+              }
+            ]
+          },
+          "hint": "Bungkus teks dengan io.StringIO dan pakai DictReader.",
+          "solution": "import csv, io\n\ndef baca_csv(teks):\n    return list(csv.DictReader(io.StringIO(teks)))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-07-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `rata_kolom(teks, kolom)` yang mengembalikan rata-rata nilai numerik kolom `kolom` dari teks CSV berheader.",
+          "note": "Semua nilai valid dan ada minimal satu baris.",
+          "filename": "solution.py",
+          "starter_code": "import csv, io\n\ndef rata_kolom(teks, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_kolom(t, \"skor\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = \"nama,skor\\nA,80\\nB,90\\nC,70\\n\"\nassert rata_kolom(t, \"skor\") == 80"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_kolom(\"x\\n1\\n2\\n\", \"x\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_kolom(\"x\\n1\\n2\\n\", \"x\") == 1.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_kolom(\"x\\n5\\n\", \"x\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_kolom(\"x\\n5\\n\", \"x\") == 5"
+              }
+            ]
+          },
+          "hint": "Baca dengan DictReader lalu ubah ke float dan rata-ratakan.",
+          "solution": "import csv, io\n\ndef rata_kolom(teks, kolom):\n    nilai = [float(r[kolom]) for r in csv.DictReader(io.StringIO(teks))]\n    return sum(nilai) / len(nilai)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-07-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `total_per_kota(teks)` yang menerima CSV dengan kolom `kota` dan `jumlah`, dan mengembalikan dictionary kota ke total jumlah (int).",
+          "note": "Baris dengan jumlah kosong atau bukan angka dilewati.",
+          "filename": "solution.py",
+          "starter_code": "import csv, io\n\ndef total_per_kota(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_per_kota(t)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = \"kota,jumlah\\nDepok,5\\nBogor,3\\nDepok,2\\nBogor,\\nBekasi,x\\n\"\nassert total_per_kota(t) == {\"Depok\": 7, \"Bogor\": 3}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_per_kota(\"kota,jumlah\\n\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_per_kota(\"kota,jumlah\\n\") == {}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_per_kota(\"kota,jumlah\\nA, 4 \\n\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert total_per_kota(\"kota,jumlah\\nA, 4 \\n\") == {\"A\": 4}"
+              }
+            ]
+          },
+          "hint": "Coba ubah ke int dalam try dan lewati bila ValueError.",
+          "solution": "import csv, io\n\ndef total_per_kota(teks):\n    hasil = {}\n    for r in csv.DictReader(io.StringIO(teks)):\n        try:\n            n = int(r[\"jumlah\"].strip())\n        except ValueError:\n            continue\n        hasil[r[\"kota\"]] = hasil.get(r[\"kota\"], 0) + n\n    return hasil",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-07-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ke_csv(baris, kolom)` yang menerima list dictionary dan list nama kolom dan mengembalikan teks CSV dengan header, memakai `csv.DictWriter` dan `lineterminator=\"\\n\"`.",
+          "note": "Kunci yang tidak ada diisi kosong.",
+          "filename": "solution.py",
+          "starter_code": "import csv, io\n\ndef ke_csv(baris, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ke_csv(r, [\"a\", \"b\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = [{\"a\": 1, \"b\": \"x,y\"}, {\"a\": 2}]\nassert ke_csv(r, [\"a\", \"b\"]) == 'a,b\\n1,\"x,y\"\\n2,\\n'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ke_csv([], [\"a\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_csv([], [\"a\"]) == \"a\\n\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ke_csv([{\"a\": 1, \"z\": 9}], [\"a\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_csv([{\"a\": 1, \"z\": 9}], [\"a\"]) == \"a\\n1\\n\""
+              }
+            ]
+          },
+          "hint": "Tulis ke StringIO dengan DictWriter dan ambil getvalue. Gunakan restval kosong dan extrasaction ignore.",
+          "solution": "import csv, io\n\ndef ke_csv(baris, kolom):\n    out = io.StringIO()\n    w = csv.DictWriter(out, fieldnames=kolom, lineterminator=\"\\n\", extrasaction=\"ignore\")\n    w.writeheader()\n    w.writerows(baris)\n    return out.getvalue()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Tipe nilai yang dibaca dari CSV?",
+          "code": null,
+          "options": [
+            {
+              "label": "int",
+              "description": ""
+            },
+            {
+              "label": "float",
+              "description": ""
+            },
+            {
+              "label": "str",
+              "description": ""
+            },
+            {
+              "label": "otomatis",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Konversi manual.",
+          "explanation": "Semua nilai dibaca sebagai string."
+        },
+        {
+          "q": "Keunggulan DictReader?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lebih cepat",
+              "description": ""
+            },
+            {
+              "label": "Baris menjadi dictionary berkunci header",
+              "description": ""
+            },
+            {
+              "label": "Mengubah tipe otomatis",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Header jadi kunci.",
+          "explanation": "Akses kolom lewat nama."
+        },
+        {
+          "q": "Mengapa tidak memakai split koma?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lambat",
+              "description": ""
+            },
+            {
+              "label": "Nilai berkutip bisa mengandung koma",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada split",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Lihat contoh Jakarta, Selatan.",
+          "explanation": "Koma di dalam kutip tidak boleh memecah."
+        },
+        {
+          "q": "Nilai kembalian fungsi konversi yang gagal sebaiknya?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            },
+            {
+              "label": "error diam",
+              "description": ""
+            },
+            {
+              "label": "string kosong",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Beda dari nol.",
+          "explanation": "None menandai nilai hilang secara eksplisit."
+        },
+        {
+          "q": "Operasi yang setara groupby?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mengelompokkan baris lalu agregasi",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menyaring",
+              "description": ""
+            },
+            {
+              "label": "Menulis",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "GROUP BY di SQL.",
+          "explanation": "Kelompokkan menurut kolom lalu hitung per kelompok."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengurai CSV dengan split koma. Lebih baik: Pakai modul csv agar nilai berkutip benar.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengurai CSV dengan split koma.",
+          "fix": "Pakai modul csv agar nilai berkutip benar."
+        },
+        {
+          "mistake": "Menjumlahkan nilai CSV tanpa mengubah tipe.",
+          "fix": "Ubah dengan int atau float lebih dulu."
+        },
+        {
+          "mistake": "Mengabaikan baris rusak tanpa menghitung.",
+          "fix": "Hitung dan laporkan jumlah baris yang gagal."
+        }
+      ],
+      "summary": [
+        "CSV adalah tabel teks dan semua nilainya dibaca sebagai string.",
+        "Gunakan modul csv, bukan split, untuk menangani kutip dan koma.",
+        "DictReader dan DictWriter bekerja dengan dictionary berlabel.",
+        "Tangani sel kosong secara sadar dan laporkan data yang hilang."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Bekerja dengan CSV"
+          },
+          {
+            "type": "text",
+            "source": "`csv.reader` menangani nilai berkutip yang mengandung koma, sedangkan `split` memecahnya keliru. Semua nilai dibaca sebagai string dan sel kosong menjadi string kosong."
+          },
+          {
+            "type": "code",
+            "source": "import csv, io\n\nteks = \"nama,kota,skor\\nSari,Depok,85\\nBudi,\\\"Jakarta, Selatan\\\",90\\nCitra,Bandung,\\n\"\nfor baris in csv.reader(io.StringIO(teks)):\n    print(baris)\nprint(\"Jakarta, Selatan\".split(\",\"))"
+          },
+          {
+            "type": "text",
+            "source": "`DictReader` membaca baris sebagai dictionary berkunci header. Nilai diubah ke `int` secara manual dan `DictWriter` menulis kolom baru."
+          },
+          {
+            "type": "code",
+            "source": "import csv, io\n\nteks = \"nama,skor\\nSari,85\\nBudi,90\\nCitra,70\\n\"\nbaca = list(csv.DictReader(io.StringIO(teks)))\nprint(baca[0], baca[0][\"nama\"])\nfor r in baca:\n    r[\"skor\"] = int(r[\"skor\"])\nprint(sum(r[\"skor\"] for r in baca) / len(baca))\n\nkeluar = io.StringIO()\ntulis = csv.DictWriter(keluar, fieldnames=[\"nama\", \"skor\", \"lulus\"], lineterminator=\"\\n\")\ntulis.writeheader()\nfor r in baca:\n    tulis.writerow({**r, \"lulus\": r[\"skor\"] >= 75})\nprint(keluar.getvalue())"
+          },
+          {
+            "type": "text",
+            "source": "Fungsi pembantu mengembalikan `None` untuk nilai tak valid. Jumlah baris yang gagal dihitung dan dilaporkan, bukan diabaikan diam-diam."
+          },
+          {
+            "type": "code",
+            "source": "import csv, io\n\ndef ke_angka(s):\n    s = s.strip()\n    try:\n        return float(s)\n    except ValueError:\n        return None\n\nteks = \"id,harga\\n1,100\\n2,\\n3, 250 \\n4,n/a\\n5,75.5\\n\"\nbaris = list(csv.DictReader(io.StringIO(teks)))\nharga = [ke_angka(r[\"harga\"]) for r in baris]\nprint(harga)\nvalid = [h for h in harga if h is not None]\nprint(len(valid), len(baris) - len(valid), sum(valid) / len(valid))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-07-3",
+      "title": "JSON dan serialisasi",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengubah antara string JSON dan objek Python dengan json.loads dan json.dumps",
+        "Memakai indent, sort_keys, dan ensure_ascii untuk keluaran yang rapi",
+        "Membaca dan menulis file JSON dengan json.load dan json.dump",
+        "Menangani tipe yang tidak didukung dan meratakan JSON bersarang"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "JSON sebagai bahasa data",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## JSON sebagai bahasa data\n\n**JSON** (*JavaScript Object Notation*) adalah format teks untuk data terstruktur. Hampir semua API web mengirim dan menerima JSON, dan banyak file konfigurasi memakainya. Bentuknya mirip dictionary dan list Python: objek dengan kunci berupa string, array, string, angka, `true`, `false`, dan `null`.\n\nModul `json` mengonversi dua arah. `json.loads(teks)` mengubah string JSON menjadi objek Python, dan `json.dumps(objek)` mengubah objek Python menjadi string JSON. Versi tanpa huruf s, `json.load(file)` dan `json.dump(objek, file)`, bekerja langsung dengan objek file. Cara mengingatnya: huruf s berarti string.\n\nPemetaan tipe penting diketahui: objek menjadi dictionary, array menjadi list, `true` dan `false` menjadi `True` dan `False`, serta `null` menjadi `None`. Kunci JSON selalu string, sehingga kunci bilangan di dictionary berubah menjadi string setelah melewati JSON."
+            },
+            {
+              "type": "code_example",
+              "filename": "json_dasar.py",
+              "runnable": true,
+              "code": "import json\n\nteks = '{\"nama\": \"Sari\", \"umur\": 21, \"aktif\": true, \"skor\": null, \"tag\": [\"a\", \"b\"]}'\nd = json.loads(teks)\nprint(d[\"nama\"], d[\"aktif\"], d[\"skor\"], d[\"tag\"][1], type(d).__name__)\n\nobj = {\"x\": 1, \"ok\": True, \"kosong\": None, \"daftar\": [1, 2.5]}\ns = json.dumps(obj)\nprint(s)\nprint(type(s).__name__)\nprint(json.loads(json.dumps({1: \"a\"})))",
+              "expected_output_note": "Sari True None b dict\n{\"x\": 1, \"ok\": true, \"kosong\": null, \"daftar\": [1, 2.5]}\nstr\n{'1': 'a'}",
+              "explanation": "`loads` mengurai string JSON dan `dumps` menghasilkan string JSON. Kunci bilangan berubah menjadi string setelah melewati JSON."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merapikan keluaran\n\n`json.dumps` secara bawaan menghasilkan satu baris padat. Argumen `indent=2` membuatnya berlekuk sehingga mudah dibaca manusia, `sort_keys=True` mengurutkan kunci agar keluaran stabil dan mudah dibandingkan, dan `ensure_ascii=False` mempertahankan karakter non-ASCII seperti huruf beraksen alih-alih mengubahnya menjadi kode `\\uXXXX`.\n\nKeluaran yang stabil sangat berguna saat menyimpan konfigurasi dalam kendali versi atau membandingkan dua hasil dengan teks. Kunci yang selalu terurut berarti dua dictionary yang sama isinya menghasilkan teks yang sama.\n\nUntuk mengirim data kecil antar program, bentuk padat sudah cukup. Untuk file yang akan dibaca manusia, pakai `indent`. Pilih sesuai pembacanya."
+            },
+            {
+              "type": "code_example",
+              "filename": "json_format.py",
+              "runnable": true,
+              "code": "import json\n\ndata = {\"kota\": \"Yogyakarta\", \"tag\": [\"b\", \"a\"], \"nama\": \"José\", \"angka\": 3}\nprint(json.dumps(data, sort_keys=True))\nprint(json.dumps({\"a\": 1, \"b\": [1, 2]}, indent=2))\nprint(json.dumps({\"n\": \"José\"}))\nprint(json.dumps({\"n\": \"José\"}, ensure_ascii=False))\na = json.dumps({\"x\": 1, \"y\": 2}, sort_keys=True)\nb = json.dumps({\"y\": 2, \"x\": 1}, sort_keys=True)\nprint(a == b)",
+              "expected_output_note": "{\"angka\": 3, \"kota\": \"Yogyakarta\", \"nama\": \"Jos\\u00e9\", \"tag\": [\"b\", \"a\"]}\n{\n  \"a\": 1,\n  \"b\": [\n    1,\n    2\n  ]\n}\n{\"n\": \"Jos\\u00e9\"}\n{\"n\": \"José\"}\nTrue",
+              "explanation": "`sort_keys` menstabilkan keluaran, `indent` merapikannya, dan `ensure_ascii=False` mempertahankan huruf beraksen."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Mengingat load dan loads",
+              "markdown": "Ingat dengan huruf s: `loads` dan `dumps` bekerja dengan string, sedangkan `load` dan `dump` bekerja dengan objek file."
+            }
+          ],
+          "quick_check": {
+            "question": "Fungsi untuk mengubah string JSON menjadi objek Python?",
+            "options": [
+              "json.loads",
+              "json.dumps"
+            ],
+            "answer_index": 0,
+            "explanation": "loads mengurai string.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "File JSON dan tipe yang tidak didukung",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## File JSON dan tipe yang tidak didukung\n\nUntuk menyimpan ke file, buka dengan `with open(\"data.json\", \"w\", encoding=\"utf-8\") as f:` lalu `json.dump(obj, f, indent=2, ensure_ascii=False)`. Membacanya kembali dengan `json.load(f)`. Pola baca dan tulis ini dipakai untuk menyimpan hasil antara dan konfigurasi.\n\nTidak semua objek Python bisa diubah ke JSON. Himpunan (`set`), tuple dengan perilaku khusus, tanggal, dan objek buatan sendiri tidak didukung langsung. Tuple menjadi array dan kembali sebagai list, sedangkan `set` menimbulkan `TypeError`. Solusinya mengubah dulu menjadi tipe yang didukung, misalnya `sorted(set)` menjadi list, atau memberi argumen `default=` berupa fungsi yang menjelaskan cara mengonversi.\n\nPerhatikan juga bahwa JSON tidak membedakan bilangan bulat dan desimal secara ketat, serta tidak mendukung `NaN` dan tak hingga menurut standar. Python mengizinkannya secara bawaan, tetapi program lain bisa menolaknya."
+            },
+            {
+              "type": "code_example",
+              "filename": "json_file.py",
+              "runnable": true,
+              "code": "import json\n\nwith open(\"data.json\", \"w\", encoding=\"utf-8\") as f:\n    json.dump({\"nama\": \"Sari\", \"nilai\": [90, 85]}, f, indent=2)\nwith open(\"data.json\", encoding=\"utf-8\") as f:\n    kembali = json.load(f)\nprint(kembali, kembali[\"nilai\"][0])\n\ntry:\n    json.dumps({\"s\": {1, 2}})\nexcept TypeError:\n    print(\"set tidak didukung\")\nprint(json.dumps({\"s\": sorted({2, 1})}))\nprint(json.dumps({\"t\": (1, 2)}), json.loads('{\"t\": [1, 2]}'))\nprint(json.dumps({\"s\": {3, 1}}, default=sorted))",
+              "expected_output_note": "{'nama': 'Sari', 'nilai': [90, 85]} 90\nset tidak didukung\n{\"s\": [1, 2]}\n{\"t\": [1, 2]} {'t': [1, 2]}\n{\"s\": [1, 3]}",
+              "explanation": "`dump` dan `load` bekerja dengan file. Set tidak didukung langsung sehingga diubah ke list atau diberi `default`."
+            }
+          ],
+          "quick_check": {
+            "question": "JSON null menjadi apa di Python?",
+            "options": [
+              "0",
+              "None"
+            ],
+            "answer_index": 1,
+            "explanation": "null dipetakan ke None.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Meratakan JSON bersarang",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Meratakan JSON bersarang\n\nData dari API biasanya bersarang: objek berisi objek dan array. Untuk dianalisis sebagai tabel, struktur ini perlu diratakan. Pendekatan umum: telusuri struktur secara rekursif, gabungkan kunci bertingkat dengan pemisah seperti titik, dan hasilkan satu dictionary datar.\n\nMisalnya `{\"a\": {\"b\": 1}}` menjadi `{\"a.b\": 1}`. Array biasanya diperlakukan terpisah: bisa dijadikan satu sel, atau dipecah menjadi beberapa baris. Pilihan bergantung pada tujuan analisis. Pustaka pandas menyediakan `json_normalize` untuk ini, tetapi memahami versi manualnya membantumu mengatasi kasus yang tidak tertangani otomatis.\n\nBerhati-hatilah dengan JSON dari sumber tidak tepercaya. Parsing JSON sendiri aman, tetapi isinya bisa tidak sesuai harapan. Validasi bentuk data sebelum memakainya, dan jangan pernah mengevaluasinya sebagai kode."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pola kerja dengan API\n\nSaat mengambil data dari API, alurnya hampir selalu sama: kirim permintaan, terima teks JSON, urai dengan `json.loads`, periksa bentuknya, lalu ekstrak bagian yang kamu butuhkan. Jangan berasumsi kunci selalu ada. Gunakan `get` dengan nilai bawaan atau tangkap `KeyError`, karena API sering mengubah atau menghilangkan kolom opsional.\n\nSimpan respons mentah ke file sebelum mengolahnya. Bila ada bug di kodemu, kamu tidak perlu memanggil API lagi, dan kamu bisa membandingkan hasil dari waktu ke waktu. Kebiasaan ini juga menghemat kuota panggilan yang sering dibatasi.\n\nLatihan berikut tidak memakai jaringan, hanya string JSON di memori. Itu cukup untuk melatih semua keterampilan penguraian dan perataan yang kamu butuhkan nanti saat bekerja dengan data nyata.\n\nSatu pesan terakhir: selalu tangani kegagalan penguraian. Teks yang bukan JSON valid akan menimbulkan galat, dan program yang baik menanganinya dengan jelas."
+            }
+          ],
+          "quick_check": {
+            "question": "Argumen untuk keluaran berlekuk?",
+            "options": [
+              "indent",
+              "pretty"
+            ],
+            "answer_index": 0,
+            "explanation": "indent mengatur lekukan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-07-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ambil_nama(teks)` yang menerima string JSON objek dan mengembalikan nilai kunci `nama`, atau `None` bila tidak ada.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import json\n\ndef ambil_nama(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ambil_nama('{\"nama\": \"Sari\"}')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_nama('{\"nama\": \"Sari\"}') == \"Sari\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ambil_nama('{\"umur\": 3}')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_nama('{\"umur\": 3}') is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ambil_nama('{\"nama\": null}')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_nama('{\"nama\": null}') is None"
+              }
+            ]
+          },
+          "hint": "Urai dengan json.loads lalu gunakan get.",
+          "solution": "import json\n\ndef ambil_nama(teks):\n    return json.loads(teks).get(\"nama\")",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-07-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ke_json(obj)` yang mengembalikan string JSON dengan kunci terurut dan tanpa mengubah karakter non-ASCII.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import json\n\ndef ke_json(obj):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ke_json({\"b\": 1, \"a\": 2})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_json({\"b\": 1, \"a\": 2}) == '{\"a\": 2, \"b\": 1}'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ke_json({\"n\": \"é\"})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_json({\"n\": \"é\"}) == '{\"n\": \"é\"}'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ke_json([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_json([]) == \"[]\""
+              }
+            ]
+          },
+          "hint": "Pakai sort_keys=True dan ensure_ascii=False.",
+          "solution": "import json\n\ndef ke_json(obj):\n    return json.dumps(obj, sort_keys=True, ensure_ascii=False)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-07-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `aman_json(teks, bawaan=None)` yang mengurai string JSON dan mengembalikan hasilnya, tetapi mengembalikan `bawaan` bila teks bukan JSON yang valid.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import json\n\ndef aman_json(teks, bawaan=None):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "aman_json('{\"a\": 1}')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aman_json('{\"a\": 1}') == {\"a\": 1}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "aman_json(\"bukan json\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aman_json(\"bukan json\") is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "aman_json(\"{rusak\", bawaan={})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aman_json(\"{rusak\", bawaan={}) == {}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "aman_json(\"[1, 2]\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aman_json(\"[1, 2]\") == [1, 2]"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "aman_json(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aman_json(\"\") is None"
+              }
+            ]
+          },
+          "hint": "Tangkap json.JSONDecodeError atau ValueError.",
+          "solution": "import json\n\ndef aman_json(teks, bawaan=None):\n    try:\n        return json.loads(teks)\n    except ValueError:\n        return bawaan",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-07-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ratakan(d, awalan=\"\")` yang meratakan dictionary bersarang menjadi satu dictionary datar dengan kunci digabung titik.",
+          "note": "Nilai bukan dictionary (termasuk list) dibiarkan apa adanya. Contoh `{\"a\": {\"b\": 1, \"c\": {\"d\": 2}}, \"e\": 3}` menjadi `{\"a.b\": 1, \"a.c.d\": 2, \"e\": 3}`.",
+          "filename": "solution.py",
+          "starter_code": "def ratakan(d, awalan=\"\"):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ratakan({\"a\": {\"b\": 1, \"c\": {\"d\": 2}}, \"e\": 3})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ratakan({\"a\": {\"b\": 1, \"c\": {\"d\": 2}}, \"e\": 3}) == {\"a.b\": 1, \"a.c.d\": 2, \"e\": 3}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ratakan({})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ratakan({}) == {}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ratakan({\"x\": [1, 2]})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ratakan({\"x\": [1, 2]}) == {\"x\": [1, 2]}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ratakan({\"a\": {}})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ratakan({\"a\": {}}) == {}"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "ratakan({\"p\": {\"q\": None}})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ratakan({\"p\": {\"q\": None}}) == {\"p.q\": None}"
+              }
+            ]
+          },
+          "hint": "Telusuri items dan rekursif untuk nilai dictionary dengan awalan kunci.",
+          "solution": "def ratakan(d, awalan=\"\"):\n    hasil = {}\n    for k, v in d.items():\n        kunci = awalan + \".\" + k if awalan else k\n        if isinstance(v, dict):\n            hasil.update(ratakan(v, kunci))\n        else:\n            hasil[kunci] = v\n    return hasil",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Fungsi untuk mengubah string JSON menjadi objek Python?",
+          "code": null,
+          "options": [
+            {
+              "label": "json.dumps",
+              "description": ""
+            },
+            {
+              "label": "json.loads",
+              "description": ""
+            },
+            {
+              "label": "json.dump",
+              "description": ""
+            },
+            {
+              "label": "json.read",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "s untuk string.",
+          "explanation": "loads mengurai string."
+        },
+        {
+          "q": "JSON null menjadi apa di Python?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "False",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            },
+            {
+              "label": "''",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Nilai kosong.",
+          "explanation": "null dipetakan ke None."
+        },
+        {
+          "q": "Argumen untuk keluaran berlekuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "pretty",
+              "description": ""
+            },
+            {
+              "label": "indent",
+              "description": ""
+            },
+            {
+              "label": "format",
+              "description": ""
+            },
+            {
+              "label": "space",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Menjorok.",
+          "explanation": "indent mengatur lekukan."
+        },
+        {
+          "q": "Apa yang terjadi bila dumps menerima set?",
+          "code": null,
+          "options": [
+            {
+              "label": "Jadi list",
+              "description": ""
+            },
+            {
+              "label": "TypeError",
+              "description": ""
+            },
+            {
+              "label": "Jadi string",
+              "description": ""
+            },
+            {
+              "label": "Diabaikan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Perlu konversi.",
+          "explanation": "Set tidak didukung."
+        },
+        {
+          "q": "Fungsi untuk menulis objek ke file JSON?",
+          "code": null,
+          "options": [
+            {
+              "label": "json.dumps",
+              "description": ""
+            },
+            {
+              "label": "json.dump",
+              "description": ""
+            },
+            {
+              "label": "json.write",
+              "description": ""
+            },
+            {
+              "label": "json.save",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tanpa s.",
+          "explanation": "dump menulis ke objek file."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira loads membaca file. Lebih baik: loads untuk string, load untuk objek file.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira loads membaca file.",
+          "fix": "loads untuk string, load untuk objek file."
+        },
+        {
+          "mistake": "Menyimpan set langsung ke JSON.",
+          "fix": "Ubah ke list terurut atau beri default."
+        },
+        {
+          "mistake": "Mengharapkan kunci bilangan tetap bilangan.",
+          "fix": "Kunci JSON selalu string."
+        }
+      ],
+      "summary": [
+        "loads dan dumps bekerja dengan string, load dan dump dengan file.",
+        "indent, sort_keys, dan ensure_ascii merapikan keluaran.",
+        "Set dan tipe khusus perlu dikonversi sebelum menjadi JSON.",
+        "JSON bersarang diratakan dengan rekursi."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# JSON dan serialisasi"
+          },
+          {
+            "type": "text",
+            "source": "`loads` mengurai string JSON dan `dumps` menghasilkan string JSON. Kunci bilangan berubah menjadi string setelah melewati JSON."
+          },
+          {
+            "type": "code",
+            "source": "import json\n\nteks = '{\"nama\": \"Sari\", \"umur\": 21, \"aktif\": true, \"skor\": null, \"tag\": [\"a\", \"b\"]}'\nd = json.loads(teks)\nprint(d[\"nama\"], d[\"aktif\"], d[\"skor\"], d[\"tag\"][1], type(d).__name__)\n\nobj = {\"x\": 1, \"ok\": True, \"kosong\": None, \"daftar\": [1, 2.5]}\ns = json.dumps(obj)\nprint(s)\nprint(type(s).__name__)\nprint(json.loads(json.dumps({1: \"a\"})))"
+          },
+          {
+            "type": "text",
+            "source": "`sort_keys` menstabilkan keluaran, `indent` merapikannya, dan `ensure_ascii=False` mempertahankan huruf beraksen."
+          },
+          {
+            "type": "code",
+            "source": "import json\n\ndata = {\"kota\": \"Yogyakarta\", \"tag\": [\"b\", \"a\"], \"nama\": \"José\", \"angka\": 3}\nprint(json.dumps(data, sort_keys=True))\nprint(json.dumps({\"a\": 1, \"b\": [1, 2]}, indent=2))\nprint(json.dumps({\"n\": \"José\"}))\nprint(json.dumps({\"n\": \"José\"}, ensure_ascii=False))\na = json.dumps({\"x\": 1, \"y\": 2}, sort_keys=True)\nb = json.dumps({\"y\": 2, \"x\": 1}, sort_keys=True)\nprint(a == b)"
+          },
+          {
+            "type": "text",
+            "source": "`dump` dan `load` bekerja dengan file. Set tidak didukung langsung sehingga diubah ke list atau diberi `default`."
+          },
+          {
+            "type": "code",
+            "source": "import json\n\nwith open(\"data.json\", \"w\", encoding=\"utf-8\") as f:\n    json.dump({\"nama\": \"Sari\", \"nilai\": [90, 85]}, f, indent=2)\nwith open(\"data.json\", encoding=\"utf-8\") as f:\n    kembali = json.load(f)\nprint(kembali, kembali[\"nilai\"][0])\n\ntry:\n    json.dumps({\"s\": {1, 2}})\nexcept TypeError:\n    print(\"set tidak didukung\")\nprint(json.dumps({\"s\": sorted({2, 1})}))\nprint(json.dumps({\"t\": (1, 2)}), json.loads('{\"t\": [1, 2]}'))\nprint(json.dumps({\"s\": {3, 1}}, default=sorted))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa kode dan contoh singkat yang cukup jelas dalam teks dan latihan.",
+    "brief": []
+  },
+  "references": []
+}

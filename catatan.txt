@@ -1,0 +1,4 @@
+baris satu
+baris dua
+baris tiga
+baris empat

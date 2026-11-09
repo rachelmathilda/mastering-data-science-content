@@ -1,0 +1,1540 @@
+{
+  "schema_version": 2,
+  "course_id": "A2",
+  "module_no": 3,
+  "title": "Sistem persamaan linear",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menulis dan menafsirkan sistem persamaan linear dalam bentuk matriks",
+    "Menyelesaikan sistem dengan eliminasi Gauss dan pivoting",
+    "Memakai kuadrat terkecil untuk regresi linear"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A2-03-1",
+    "exercise_id": "A2-03-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def jenis_solusi(A, b):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A2-03-1",
+      "title": "Sistem persamaan linear dan bentuk matriks",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menulis sistem persamaan linear dalam bentuk matriks A x = b",
+        "Menafsirkan solusi secara geometris sebagai perpotongan garis atau bidang",
+        "Membedakan sistem dengan solusi tunggal, tak hingga, dan tanpa solusi",
+        "Menyelesaikan sistem kecil dengan np.linalg.solve"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari persamaan ke matriks",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari persamaan ke matriks\n\n**Sistem persamaan linear** adalah sekumpulan persamaan dengan beberapa variabel yang semuanya berpangkat satu. Contoh: `2x + y = 5` dan `x - y = 1`. Kita mencari nilai `x` dan `y` yang memenuhi semua persamaan sekaligus. Sistem seperti ini muncul di mana-mana: menyeimbangkan anggaran, menghitung aliran jaringan, hingga mencari bobot regresi.\n\nSemua sistem linear dapat ditulis dalam satu bentuk ringkas `A x = b`. Matriks `A` berisi koefisien, vektor `x` berisi variabel yang dicari, dan vektor `b` berisi sisi kanan. Untuk contoh tadi, `A = [[2, 1], [1, -1]]`, `x = [x, y]`, dan `b = [5, 1]`. Bentuk ini memungkinkan kita memakai seluruh alat aljabar linear, bukan sekadar trik per kasus.\n\nMenulis sistem sebagai `A x = b` juga menghubungkan ke pelajaran sebelumnya: `A x` adalah kombinasi linear kolom `A`, sehingga mencari `x` berarti mencari bobot yang membentuk `b` dari kolom-kolom itu."
+            },
+            {
+              "type": "code_example",
+              "filename": "solve_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[2.0, 1.0], [1.0, -1.0]])\nb = np.array([5.0, 1.0])\nx = np.linalg.solve(A, b)\nprint(x.tolist())\nprint((A @ x).tolist(), np.allclose(A @ x, b))\nkombinasi = x[0] * A[:, 0] + x[1] * A[:, 1]\nprint(kombinasi.tolist())",
+              "expected_output_note": "[2.0, 1.0]\n[5.0, 1.0] True\n[5.0, 1.0]",
+              "explanation": "`np.linalg.solve` menyelesaikan `A x = b`. Solusi diperiksa dengan mengalikan kembali, dan `b` adalah kombinasi linear kolom `A` berbobot solusi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tafsir geometris\n\nSetiap persamaan linear dua variabel menggambarkan sebuah garis di bidang. Solusi sistem adalah titik yang berada di semua garis, yaitu titik perpotongan. Untuk tiga variabel, tiap persamaan adalah bidang, dan solusinya adalah titik tempat bidang-bidang itu bertemu.\n\nDari gambaran ini ada tiga kemungkinan untuk dua garis. Garis berpotongan di satu titik, artinya **solusi tunggal**. Garis sejajar dan berbeda, artinya **tidak ada solusi**. Garis berimpit, artinya **solusi tak hingga** karena setiap titik pada garis itu memenuhi kedua persamaan. Tidak pernah ada tepat dua atau tiga solusi: bila ada lebih dari satu, maka ada tak hingga.\n\nPandangan kolom memberi tafsir lain. Sistem punya solusi bila dan hanya bila `b` terletak pada span kolom-kolom `A`. Bila `b` di luar span, tidak ada kombinasi linear yang menghasilkannya, sehingga sistem tak punya solusi."
+            },
+            {
+              "type": "code_example",
+              "filename": "jenis_solusi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ntunggal = np.array([[1.0, 1.0], [1.0, -1.0]])\nsejajar = np.array([[1.0, 1.0], [2.0, 2.0]])\nprint(round(float(np.linalg.det(tunggal)), 4), round(float(np.linalg.det(sejajar)), 4))\nprint(np.linalg.matrix_rank(tunggal), np.linalg.matrix_rank(sejajar))\ntry:\n    np.linalg.solve(sejajar, np.array([2.0, 5.0]))\nexcept np.linalg.LinAlgError:\n    print(\"matriks singular\")\naug_a = np.column_stack([sejajar, [2.0, 4.0]])\naug_b = np.column_stack([sejajar, [2.0, 5.0]])\nprint(np.linalg.matrix_rank(aug_a), np.linalg.matrix_rank(aug_b))",
+              "expected_output_note": "-2.0 0.0\n2 1\nmatriks singular\n1 2",
+              "explanation": "Determinan nol dan peringkat kurang dari penuh menandakan garis sejajar atau berimpit. Matriks augmented dengan peringkat sama menandakan solusi ada, dan peringkat lebih besar berarti tidak ada solusi."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Peringkat menentukan jenis solusi",
+              "markdown": "Sistem `A x = b` dengan `A` persegi punya solusi tunggal bila peringkat `A` sama dengan jumlah variabel. Bila peringkatnya lebih kecil, solusinya nol atau tak hingga, tergantung `b`."
+            }
+          ],
+          "quick_check": {
+            "question": "Bentuk matriks sistem persamaan linear?",
+            "options": [
+              "A x = b",
+              "A + x = b"
+            ],
+            "answer_index": 0,
+            "explanation": "Koefisien dikali variabel sama dengan sisi kanan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Banyak persamaan, banyak variabel",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Banyak persamaan, banyak variabel\n\nJumlah persamaan tidak harus sama dengan jumlah variabel. Bila persamaan lebih banyak daripada variabel, sistem disebut **overdetermined**, dan umumnya tidak ada solusi persis. Inilah situasi regresi: banyak pengamatan, sedikit parameter. Kita lalu mencari solusi terbaik dalam arti kuadrat terkecil, topik yang dibahas pada modul berikutnya.\n\nBila persamaan lebih sedikit daripada variabel, sistem **underdetermined**, dan umumnya ada tak hingga solusi. Kondisi ini muncul pada model dengan fitur lebih banyak daripada data, dan menjadi alasan teknik regularisasi dibutuhkan untuk memilih satu solusi di antara banyak yang mungkin.\n\nPembedaan ini penting dalam praktik. Pustaka seperti scikit-learn menyelesaikan masalah overdetermined lewat kuadrat terkecil secara otomatis, tetapi memahami asal usulnya membantumu mendiagnosis mengapa sebuah model gagal atau tidak stabil."
+            },
+            {
+              "type": "code_example",
+              "filename": "overdetermined.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[1.0, 1.0], [1.0, 2.0], [1.0, 3.0]])\nb = np.array([1.0, 2.0, 2.0])\nx, sisa, peringkat, sv = np.linalg.lstsq(A, b, rcond=None)\nprint(x.round(4).tolist(), peringkat)\nprint((A @ x).round(4).tolist())\nprint(np.allclose(A @ x, b))",
+              "expected_output_note": "[0.6667, 0.5] 2\n[1.1667, 1.6667, 2.1667]\nFalse",
+              "explanation": "Tiga persamaan dua variabel tidak punya solusi persis. `lstsq` memberi solusi terbaik dalam arti kuadrat terkecil, dan hasil kali tidak tepat sama dengan `b`."
+            }
+          ],
+          "quick_check": {
+            "question": "Dua garis sejajar berbeda menghasilkan?",
+            "options": [
+              "Solusi tunggal",
+              "Tak ada solusi"
+            ],
+            "answer_index": 1,
+            "explanation": "Tidak ada titik perpotongan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kondisi dan ketelitian numerik",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kondisi dan ketelitian numerik\n\nSistem bisa punya solusi tunggal secara teori tetapi sangat sulit dihitung dengan akurat. Bila baris-baris `A` hampir sejajar, perubahan kecil pada `b` dapat menyebabkan perubahan besar pada solusi. Matriks seperti ini disebut **berkondisi buruk**. Ukurannya adalah **bilangan kondisi**, yang diperoleh dengan `np.linalg.cond(A)`. Bilangan kondisi yang sangat besar memperingatkan bahwa hasil mungkin tidak dapat dipercaya.\n\nDalam praktik data, kondisi buruk muncul ketika fitur-fitur sangat berkorelasi, sehingga kolom `X` hampir bergantung linear. Gejalanya: koefisien regresi meloncat tak masuk akal antar sampel data. Mengenali masalah ini lebih awal menghindarkan kesimpulan keliru.\n\nSatu prinsip penting: jangan pernah menghitung invers matriks lalu mengalikannya untuk menyelesaikan sistem. Gunakan `np.linalg.solve`, yang lebih cepat dan jauh lebih akurat secara numerik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan pemilihan alat\n\nUntuk sistem kecil dan persegi dengan solusi tunggal, `np.linalg.solve` adalah pilihan utama. Untuk sistem dengan lebih banyak persamaan daripada variabel, pakai `np.linalg.lstsq`. Untuk memeriksa apakah sistem punya solusi tunggal, lihat peringkat dan bilangan kondisi. Pilihan alat yang tepat sejak awal menghemat banyak waktu debugging."
+            }
+          ],
+          "quick_check": {
+            "question": "Sistem lebih banyak persamaan daripada variabel disebut?",
+            "options": [
+              "Overdetermined",
+              "Underdetermined"
+            ],
+            "answer_index": 0,
+            "explanation": "Biasanya tak ada solusi persis.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-03-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ke_matriks(persamaan)` yang menerima list tuple `(a, b, c)` untuk persamaan `a x + b y = c` dan mengembalikan tuple `(A, rhs)` dengan `A` list of list koefisien dan `rhs` list sisi kanan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def ke_matriks(persamaan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ke_matriks([(2, 1, 5), (1, -1, 1)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_matriks([(2, 1, 5), (1, -1, 1)]) == ([[2, 1], [1, -1]], [5, 1])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ke_matriks([(3, 4, 7)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_matriks([(3, 4, 7)]) == ([[3, 4]], [7])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ke_matriks([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_matriks([]) == ([], [])"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ke_matriks([(0, 1, 0), (1, 0, 0)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_matriks([(0, 1, 0), (1, 0, 0)]) == ([[0, 1], [1, 0]], [0, 0])"
+              }
+            ]
+          },
+          "hint": "Pisahkan dua koefisien pertama dari elemen ketiga di tiap tuple.",
+          "solution": "def ke_matriks(persamaan):\n    return [[a, b] for a, b, _ in persamaan], [c for _, _, c in persamaan]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-03-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `penuhi(A, x, b)` yang mengembalikan `True` bila `A x` sama dengan `b` (toleransi 1e-9) untuk `A` list of list, `x` dan `b` list.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def penuhi(A, x, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "penuhi([[2, 1], [1, -1]], [2, 1], [5, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert penuhi([[2, 1], [1, -1]], [2, 1], [5, 1]) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "penuhi([[2, 1], [1, -1]], [1, 1], [5, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert penuhi([[2, 1], [1, -1]], [1, 1], [5, 1]) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "penuhi([[1, 0], [0, 1]], [3, 4], [3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert penuhi([[1, 0], [0, 1]], [3, 4], [3, 4]) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "penuhi([[0.1, 0.2]], [1, 1], [0.3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert penuhi([[0.1, 0.2]], [1, 1], [0.3]) is True"
+              }
+            ]
+          },
+          "hint": "Hitung dot product tiap baris dengan x lalu bandingkan dengan toleransi.",
+          "solution": "def penuhi(A, x, b):\n    hasil = [sum(a * v for a, v in zip(baris, x)) for baris in A]\n    return all(abs(h - t) < 1e-9 for h, t in zip(hasil, b))",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-03-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `selesaikan_2x2(a, b, c, d, e, f)` yang menyelesaikan sistem `a x + b y = e` dan `c x + d y = f` dengan aturan Cramer.",
+          "note": "Kembalikan tuple `(x, y)` dibulatkan 6 desimal, atau `None` bila determinan nol.",
+          "filename": "solution.py",
+          "starter_code": "def selesaikan_2x2(a, b, c, d, e, f):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selesaikan_2x2(2, 1, 1, -1, 5, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan_2x2(2, 1, 1, -1, 5, 1) == (2.0, 1.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selesaikan_2x2(1, 1, 2, 2, 2, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan_2x2(1, 1, 2, 2, 2, 4) is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selesaikan_2x2(1, 0, 0, 1, 3, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan_2x2(1, 0, 0, 1, 3, 4) == (3.0, 4.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "selesaikan_2x2(3, 2, 1, 4, 7, 9)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan_2x2(3, 2, 1, 4, 7, 9) == (1.0, 2.0)"
+              }
+            ]
+          },
+          "hint": "Determinan adalah a d dikurangi b c. x dan y diperoleh dari rasio determinan.",
+          "solution": "def selesaikan_2x2(a, b, c, d, e, f):\n    det = a * d - b * c\n    if det == 0:\n        return None\n    x = (e * d - b * f) / det\n    y = (a * f - e * c) / det\n    return round(x, 6), round(y, 6)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-03-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `jenis_solusi(A, b)` untuk sistem 2x2 dengan `A` list of list dan `b` list.",
+          "note": "Kembalikan `\"tunggal\"` bila determinan tak nol. Bila determinan nol, kembalikan `\"tak hingga\"` bila `b` konsisten (baris kedua kelipatan baris pertama berikut sisi kanannya) dan `\"tidak ada\"` bila tidak. Anggap baris pertama tidak semuanya nol.",
+          "filename": "solution.py",
+          "starter_code": "def jenis_solusi(A, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jenis_solusi([[2, 1], [1, -1]], [5, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_solusi([[2, 1], [1, -1]], [5, 1]) == \"tunggal\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jenis_solusi([[1, 1], [2, 2]], [2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_solusi([[1, 1], [2, 2]], [2, 4]) == \"tak hingga\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jenis_solusi([[1, 1], [2, 2]], [2, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_solusi([[1, 1], [2, 2]], [2, 5]) == \"tidak ada\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jenis_solusi([[1, 2], [3, 6]], [1, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jenis_solusi([[1, 2], [3, 6]], [1, 3]) == \"tak hingga\""
+              }
+            ]
+          },
+          "hint": "Bila determinan nol, cari kelipatan baris kedua terhadap baris pertama dan periksa sisi kanan.",
+          "solution": "def jenis_solusi(A, b):\n    (a, bb), (c, d) = A\n    if a * d - bb * c != 0:\n        return \"tunggal\"\n    if a != 0:\n        k = c / a\n    else:\n        k = d / bb\n    return \"tak hingga\" if abs(k * b[0] - b[1]) < 1e-9 else \"tidak ada\"",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Bentuk matriks sistem persamaan linear?",
+          "code": null,
+          "options": [
+            {
+              "label": "A + x = b",
+              "description": ""
+            },
+            {
+              "label": "A x = b",
+              "description": ""
+            },
+            {
+              "label": "A / x = b",
+              "description": ""
+            },
+            {
+              "label": "A^x = b",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Perkalian matriks.",
+          "explanation": "Koefisien dikali variabel sama dengan sisi kanan."
+        },
+        {
+          "q": "Dua garis sejajar berbeda menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Solusi tunggal",
+              "description": ""
+            },
+            {
+              "label": "Tak ada solusi",
+              "description": ""
+            },
+            {
+              "label": "Tak hingga solusi",
+              "description": ""
+            },
+            {
+              "label": "Dua solusi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tidak pernah bertemu.",
+          "explanation": "Tidak ada titik perpotongan."
+        },
+        {
+          "q": "Sistem lebih banyak persamaan daripada variabel disebut?",
+          "code": null,
+          "options": [
+            {
+              "label": "Underdetermined",
+              "description": ""
+            },
+            {
+              "label": "Overdetermined",
+              "description": ""
+            },
+            {
+              "label": "Homogen",
+              "description": ""
+            },
+            {
+              "label": "Diagonal",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Situasi regresi.",
+          "explanation": "Biasanya tak ada solusi persis."
+        },
+        {
+          "q": "Fungsi NumPy untuk solusi kuadrat terkecil?",
+          "code": null,
+          "options": [
+            {
+              "label": "np.solve",
+              "description": ""
+            },
+            {
+              "label": "np.linalg.lstsq",
+              "description": ""
+            },
+            {
+              "label": "np.fit",
+              "description": ""
+            },
+            {
+              "label": "np.lsq",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Least squares.",
+          "explanation": "lstsq memberi solusi terbaik."
+        },
+        {
+          "q": "Apa yang ditunjukkan bilangan kondisi besar?",
+          "code": null,
+          "options": [
+            {
+              "label": "Solusi akurat",
+              "description": ""
+            },
+            {
+              "label": "Sistem sensitif dan hasil bisa tak andal",
+              "description": ""
+            },
+            {
+              "label": "Sistem diagonal",
+              "description": ""
+            },
+            {
+              "label": "Tak ada apa-apa",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kondisi buruk.",
+          "explanation": "Perubahan kecil memicu perubahan besar."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menyelesaikan sistem dengan menghitung invers lalu mengalikan. Lebih baik: Pakai np.linalg.solve yang lebih akurat dan cepat.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menyelesaikan sistem dengan menghitung invers lalu mengalikan.",
+          "fix": "Pakai np.linalg.solve yang lebih akurat dan cepat."
+        },
+        {
+          "mistake": "Mengira sistem singular punya solusi tunggal.",
+          "fix": "Periksa determinan dan peringkat."
+        },
+        {
+          "mistake": "Mengabaikan bilangan kondisi yang besar.",
+          "fix": "Waspadai hasil dan periksa korelasi antar fitur."
+        }
+      ],
+      "summary": [
+        "Sistem linear ditulis A x = b dan b adalah kombinasi linear kolom A.",
+        "Solusi bisa tunggal, tak hingga, atau tak ada tergantung geometri dan peringkat.",
+        "Overdetermined dan underdetermined adalah dua kondisi umum dalam data.",
+        "Pakai solve, bukan invers, dan waspadai bilangan kondisi."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Sistem persamaan linear dan bentuk matriks"
+          },
+          {
+            "type": "text",
+            "source": "`np.linalg.solve` menyelesaikan `A x = b`. Solusi diperiksa dengan mengalikan kembali, dan `b` adalah kombinasi linear kolom `A` berbobot solusi."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[2.0, 1.0], [1.0, -1.0]])\nb = np.array([5.0, 1.0])\nx = np.linalg.solve(A, b)\nprint(x.tolist())\nprint((A @ x).tolist(), np.allclose(A @ x, b))\nkombinasi = x[0] * A[:, 0] + x[1] * A[:, 1]\nprint(kombinasi.tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Determinan nol dan peringkat kurang dari penuh menandakan garis sejajar atau berimpit. Matriks augmented dengan peringkat sama menandakan solusi ada, dan peringkat lebih besar berarti tidak ada solusi."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ntunggal = np.array([[1.0, 1.0], [1.0, -1.0]])\nsejajar = np.array([[1.0, 1.0], [2.0, 2.0]])\nprint(round(float(np.linalg.det(tunggal)), 4), round(float(np.linalg.det(sejajar)), 4))\nprint(np.linalg.matrix_rank(tunggal), np.linalg.matrix_rank(sejajar))\ntry:\n    np.linalg.solve(sejajar, np.array([2.0, 5.0]))\nexcept np.linalg.LinAlgError:\n    print(\"matriks singular\")\naug_a = np.column_stack([sejajar, [2.0, 4.0]])\naug_b = np.column_stack([sejajar, [2.0, 5.0]])\nprint(np.linalg.matrix_rank(aug_a), np.linalg.matrix_rank(aug_b))"
+          },
+          {
+            "type": "text",
+            "source": "Tiga persamaan dua variabel tidak punya solusi persis. `lstsq` memberi solusi terbaik dalam arti kuadrat terkecil, dan hasil kali tidak tepat sama dengan `b`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[1.0, 1.0], [1.0, 2.0], [1.0, 3.0]])\nb = np.array([1.0, 2.0, 2.0])\nx, sisa, peringkat, sv = np.linalg.lstsq(A, b, rcond=None)\nprint(x.round(4).tolist(), peringkat)\nprint((A @ x).round(4).tolist())\nprint(np.allclose(A @ x, b))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-03-2",
+      "title": "Eliminasi Gauss",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjalankan operasi baris elementer pada matriks augmented",
+        "Menerapkan eliminasi maju dan substitusi mundur",
+        "Memakai pivoting sebagian untuk menjaga kestabilan numerik",
+        "Mengimplementasikan solver Gauss dari nol dan membandingkannya dengan NumPy"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Ide eliminasi",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ide eliminasi\n\n**Eliminasi Gauss** adalah algoritma sistematis untuk menyelesaikan `A x = b`. Idenya: ubah sistem menjadi bentuk segitiga yang mudah diselesaikan tanpa mengubah solusinya. Kita memakai tiga **operasi baris elementer**: menukar dua baris, mengalikan satu baris dengan bilangan tak nol, dan menambahkan kelipatan satu baris ke baris lain. Ketiganya tidak mengubah himpunan solusi.\n\nKita bekerja pada **matriks augmented** `[A | b]`, yaitu `A` dengan `b` ditempelkan sebagai kolom terakhir. Dengan begitu setiap operasi baris otomatis berlaku untuk sisi kanan juga. Tujuannya membuat semua elemen di bawah diagonal menjadi nol, yang disebut bentuk eselon baris.\n\nSetelah segitiga, sistem diselesaikan dengan **substitusi mundur**: variabel terakhir langsung terbaca, lalu dimasukkan ke persamaan di atasnya, dan seterusnya naik. Algoritma ini sama dengan yang dijalankan di balik `np.linalg.solve`, dengan tambahan optimasi."
+            },
+            {
+              "type": "code_example",
+              "filename": "gauss_manual.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nM = np.array([[2.0, 1.0, -1.0, 8.0],\n              [-3.0, -1.0, 2.0, -11.0],\n              [-2.0, 1.0, 2.0, -3.0]])\nM[1] = M[1] + 1.5 * M[0]\nM[2] = M[2] + 1.0 * M[0]\nprint(M.round(4).tolist())\nM[2] = M[2] - 4.0 * M[1]\nprint(M.round(4).tolist())\nz = M[2, 3] / M[2, 2]\ny = (M[1, 3] - M[1, 2] * z) / M[1, 1]\nx = (M[0, 3] - M[0, 1] * y - M[0, 2] * z) / M[0, 0]\nprint(round(x, 4), round(y, 4), round(z, 4))",
+              "expected_output_note": "[[2.0, 1.0, -1.0, 8.0], [0.0, 0.5, 0.5, 1.0], [0.0, 2.0, 1.0, 5.0]]\n[[2.0, 1.0, -1.0, 8.0], [0.0, 0.5, 0.5, 1.0], [0.0, 0.0, -1.0, 1.0]]\n2.0 3.0 -1.0",
+              "explanation": "Dua langkah eliminasi mengubah sistem tiga persamaan menjadi segitiga atas. Substitusi mundur lalu memberi `x`, `y`, dan `z` dari bawah ke atas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pivoting\n\nElemen diagonal yang dipakai untuk menghilangkan elemen di bawahnya disebut **pivot**. Bila pivot nol, pembagian tidak mungkin, sehingga kita harus menukar baris dengan baris di bawahnya yang elemen kolomnya tak nol. Namun bahkan pivot yang sangat kecil berbahaya: membagi dengan bilangan hampir nol membesarkan galat pembulatan.\n\nSolusinya adalah **pivoting sebagian**: pada setiap langkah, pilih baris dengan elemen terbesar secara mutlak di kolom itu dan tukar ke posisi pivot. Strategi ini menjaga pengali tetap kecil dan hasil stabil. Hampir semua implementasi nyata memakainya.\n\nContoh klasik: sistem dengan pivot `0.0001` memberi hasil salah bila dihitung tanpa menukar baris, padahal dengan pivoting hasilnya akurat. Perbedaan ini bukan teori semata, ia nyata pada data berskala campuran."
+            },
+            {
+              "type": "code_example",
+              "filename": "pivoting.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef gauss(A, b, pivot=True):\n    M = np.column_stack([np.array(A, float), np.array(b, float)])\n    n = len(M)\n    for k in range(n):\n        if pivot:\n            p = k + int(np.argmax(np.abs(M[k:, k])))\n            M[[k, p]] = M[[p, k]]\n        for i in range(k + 1, n):\n            M[i] -= (M[i, k] / M[k, k]) * M[k]\n    x = np.zeros(n)\n    for i in range(n - 1, -1, -1):\n        x[i] = (M[i, n] - M[i, i + 1:n] @ x[i + 1:]) / M[i, i]\n    return x\n\nA = [[1e-17, 1.0], [1.0, 1.0]]\nb = [1.0, 2.0]\nprint(gauss(A, b, pivot=False).round(3).tolist())\nprint(gauss(A, b, pivot=True).round(3).tolist())\nprint(np.linalg.solve(np.array(A), np.array(b)).round(3).tolist())",
+              "expected_output_note": "[0.0, 1.0]\n[1.0, 1.0]\n[1.0, 1.0]",
+              "explanation": "Tanpa pivoting pivot sangat kecil menghasilkan jawaban keliru untuk `x`. Dengan pivoting hasilnya cocok dengan `np.linalg.solve`."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Selalu pakai pivoting",
+              "markdown": "Jangan menulis eliminasi Gauss tanpa pivoting untuk dipakai pada data nyata. Pivot kecil membesarkan galat pembulatan dan bisa menghasilkan jawaban yang salah total."
+            }
+          ],
+          "quick_check": {
+            "question": "Operasi baris elementer yang sah?",
+            "options": [
+              "Menukar baris",
+              "Menghapus baris"
+            ],
+            "answer_index": 0,
+            "explanation": "Tukar, kalikan konstanta tak nol, dan tambah kelipatan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Biaya dan penggunaan ulang",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Biaya dan penggunaan ulang\n\nEliminasi Gauss untuk matriks `n x n` membutuhkan sekitar dua pertiga `n` pangkat tiga operasi. Untuk seribu variabel itu sekitar enam ratus juta operasi, wajar untuk komputer modern. Bagian terbesar biayanya ada pada tahap eliminasi, sedangkan substitusi mundur hanya sekitar `n` kuadrat.\n\nBila kamu perlu menyelesaikan banyak sistem dengan `A` yang sama tetapi `b` berbeda, mengulang eliminasi setiap kali boros. Dekomposisi **LU** menyimpan hasil eliminasi sebagai dua matriks segitiga, sehingga tiap `b` baru hanya butuh dua substitusi murah. Pustaka `scipy.linalg.lu_factor` dan `lu_solve` menyediakannya.\n\nPola ini umum dalam komputasi ilmiah: lakukan pekerjaan mahal sekali, simpan hasil, dan pakai ulang. Ide serupa muncul pada dekomposisi Cholesky untuk matriks simetris positif definit yang sering dijumpai dalam statistik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengecek solver sendiri\n\nSetelah menulis solver sendiri, bandingkan hasilnya dengan `np.linalg.solve` pada banyak sistem acak. Bila keduanya selalu cocok dalam toleransi kecil, implementasimu hampir pasti benar. Teknik membandingkan dengan implementasi acuan ini sangat berguna untuk semua algoritma numerik yang kamu tulis, sebab bug halus mudah lolos dari satu atau dua contoh tangan.\n\nGunakan benih acak tetap agar pengujian dapat diulang. Bila pernah gagal, simpan sistem yang menyebabkan kegagalan sebagai kasus uji permanen. Kebiasaan ini mengubah setiap bug yang ditemukan menjadi perlindungan di masa depan."
+            },
+            {
+              "type": "code_example",
+              "filename": "uji_acak_solver.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef gauss(A, b):\n    M = np.column_stack([np.array(A, float), np.array(b, float)])\n    n = len(M)\n    for k in range(n):\n        p = k + int(np.argmax(np.abs(M[k:, k])))\n        M[[k, p]] = M[[p, k]]\n        for i in range(k + 1, n):\n            M[i] -= (M[i, k] / M[k, k]) * M[k]\n    x = np.zeros(n)\n    for i in range(n - 1, -1, -1):\n        x[i] = (M[i, n] - M[i, i + 1:n] @ x[i + 1:]) / M[i, i]\n    return x\n\nrng = np.random.default_rng(0)\ncocok = 0\nfor _ in range(50):\n    n = int(rng.integers(2, 7))\n    A = rng.normal(size=(n, n))\n    b = rng.normal(size=n)\n    if np.allclose(gauss(A, b), np.linalg.solve(A, b)):\n        cocok += 1\nprint(cocok)",
+              "expected_output_note": "50",
+              "explanation": "Solver buatan sendiri dibandingkan dengan `np.linalg.solve` pada lima puluh sistem acak berbagai ukuran. Semuanya cocok."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa tujuan eliminasi maju?",
+            "options": [
+              "Membuat identitas",
+              "Membuat matriks segitiga"
+            ],
+            "answer_index": 1,
+            "explanation": "Nol di bawah diagonal.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Operasi baris dan determinan",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Operasi baris dan determinan\n\nEliminasi Gauss juga memberi cara menghitung determinan. Menukar dua baris membalik tanda determinan, menambah kelipatan satu baris ke baris lain tidak mengubahnya, dan mengalikan satu baris dengan skalar mengalikan determinan dengan skalar itu. Setelah matriks menjadi segitiga atas, determinannya adalah hasil kali elemen diagonal, dikalikan minus satu pangkat jumlah penukaran baris.\n\nCara ini jauh lebih efisien daripada ekspansi kofaktor yang butuh faktorial operasi. Karena itu `np.linalg.det` memakai dekomposisi LU di balik layar. Determinan nol berarti ada pivot nol yang tak bisa ditukar, tanda bahwa baris-baris bergantung linear dan matriksnya singular.\n\nPengetahuan ini menghubungkan tiga hal sekaligus: eliminasi, determinan, dan peringkat. Jumlah pivot tak nol setelah eliminasi sama dengan peringkat matriks, dan matriks persegi punya invers tepat ketika semua pivotnya tak nol. Satu algoritma sederhana menjawab ketiga pertanyaan itu."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa pivoting sebagian dipakai?",
+            "options": [
+              "Menjaga kestabilan numerik",
+              "Mempercepat"
+            ],
+            "answer_index": 0,
+            "explanation": "Menghindari pembagian dengan angka kecil.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-03-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `tukar_baris(M, i, j)` yang mengembalikan salinan matriks (list of list) dengan baris `i` dan `j` ditukar.",
+          "note": "Matriks asal tidak boleh berubah.",
+          "filename": "solution.py",
+          "starter_code": "def tukar_baris(M, i, j):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tukar_baris(a, 0, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = [[1, 2], [3, 4], [5, 6]]\nassert tukar_baris(a, 0, 2) == [[5, 6], [3, 4], [1, 2]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert a == [[1, 2], [3, 4], [5, 6]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tukar_baris(a, 1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tukar_baris(a, 1, 1) == a"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tukar_baris([[1], [2]], 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tukar_baris([[1], [2]], 0, 1) == [[2], [1]]"
+              }
+            ]
+          },
+          "hint": "Salin tiap baris dulu lalu tukar.",
+          "solution": "def tukar_baris(M, i, j):\n    hasil = [list(b) for b in M]\n    hasil[i], hasil[j] = hasil[j], hasil[i]\n    return hasil",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-03-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `tambah_kelipatan(M, tujuan, sumber, k)` yang mengembalikan salinan matriks dengan baris `tujuan` ditambah `k` kali baris `sumber`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def tambah_kelipatan(M, tujuan, sumber, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tambah_kelipatan(a, 1, 0, -3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = [[1, 2], [3, 4]]\nassert tambah_kelipatan(a, 1, 0, -3) == [[1, 2], [0, -2]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert a == [[1, 2], [3, 4]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tambah_kelipatan(a, 0, 1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_kelipatan(a, 0, 1, 1) == [[4, 6], [3, 4]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tambah_kelipatan(a, 0, 1, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_kelipatan(a, 0, 1, 0) == a"
+              }
+            ]
+          },
+          "hint": "Buat salinan lalu perbarui baris tujuan dengan zip.",
+          "solution": "def tambah_kelipatan(M, tujuan, sumber, k):\n    hasil = [list(b) for b in M]\n    hasil[tujuan] = [t + k * s for t, s in zip(M[tujuan], M[sumber])]\n    return hasil",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-03-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `substitusi_mundur(U, c)` yang menyelesaikan `U x = c` untuk matriks segitiga atas `U` (list of list) dengan diagonal tak nol, dan mengembalikan `x` sebagai list dibulatkan 6 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def substitusi_mundur(U, c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "substitusi_mundur([[2, 1], [0, 3]], [5, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert substitusi_mundur([[2, 1], [0, 3]], [5, 6]) == [1.5, 2.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "substitusi_mundur([[1]], [4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert substitusi_mundur([[1]], [4]) == [4.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "substitusi_mundur([[2, 1, -1], [0, 0.5, 0.5],...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert substitusi_mundur([[2, 1, -1], [0, 0.5, 0.5], [0, 0, -1]], [8, 1, 1]) == [2.0, 3.0, -1.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "substitusi_mundur([[1, 0], [0, 1]], [3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert substitusi_mundur([[1, 0], [0, 1]], [3, 4]) == [3.0, 4.0]"
+              }
+            ]
+          },
+          "hint": "Mulai dari baris terakhir dan kurangi kontribusi variabel yang sudah diketahui.",
+          "solution": "def substitusi_mundur(U, c):\n    n = len(U)\n    x = [0.0] * n\n    for i in range(n - 1, -1, -1):\n        s = sum(U[i][j] * x[j] for j in range(i + 1, n))\n        x[i] = (c[i] - s) / U[i][i]\n    return [round(v, 6) for v in x]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-03-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `gauss(A, b)` yang menyelesaikan `A x = b` untuk matriks persegi dengan eliminasi Gauss dan pivoting sebagian tanpa NumPy.",
+          "note": "Kembalikan `x` sebagai list dibulatkan 6 desimal. Bila matriks singular (pivot terbesar bernilai mutlak di bawah 1e-12) kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "def gauss(A, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "gauss([[2, 1], [1, -1]], [5, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gauss([[2, 1], [1, -1]], [5, 1]) == [2.0, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "gauss([[2, 1, -1], [-3, -1, 2], [-2, 1, 2]], ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gauss([[2, 1, -1], [-3, -1, 2], [-2, 1, 2]], [8, -11, -3]) == [2.0, 3.0, -1.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "gauss([[1, 1], [2, 2]], [2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gauss([[1, 1], [2, 2]], [2, 4]) is None"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "gauss([[0, 1], [1, 0]], [3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gauss([[0, 1], [1, 0]], [3, 4]) == [4.0, 3.0]"
+              }
+            ]
+          },
+          "hint": "Untuk tiap kolom pilih baris dengan elemen mutlak terbesar, tukar, lalu hilangkan elemen di bawahnya. Akhiri dengan substitusi mundur.",
+          "solution": "def gauss(A, b):\n    n = len(A)\n    M = [list(map(float, A[i])) + [float(b[i])] for i in range(n)]\n    for k in range(n):\n        p = max(range(k, n), key=lambda i: abs(M[i][k]))\n        if abs(M[p][k]) < 1e-12:\n            return None\n        M[k], M[p] = M[p], M[k]\n        for i in range(k + 1, n):\n            f = M[i][k] / M[k][k]\n            M[i] = [a - f * c for a, c in zip(M[i], M[k])]\n    x = [0.0] * n\n    for i in range(n - 1, -1, -1):\n        s = sum(M[i][j] * x[j] for j in range(i + 1, n))\n        x[i] = (M[i][n] - s) / M[i][i]\n    return [round(v, 6) for v in x]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Operasi baris elementer yang sah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menukar baris",
+              "description": ""
+            },
+            {
+              "label": "Menghapus baris",
+              "description": ""
+            },
+            {
+              "label": "Mengkuadratkan baris",
+              "description": ""
+            },
+            {
+              "label": "Menjumlah kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tiga operasi.",
+          "explanation": "Tukar, kalikan konstanta tak nol, dan tambah kelipatan."
+        },
+        {
+          "q": "Apa tujuan eliminasi maju?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membuat matriks segitiga",
+              "description": ""
+            },
+            {
+              "label": "Membuat identitas",
+              "description": ""
+            },
+            {
+              "label": "Menghitung norma",
+              "description": ""
+            },
+            {
+              "label": "Transpos",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Segitiga atas.",
+          "explanation": "Nol di bawah diagonal."
+        },
+        {
+          "q": "Mengapa pivoting sebagian dipakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mempercepat",
+              "description": ""
+            },
+            {
+              "label": "Menjaga kestabilan numerik",
+              "description": ""
+            },
+            {
+              "label": "Mengurangi memori",
+              "description": ""
+            },
+            {
+              "label": "Tidak perlu",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Galat pembulatan.",
+          "explanation": "Menghindari pembagian dengan angka kecil."
+        },
+        {
+          "q": "Apa itu matriks augmented?",
+          "code": null,
+          "options": [
+            {
+              "label": "A dikali b",
+              "description": ""
+            },
+            {
+              "label": "A dengan b ditempel sebagai kolom",
+              "description": ""
+            },
+            {
+              "label": "Transpos A",
+              "description": ""
+            },
+            {
+              "label": "Invers A",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kolom tambahan.",
+          "explanation": "Bentuk [A | b]."
+        },
+        {
+          "q": "Keuntungan dekomposisi LU?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menyimpan eliminasi untuk b berbeda",
+              "description": ""
+            },
+            {
+              "label": "Menghitung norma",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Tak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sekali mahal, banyak murah.",
+          "explanation": "Eliminasi dipakai ulang untuk banyak b."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membagi dengan pivot nol atau sangat kecil. Lebih baik: Tukar baris dengan pivoting sebagian.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membagi dengan pivot nol atau sangat kecil.",
+          "fix": "Tukar baris dengan pivoting sebagian."
+        },
+        {
+          "mistake": "Mengubah matriks asal saat operasi baris.",
+          "fix": "Kerjakan pada salinan."
+        },
+        {
+          "mistake": "Lupa ikut mengubah sisi kanan saat operasi baris.",
+          "fix": "Gunakan matriks augmented."
+        }
+      ],
+      "summary": [
+        "Eliminasi Gauss mengubah sistem menjadi segitiga dengan operasi baris elementer.",
+        "Substitusi mundur menyelesaikan variabel dari bawah ke atas.",
+        "Pivoting sebagian menjaga kestabilan numerik.",
+        "LU menyimpan eliminasi untuk dipakai ulang pada banyak sisi kanan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Eliminasi Gauss"
+          },
+          {
+            "type": "text",
+            "source": "Dua langkah eliminasi mengubah sistem tiga persamaan menjadi segitiga atas. Substitusi mundur lalu memberi `x`, `y`, dan `z` dari bawah ke atas."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nM = np.array([[2.0, 1.0, -1.0, 8.0],\n              [-3.0, -1.0, 2.0, -11.0],\n              [-2.0, 1.0, 2.0, -3.0]])\nM[1] = M[1] + 1.5 * M[0]\nM[2] = M[2] + 1.0 * M[0]\nprint(M.round(4).tolist())\nM[2] = M[2] - 4.0 * M[1]\nprint(M.round(4).tolist())\nz = M[2, 3] / M[2, 2]\ny = (M[1, 3] - M[1, 2] * z) / M[1, 1]\nx = (M[0, 3] - M[0, 1] * y - M[0, 2] * z) / M[0, 0]\nprint(round(x, 4), round(y, 4), round(z, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Tanpa pivoting pivot sangat kecil menghasilkan jawaban keliru untuk `x`. Dengan pivoting hasilnya cocok dengan `np.linalg.solve`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef gauss(A, b, pivot=True):\n    M = np.column_stack([np.array(A, float), np.array(b, float)])\n    n = len(M)\n    for k in range(n):\n        if pivot:\n            p = k + int(np.argmax(np.abs(M[k:, k])))\n            M[[k, p]] = M[[p, k]]\n        for i in range(k + 1, n):\n            M[i] -= (M[i, k] / M[k, k]) * M[k]\n    x = np.zeros(n)\n    for i in range(n - 1, -1, -1):\n        x[i] = (M[i, n] - M[i, i + 1:n] @ x[i + 1:]) / M[i, i]\n    return x\n\nA = [[1e-17, 1.0], [1.0, 1.0]]\nb = [1.0, 2.0]\nprint(gauss(A, b, pivot=False).round(3).tolist())\nprint(gauss(A, b, pivot=True).round(3).tolist())\nprint(np.linalg.solve(np.array(A), np.array(b)).round(3).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Solver buatan sendiri dibandingkan dengan `np.linalg.solve` pada lima puluh sistem acak berbagai ukuran. Semuanya cocok."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef gauss(A, b):\n    M = np.column_stack([np.array(A, float), np.array(b, float)])\n    n = len(M)\n    for k in range(n):\n        p = k + int(np.argmax(np.abs(M[k:, k])))\n        M[[k, p]] = M[[p, k]]\n        for i in range(k + 1, n):\n            M[i] -= (M[i, k] / M[k, k]) * M[k]\n    x = np.zeros(n)\n    for i in range(n - 1, -1, -1):\n        x[i] = (M[i, n] - M[i, i + 1:n] @ x[i + 1:]) / M[i, i]\n    return x\n\nrng = np.random.default_rng(0)\ncocok = 0\nfor _ in range(50):\n    n = int(rng.integers(2, 7))\n    A = rng.normal(size=(n, n))\n    b = rng.normal(size=n)\n    if np.allclose(gauss(A, b), np.linalg.solve(A, b)):\n        cocok += 1\nprint(cocok)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-03-3",
+      "title": "Kuadrat terkecil dan regresi linear",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Memahami solusi kuadrat terkecil sebagai proyeksi pada ruang kolom",
+        "Menurunkan dan memakai persamaan normal X^T X b = X^T y",
+        "Menyusun matriks desain dengan kolom intersep",
+        "Membandingkan solusi sendiri dengan np.linalg.lstsq"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Ketika tidak ada solusi persis",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ketika tidak ada solusi persis\n\nPada data nyata, jumlah pengamatan jauh lebih banyak daripada parameter, sehingga sistem `X w = y` hampir pasti tidak punya solusi persis. Titik-titik data tidak terletak tepat pada satu garis. Kita lalu mencari `w` yang membuat `X w` sedekat mungkin dengan `y`. Ukuran kedekatannya adalah jumlah kuadrat galat, `||y - X w||^2`.\n\nMeminimalkan jumlah kuadrat ini disebut **kuadrat terkecil**. Secara geometris, `X w` selalu berada di ruang kolom `X`, yaitu semua kombinasi linear kolom `X`. Titik di ruang itu yang paling dekat dengan `y` adalah **proyeksi ortogonal** `y` pada ruang kolom. Galatnya, `y - X w`, tegak lurus terhadap seluruh kolom `X`.\n\nSyarat ketegaklurusan inilah yang menghasilkan persamaan normal. Karena galat ortogonal pada tiap kolom `X`, kita punya `X^T (y - X w) = 0`, yang berarti `X^T X w = X^T y`."
+            },
+            {
+              "type": "code_example",
+              "filename": "persamaan_normal.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nX = np.array([[1.0, 1.0], [1.0, 2.0], [1.0, 3.0], [1.0, 4.0]])\ny = np.array([2.0, 3.0, 5.0, 6.0])\nw = np.linalg.solve(X.T @ X, X.T @ y)\nprint(w.round(4).tolist())\ngalat = y - X @ w\nprint(galat.round(4).tolist())\nprint(np.allclose(X.T @ galat, 0))\nprint(round(float(galat @ galat), 4))",
+              "expected_output_note": "[0.5, 1.4]\n[0.1, -0.3, 0.3, -0.1]\nTrue\n0.2",
+              "explanation": "Persamaan normal memberi garis `y = 0.5 + 1.4 x`. Galatnya tegak lurus terhadap kedua kolom `X`, sehingga `X.T @ galat` bernilai nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Matriks desain dan intersep\n\nUntuk memodelkan `y = b0 + b1 x`, kita membentuk **matriks desain** `X` dengan kolom pertama berisi angka satu (untuk intersep) dan kolom kedua berisi nilai `x`. Tiap baris `X` mewakili satu pengamatan, dan `w = [b0, b1]` memuat parameter yang dicari. Kolom satu penting agar garis tidak terpaksa melewati titik asal.\n\nModel lebih banyak fitur tinggal menambah kolom. Model polinomial, misalnya `y = b0 + b1 x + b2 x^2`, tetap linear terhadap parameter, sehingga cukup menambah kolom `x^2`. Inilah sebabnya regresi linear sangat fleksibel: linear merujuk pada parameter, bukan pada bentuk kurva.\n\nSetelah `w` didapat, prediksi untuk semua pengamatan dihitung dengan `X @ w`. Kualitas model diukur dari galat, misalnya galat kuadrat rata-rata, dan dari koefisien determinasi `R^2` yang membandingkan galat model dengan galat prediksi rata-rata saja."
+            },
+            {
+              "type": "code_example",
+              "filename": "matriks_desain.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([1.0, 2.0, 3.0, 4.0, 5.0])\ny = np.array([1.2, 3.9, 9.1, 15.8, 25.2])\nX1 = np.column_stack([np.ones_like(x), x])\nX2 = np.column_stack([np.ones_like(x), x, x ** 2])\n\ndef cocok(X):\n    w = np.linalg.lstsq(X, y, rcond=None)[0]\n    galat = y - X @ w\n    r2 = 1 - (galat @ galat) / ((y - y.mean()) @ (y - y.mean()))\n    return w.round(3).tolist(), round(float(r2), 4)\n\nprint(cocok(X1))\nprint(cocok(X2))",
+              "expected_output_note": "([-6.93, 5.99], 0.9575)\n([0.52, -0.396, 1.064], 0.9998)",
+              "explanation": "Menambah kolom `x^2` membuat model tetap linear pada parameter namun cocok jauh lebih baik, dengan `R^2` naik dari sekitar 0.96 ke hampir 1."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Kolom intersep",
+              "markdown": "Jangan lupa kolom satu untuk intersep. Tanpanya garis dipaksa melewati titik asal dan hasilnya bias bila data memang tidak lewat titik itu."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang diminimalkan kuadrat terkecil?",
+            "options": [
+              "Jumlah kuadrat galat",
+              "Jumlah galat"
+            ],
+            "answer_index": 0,
+            "explanation": "||y - X w||^2.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Stabilitas numerik: normal versus lstsq",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Stabilitas numerik: normal versus lstsq\n\nMenyelesaikan persamaan normal langsung memang mudah, tetapi membentuk `X^T X` mengkuadratkan bilangan kondisi `X`. Bila `X` sudah berkondisi buruk, `X^T X` jauh lebih buruk sehingga hasil kehilangan banyak digit ketelitian. Karena itu perangkat lunak nyata tidak memakai persamaan normal secara langsung.\n\n`np.linalg.lstsq` memakai dekomposisi yang lebih stabil, yaitu SVD, yang akan kamu pelajari beberapa modul lagi. Ia juga menangani kasus `X` yang kolomnya bergantung linear dengan memberi solusi berpanjang minimum, sedangkan persamaan normal akan gagal karena `X^T X` singular.\n\nPegangan praktis: untuk pembelajaran dan data kecil yang rapi, persamaan normal aman dan memperjelas konsep. Untuk pekerjaan serius, pakai `lstsq` atau pustaka seperti scikit-learn dan statsmodels yang sudah menangani detail ini untukmu."
+            },
+            {
+              "type": "code_example",
+              "filename": "normal_vs_lstsq.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.arange(1.0, 6.0)\ny = 2 * x + 1\nX = np.column_stack([np.ones_like(x), x, 2 * x])\nprint(np.linalg.matrix_rank(X))\ntry:\n    np.linalg.solve(X.T @ X, X.T @ y)\n    print(\"tanpa galat\")\nexcept np.linalg.LinAlgError:\n    print(\"X^T X singular\")\nw = np.linalg.lstsq(X, y, rcond=None)[0]\nprint(np.allclose(X @ w, y))",
+              "expected_output_note": "2\nX^T X singular\nTrue",
+              "explanation": "Kolom ketiga adalah dua kali kolom kedua sehingga `X^T X` singular dan `solve` gagal. `lstsq` tetap memberi solusi yang cocok dengan data."
+            }
+          ],
+          "quick_check": {
+            "question": "Galat kuadrat terkecil terhadap kolom X bersifat?",
+            "options": [
+              "Sejajar",
+              "Tegak lurus"
+            ],
+            "answer_index": 1,
+            "explanation": "X^T galat = 0.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dari kuadrat terkecil ke pembelajaran mesin",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari kuadrat terkecil ke pembelajaran mesin\n\nRegresi linear adalah model pembelajaran mesin paling sederhana sekaligus fondasi bagi banyak model lain. Regresi logistik, regresi ridge, dan bahkan lapisan terakhir jaringan saraf memakai gagasan yang sama: cari parameter yang meminimalkan suatu galat atas data. Perbedaannya terletak pada fungsi galat dan cara meminimalkannya.\n\nUntuk galat kuadrat linear, solusi tertutup tersedia lewat persamaan normal. Untuk model yang lebih rumit, solusi tertutup tidak ada dan kita memakai optimasi iteratif seperti gradient descent, topik pada kursus kalkulus dan optimasi. Memahami solusi tertutup memberimu patokan untuk memeriksa apakah optimasi iteratifmu berjalan benar.\n\nLatihan berikut membangun regresi dari nol: menyusun matriks desain, menyelesaikan persamaan normal, dan menghitung galat serta R kuadrat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa asumsi\n\nKuadrat terkecil memberi hasil, tetapi hasil itu hanya bermakna bila asumsinya wajar. Periksa grafik galat terhadap prediksi: bila polanya melengkung, model linear belum cukup. Periksa pencilan, karena satu titik ekstrem dapat menarik garis jauh dari mayoritas data akibat galat dikuadratkan. Periksa korelasi antar fitur, sebab fitur yang hampir kembar membuat koefisien tidak stabil."
+            }
+          ],
+          "quick_check": {
+            "question": "Persamaan normal?",
+            "options": [
+              "X^T X w = X^T y",
+              "X w = y"
+            ],
+            "answer_index": 0,
+            "explanation": "Hasil syarat ortogonalitas.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-03-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `matriks_desain(x)` yang menerima list nilai `x` dan mengembalikan matriks desain (list of list) dengan kolom pertama 1 dan kolom kedua `x`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def matriks_desain(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "matriks_desain([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_desain([1, 2, 3]) == [[1, 1], [1, 2], [1, 3]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "matriks_desain([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_desain([]) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "matriks_desain([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_desain([5]) == [[1, 5]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "matriks_desain([0.5, -1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_desain([0.5, -1]) == [[1, 0.5], [1, -1]]"
+              }
+            ]
+          },
+          "hint": "Bangun satu baris [1, nilai] untuk tiap nilai x.",
+          "solution": "def matriks_desain(x):\n    return [[1, v] for v in x]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-03-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `galat_kuadrat(y, prediksi)` yang mengembalikan jumlah kuadrat selisih dua list.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def galat_kuadrat(y, prediksi):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "galat_kuadrat([1, 2, 3], [1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_kuadrat([1, 2, 3], [1, 2, 3]) == 0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "galat_kuadrat([1, 2], [2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_kuadrat([1, 2], [2, 4]) == 5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "galat_kuadrat([], [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_kuadrat([], []) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "galat_kuadrat([0], [3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_kuadrat([0], [3]) == 9"
+              }
+            ]
+          },
+          "hint": "Jumlahkan (a - b) ** 2 untuk tiap pasangan.",
+          "solution": "def galat_kuadrat(y, prediksi):\n    return sum((a - b) ** 2 for a, b in zip(y, prediksi))",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-03-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `garis_terbaik(x, y)` yang mengembalikan tuple `(b0, b1)` dari regresi linear sederhana `y = b0 + b1 x` dengan rumus `b1 = kovariansi(x, y) / varians(x)` dan `b0 = rata(y) - b1 * rata(x)`, dibulatkan 6 desimal.",
+          "note": "Anggap varians `x` tidak nol.",
+          "filename": "solution.py",
+          "starter_code": "def garis_terbaik(x, y):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "garis_terbaik([1, 2, 3, 4], [2, 3, 5, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert garis_terbaik([1, 2, 3, 4], [2, 3, 5, 6]) == (0.5, 1.4)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "garis_terbaik([0, 1, 2], [1, 3, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert garis_terbaik([0, 1, 2], [1, 3, 5]) == (1.0, 2.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "garis_terbaik([1, 2, 3], [4, 4, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert garis_terbaik([1, 2, 3], [4, 4, 4]) == (4.0, 0.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "garis_terbaik([-1, 0, 1], [1, 0, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert garis_terbaik([-1, 0, 1], [1, 0, 1]) == (0.666667, 0.0)"
+              }
+            ]
+          },
+          "hint": "Hitung rata-rata, lalu jumlah hasil kali simpangan dibagi jumlah kuadrat simpangan x.",
+          "solution": "def garis_terbaik(x, y):\n    n = len(x)\n    mx = sum(x) / n\n    my = sum(y) / n\n    b1 = sum((a - mx) * (b - my) for a, b in zip(x, y)) / sum((a - mx) ** 2 for a in x)\n    b0 = my - b1 * mx\n    return round(b0, 6), round(b1, 6)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-03-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `r_kuadrat(y, prediksi)` yang mengembalikan koefisien determinasi `1 - SSE / SST` dibulatkan 4 desimal, dengan SSE jumlah kuadrat galat dan SST jumlah kuadrat simpangan `y` dari rata-ratanya.",
+          "note": "Bila SST nol kembalikan 1.0 jika SSE nol dan 0.0 bila tidak.",
+          "filename": "solution.py",
+          "starter_code": "def r_kuadrat(y, prediksi):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "r_kuadrat([1, 2, 3], [1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r_kuadrat([1, 2, 3], [1, 2, 3]) == 1.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "r_kuadrat([1, 2, 3], [2, 2, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r_kuadrat([1, 2, 3], [2, 2, 2]) == 0.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "r_kuadrat([2, 3, 5, 6], [1.9, 3.3, 4.7, 6.1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r_kuadrat([2, 3, 5, 6], [1.9, 3.3, 4.7, 6.1]) == 0.98"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "r_kuadrat([4, 4], [4, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r_kuadrat([4, 4], [4, 4]) == 1.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "r_kuadrat([4, 4], [5, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r_kuadrat([4, 4], [5, 5]) == 0.0"
+              }
+            ]
+          },
+          "hint": "Hitung SSE dan SST lalu tangani SST nol secara terpisah.",
+          "solution": "def r_kuadrat(y, prediksi):\n    rata = sum(y) / len(y)\n    sse = sum((a - b) ** 2 for a, b in zip(y, prediksi))\n    sst = sum((a - rata) ** 2 for a in y)\n    if sst == 0:\n        return 1.0 if sse == 0 else 0.0\n    return round(1 - sse / sst, 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa yang diminimalkan kuadrat terkecil?",
+          "code": null,
+          "options": [
+            {
+              "label": "Jumlah galat",
+              "description": ""
+            },
+            {
+              "label": "Jumlah kuadrat galat",
+              "description": ""
+            },
+            {
+              "label": "Galat terbesar",
+              "description": ""
+            },
+            {
+              "label": "Jumlah y",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dikuadratkan.",
+          "explanation": "||y - X w||^2."
+        },
+        {
+          "q": "Galat kuadrat terkecil terhadap kolom X bersifat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sejajar",
+              "description": ""
+            },
+            {
+              "label": "Tegak lurus",
+              "description": ""
+            },
+            {
+              "label": "Sama dengan nol selalu",
+              "description": ""
+            },
+            {
+              "label": "Sama dengan y",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Proyeksi ortogonal.",
+          "explanation": "X^T galat = 0."
+        },
+        {
+          "q": "Persamaan normal?",
+          "code": null,
+          "options": [
+            {
+              "label": "X w = y",
+              "description": ""
+            },
+            {
+              "label": "X^T X w = X^T y",
+              "description": ""
+            },
+            {
+              "label": "X X^T w = y",
+              "description": ""
+            },
+            {
+              "label": "w = X y",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ada transpos di kedua sisi.",
+          "explanation": "Hasil syarat ortogonalitas."
+        },
+        {
+          "q": "Fungsi kolom satu di matriks desain?",
+          "code": null,
+          "options": [
+            {
+              "label": "Normalisasi",
+              "description": ""
+            },
+            {
+              "label": "Intersep",
+              "description": ""
+            },
+            {
+              "label": "Regularisasi",
+              "description": ""
+            },
+            {
+              "label": "Pencilan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Konstanta.",
+          "explanation": "Mengizinkan garis tidak lewat titik asal."
+        },
+        {
+          "q": "Mengapa lstsq lebih disukai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lebih pendek",
+              "description": ""
+            },
+            {
+              "label": "Lebih stabil secara numerik",
+              "description": ""
+            },
+            {
+              "label": "Selalu eksak",
+              "description": ""
+            },
+            {
+              "label": "Tak butuh data",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Memakai SVD.",
+          "explanation": "Tidak mengkuadratkan bilangan kondisi."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Lupa kolom intersep pada matriks desain. Lebih baik: Tambahkan kolom berisi satu.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Lupa kolom intersep pada matriks desain.",
+          "fix": "Tambahkan kolom berisi satu."
+        },
+        {
+          "mistake": "Menyelesaikan persamaan normal pada X berkondisi buruk.",
+          "fix": "Pakai np.linalg.lstsq."
+        },
+        {
+          "mistake": "Mengira regresi linear hanya untuk garis lurus.",
+          "fix": "Linear pada parameter, kolom polinomial diperbolehkan."
+        }
+      ],
+      "summary": [
+        "Kuadrat terkecil memproyeksikan y ke ruang kolom X.",
+        "Persamaan normal X^T X w = X^T y memberi solusi tertutup.",
+        "Matriks desain memakai kolom satu untuk intersep dan boleh berisi kolom polinomial.",
+        "Pakai lstsq untuk kestabilan numerik."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Kuadrat terkecil dan regresi linear"
+          },
+          {
+            "type": "text",
+            "source": "Persamaan normal memberi garis `y = 0.5 + 1.4 x`. Galatnya tegak lurus terhadap kedua kolom `X`, sehingga `X.T @ galat` bernilai nol."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nX = np.array([[1.0, 1.0], [1.0, 2.0], [1.0, 3.0], [1.0, 4.0]])\ny = np.array([2.0, 3.0, 5.0, 6.0])\nw = np.linalg.solve(X.T @ X, X.T @ y)\nprint(w.round(4).tolist())\ngalat = y - X @ w\nprint(galat.round(4).tolist())\nprint(np.allclose(X.T @ galat, 0))\nprint(round(float(galat @ galat), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Menambah kolom `x^2` membuat model tetap linear pada parameter namun cocok jauh lebih baik, dengan `R^2` naik dari sekitar 0.96 ke hampir 1."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([1.0, 2.0, 3.0, 4.0, 5.0])\ny = np.array([1.2, 3.9, 9.1, 15.8, 25.2])\nX1 = np.column_stack([np.ones_like(x), x])\nX2 = np.column_stack([np.ones_like(x), x, x ** 2])\n\ndef cocok(X):\n    w = np.linalg.lstsq(X, y, rcond=None)[0]\n    galat = y - X @ w\n    r2 = 1 - (galat @ galat) / ((y - y.mean()) @ (y - y.mean()))\n    return w.round(3).tolist(), round(float(r2), 4)\n\nprint(cocok(X1))\nprint(cocok(X2))"
+          },
+          {
+            "type": "text",
+            "source": "Kolom ketiga adalah dua kali kolom kedua sehingga `X^T X` singular dan `solve` gagal. `lstsq` tetap memberi solusi yang cocok dengan data."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.arange(1.0, 6.0)\ny = 2 * x + 1\nX = np.column_stack([np.ones_like(x), x, 2 * x])\nprint(np.linalg.matrix_rank(X))\ntry:\n    np.linalg.solve(X.T @ X, X.T @ y)\n    print(\"tanpa galat\")\nexcept np.linalg.LinAlgError:\n    print(\"X^T X singular\")\nw = np.linalg.lstsq(X, y, rcond=None)[0]\nprint(np.allclose(X @ w, y))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa perhitungan dan contoh kode yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

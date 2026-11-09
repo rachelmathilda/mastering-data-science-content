@@ -51,7 +51,7 @@
       "exercise_count": 96,
       "prerequisites": [],
       "lock_policy": "recommended",
-      "modules_ready": 1,
+      "modules_ready": 8,
       "url": "courses/A1/outline.json"
     },
     {
@@ -70,7 +70,7 @@
         "A1"
       ],
       "lock_policy": "recommended",
-      "modules_ready": 0,
+      "modules_ready": 7,
       "url": "courses/A2/outline.json"
     },
     {
@@ -89,7 +89,7 @@
         "A2"
       ],
       "lock_policy": "recommended",
-      "modules_ready": 0,
+      "modules_ready": 6,
       "url": "courses/A3/outline.json"
     },
     {
@@ -108,7 +108,7 @@
         "A3"
       ],
       "lock_policy": "recommended",
-      "modules_ready": 0,
+      "modules_ready": 7,
       "url": "courses/A4/outline.json"
     },
     {

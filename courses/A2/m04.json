@@ -1,0 +1,1564 @@
+{
+  "schema_version": 2,
+  "course_id": "A2",
+  "module_no": 4,
+  "title": "Determinan dan invers",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menghitung dan menafsirkan determinan",
+    "Menghitung dan memakai matriks invers dengan benar",
+    "Menilai kondisi matriks dan memakai pseudoinvers"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A2-04-1",
+    "exercise_id": "A2-04-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def determinan_eliminasi(m):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A2-04-1",
+      "title": "Determinan",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menghitung determinan matriks 2x2 dan 3x3",
+        "Menafsirkan determinan sebagai faktor perubahan luas atau volume",
+        "Memakai sifat-sifat determinan untuk menyederhanakan perhitungan",
+        "Mengaitkan determinan nol dengan matriks singular"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Apa itu determinan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Apa itu determinan\n\n**Determinan** adalah satu bilangan yang dihitung dari matriks persegi dan merangkum sifat pentingnya. Untuk matriks `2 x 2`, `[[a, b], [c, d]]`, determinannya `a d - b c`. Untuk `[[3, 1], [2, 4]]` hasilnya `12 - 2 = 10`. Determinan hanya terdefinisi untuk matriks persegi.\n\nBilangan ini menjawab pertanyaan penting: apakah matriks bisa dibalik? Matriks punya invers tepat ketika determinannya tidak nol. Ia juga memberi tahu bagaimana transformasi yang diwakili matriks itu mengubah ukuran ruang. Dua tafsir ini, kemampuan dibalik dan faktor penskalaan, membuat determinan sangat berguna.\n\nDalam praktik data, determinan jarang dihitung langsung untuk matriks besar karena rawan masalah numerik, tetapi pemahaman konsepnya diperlukan untuk menalar kapan sebuah sistem punya solusi tunggal dan kapan sebuah model mengalami masalah kolinearitas."
+            },
+            {
+              "type": "code_example",
+              "filename": "determinan_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[3.0, 1.0], [2.0, 4.0]])\nprint(round(float(np.linalg.det(A)), 6), 3 * 4 - 1 * 2)\nB = np.array([[1.0, 2.0], [2.0, 4.0]])\nprint(round(float(np.linalg.det(B)), 6))\nI = np.eye(3)\nprint(round(float(np.linalg.det(I)), 6))\nD = np.diag([2.0, 3.0, 4.0])\nprint(round(float(np.linalg.det(D)), 6))\nC3 = np.array([[2.0, 0.0, 1.0], [1.0, 3.0, 2.0], [1.0, 1.0, 2.0]])\nprint(round(float(np.linalg.det(C3)), 6))",
+              "expected_output_note": "10.0 10\n0.0\n1.0\n24.0\n6.0",
+              "explanation": "Determinan matriks 2x2 adalah `ad - bc`. Matriks dengan baris kelipatan satu sama lain punya determinan nol, identitas bernilai satu, dan matriks diagonal bernilai hasil kali diagonalnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ekspansi kofaktor untuk 3x3\n\nUntuk matriks `3 x 3` kita bisa menghitung determinan dengan **ekspansi kofaktor** sepanjang baris pertama: `det = a11 * M11 - a12 * M12 + a13 * M13`, dengan `Mij` determinan `2 x 2` yang tersisa setelah menghapus baris `i` dan kolom `j`. Tanda bergantian plus dan minus seperti papan catur.\n\nMetode ini bekerja untuk ukuran berapa pun secara rekursif, tetapi biayanya tumbuh seperti faktorial, sehingga tidak praktis untuk matriks besar. Untuk `10 x 10` saja sudah jutaan operasi. Itulah mengapa perangkat lunak memakai eliminasi, yang hanya butuh sekitar `n` pangkat tiga operasi.\n\nNamun ekspansi kofaktor tetap penting untuk dipahami karena melatih intuisi dan muncul pada rumus teoretis seperti aturan Cramer dan rumus invers lewat adjugat. Kamu akan mengimplementasikannya sendiri di latihan."
+            },
+            {
+              "type": "code_example",
+              "filename": "kofaktor.py",
+              "runnable": true,
+              "code": "def det2(m):\n    return m[0][0] * m[1][1] - m[0][1] * m[1][0]\n\ndef minor(m, i, j):\n    return [[m[r][c] for c in range(len(m)) if c != j] for r in range(len(m)) if r != i]\n\ndef det(m):\n    if len(m) == 1:\n        return m[0][0]\n    if len(m) == 2:\n        return det2(m)\n    return sum((-1) ** j * m[0][j] * det(minor(m, 0, j)) for j in range(len(m)))\n\nA = [[2, 0, 1], [1, 3, 2], [1, 1, 2]]\nprint(det(A))\nprint(det([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))\nprint(det([[2, 0, 0, 0], [0, 3, 0, 0], [0, 0, 4, 0], [0, 0, 0, 5]]))\nprint(det([[0, 1], [1, 0]]))",
+              "expected_output_note": "6\n0\n120\n-1",
+              "explanation": "Ekspansi kofaktor rekursif menghitung determinan. Matriks `[[1,2,3],[4,5,6],[7,8,9]]` singular karena barisnya bergantung linear, dan menukar baris identitas memberi determinan minus satu."
+            }
+          ],
+          "quick_check": {
+            "question": "Determinan [[3,1],[2,4]]?",
+            "options": [
+              "10",
+              "14"
+            ],
+            "answer_index": 0,
+            "explanation": "3 kali 4 dikurangi 1 kali 2 sama dengan 10.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tafsir geometris",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tafsir geometris\n\nDeterminan adalah faktor penskalaan luas atau volume. Dua kolom matriks `2 x 2` membentuk jajar genjang, dan **nilai mutlak determinan sama dengan luas jajar genjang itu**. Untuk `3 x 3`, tiga kolom membentuk paralelepipedum, dan nilai mutlak determinan adalah volumenya. Matriks yang mengubah vektor basis satuan menjadi kolom-kolomnya memetakan persegi satuan menjadi jajar genjang tersebut.\n\nTanda determinan memberi informasi orientasi. Determinan positif berarti transformasi menjaga orientasi, seperti rotasi. Determinan negatif berarti ada pemantulan yang membalik orientasi. Determinan nol berarti ruang dipampatkan ke dimensi lebih rendah: bidang menjadi garis atau titik, volume menjadi nol, dan informasi hilang sehingga transformasi tidak bisa dibalik.\n\nKarena itu determinan nol identik dengan kolom-kolom yang bergantung linear: jajar genjang yang mereka bentuk datar sehingga luasnya nol."
+            },
+            {
+              "type": "code_example",
+              "filename": "determinan_geometri.py",
+              "runnable": true,
+              "code": "import numpy as np\n\na = np.array([3.0, 0.0])\nb = np.array([1.0, 2.0])\nM = np.column_stack([a, b])\nprint(round(float(np.linalg.det(M)), 6))\nsegitiga = 0.5 * abs(np.linalg.det(M))\nprint(round(float(segitiga), 6))\n\nskala = np.array([[2.0, 0.0], [0.0, 3.0]])\nrotasi = np.array([[0.0, -1.0], [1.0, 0.0]])\npantul = np.array([[1.0, 0.0], [0.0, -1.0]])\nfor nama, T_ in [(\"skala\", skala), (\"rotasi\", rotasi), (\"pantul\", pantul)]:\n    print(nama, round(float(np.linalg.det(T_)), 6))\n\ndatar = np.array([[1.0, 2.0], [2.0, 4.0]])\nprint(round(float(np.linalg.det(datar)), 6))",
+              "expected_output_note": "6.0\n3.0\nskala 6.0\nrotasi 1.0\npantul -1.0\n0.0",
+              "explanation": "Luas jajar genjang dari dua kolom sama dengan nilai mutlak determinan. Skala dua kali tiga memperbesar luas enam kali, rotasi menjaga luas, dan pemantulan memberi determinan negatif."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Satu gagasan, empat nama",
+              "markdown": "Determinan nol, kolom bergantung linear, peringkat kurang dari penuh, dan matriks singular adalah empat cara menyatakan hal yang sama pada matriks persegi."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa arti determinan nol?",
+            "options": [
+              "Matriks identitas",
+              "Matriks singular tak punya invers"
+            ],
+            "answer_index": 1,
+            "explanation": "Ruang dipampatkan sehingga transformasi tidak bisa dibalik.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Sifat-sifat penting",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Sifat-sifat penting\n\nBeberapa sifat membuat determinan mudah dimanipulasi. Pertama, `det(A B) = det(A) det(B)`: determinan hasil kali sama dengan hasil kali determinan. Kedua, `det(A^T) = det(A)`. Ketiga, menukar dua baris membalik tanda. Keempat, mengalikan satu baris dengan `k` mengalikan determinan dengan `k`. Kelima, menambahkan kelipatan satu baris ke baris lain tidak mengubah determinan.\n\nSifat kelima adalah dasar menghitung determinan dengan eliminasi: kita mengubah matriks menjadi segitiga tanpa mengubah determinan (kecuali tanda saat menukar baris), lalu mengalikan elemen diagonal. Untuk matriks segitiga, determinan memang hasil kali diagonal.\n\nPerhatikan bahwa `det(A + B)` secara umum **tidak** sama dengan `det(A) + det(B)`. Determinan tidak linear terhadap penjumlahan matriks, kesalahan yang cukup sering dibuat."
+            },
+            {
+              "type": "code_example",
+              "filename": "sifat_determinan.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[2.0, 1.0], [1.0, 3.0]])\nB = np.array([[1.0, 4.0], [0.0, 2.0]])\nd = lambda m: round(float(np.linalg.det(m)), 6)\nprint(d(A), d(B), d(A @ B), d(A) * d(B))\nprint(d(A.T) == d(A))\ntukar = A[[1, 0]]\nprint(d(tukar))\nskala_baris = A.copy()\nskala_baris[0] *= 5\nprint(d(skala_baris))\ntambah = A.copy()\ntambah[1] += 3 * tambah[0]\nprint(d(tambah))\nprint(d(A + B), d(A) + d(B))",
+              "expected_output_note": "5.0 2.0 10.0 10.0\nTrue\n-5.0\n25.0\n5.0\n10.0 7.0",
+              "explanation": "Determinan hasil kali sama dengan hasil kali determinan. Menukar baris membalik tanda, menskalakan baris mengalikan determinan, dan menambah kelipatan baris tidak mengubahnya. Determinan jumlah tidak sama dengan jumlah determinan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan determinan menyesatkan\n\nDeterminan kecil tidak selalu berarti matriks hampir singular, dan determinan besar tidak menjamin kondisi baik. Matriks `0.1` dikali identitas `10 x 10` punya determinan `1e-10` yang sangat kecil, padahal matriks itu sempurna berkondisi baik. Ukuran ketunggalan yang benar adalah bilangan kondisi atau nilai singular terkecil, bukan determinan.\n\nSelain itu, determinan matriks besar mudah menghasilkan luapan atau underflow karena hasil kali banyak angka. Untuk kebutuhan seperti kemungkinan Gaussian multivariat, dipakai logaritma determinan lewat `np.linalg.slogdet` yang stabil. Gunakan determinan sebagai alat konsep, dan alat numerik lain untuk keputusan praktis."
+            }
+          ],
+          "quick_check": {
+            "question": "Nilai mutlak determinan 2x2 sama dengan?",
+            "options": [
+              "Luas jajar genjang dari kolom",
+              "Panjang kolom"
+            ],
+            "answer_index": 0,
+            "explanation": "Ia faktor perubahan luas.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-04-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `det2(m)` yang mengembalikan determinan matriks 2x2 (list of list).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def det2(m):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "det2([[3, 1], [2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert det2([[3, 1], [2, 4]]) == 10"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "det2([[1, 2], [2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert det2([[1, 2], [2, 4]]) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "det2([[0, 1], [1, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert det2([[0, 1], [1, 0]]) == -1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "det2([[5, 0], [0, 5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert det2([[5, 0], [0, 5]]) == 25"
+              }
+            ]
+          },
+          "hint": "Hitung a d dikurangi b c.",
+          "solution": "def det2(m):\n    return m[0][0] * m[1][1] - m[0][1] * m[1][0]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-04-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `luas_jajar_genjang(u, v)` yang mengembalikan luas jajar genjang dari dua vektor 2D `u` dan `v` (nilai mutlak determinan matriks dengan kolom `u` dan `v`).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def luas_jajar_genjang(u, v):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "luas_jajar_genjang([3, 0], [1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_jajar_genjang([3, 0], [1, 2]) == 6"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "luas_jajar_genjang([1, 0], [0, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_jajar_genjang([1, 0], [0, 1]) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "luas_jajar_genjang([1, 2], [2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_jajar_genjang([1, 2], [2, 4]) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "luas_jajar_genjang([0, 1], [1, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_jajar_genjang([0, 1], [1, 0]) == 1"
+              }
+            ]
+          },
+          "hint": "Determinan 2x2 dengan kolom u dan v adalah u0 v1 dikurangi v0 u1.",
+          "solution": "def luas_jajar_genjang(u, v):\n    return abs(u[0] * v[1] - v[0] * u[1])",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-04-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `determinan(m)` yang menghitung determinan matriks persegi (list of list, boleh ukuran berapa pun) dengan ekspansi kofaktor sepanjang baris pertama.",
+          "note": "Matriks 1x1 mengembalikan elemennya.",
+          "filename": "solution.py",
+          "starter_code": "def determinan(m):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "determinan([[7]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinan([[7]]) == 7"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "determinan([[3, 1], [2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinan([[3, 1], [2, 4]]) == 10"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "determinan([[2, 0, 1], [1, 3, 2], [1, 1, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinan([[2, 0, 1], [1, 3, 2], [1, 1, 2]]) == 6"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "determinan([[1, 2, 3], [4, 5, 6], [7, 8, 9]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinan([[1, 2, 3], [4, 5, 6], [7, 8, 9]]) == 0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "determinan([[2, 0, 0, 0], [0, 3, 0, 0], [0, 0...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinan([[2, 0, 0, 0], [0, 3, 0, 0], [0, 0, 4, 0], [0, 0, 0, 5]]) == 120"
+              }
+            ]
+          },
+          "hint": "Rekursi dengan tanda bergantian dan matriks minor tanpa baris 0 dan kolom j.",
+          "solution": "def determinan(m):\n    if len(m) == 1:\n        return m[0][0]\n    total = 0\n    for j in range(len(m)):\n        minor = [baris[:j] + baris[j + 1:] for baris in m[1:]]\n        total += (-1) ** j * m[0][j] * determinan(minor)\n    return total",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-04-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `determinan_eliminasi(m)` yang menghitung determinan lewat eliminasi dengan pivoting sebagian tanpa NumPy.",
+          "note": "Kembalikan hasil dibulatkan 6 desimal. Ingat setiap penukaran baris membalik tanda, dan bila pivot terbesar nol kembalikan 0.0.",
+          "filename": "solution.py",
+          "starter_code": "def determinan_eliminasi(m):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "determinan_eliminasi([[3, 1], [2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinan_eliminasi([[3, 1], [2, 4]]) == 10.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "determinan_eliminasi([[2, 0, 1], [1, 3, 2], [...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinan_eliminasi([[2, 0, 1], [1, 3, 2], [1, 1, 2]]) == 6.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "determinan_eliminasi([[1, 2], [2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinan_eliminasi([[1, 2], [2, 4]]) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "determinan_eliminasi([[0, 1], [1, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinan_eliminasi([[0, 1], [1, 0]]) == -1.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "determinan_eliminasi([[1, 2, 3], [4, 5, 6], [...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinan_eliminasi([[1, 2, 3], [4, 5, 6], [7, 8, 9]]) == 0.0"
+              }
+            ]
+          },
+          "hint": "Pilih pivot terbesar, tukar baris dan balik tanda, hilangkan elemen di bawah pivot, lalu kalikan diagonal.",
+          "solution": "def determinan_eliminasi(m):\n    n = len(m)\n    a = [list(map(float, b)) for b in m]\n    tanda = 1.0\n    for k in range(n):\n        p = max(range(k, n), key=lambda i: abs(a[i][k]))\n        if abs(a[p][k]) < 1e-12:\n            return 0.0\n        if p != k:\n            a[k], a[p] = a[p], a[k]\n            tanda = -tanda\n        for i in range(k + 1, n):\n            f = a[i][k] / a[k][k]\n            a[i] = [x - f * y for x, y in zip(a[i], a[k])]\n    hasil = tanda\n    for k in range(n):\n        hasil *= a[k][k]\n    return round(hasil + 0.0, 6)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Determinan [[3,1],[2,4]]?",
+          "code": null,
+          "options": [
+            {
+              "label": "14",
+              "description": ""
+            },
+            {
+              "label": "10",
+              "description": ""
+            },
+            {
+              "label": "12",
+              "description": ""
+            },
+            {
+              "label": "2",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "ad dikurangi bc.",
+          "explanation": "3 kali 4 dikurangi 1 kali 2 sama dengan 10."
+        },
+        {
+          "q": "Apa arti determinan nol?",
+          "code": null,
+          "options": [
+            {
+              "label": "Matriks identitas",
+              "description": ""
+            },
+            {
+              "label": "Matriks singular tak punya invers",
+              "description": ""
+            },
+            {
+              "label": "Matriks simetris",
+              "description": ""
+            },
+            {
+              "label": "Matriks ortogonal",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kolom bergantung linear.",
+          "explanation": "Ruang dipampatkan sehingga transformasi tidak bisa dibalik."
+        },
+        {
+          "q": "Nilai mutlak determinan 2x2 sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Panjang kolom",
+              "description": ""
+            },
+            {
+              "label": "Luas jajar genjang dari kolom",
+              "description": ""
+            },
+            {
+              "label": "Jumlah elemen",
+              "description": ""
+            },
+            {
+              "label": "Peringkat",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Geometri.",
+          "explanation": "Ia faktor perubahan luas."
+        },
+        {
+          "q": "det(AB) sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "det A + det B",
+              "description": ""
+            },
+            {
+              "label": "det A kali det B",
+              "description": ""
+            },
+            {
+              "label": "det A dibagi det B",
+              "description": ""
+            },
+            {
+              "label": "det(BA)^2",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kali.",
+          "explanation": "Determinan bersifat multiplikatif."
+        },
+        {
+          "q": "Efek menukar dua baris pada determinan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak berubah",
+              "description": ""
+            },
+            {
+              "label": "Tanda terbalik",
+              "description": ""
+            },
+            {
+              "label": "Menjadi nol",
+              "description": ""
+            },
+            {
+              "label": "Dikuadratkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Orientasi.",
+          "explanation": "Tanda berganti."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menganggap det(A + B) = det(A) + det(B). Lebih baik: Determinan tidak linear terhadap penjumlahan, tetapi det(AB) = det(A) det(B).",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menganggap det(A + B) = det(A) + det(B).",
+          "fix": "Determinan tidak linear terhadap penjumlahan, tetapi det(AB) = det(A) det(B)."
+        },
+        {
+          "mistake": "Menilai kondisi matriks dari besar kecilnya determinan.",
+          "fix": "Pakai bilangan kondisi atau nilai singular."
+        },
+        {
+          "mistake": "Lupa membalik tanda saat menukar baris.",
+          "fix": "Setiap penukaran baris membalik tanda determinan."
+        }
+      ],
+      "summary": [
+        "Determinan merangkum apakah matriks bisa dibalik dan bagaimana ia menskalakan luas atau volume.",
+        "Ekspansi kofaktor bersifat rekursif, eliminasi jauh lebih efisien.",
+        "det(AB) = det(A) det(B) tetapi determinan tidak linear terhadap penjumlahan.",
+        "Gunakan bilangan kondisi, bukan determinan, untuk menilai kedekatan dengan singular."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Determinan"
+          },
+          {
+            "type": "text",
+            "source": "Determinan matriks 2x2 adalah `ad - bc`. Matriks dengan baris kelipatan satu sama lain punya determinan nol, identitas bernilai satu, dan matriks diagonal bernilai hasil kali diagonalnya."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[3.0, 1.0], [2.0, 4.0]])\nprint(round(float(np.linalg.det(A)), 6), 3 * 4 - 1 * 2)\nB = np.array([[1.0, 2.0], [2.0, 4.0]])\nprint(round(float(np.linalg.det(B)), 6))\nI = np.eye(3)\nprint(round(float(np.linalg.det(I)), 6))\nD = np.diag([2.0, 3.0, 4.0])\nprint(round(float(np.linalg.det(D)), 6))\nC3 = np.array([[2.0, 0.0, 1.0], [1.0, 3.0, 2.0], [1.0, 1.0, 2.0]])\nprint(round(float(np.linalg.det(C3)), 6))"
+          },
+          {
+            "type": "text",
+            "source": "Ekspansi kofaktor rekursif menghitung determinan. Matriks `[[1,2,3],[4,5,6],[7,8,9]]` singular karena barisnya bergantung linear, dan menukar baris identitas memberi determinan minus satu."
+          },
+          {
+            "type": "code",
+            "source": "def det2(m):\n    return m[0][0] * m[1][1] - m[0][1] * m[1][0]\n\ndef minor(m, i, j):\n    return [[m[r][c] for c in range(len(m)) if c != j] for r in range(len(m)) if r != i]\n\ndef det(m):\n    if len(m) == 1:\n        return m[0][0]\n    if len(m) == 2:\n        return det2(m)\n    return sum((-1) ** j * m[0][j] * det(minor(m, 0, j)) for j in range(len(m)))\n\nA = [[2, 0, 1], [1, 3, 2], [1, 1, 2]]\nprint(det(A))\nprint(det([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))\nprint(det([[2, 0, 0, 0], [0, 3, 0, 0], [0, 0, 4, 0], [0, 0, 0, 5]]))\nprint(det([[0, 1], [1, 0]]))"
+          },
+          {
+            "type": "text",
+            "source": "Luas jajar genjang dari dua kolom sama dengan nilai mutlak determinan. Skala dua kali tiga memperbesar luas enam kali, rotasi menjaga luas, dan pemantulan memberi determinan negatif."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\na = np.array([3.0, 0.0])\nb = np.array([1.0, 2.0])\nM = np.column_stack([a, b])\nprint(round(float(np.linalg.det(M)), 6))\nsegitiga = 0.5 * abs(np.linalg.det(M))\nprint(round(float(segitiga), 6))\n\nskala = np.array([[2.0, 0.0], [0.0, 3.0]])\nrotasi = np.array([[0.0, -1.0], [1.0, 0.0]])\npantul = np.array([[1.0, 0.0], [0.0, -1.0]])\nfor nama, T_ in [(\"skala\", skala), (\"rotasi\", rotasi), (\"pantul\", pantul)]:\n    print(nama, round(float(np.linalg.det(T_)), 6))\n\ndatar = np.array([[1.0, 2.0], [2.0, 4.0]])\nprint(round(float(np.linalg.det(datar)), 6))"
+          },
+          {
+            "type": "text",
+            "source": "Determinan hasil kali sama dengan hasil kali determinan. Menukar baris membalik tanda, menskalakan baris mengalikan determinan, dan menambah kelipatan baris tidak mengubahnya. Determinan jumlah tidak sama dengan jumlah determinan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[2.0, 1.0], [1.0, 3.0]])\nB = np.array([[1.0, 4.0], [0.0, 2.0]])\nd = lambda m: round(float(np.linalg.det(m)), 6)\nprint(d(A), d(B), d(A @ B), d(A) * d(B))\nprint(d(A.T) == d(A))\ntukar = A[[1, 0]]\nprint(d(tukar))\nskala_baris = A.copy()\nskala_baris[0] *= 5\nprint(d(skala_baris))\ntambah = A.copy()\ntambah[1] += 3 * tambah[0]\nprint(d(tambah))\nprint(d(A + B), d(A) + d(B))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-04-2",
+      "title": "Matriks invers",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Memahami definisi invers dan kapan invers ada",
+        "Menghitung invers 2x2 dengan rumus dan invers umum dengan NumPy",
+        "Memakai sifat invers dan memeriksa hasilnya",
+        "Memahami mengapa solve lebih baik daripada invers eksplisit"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Definisi invers",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Definisi invers\n\n**Invers** matriks persegi `A`, ditulis `A^-1`, adalah matriks yang memenuhi `A A^-1 = A^-1 A = I`. Ia berperan seperti kebalikan bilangan: mengalikan dengan `A` lalu dengan `A^-1` mengembalikan keadaan semula. Bila `A` mewakili transformasi, `A^-1` membatalkannya.\n\nInvers hanya ada bila `A` persegi dan determinannya tidak nol. Matriks yang punya invers disebut *invertible* atau tak singular. Bila ada, inversnya tunggal. Matriks yang determinannya nol disebut singular dan tidak punya invers, karena transformasinya memampatkan ruang dan informasi tidak bisa dipulihkan.\n\nBila `A` invertible, sistem `A x = b` punya tepat satu solusi, yaitu `x = A^-1 b`. Rumus ini indah secara konsep, tetapi seperti akan dijelaskan, jarang dipakai persis begitu dalam komputasi nyata."
+            },
+            {
+              "type": "code_example",
+              "filename": "invers_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[4.0, 7.0], [2.0, 6.0]])\nAinv = np.linalg.inv(A)\nprint(Ainv.round(4).tolist())\nprint(np.allclose(A @ Ainv, np.eye(2)), np.allclose(Ainv @ A, np.eye(2)))\nb = np.array([1.0, 2.0])\nprint((Ainv @ b).round(4).tolist(), np.linalg.solve(A, b).round(4).tolist())\nS = np.array([[1.0, 2.0], [2.0, 4.0]])\ntry:\n    np.linalg.inv(S)\nexcept np.linalg.LinAlgError:\n    print(\"singular\")",
+              "expected_output_note": "[[0.6, -0.7], [-0.2, 0.4]]\nTrue True\n[-0.8, 0.6] [-0.8, 0.6]\nsingular",
+              "explanation": "`inv` menghasilkan matriks yang bila dikalikan dengan `A` memberi identitas. Matriks singular memicu `LinAlgError`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rumus invers 2x2\n\nUntuk matriks `2 x 2`, `[[a, b], [c, d]]`, inversnya punya rumus tertutup: `(1 / (a d - b c)) * [[d, -b], [-c, a]]`. Tukar elemen diagonal, balik tanda elemen luar diagonal, lalu bagi dengan determinan. Rumus ini juga menunjukkan secara langsung bahwa determinan nol membuat invers tidak terdefinisi karena pembagian dengan nol.\n\nUntuk ukuran lebih besar, rumus serupa memakai matriks adjugat (transpos matriks kofaktor) dibagi determinan, tetapi tidak dipakai dalam praktik karena sangat mahal. Metode praktis adalah eliminasi Gauss-Jordan pada matriks augmented `[A | I]`: setelah `A` menjadi identitas, bagian kanan menjadi `A^-1`.\n\nMenghafal rumus 2x2 sangat berguna untuk pemeriksaan cepat dengan tangan, sebab banyak contoh mini di buku dan ujian memakainya."
+            },
+            {
+              "type": "code_example",
+              "filename": "invers_2x2.py",
+              "runnable": true,
+              "code": "def invers2(m):\n    (a, b), (c, d) = m\n    det = a * d - b * c\n    if det == 0:\n        return None\n    return [[d / det, -b / det], [-c / det, a / det]]\n\nprint(invers2([[4, 7], [2, 6]]))\nprint(invers2([[1, 2], [2, 4]]))\nprint(invers2([[2, 0], [0, 5]]))\n\nimport numpy as np\nprint(np.allclose(invers2([[3, 1], [5, 2]]), np.linalg.inv(np.array([[3.0, 1.0], [5.0, 2.0]]))))",
+              "expected_output_note": "[[0.6, -0.7], [-0.2, 0.4]]\nNone\n[[0.5, 0.0], [0.0, 0.2]]\nTrue",
+              "explanation": "Rumus tertutup memberi invers 2x2 dan mengenali kasus singular. Hasilnya cocok dengan `np.linalg.inv`."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Hindari invers eksplisit",
+              "markdown": "Jangan menyelesaikan `A x = b` dengan `np.linalg.inv(A) @ b`. Pakai `np.linalg.solve(A, b)` yang lebih cepat dan lebih akurat. Invers eksplisit jarang benar-benar dibutuhkan."
+            }
+          ],
+          "quick_check": {
+            "question": "Syarat A punya invers?",
+            "options": [
+              "Persegi dan determinan tak nol",
+              "Simetris"
+            ],
+            "answer_index": 0,
+            "explanation": "Matriks persegi dengan determinan tak nol.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Sifat-sifat invers",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Sifat-sifat invers\n\nBeberapa sifat penting. Invers dari invers adalah matriks asal: `(A^-1)^-1 = A`. Invers hasil kali membalik urutan: `(A B)^-1 = B^-1 A^-1`, sama seperti memakai kaus kaki lalu sepatu, lalu melepasnya dalam urutan terbalik. Invers transpos sama dengan transpos invers: `(A^T)^-1 = (A^-1)^T`. Dan `det(A^-1) = 1 / det(A)`.\n\nUntuk matriks diagonal, inversnya adalah matriks diagonal dengan elemen kebalikan. Untuk matriks ortogonal, inversnya adalah transposnya. Mengenali struktur ini menghemat banyak komputasi: tidak perlu algoritma umum bila struktur sederhana tersedia.\n\nSifat `(A B)^-1 = B^-1 A^-1` sering menjebak pemula yang menulis `A^-1 B^-1`. Hasilnya berbeda karena perkalian matriks tidak komutatif. Verifikasi numerik di bawah menunjukkan semua sifat tersebut."
+            },
+            {
+              "type": "code_example",
+              "filename": "sifat_invers.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[2.0, 1.0], [1.0, 3.0]])\nB = np.array([[1.0, 2.0], [0.0, 1.0]])\ninv = np.linalg.inv\nprint(np.allclose(inv(inv(A)), A))\nprint(np.allclose(inv(A @ B), inv(B) @ inv(A)))\nprint(np.allclose(inv(A @ B), inv(A) @ inv(B)))\nprint(np.allclose(inv(A.T), inv(A).T))\nprint(round(float(np.linalg.det(inv(A))), 6), round(1 / float(np.linalg.det(A)), 6))\nD = np.diag([2.0, 4.0, 5.0])\nprint(np.diag(inv(D)).tolist())",
+              "expected_output_note": "True\nTrue\nFalse\nTrue\n0.2 0.2\n[0.5, 0.25, 0.2]",
+              "explanation": "Invers hasil kali membalik urutan faktor, sedangkan mempertahankan urutan memberi hasil salah. Invers matriks diagonal berisi kebalikan elemen diagonal."
+            }
+          ],
+          "quick_check": {
+            "question": "(AB)^-1 sama dengan?",
+            "options": [
+              "A^-1 B^-1",
+              "B^-1 A^-1"
+            ],
+            "answer_index": 1,
+            "explanation": "Urutan terbalik.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mengapa solve lebih baik",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa solve lebih baik\n\nMenghitung `A^-1` penuh membutuhkan sekitar tiga kali biaya menyelesaikan satu sistem, dan hasilnya membawa lebih banyak galat pembulatan. Bila yang kamu butuhkan hanyalah `x = A^-1 b`, menyelesaikan `A x = b` langsung dengan faktorisasi LU lebih cepat dan lebih akurat. Menyimpan invers juga boros untuk matriks besar yang jarang.\n\nInvers eksplisit memang kadang dibutuhkan, misalnya saat kamu ingin kovariansi parameter dalam regresi, `(X^T X)^-1`, atau elemen diagonalnya. Bahkan di sana, pustaka statistik memakai dekomposisi stabil di balik layar dan hanya menghitung bagian yang dibutuhkan.\n\nPegangan praktis: bila kamu menulis `inv` di kodemu, tanyakan apakah `solve` cukup. Hampir selalu jawabannya ya. Latihan berikut membangun invers dari nol agar kamu paham cara kerjanya, tetapi di proyek nyata pakai fungsi pustaka."
+            },
+            {
+              "type": "text",
+              "markdown": "## Invers dan transformasi\n\nBila `A` mewakili transformasi, `A^-1` adalah transformasi yang mengembalikan semuanya ke keadaan awal. Rotasi sebesar sudut tertentu dibatalkan oleh rotasi dengan sudut berlawanan, dan penskalaan dua kali dibatalkan oleh penskalaan setengah. Gambaran ini membantu memeriksa kewajaran sebuah invers: bila hasilmu tidak membatalkan transformasi aslinya, ada yang salah.\n\nDalam grafika komputer dan robotika, rantai transformasi dibalik dengan membalik urutan inversnya, persis sifat `(AB)^-1 = B^-1 A^-1`. Dalam data science, pemutihan data (*whitening*) memakai invers akar kovariansi untuk membuat fitur tak berkorelasi dengan variansi satu. Konsep invers jadi terasa nyata ketika kamu melihatnya sebagai pembatalan operasi."
+            }
+          ],
+          "quick_check": {
+            "question": "det(A^-1) sama dengan?",
+            "options": [
+              "1 / det A",
+              "det A"
+            ],
+            "answer_index": 0,
+            "explanation": "Kebalikan determinan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-04-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `invers2(m)` yang mengembalikan invers matriks 2x2 (list of list) dengan nilai dibulatkan 6 desimal, atau `None` bila determinan nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def invers2(m):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "invers2([[4, 7], [2, 6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert invers2([[4, 7], [2, 6]]) == [[0.6, -0.7], [-0.2, 0.4]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "invers2([[1, 2], [2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert invers2([[1, 2], [2, 4]]) is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "invers2([[2, 0], [0, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert invers2([[2, 0], [0, 4]]) == [[0.5, 0.0], [0.0, 0.25]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "invers2([[1, 0], [0, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert invers2([[1, 0], [0, 1]]) == [[1.0, 0.0], [0.0, 1.0]]"
+              }
+            ]
+          },
+          "hint": "Gunakan rumus tertutup dan tambahkan 0.0 untuk menghindari nol negatif bila perlu.",
+          "solution": "def invers2(m):\n    (a, b), (c, d) = m\n    det = a * d - b * c\n    if det == 0:\n        return None\n    return [[round(d / det + 0.0, 6), round(-b / det + 0.0, 6)], [round(-c / det + 0.0, 6), round(a / det + 0.0, 6)]]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-04-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bisa_dibalik(m)` yang mengembalikan `True` bila matriks 2x2 punya invers.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def bisa_dibalik(m):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bisa_dibalik([[4, 7], [2, 6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_dibalik([[4, 7], [2, 6]]) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bisa_dibalik([[1, 2], [2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_dibalik([[1, 2], [2, 4]]) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bisa_dibalik([[0, 1], [1, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_dibalik([[0, 1], [1, 0]]) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bisa_dibalik([[0, 0], [0, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisa_dibalik([[0, 0], [0, 0]]) is False"
+              }
+            ]
+          },
+          "hint": "Determinan harus tidak nol.",
+          "solution": "def bisa_dibalik(m):\n    return m[0][0] * m[1][1] - m[0][1] * m[1][0] != 0",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-04-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `selesaikan_dengan_invers(A, b)` untuk sistem 2x2 yang mengembalikan `x` sebagai list dibulatkan 6 desimal memakai rumus invers 2x2, atau `None` bila `A` singular.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def selesaikan_dengan_invers(A, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selesaikan_dengan_invers([[4, 7], [2, 6]], [1...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan_dengan_invers([[4, 7], [2, 6]], [1, 2]) == [-0.8, 0.6]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selesaikan_dengan_invers([[1, 2], [2, 4]], [1...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan_dengan_invers([[1, 2], [2, 4]], [1, 2]) is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selesaikan_dengan_invers([[1, 0], [0, 1]], [3...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan_dengan_invers([[1, 0], [0, 1]], [3, 4]) == [3.0, 4.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "selesaikan_dengan_invers([[2, 1], [1, -1]], [...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selesaikan_dengan_invers([[2, 1], [1, -1]], [5, 1]) == [2.0, 1.0]"
+              }
+            ]
+          },
+          "hint": "Hitung invers dengan rumus lalu kalikan dengan b.",
+          "solution": "def selesaikan_dengan_invers(A, b):\n    (a, bb), (c, d) = A\n    det = a * d - bb * c\n    if det == 0:\n        return None\n    inv = [[d / det, -bb / det], [-c / det, a / det]]\n    return [round(sum(inv[i][j] * b[j] for j in range(2)) + 0.0, 6) for i in range(2)]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-04-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `invers(m)` yang menghitung invers matriks persegi berukuran berapa pun dengan eliminasi Gauss-Jordan pada `[A | I]` dengan pivoting sebagian tanpa NumPy.",
+          "note": "Kembalikan list of list dibulatkan 6 desimal, atau `None` bila singular (pivot mutlak di bawah 1e-12).",
+          "filename": "solution.py",
+          "starter_code": "def invers(m):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "invers([[4, 7], [2, 6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert invers([[4, 7], [2, 6]]) == [[0.6, -0.7], [-0.2, 0.4]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "invers([[1, 2], [2, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert invers([[1, 2], [2, 4]]) is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "invers([[2, 0, 0], [0, 4, 0], [0, 0, 5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert invers([[2, 0, 0], [0, 4, 0], [0, 0, 5]]) == [[0.5, 0.0, 0.0], [0.0, 0.25, 0.0], [0.0, 0.0, 0.2]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "invers([[1, 2], [3, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert invers([[1, 2], [3, 4]]) == [[-2.0, 1.0], [1.5, -0.5]]"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "invers([[0, 1], [1, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert invers([[0, 1], [1, 0]]) == [[0.0, 1.0], [1.0, 0.0]]"
+              }
+            ]
+          },
+          "hint": "Bentuk matriks augmented dengan identitas, eliminasi ke atas dan ke bawah, lalu bagi tiap baris dengan pivotnya.",
+          "solution": "def invers(m):\n    n = len(m)\n    a = [list(map(float, m[i])) + [1.0 if i == j else 0.0 for j in range(n)] for i in range(n)]\n    for k in range(n):\n        p = max(range(k, n), key=lambda i: abs(a[i][k]))\n        if abs(a[p][k]) < 1e-12:\n            return None\n        a[k], a[p] = a[p], a[k]\n        pivot = a[k][k]\n        a[k] = [x / pivot for x in a[k]]\n        for i in range(n):\n            if i != k:\n                f = a[i][k]\n                a[i] = [x - f * y for x, y in zip(a[i], a[k])]\n    return [[round(x + 0.0, 6) for x in baris[n:]] for baris in a]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Syarat A punya invers?",
+          "code": null,
+          "options": [
+            {
+              "label": "Simetris",
+              "description": ""
+            },
+            {
+              "label": "Persegi dan determinan tak nol",
+              "description": ""
+            },
+            {
+              "label": "Diagonal",
+              "description": ""
+            },
+            {
+              "label": "Ortogonal",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tak singular.",
+          "explanation": "Matriks persegi dengan determinan tak nol."
+        },
+        {
+          "q": "(AB)^-1 sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "A^-1 B^-1",
+              "description": ""
+            },
+            {
+              "label": "B^-1 A^-1",
+              "description": ""
+            },
+            {
+              "label": "AB",
+              "description": ""
+            },
+            {
+              "label": "A^-1 + B^-1",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kaus kaki dan sepatu.",
+          "explanation": "Urutan terbalik."
+        },
+        {
+          "q": "det(A^-1) sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "det A",
+              "description": ""
+            },
+            {
+              "label": "1 / det A",
+              "description": ""
+            },
+            {
+              "label": "-det A",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kebalikan.",
+          "explanation": "Kebalikan determinan."
+        },
+        {
+          "q": "Cara terbaik menyelesaikan A x = b?",
+          "code": null,
+          "options": [
+            {
+              "label": "inv(A) @ b",
+              "description": ""
+            },
+            {
+              "label": "np.linalg.solve(A, b)",
+              "description": ""
+            },
+            {
+              "label": "A / b",
+              "description": ""
+            },
+            {
+              "label": "A.T @ b",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Hindari invers eksplisit.",
+          "explanation": "solve lebih cepat dan akurat."
+        },
+        {
+          "q": "Invers matriks diagonal?",
+          "code": null,
+          "options": [
+            {
+              "label": "Diagonal berisi kebalikan elemen",
+              "description": ""
+            },
+            {
+              "label": "Transposnya",
+              "description": ""
+            },
+            {
+              "label": "Dirinya",
+              "description": ""
+            },
+            {
+              "label": "Tak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "1 dibagi elemen.",
+          "explanation": "Setiap elemen diagonal dibalik."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis (AB)^-1 = A^-1 B^-1. Lebih baik: Urutan terbalik: (AB)^-1 = B^-1 A^-1.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis (AB)^-1 = A^-1 B^-1.",
+          "fix": "Urutan terbalik: (AB)^-1 = B^-1 A^-1."
+        },
+        {
+          "mistake": "Memakai inv untuk menyelesaikan sistem.",
+          "fix": "Pakai np.linalg.solve."
+        },
+        {
+          "mistake": "Mencoba membalik matriks singular.",
+          "fix": "Periksa determinan atau peringkat lebih dulu."
+        }
+      ],
+      "summary": [
+        "Invers ada untuk matriks persegi dengan determinan tak nol dan membatalkan transformasi.",
+        "Rumus 2x2 dan Gauss-Jordan menghitung invers.",
+        "Invers hasil kali membalik urutan faktor.",
+        "Gunakan solve, bukan invers eksplisit, untuk sistem linear."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Matriks invers"
+          },
+          {
+            "type": "text",
+            "source": "`inv` menghasilkan matriks yang bila dikalikan dengan `A` memberi identitas. Matriks singular memicu `LinAlgError`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[4.0, 7.0], [2.0, 6.0]])\nAinv = np.linalg.inv(A)\nprint(Ainv.round(4).tolist())\nprint(np.allclose(A @ Ainv, np.eye(2)), np.allclose(Ainv @ A, np.eye(2)))\nb = np.array([1.0, 2.0])\nprint((Ainv @ b).round(4).tolist(), np.linalg.solve(A, b).round(4).tolist())\nS = np.array([[1.0, 2.0], [2.0, 4.0]])\ntry:\n    np.linalg.inv(S)\nexcept np.linalg.LinAlgError:\n    print(\"singular\")"
+          },
+          {
+            "type": "text",
+            "source": "Rumus tertutup memberi invers 2x2 dan mengenali kasus singular. Hasilnya cocok dengan `np.linalg.inv`."
+          },
+          {
+            "type": "code",
+            "source": "def invers2(m):\n    (a, b), (c, d) = m\n    det = a * d - b * c\n    if det == 0:\n        return None\n    return [[d / det, -b / det], [-c / det, a / det]]\n\nprint(invers2([[4, 7], [2, 6]]))\nprint(invers2([[1, 2], [2, 4]]))\nprint(invers2([[2, 0], [0, 5]]))\n\nimport numpy as np\nprint(np.allclose(invers2([[3, 1], [5, 2]]), np.linalg.inv(np.array([[3.0, 1.0], [5.0, 2.0]]))))"
+          },
+          {
+            "type": "text",
+            "source": "Invers hasil kali membalik urutan faktor, sedangkan mempertahankan urutan memberi hasil salah. Invers matriks diagonal berisi kebalikan elemen diagonal."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[2.0, 1.0], [1.0, 3.0]])\nB = np.array([[1.0, 2.0], [0.0, 1.0]])\ninv = np.linalg.inv\nprint(np.allclose(inv(inv(A)), A))\nprint(np.allclose(inv(A @ B), inv(B) @ inv(A)))\nprint(np.allclose(inv(A @ B), inv(A) @ inv(B)))\nprint(np.allclose(inv(A.T), inv(A).T))\nprint(round(float(np.linalg.det(inv(A))), 6), round(1 / float(np.linalg.det(A)), 6))\nD = np.diag([2.0, 4.0, 5.0])\nprint(np.diag(inv(D)).tolist())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-04-3",
+      "title": "Kondisi, pseudoinvers, dan penerapan",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Mengukur kondisi matriks dengan bilangan kondisi",
+        "Mengenali matriks hampir singular lewat contoh matriks Hilbert dan kolinearitas",
+        "Memakai pseudoinvers untuk matriks non-persegi atau singular",
+        "Menerapkan konsep pada regresi dengan fitur berkorelasi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Bilangan kondisi",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bilangan kondisi\n\nMatriks tidak hanya terbagi menjadi singular dan tidak singular. Ada kelabu di antaranya: matriks yang secara teori punya invers tetapi hampir singular, sehingga perhitungan dengannya rapuh. **Bilangan kondisi** `cond(A)` mengukur ini. Ia adalah rasio nilai singular terbesar terhadap terkecil, dan menyatakan seberapa besar galat relatif pada `b` bisa diperkuat menjadi galat relatif pada solusi `x`.\n\nBilangan kondisi 1 adalah terbaik, seperti matriks identitas atau ortogonal. Bilangan kondisi `10^k` berarti kamu bisa kehilangan sekitar `k` digit ketelitian. Dengan ketelitian ganda sekitar enam belas digit, bilangan kondisi `10^16` berarti hasil praktis tidak bermakna.\n\nBilangan kondisi adalah ukuran yang tepat untuk menilai kedekatan dengan singular, bukan determinan. Matriks `0.1 I` memiliki determinan sangat kecil tetapi bilangan kondisi 1."
+            },
+            {
+              "type": "code_example",
+              "filename": "bilangan_kondisi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nprint(round(float(np.linalg.cond(np.eye(3))), 4))\nprint(round(float(np.linalg.cond(0.1 * np.eye(10))), 4))\nprint(round(float(np.linalg.det(0.1 * np.eye(10))), 12))\n\nhampir = np.array([[1.0, 1.0], [1.0, 1.0001]])\nprint(round(float(np.linalg.cond(hampir)), 0))\nb1 = np.array([2.0, 2.0001])\nb2 = np.array([2.0, 2.0002])\nprint(np.linalg.solve(hampir, b1).round(2).tolist())\nprint(np.linalg.solve(hampir, b2).round(2).tolist())",
+              "expected_output_note": "1.0\n1.0\n1e-10\n40002.0\n[1.0, 1.0]\n[0.0, 2.0]",
+              "explanation": "Bilangan kondisi identitas dan kelipatannya sama dengan satu walau determinan kecil. Pada matriks hampir singular, perubahan sangat kecil pada `b` mengubah solusi dari `[1, 1]` menjadi `[0, 2]`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Matriks Hilbert dan kolinearitas\n\nContoh klasik matriks berkondisi buruk adalah matriks Hilbert dengan elemen `1 / (i + j - 1)`. Bilangan kondisinya meledak secara eksponensial terhadap ukuran. Pada ukuran sepuluh saja sudah sekitar `10^13`, sehingga menyelesaikan sistem dengannya hampir tidak memberi digit yang benar.\n\nDalam data, penyebab umum kondisi buruk adalah **kolinearitas**: dua atau lebih fitur hampir merupakan kombinasi linear satu sama lain, misalnya tinggi dalam sentimeter dan tinggi dalam inci, atau jumlah beberapa kolom dummy yang sama dengan kolom intersep. Kolom `X` hampir bergantung linear, sehingga `X^T X` hampir singular.\n\nAkibatnya koefisien regresi menjadi sangat tidak stabil: perubahan kecil pada data membuat koefisien meloncat dan saling meniadakan. Prediksi mungkin masih baik, tetapi tafsir koefisien tak dapat dipercaya. Solusinya menghapus fitur redundan, memakai regularisasi, atau PCA."
+            },
+            {
+              "type": "code_example",
+              "filename": "hilbert_kolinearitas.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef hilbert(n):\n    return np.array([[1.0 / (i + j + 1) for j in range(n)] for i in range(n)])\n\nfor n in [2, 4, 8]:\n    print(n, \"{:.1e}\".format(np.linalg.cond(hilbert(n))))\n\nrng = np.random.default_rng(1)\nx1 = rng.normal(size=50)\nx2 = x1 + rng.normal(scale=1e-6, size=50)\nX = np.column_stack([np.ones(50), x1, x2])\nprint(np.linalg.cond(X) > 1e5)\nprint(np.linalg.matrix_rank(X))",
+              "expected_output_note": "2 1.9e+01\n4 1.6e+04\n8 1.5e+10\nTrue\n3",
+              "explanation": "Bilangan kondisi matriks Hilbert naik sangat cepat terhadap ukuran. Dua fitur yang nyaris identik membuat matriks desain berkondisi buruk walau peringkatnya masih penuh secara numerik."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Cek kondisi fitur",
+              "markdown": "Sebelum menjalankan regresi, hitung `np.linalg.cond` pada matriks fitur (setelah standardisasi). Nilai di atas sekitar 1000 adalah tanda perlu waspada terhadap kolinearitas."
+            }
+          ],
+          "quick_check": {
+            "question": "Bilangan kondisi terbaik?",
+            "options": [
+              "1",
+              "0"
+            ],
+            "answer_index": 0,
+            "explanation": "Matriks identitas dan ortogonal bernilai 1.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Pseudoinvers",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pseudoinvers\n\nBagaimana bila matriks tidak persegi atau singular? **Pseudoinvers** Moore-Penrose, ditulis `A^+`, memperluas konsep invers ke matriks apa pun. Ia memberi solusi kuadrat terkecil berpanjang minimum untuk `A x = b`: bila ada banyak solusi, ia memilih yang normanya terkecil, dan bila tidak ada solusi persis, ia memberi yang galatnya terkecil.\n\nUntuk `A` dengan kolom bebas linear, `A^+ = (A^T A)^-1 A^T`, yang tepat solusi persamaan normal. Untuk kasus umum, `np.linalg.pinv` menghitungnya lewat SVD, yang stabil. Bila `A` persegi dan tak singular, `A^+ = A^-1`.\n\nPseudoinvers menjadi alat utama dalam regresi dengan fitur berkorelasi sempurna, sistem underdetermined, dan banyak algoritma pembelajaran mesin. Tetapi sama seperti invers biasa, untuk tujuan prediksi lebih baik memakai `lstsq` yang bekerja langsung tanpa membentuk `A^+`."
+            },
+            {
+              "type": "code_example",
+              "filename": "pseudoinvers.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])\nb = np.array([1.0, 2.0, 2.0])\nP = np.linalg.pinv(A)\nprint(P.shape, (P @ b).round(4).tolist())\nprint(np.allclose(P @ b, np.linalg.lstsq(A, b, rcond=None)[0]))\nprint(np.allclose(np.linalg.pinv(np.array([[4.0, 7.0], [2.0, 6.0]])), np.linalg.inv(np.array([[4.0, 7.0], [2.0, 6.0]]))))\n\nS = np.array([[1.0, 2.0], [2.0, 4.0]])\ny = np.array([3.0, 6.0])\nx = np.linalg.pinv(S) @ y\nprint(x.round(4).tolist(), np.allclose(S @ x, y))",
+              "expected_output_note": "(2, 3) [-0.6667, 0.9167]\nTrue\nTrue\n[0.6, 1.2] True",
+              "explanation": "Pseudoinvers memberi solusi kuadrat terkecil untuk sistem tidak persegi. Untuk matriks singular dengan banyak solusi ia memilih yang paling pendek, yaitu `[0.6, 1.2]`."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang menyebabkan koefisien regresi tidak stabil?",
+            "options": [
+              "Terlalu banyak data",
+              "Kolinearitas antar fitur"
+            ],
+            "answer_index": 1,
+            "explanation": "Kolom hampir bergantung linear.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Penerapan: variansi koefisien regresi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Penerapan: variansi koefisien regresi\n\nDalam regresi linear klasik, matriks kovariansi estimasi koefisien adalah `sigma^2 (X^T X)^-1`. Elemen diagonalnya adalah variansi tiap koefisien, dan akar kuadratnya adalah galat baku yang kamu lihat di tabel regresi. Ketika `X^T X` hampir singular, inversnya memiliki elemen sangat besar, sehingga galat baku membengkak. Itulah hubungan langsung antara kondisi buruk dan koefisien yang tidak bisa dipercaya.\n\nUkuran praktis untuk ini adalah faktor inflasi variansi (VIF), yang menunjukkan seberapa besar variansi koefisien membesar akibat korelasi dengan fitur lain. VIF tinggi menandakan kolinearitas. Konsep ini muncul di kursus regresi, dan akarnya ada pada materi yang baru kamu pelajari.\n\nLatihan berikut menghitung bilangan kondisi, mendeteksi kolinearitas, dan menghitung pseudoinvers sederhana dari nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Langkah praktis mendiagnosis masalah\n\nBila sebuah model linear menghasilkan koefisien aneh, ikuti urutan sederhana. Pertama, standardisasi fitur agar skala tidak menipu. Kedua, hitung bilangan kondisi matriks fitur. Ketiga, hitung korelasi antar fitur dan cari pasangan di atas 0.9. Keempat, hapus atau gabungkan fitur redundan, atau gunakan regularisasi. Dengan urutan ini, sebagian besar masalah kolinearitas dapat ditemukan dalam hitungan menit.\n\nCatat juga hasil diagnosis agar rekan kerja memahami alasan sebuah fitur dibuang."
+            }
+          ],
+          "quick_check": {
+            "question": "Fungsi NumPy untuk pseudoinvers?",
+            "options": [
+              "np.linalg.pinv",
+              "np.linalg.inv"
+            ],
+            "answer_index": 0,
+            "explanation": "pinv menghitung Moore-Penrose.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-04-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `kondisi_diagonal(d)` yang menerima list elemen diagonal tak nol dari matriks diagonal dan mengembalikan bilangan kondisinya (nilai mutlak terbesar dibagi nilai mutlak terkecil) dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def kondisi_diagonal(d):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kondisi_diagonal([1, 1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kondisi_diagonal([1, 1, 1]) == 1.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kondisi_diagonal([10, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kondisi_diagonal([10, 1]) == 10.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kondisi_diagonal([-4, 2, 8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kondisi_diagonal([-4, 2, 8]) == 4.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kondisi_diagonal([0.1, 0.1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kondisi_diagonal([0.1, 0.1]) == 1.0"
+              }
+            ]
+          },
+          "hint": "Bagi nilai mutlak terbesar dengan nilai mutlak terkecil.",
+          "solution": "def kondisi_diagonal(d):\n    a = [abs(x) for x in d]\n    return round(max(a) / min(a), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-04-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `korelasi(x, y)` yang mengembalikan koefisien korelasi Pearson dua list dibulatkan 4 desimal.",
+          "note": "Anggap variansi keduanya tidak nol.",
+          "filename": "solution.py",
+          "starter_code": "def korelasi(x, y):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "korelasi([1, 2, 3], [2, 4, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi([1, 2, 3], [2, 4, 6]) == 1.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "korelasi([1, 2, 3], [3, 2, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi([1, 2, 3], [3, 2, 1]) == -1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "korelasi([1, 2, 3, 4], [1, 3, 2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi([1, 2, 3, 4], [1, 3, 2, 4]) == 0.8"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "korelasi([1, 2, 3], [5, 5.5, 7])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi([1, 2, 3], [5, 5.5, 7]) == 0.9608"
+              }
+            ]
+          },
+          "hint": "Kovariansi dibagi hasil kali akar jumlah kuadrat simpangan.",
+          "solution": "def korelasi(x, y):\n    n = len(x)\n    mx, my = sum(x) / n, sum(y) / n\n    sxy = sum((a - mx) * (b - my) for a, b in zip(x, y))\n    sxx = sum((a - mx) ** 2 for a in x)\n    syy = sum((b - my) ** 2 for b in y)\n    return round(sxy / (sxx * syy) ** 0.5, 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-04-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kolinear(X, batas=0.99)` yang menerima matriks fitur `X` (list of list, baris pengamatan) dan mengembalikan list tuple indeks `(i, j)` dengan `i < j` untuk setiap pasangan kolom yang nilai mutlak korelasinya melebihi `batas`.",
+          "note": "Anggap variansi tiap kolom tidak nol.",
+          "filename": "solution.py",
+          "starter_code": "def kolinear(X, batas=0.99):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kolinear(X)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "X = [[1, 2, 5], [2, 4.01, 1], [3, 6, 4], [4, 7.99, 2]]\nassert kolinear(X) == [(0, 1)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kolinear([[1, 5], [2, 1], [3, 4], [4, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolinear([[1, 5], [2, 1], [3, 4], [4, 2]]) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kolinear([[1, 2, -1], [2, 4, -2], [3, 6.1, -3...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolinear([[1, 2, -1], [2, 4, -2], [3, 6.1, -3.1]]) == [(0, 1), (0, 2), (1, 2)]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kolinear([[1, 1], [2, 2.5], [3, 2]], batas=0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kolinear([[1, 1], [2, 2.5], [3, 2]], batas=0.5) == [(0, 1)]"
+              }
+            ]
+          },
+          "hint": "Hitung korelasi Pearson untuk semua pasangan kolom dari zip(*X).",
+          "solution": "def kolinear(X, batas=0.99):\n    kol = [list(k) for k in zip(*X)]\n    def kor(x, y):\n        n = len(x)\n        mx, my = sum(x) / n, sum(y) / n\n        sxy = sum((a - mx) * (b - my) for a, b in zip(x, y))\n        sxx = sum((a - mx) ** 2 for a in x)\n        syy = sum((b - my) ** 2 for b in y)\n        return sxy / (sxx * syy) ** 0.5\n    hasil = []\n    for i in range(len(kol)):\n        for j in range(i + 1, len(kol)):\n            if abs(kor(kol[i], kol[j])) > batas:\n                hasil.append((i, j))\n    return hasil",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-04-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pinv_kolom_penuh(A)` yang menghitung pseudoinvers `(A^T A)^-1 A^T` untuk matriks `A` berukuran `n x 2` (dua kolom bebas linear) tanpa NumPy dan mengembalikan list of list `2 x n` dibulatkan 6 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pinv_kolom_penuh(A):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = pinv_kolom_penuh([[1, 0], [0, 1], [0, 0]])\nassert r == [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r2 = pinv_kolom_penuh([[1, 1], [1, 2], [1, 3]])\nassert r2 == [[1.333333, 0.333333, -0.666667], [-0.5, 0.0, 0.5]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r3 = pinv_kolom_penuh([[2, 0], [0, 2]])\nassert r3 == [[0.5, 0.0], [0.0, 0.5]]"
+              }
+            ]
+          },
+          "hint": "Hitung G = A^T A (2x2), balikkan dengan rumus 2x2, lalu kalikan dengan A^T.",
+          "solution": "def pinv_kolom_penuh(A):\n    a = sum(r[0] * r[0] for r in A)\n    b = sum(r[0] * r[1] for r in A)\n    d = sum(r[1] * r[1] for r in A)\n    det = a * d - b * b\n    inv = [[d / det, -b / det], [-b / det, a / det]]\n    hasil = [[inv[i][0] * r[0] + inv[i][1] * r[1] for r in A] for i in range(2)]\n    return [[round(x + 0.0, 6) for x in baris] for baris in hasil]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Bilangan kondisi terbaik?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "10",
+              "description": ""
+            },
+            {
+              "label": "tak hingga",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Rasio terkecil.",
+          "explanation": "Matriks identitas dan ortogonal bernilai 1."
+        },
+        {
+          "q": "Apa yang menyebabkan koefisien regresi tidak stabil?",
+          "code": null,
+          "options": [
+            {
+              "label": "Terlalu banyak data",
+              "description": ""
+            },
+            {
+              "label": "Kolinearitas antar fitur",
+              "description": ""
+            },
+            {
+              "label": "Intersep",
+              "description": ""
+            },
+            {
+              "label": "Normalisasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Fitur kembar.",
+          "explanation": "Kolom hampir bergantung linear."
+        },
+        {
+          "q": "Fungsi NumPy untuk pseudoinvers?",
+          "code": null,
+          "options": [
+            {
+              "label": "np.linalg.inv",
+              "description": ""
+            },
+            {
+              "label": "np.linalg.pinv",
+              "description": ""
+            },
+            {
+              "label": "np.linalg.pseudo",
+              "description": ""
+            },
+            {
+              "label": "np.inv",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "p untuk pseudo.",
+          "explanation": "pinv menghitung Moore-Penrose."
+        },
+        {
+          "q": "Pseudoinvers memberi solusi apa pada sistem underdetermined?",
+          "code": null,
+          "options": [
+            {
+              "label": "Solusi terpanjang",
+              "description": ""
+            },
+            {
+              "label": "Solusi berpanjang minimum",
+              "description": ""
+            },
+            {
+              "label": "Tak ada",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Terpendek.",
+          "explanation": "Norma terkecil di antara banyak solusi."
+        },
+        {
+          "q": "Bilangan kondisi 10^6 berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hasil sempurna",
+              "description": ""
+            },
+            {
+              "label": "Bisa kehilangan sekitar 6 digit",
+              "description": ""
+            },
+            {
+              "label": "Matriks diagonal",
+              "description": ""
+            },
+            {
+              "label": "Singular pasti",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Eksponen adalah digit.",
+          "explanation": "Galat diperkuat sekitar sejuta kali."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menilai kondisi dari determinan. Lebih baik: Pakai np.linalg.cond.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menilai kondisi dari determinan.",
+          "fix": "Pakai np.linalg.cond."
+        },
+        {
+          "mistake": "Mengabaikan kolinearitas antar fitur.",
+          "fix": "Periksa korelasi dan bilangan kondisi sebelum regresi."
+        },
+        {
+          "mistake": "Memakai persamaan normal pada fitur yang hampir kembar.",
+          "fix": "Pakai lstsq, pinv, atau regularisasi."
+        }
+      ],
+      "summary": [
+        "Bilangan kondisi mengukur kedekatan dengan singular dan penguatan galat.",
+        "Kolinearitas membuat matriks desain berkondisi buruk dan koefisien tidak stabil.",
+        "Pseudoinvers memperluas invers ke matriks non-persegi atau singular.",
+        "Variansi koefisien regresi bergantung pada (X^T X)^-1."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Kondisi, pseudoinvers, dan penerapan"
+          },
+          {
+            "type": "text",
+            "source": "Bilangan kondisi identitas dan kelipatannya sama dengan satu walau determinan kecil. Pada matriks hampir singular, perubahan sangat kecil pada `b` mengubah solusi dari `[1, 1]` menjadi `[0, 2]`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nprint(round(float(np.linalg.cond(np.eye(3))), 4))\nprint(round(float(np.linalg.cond(0.1 * np.eye(10))), 4))\nprint(round(float(np.linalg.det(0.1 * np.eye(10))), 12))\n\nhampir = np.array([[1.0, 1.0], [1.0, 1.0001]])\nprint(round(float(np.linalg.cond(hampir)), 0))\nb1 = np.array([2.0, 2.0001])\nb2 = np.array([2.0, 2.0002])\nprint(np.linalg.solve(hampir, b1).round(2).tolist())\nprint(np.linalg.solve(hampir, b2).round(2).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Bilangan kondisi matriks Hilbert naik sangat cepat terhadap ukuran. Dua fitur yang nyaris identik membuat matriks desain berkondisi buruk walau peringkatnya masih penuh secara numerik."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef hilbert(n):\n    return np.array([[1.0 / (i + j + 1) for j in range(n)] for i in range(n)])\n\nfor n in [2, 4, 8]:\n    print(n, \"{:.1e}\".format(np.linalg.cond(hilbert(n))))\n\nrng = np.random.default_rng(1)\nx1 = rng.normal(size=50)\nx2 = x1 + rng.normal(scale=1e-6, size=50)\nX = np.column_stack([np.ones(50), x1, x2])\nprint(np.linalg.cond(X) > 1e5)\nprint(np.linalg.matrix_rank(X))"
+          },
+          {
+            "type": "text",
+            "source": "Pseudoinvers memberi solusi kuadrat terkecil untuk sistem tidak persegi. Untuk matriks singular dengan banyak solusi ia memilih yang paling pendek, yaitu `[0.6, 1.2]`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])\nb = np.array([1.0, 2.0, 2.0])\nP = np.linalg.pinv(A)\nprint(P.shape, (P @ b).round(4).tolist())\nprint(np.allclose(P @ b, np.linalg.lstsq(A, b, rcond=None)[0]))\nprint(np.allclose(np.linalg.pinv(np.array([[4.0, 7.0], [2.0, 6.0]])), np.linalg.inv(np.array([[4.0, 7.0], [2.0, 6.0]]))))\n\nS = np.array([[1.0, 2.0], [2.0, 4.0]])\ny = np.array([3.0, 6.0])\nx = np.linalg.pinv(S) @ y\nprint(x.round(4).tolist(), np.allclose(S @ x, y))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa perhitungan dan contoh kode yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

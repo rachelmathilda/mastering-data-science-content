@@ -1,0 +1,1564 @@
+{
+  "schema_version": 2,
+  "course_id": "A3",
+  "module_no": 4,
+  "title": "Chain rule dan turunan komposisi",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menerapkan aturan rantai dan graf komputasi",
+    "Menurunkan backpropagation untuk lapisan dan jaringan kecil",
+    "Membangun dan memakai mini autograd"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A3-04-1",
+    "exercise_id": "A3-04-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def backward_skalar(masukan, ops):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A3-04-1",
+      "title": "Aturan rantai dan graf komputasi",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menerapkan aturan rantai pada komposisi bertingkat",
+        "Menggambar perhitungan sebagai graf komputasi",
+        "Menjalankan pass maju dan pass mundur secara manual",
+        "Menangani variabel yang dipakai lebih dari sekali"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa aturan rantai sentral",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa aturan rantai sentral\n\nModel ML adalah komposisi banyak fungsi sederhana: perkalian matriks, penjumlahan bias, aktivasi, lalu loss. Untuk melatihnya kita butuh turunan loss terhadap setiap parameter, dan itu hanya mungkin lewat **aturan rantai**. Bila `y = f(u)` dan `u = g(x)`, maka `dy/dx = dy/du * du/dx`. Laju perubahan bertingkat saling mengalikan.\n\nIntuisinya sederhana. Bila `u` berubah tiga kali lebih cepat dari `x`, dan `y` berubah dua kali lebih cepat dari `u`, maka `y` berubah enam kali lebih cepat dari `x`. Aturan rantai hanyalah pembukuan faktor penguatan sepanjang rantai. Untuk rantai panjang, kalikan semua faktor lokal dari satu ujung ke ujung lain."
+            },
+            {
+              "type": "text",
+              "markdown": "## Graf komputasi\n\nCara terbaik memahami aturan rantai adalah menggambar perhitungan sebagai **graf komputasi**: simpul adalah nilai antara dan sisi adalah operasi. Misalkan `L = (w x + b - t)^2`. Kita uraikan menjadi langkah elementer: `u = w x`, `v = u + b`, `d = v - t`, `L = d^2`. Tiap langkah memiliki turunan lokal yang sangat sederhana.\n\nMenghitung nilai `L` dari masukan ke keluaran disebut **pass maju**. Menghitung turunan `L` terhadap semua simpul dari keluaran ke masukan disebut **pass mundur**. Pada pass mundur kita mulai dari `dL/dL = 1`, lalu menyebarkan turunan ke belakang, di tiap simpul mengalikan turunan yang datang dengan turunan lokal operasi itu."
+            },
+            {
+              "type": "code_example",
+              "filename": "graf_komputasi.py",
+              "runnable": true,
+              "code": "x, w, b, t = 2.0, 3.0, 1.0, 5.0\nu = w * x\nv = u + b\nd = v - t\nL = d ** 2\nprint(u, v, d, L)\n\ndL_dd = 2 * d\ndL_dv = dL_dd\ndL_du = dL_dv\ndL_db = dL_dv\ndL_dw = dL_du * x\ndL_dx = dL_du * w\nprint(dL_dw, dL_db, dL_dx)\n\ndef L_fn(x, w, b, t=5.0):\n    return (w * x + b - t) ** 2\n\nh = 1e-6\nprint(round((L_fn(x, w + h, b) - L_fn(x, w - h, b)) / (2 * h), 4),\n      round((L_fn(x, w, b + h) - L_fn(x, w, b - h)) / (2 * h), 4),\n      round((L_fn(x + h, w, b) - L_fn(x - h, w, b)) / (2 * h), 4))",
+              "expected_output_note": "6.0 7.0 2.0 4.0\n8.0 4.0 12.0\n8.0 4.0 12.0",
+              "explanation": "Pass mundur menghasilkan turunan terhadap `w`, `b`, dan `x`, dan hasilnya sama dengan turunan numerik. Penjumlahan meneruskan turunan apa adanya, sedangkan perkalian menukar faktornya."
+            }
+          ],
+          "quick_check": {
+            "question": "Aturan rantai?",
+            "options": [
+              "dy/dx = dy/du du/dx",
+              "dy/dx = dy + du"
+            ],
+            "answer_index": 0,
+            "explanation": "Faktor perubahan dikalikan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Aturan lokal tiap operasi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Aturan lokal tiap operasi\n\nBackpropagation bekerja karena setiap operasi dasar punya aturan turunan lokal yang mudah. Pada **penjumlahan**, turunan yang datang diteruskan sama ke kedua masukan. Pada **perkalian** `a b`, turunan untuk `a` adalah turunan datang dikali `b`, dan untuk `b` dikali `a`: faktornya saling menukar. Pada **pangkat dua**, turunan datang dikali dua kali masukan. Pada **tanh**, dikali `1 - tanh^2`.\n\nDengan tabel kecil ini, turunan fungsi serumit apa pun dapat dihitung secara mekanis: uraikan menjadi operasi dasar, lakukan pass maju sambil menyimpan nilai antara, lalu pass mundur sambil mengalikan aturan lokal. Itulah seluruh rahasia pustaka diferensiasi otomatis."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Cache nilai antara",
+              "markdown": "Simpan nilai antara dari pass maju. Aturan lokal seperti perkalian membutuhkan nilai masukan, jadi jika tidak disimpan kamu harus menghitungnya ulang saat pass mundur."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rantai yang panjang\n\nAturan rantai meluas ke sebanyak apa pun lapisan. Untuk `h(x) = sin(e^(x^2))`, kita punya tiga mata rantai: `a = x^2`, `b = e^a`, `h = sin b`. Turunannya adalah `cos(b) * e^a * 2x`, hasil kali tiga faktor lokal. Setiap faktor dihitung dari nilai antara yang bersesuaian.\n\nDalam jaringan dalam puluhan atau ratusan lapisan membuat hasil kali ini sangat panjang. Bila faktor-faktornya cenderung kurang dari satu, hasil kali menyusut dan gradien menghilang. Bila cenderung lebih dari satu, ia meledak. Itu sebabnya perilaku turunan lokal tiap lapisan sangat menentukan keberhasilan pelatihan."
+            },
+            {
+              "type": "code_example",
+              "filename": "rantai_panjang.py",
+              "runnable": true,
+              "code": "import math\n\ndef h(x):\n    return math.sin(math.exp(x ** 2))\n\nx = 0.5\na = x ** 2\nb = math.exp(a)\nanalitik = math.cos(b) * b * 2 * x\neps = 1e-6\nnumerik = (h(x + eps) - h(x - eps)) / (2 * eps)\nprint(round(analitik, 4), round(numerik, 4))",
+              "expected_output_note": "0.3632 0.3632",
+              "explanation": "Hasil kali tiga faktor lokal sama dengan turunan numerik fungsi komposisi."
+            }
+          ],
+          "quick_check": {
+            "question": "Pass mundur dimulai dari?",
+            "options": [
+              "Masukan",
+              "Loss dengan turunan satu"
+            ],
+            "answer_index": 1,
+            "explanation": "dL/dL = 1.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Variabel yang dipakai lebih dari sekali",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Variabel yang dipakai lebih dari sekali\n\nBagaimana bila satu variabel masuk ke beberapa operasi? Contohnya `z = x * x`, atau `f(x) = x sin(x)` yang memakai `x` di dua tempat. Turunan terhadap `x` adalah **jumlah** kontribusi dari semua jalur yang berangkat dari `x` menuju keluaran. Inilah aturan rantai multivariabel versi sederhana.\n\nUntuk `z = x * x`: jalur pertama lewat operand kiri menyumbang `x`, jalur kedua lewat operand kanan menyumbang `x`, total `2x`. Untuk `x sin(x)`: jalur lewat faktor pertama menyumbang `sin(x)`, jalur lewat `sin` menyumbang `x cos(x)`. Dalam implementasi, ini berarti gradien diakumulasi dengan `+=`, bukan diganti dengan `=`. Lupa akumulasi adalah bug klasik pada autograd buatan sendiri."
+            },
+            {
+              "type": "code_example",
+              "filename": "bercabang.py",
+              "runnable": true,
+              "code": "import math\n\nx = 3.0\ngx = 0.0\ngx += x\ngx += x\nprint(gx)\n\nx = 1.0\nanalitik = math.sin(x) + x * math.cos(x)\nf = lambda t: t * math.sin(t)\nnumerik = (f(x + 1e-6) - f(x - 1e-6)) / 2e-6\nprint(round(analitik, 4), round(numerik, 4))",
+              "expected_output_note": "6.0\n1.3818 1.3818",
+              "explanation": "Dua jalur dari `x` ke `x * x` masing-masing menyumbang `x` dan dijumlahkan. Pada `x sin(x)` dua jalur menghasilkan dua suku yang cocok dengan turunan numerik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kebiasaan menghitung turunan\n\nSaat menemui fungsi baru, biasakan tiga langkah. Pertama, uraikan fungsi menjadi operasi dasar dan gambar grafnya, walau hanya di kertas. Kedua, tuliskan turunan lokal tiap simpul. Ketiga, kalikan sepanjang jalur dan jumlahkan di tempat jalur bertemu. Tiga langkah ini membuat turunan serumit apa pun terasa terkendali. Latih kebiasaan ini pada beberapa contoh kecil sebelum memakai pustaka, supaya hasil otomatisnya bisa kamu periksa dengan akal sehat."
+            }
+          ],
+          "quick_check": {
+            "question": "Pada penjumlahan turunan?",
+            "options": [
+              "Diteruskan sama",
+              "Dikalikan nol"
+            ],
+            "answer_index": 0,
+            "explanation": "Kedua masukan menerima turunan yang sama.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-04-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `maju_mundur_linear(x, w, b, t)` untuk graf `L = (w x + b - t)^2` dan kembalikan tuple `(L, dL/dw, dL/db, dL/dx)` sebagai bilangan float.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def maju_mundur_linear(x, w, b, t):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "maju_mundur_linear(2, 3, 1, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maju_mundur_linear(2, 3, 1, 5) == (4.0, 8.0, 4.0, 12.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "maju_mundur_linear(1, 1, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maju_mundur_linear(1, 1, 0, 1) == (0.0, 0.0, 0.0, 0.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "maju_mundur_linear(0, 2, 3, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maju_mundur_linear(0, 2, 3, 0) == (9.0, 0.0, 6.0, 12.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "maju_mundur_linear(1, -1, 0, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert maju_mundur_linear(1, -1, 0, 2) == (9.0, -6.0, -6.0, 6.0)"
+              }
+            ]
+          },
+          "hint": "Hitung d = w x + b - t lalu turunan L terhadap d adalah dua kali d. Kalikan dengan aturan lokal.",
+          "solution": "def maju_mundur_linear(x, w, b, t):\n    d = w * x + b - t\n    L = d ** 2\n    dd = 2 * d\n    return (float(L) + 0.0, float(dd * x) + 0.0, float(dd) + 0.0, float(dd * w) + 0.0)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-04-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rantai_tiga(df, dg, dh, g, h, x)` yang mengembalikan turunan `f(g(h(x)))` terhadap `x` yaitu `df(g(h(x))) * dg(h(x)) * dh(x)`, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef rantai_tiga(df, dg, dh, g, h, x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rantai_tiga(df1, dg1, dh1, g1, h1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "f1 = lambda u: u * u\ndf1 = lambda u: 2 * u\ng1 = lambda u: u + 1\ndg1 = lambda u: 1\nh1 = lambda x: x ** 3\ndh1 = lambda x: 3 * x ** 2\nassert rantai_tiga(df1, dg1, dh1, g1, h1, 1) == 12.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rantai_tiga(df1, dg1, dh1, g1, h1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rantai_tiga(df1, dg1, dh1, g1, h1, 2) == 216.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rantai_tiga(math.exp, dg2, dh2, g2, h2, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "g2 = lambda u: 2 * u\ndg2 = lambda u: 2\nh2 = lambda x: x + 1\ndh2 = lambda x: 1\nassert rantai_tiga(math.exp, dg2, dh2, g2, h2, 0) == 14.7781"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rantai_tiga(math.exp, dg2, dh2, g2, h2, -1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rantai_tiga(math.exp, dg2, dh2, g2, h2, -1) == 2.0"
+              }
+            ]
+          },
+          "hint": "Hitung nilai antara h(x) lalu g(h(x)) dan kalikan tiga turunan lokal.",
+          "solution": "import math\n\ndef rantai_tiga(df, dg, dh, g, h, x):\n    a = h(x)\n    b = g(a)\n    return round(df(b) * dg(a) * dh(x), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-04-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `jumlah_jalur(jalur)` yang menerima list jalur, tiap jalur adalah list turunan lokal sepanjang jalur itu, dan mengembalikan jumlah hasil kali tiap jalur.",
+          "note": "Bila tidak ada jalur kembalikan `0`.",
+          "filename": "solution.py",
+          "starter_code": "def jumlah_jalur(jalur):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_jalur([[2, 3], [4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_jalur([[2, 3], [4]]) == 10"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_jalur([[1, 1, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_jalur([[1, 1, 1]]) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_jalur([[0.5, 0.5], [0.5, 0.5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_jalur([[0.5, 0.5], [0.5, 0.5]]) == 0.5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_jalur([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_jalur([]) == 0"
+              }
+            ]
+          },
+          "hint": "Kalikan turunan sepanjang tiap jalur lalu jumlahkan semua jalur.",
+          "solution": "def jumlah_jalur(jalur):\n    total = 0\n    for j in jalur:\n        hasil = 1\n        for v in j:\n            hasil *= v\n        total += hasil\n    return total",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-04-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `backward_skalar(masukan, ops)` untuk graf komputasi skalar.",
+          "note": "`masukan` adalah list nilai, dan `ops` adalah list operasi, tiap operasi membuat simpul baru bernomor `len(masukan) + indeks_operasi`. Operasi berbentuk `('add', i, j)`, `('sub', i, j)`, `('mul', i, j)`, atau `('pow2', i)` yang merujuk nomor simpul. Hitung nilai maju lalu turunan simpul terakhir terhadap tiap masukan dengan pass mundur dan akumulasi gradien. Kembalikan list turunan masukan dibulatkan 4 desimal, hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def backward_skalar(masukan, ops):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "backward_skalar([2, 3], [('mul', 0, 1)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert backward_skalar([2, 3], [('mul', 0, 1)]) == [3.0, 2.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "backward_skalar([2, -3, 10], [('mul', 0, 1), ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert backward_skalar([2, -3, 10], [('mul', 0, 1), ('add', 3, 2)]) == [-3.0, 2.0, 1.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "backward_skalar([2, 3, 1, 5], [('mul', 1, 0),...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert backward_skalar([2, 3, 1, 5], [('mul', 1, 0), ('add', 4, 2), ('sub', 5, 3), ('pow2', 6)]) == [12.0, 8.0, 4.0, -4.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "backward_skalar([3], [('mul', 0, 0)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert backward_skalar([3], [('mul', 0, 0)]) == [6.0]"
+              }
+            ]
+          },
+          "hint": "Simpan semua nilai simpul lalu telusuri operasi dari belakang dan tambahkan kontribusi ke gradien operand.",
+          "solution": "def backward_skalar(masukan, ops):\n    n = len(masukan)\n    nilai = [float(v) for v in masukan]\n    for op in ops:\n        if op[0] == 'add':\n            nilai.append(nilai[op[1]] + nilai[op[2]])\n        elif op[0] == 'sub':\n            nilai.append(nilai[op[1]] - nilai[op[2]])\n        elif op[0] == 'mul':\n            nilai.append(nilai[op[1]] * nilai[op[2]])\n        else:\n            nilai.append(nilai[op[1]] ** 2)\n    grad = [0.0] * len(nilai)\n    grad[-1] = 1.0\n    for k in range(len(ops) - 1, -1, -1):\n        op = ops[k]\n        g = grad[n + k]\n        if op[0] == 'add':\n            grad[op[1]] += g\n            grad[op[2]] += g\n        elif op[0] == 'sub':\n            grad[op[1]] += g\n            grad[op[2]] -= g\n        elif op[0] == 'mul':\n            grad[op[1]] += g * nilai[op[2]]\n            grad[op[2]] += g * nilai[op[1]]\n        else:\n            grad[op[1]] += g * 2 * nilai[op[1]]\n    return [round(v, 4) + 0.0 for v in grad[:n]]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Aturan rantai?",
+          "code": null,
+          "options": [
+            {
+              "label": "dy/dx = dy/du du/dx",
+              "description": ""
+            },
+            {
+              "label": "dy/dx = dy + du",
+              "description": ""
+            },
+            {
+              "label": "dy/dx = du/dy",
+              "description": ""
+            },
+            {
+              "label": "dy/dx = y/x",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kalikan.",
+          "explanation": "Faktor perubahan dikalikan."
+        },
+        {
+          "q": "Pass mundur dimulai dari?",
+          "code": null,
+          "options": [
+            {
+              "label": "Masukan",
+              "description": ""
+            },
+            {
+              "label": "Loss dengan turunan satu",
+              "description": ""
+            },
+            {
+              "label": "Parameter",
+              "description": ""
+            },
+            {
+              "label": "Data",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ujung graf.",
+          "explanation": "dL/dL = 1."
+        },
+        {
+          "q": "Pada penjumlahan turunan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dikalikan nol",
+              "description": ""
+            },
+            {
+              "label": "Diteruskan sama",
+              "description": ""
+            },
+            {
+              "label": "Dibagi dua",
+              "description": ""
+            },
+            {
+              "label": "Dihapus",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pipa.",
+          "explanation": "Kedua masukan menerima turunan yang sama."
+        },
+        {
+          "q": "Pada perkalian a b turunan ke a?",
+          "code": null,
+          "options": [
+            {
+              "label": "Turunan datang kali b",
+              "description": ""
+            },
+            {
+              "label": "Turunan datang kali a",
+              "description": ""
+            },
+            {
+              "label": "Turunan datang",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Silang.",
+          "explanation": "Faktor menukar."
+        },
+        {
+          "q": "Variabel dipakai dua kali?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pakai salah satu jalur",
+              "description": ""
+            },
+            {
+              "label": "Jumlahkan kontribusi semua jalur",
+              "description": ""
+            },
+            {
+              "label": "Kalikan jalur",
+              "description": ""
+            },
+            {
+              "label": "Abaikan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Plus.",
+          "explanation": "Gradien diakumulasi."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengganti gradien dengan = saat variabel dipakai berkali-kali. Lebih baik: Akumulasikan dengan +=.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengganti gradien dengan = saat variabel dipakai berkali-kali.",
+          "fix": "Akumulasikan dengan +=."
+        },
+        {
+          "mistake": "Lupa menyimpan nilai antara dari pass maju.",
+          "fix": "Simpan agar pass mundur tidak menghitung ulang."
+        },
+        {
+          "mistake": "Menukar faktor pada aturan perkalian.",
+          "fix": "Turunan ke a adalah turunan datang kali b."
+        }
+      ],
+      "summary": [
+        "Aturan rantai mengalikan turunan lokal sepanjang rantai.",
+        "Graf komputasi mengurai fungsi menjadi operasi dengan turunan sederhana.",
+        "Pass maju menghitung nilai dan pass mundur menghitung turunan.",
+        "Variabel yang dipakai berulang menerima gradien yang dijumlahkan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Aturan rantai dan graf komputasi"
+          },
+          {
+            "type": "text",
+            "source": "Pass mundur menghasilkan turunan terhadap `w`, `b`, dan `x`, dan hasilnya sama dengan turunan numerik. Penjumlahan meneruskan turunan apa adanya, sedangkan perkalian menukar faktornya."
+          },
+          {
+            "type": "code",
+            "source": "x, w, b, t = 2.0, 3.0, 1.0, 5.0\nu = w * x\nv = u + b\nd = v - t\nL = d ** 2\nprint(u, v, d, L)\n\ndL_dd = 2 * d\ndL_dv = dL_dd\ndL_du = dL_dv\ndL_db = dL_dv\ndL_dw = dL_du * x\ndL_dx = dL_du * w\nprint(dL_dw, dL_db, dL_dx)\n\ndef L_fn(x, w, b, t=5.0):\n    return (w * x + b - t) ** 2\n\nh = 1e-6\nprint(round((L_fn(x, w + h, b) - L_fn(x, w - h, b)) / (2 * h), 4),\n      round((L_fn(x, w, b + h) - L_fn(x, w, b - h)) / (2 * h), 4),\n      round((L_fn(x + h, w, b) - L_fn(x - h, w, b)) / (2 * h), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Hasil kali tiga faktor lokal sama dengan turunan numerik fungsi komposisi."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef h(x):\n    return math.sin(math.exp(x ** 2))\n\nx = 0.5\na = x ** 2\nb = math.exp(a)\nanalitik = math.cos(b) * b * 2 * x\neps = 1e-6\nnumerik = (h(x + eps) - h(x - eps)) / (2 * eps)\nprint(round(analitik, 4), round(numerik, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Dua jalur dari `x` ke `x * x` masing-masing menyumbang `x` dan dijumlahkan. Pada `x sin(x)` dua jalur menghasilkan dua suku yang cocok dengan turunan numerik."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nx = 3.0\ngx = 0.0\ngx += x\ngx += x\nprint(gx)\n\nx = 1.0\nanalitik = math.sin(x) + x * math.cos(x)\nf = lambda t: t * math.sin(t)\nnumerik = (f(x + 1e-6) - f(x - 1e-6)) / 2e-6\nprint(round(analitik, 4), round(numerik, 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A3-04-2",
+      "title": "Backpropagation pada lapisan dan jaringan",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menurunkan turunan lapisan linear dalam bentuk vektor",
+        "Menyusun backward pass untuk aktivasi ReLU dan tanh",
+        "Menghitung gradien jaringan dua lapis kecil",
+        "Mengenali gradien menghilang pada aktivasi jenuh"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari skalar ke vektor",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari skalar ke vektor\n\nPelajaran sebelumnya memakai skalar. Jaringan nyata memakai vektor dan matriks, tetapi ide dasarnya sama. Sebuah lapisan linear menghitung `y = W x`, dengan `W` berukuran `m x n` dan `x` berukuran `n`. Misalkan dari lapisan berikutnya datang turunan `dy = dL/dy` berukuran `m`. Kita ingin `dW` dan `dx`.\n\nHasilnya rapi. `dW = dy x^T`, yaitu perkalian luar `dy` dan `x`, berukuran `m x n` sama seperti `W`. Dan `dx = W^T dy`, berukuran `n`. Perhatikan pola transposnya: untuk menyebar turunan mundur kita memakai transpos matriks maju. Dua rumus ini adalah jantung backpropagation pada lapisan padat."
+            },
+            {
+              "type": "code_example",
+              "filename": "lapisan_vektor.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nW = np.array([[1.0, 2.0, 0.0], [0.0, 1.0, -1.0]])\nx = np.array([1.0, 2.0, 3.0])\ny = W @ x\nL = float(np.sum(y ** 2))\nprint(y.tolist(), L)\ndy = 2 * y\ndW = np.outer(dy, x)\ndx = W.T @ dy\nprint(dW.tolist())\nprint(dx.tolist())\n\ndef loss(W, x):\n    return float(np.sum((W @ x) ** 2))\n\nh = 1e-6\ndx_num = np.array([(loss(W, x + h * e) - loss(W, x - h * e)) / (2 * h) for e in np.eye(3)])\nprint(np.allclose(dx, dx_num, atol=1e-4))",
+              "expected_output_note": "[5.0, -1.0] 26.0\n[[10.0, 20.0, 30.0], [-2.0, -4.0, -6.0]]\n[10.0, 18.0, 2.0]\nTrue",
+              "explanation": "Gradien bobot adalah perkalian luar turunan keluaran dan masukan, dan gradien masukan memakai transpos bobot. Hasilnya cocok dengan turunan numerik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Backward untuk aktivasi\n\nAktivasi bekerja per elemen sehingga backward-nya sederhana: kalikan turunan datang dengan turunan aktivasi pada masukan lapisan itu, elemen demi elemen. Untuk **ReLU** turunan lokalnya satu bila masukan positif dan nol bila tidak, sehingga ReLU bertindak sebagai **topeng** yang meneruskan gradien hanya di unit yang aktif. Untuk **tanh** turunan lokalnya `1 - tanh^2`, dan untuk sigmoid `s (1 - s)`.\n\nPerhatikan bahwa backward ReLU membuang gradien unit yang tidak aktif. Bila sebuah unit selalu tidak aktif untuk semua data, bobotnya tidak pernah diperbarui. Kondisi ini disebut ReLU mati, dan salah satu alasan variasi seperti leaky ReLU diciptakan."
+            },
+            {
+              "type": "code_example",
+              "filename": "relu_masker.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nz = np.array([-1.0, 2.0, 0.5, -3.0])\ng = np.ones(4)\nprint((g * (z > 0)).tolist())\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nz2 = np.array([-10.0, 0.0, 10.0])\ns = sigmoid(z2)\nprint((s * (1 - s)).round(4).tolist())\nprint(f\"{0.25 ** 10:.4e}\")",
+              "expected_output_note": "[0.0, 1.0, 1.0, 0.0]\n[0.0, 0.25, 0.0]\n9.5367e-07",
+              "explanation": "Gradien ReLU hanya lewat di unit aktif. Sigmoid jenuh memiliki turunan hampir nol dan hasil kali sepuluh turunan maksimalnya sudah di bawah sepersejuta."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Gradien menghilang",
+              "markdown": "Sigmoid dalam lapisan tersembunyi pada jaringan dalam hampir selalu menyebabkan gradien menghilang karena turunan maksimalnya hanya 0,25. Pilih ReLU atau varian modernnya untuk lapisan tersembunyi."
+            }
+          ],
+          "quick_check": {
+            "question": "Gradien bobot lapisan y = W x?",
+            "options": [
+              "dy x^T",
+              "W dy"
+            ],
+            "answer_index": 0,
+            "explanation": "Perkalian luar.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Jaringan dua lapis",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Jaringan dua lapis\n\nMari rakit jaringan kecil: masukan `x` berdimensi dua, lapisan tersembunyi tiga unit dengan aktivasi tanh, lalu keluaran skalar linear, dengan loss kuadrat terhadap target `t`. Pass maju: `z1 = W1 x + b1`, `h = tanh(z1)`, `y = w2 . h + b2`, `L = (y - t)^2`.\n\nPass mundur mengikuti urutan terbalik. `dy = 2 (y - t)`. Lalu `dw2 = dy h` dan `db2 = dy`. Turunan ke `h` adalah `dh = dy w2`. Melewati tanh: `dz1 = dh * (1 - h^2)`. Akhirnya `dW1 = outer(dz1, x)`, `db1 = dz1`. Enam baris ini adalah backpropagation lengkap untuk jaringan dua lapis. Jaringan lebih dalam hanya mengulang pola yang sama untuk tiap lapisan."
+            },
+            {
+              "type": "code_example",
+              "filename": "jaringan_dua_lapis.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nW1 = np.array([[0.1, 0.2], [0.3, -0.1], [-0.2, 0.4]])\nb1 = np.zeros(3)\nw2 = np.array([0.5, -0.3, 0.8])\nb2 = 0.1\nx = np.array([1.0, 2.0])\nt = 1.0\n\ndef maju(W1, b1, w2, b2):\n    z1 = W1 @ x + b1\n    h = np.tanh(z1)\n    y = float(w2 @ h + b2)\n    return z1, h, y, (y - t) ** 2\n\nz1, h, y, L = maju(W1, b1, w2, b2)\ndy = 2 * (y - t)\ndw2 = dy * h\ndb2 = dy\ndh = dy * w2\ndz1 = dh * (1 - h ** 2)\ndW1 = np.outer(dz1, x)\ndb1 = dz1\nprint(round(L, 4))\n\neps = 1e-6\nW1p = W1.copy()\nW1p[2, 1] += eps\nW1m = W1.copy()\nW1m[2, 1] -= eps\nnum = (maju(W1p, b1, w2, b2)[3] - maju(W1m, b1, w2, b2)[3]) / (2 * eps)\nprint(round(float(dW1[2, 1]), 4), round(num, 4))\nw2p = w2.copy()\nw2p[0] += eps\nw2m = w2.copy()\nw2m[0] -= eps\nnum2 = (maju(W1, b1, w2p, b2)[3] - maju(W1, b1, w2m, b2)[3]) / (2 * eps)\nprint(round(float(dw2[0]), 4), round(num2, 4))",
+              "expected_output_note": "0.0725\n-0.613 -0.613\n-0.2488 -0.2488",
+              "explanation": "Dua elemen gradien yang dipilih cocok dengan turunan numerik. Pemeriksaan seperti ini adalah gradient check pada jaringan penuh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pola umum backpropagation\n\nDari contoh tadi kita bisa menyimpulkan pola umum. Tiap lapisan menyimpan masukan dan keluarannya pada pass maju. Pada pass mundur tiap lapisan menerima turunan dari lapisan berikutnya, menghitung turunan terhadap parameternya sendiri, dan meneruskan turunan terhadap masukannya ke lapisan sebelumnya. Antarmuka seragam ini membuat jaringan bisa dirakit seperti balok lego.\n\nItulah mengapa pustaka deep learning mendefinisikan setiap lapisan dengan dua fungsi, `forward` dan `backward`. Tugasmu sebagai pengguna cukup merangkai lapisan, dan mesin mengatur urutan pass mundur. Namun memahami mekanismenya membuatmu mampu mengecek gradien, mendesain lapisan kustom, dan memahami sumber kegagalan pelatihan."
+            }
+          ],
+          "quick_check": {
+            "question": "Gradien masukan?",
+            "options": [
+              "W dy",
+              "W^T dy"
+            ],
+            "answer_index": 1,
+            "explanation": "Pakai transpos.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Ukuran dan bentuk gradien",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ukuran dan bentuk gradien\n\nAturan praktis yang sangat membantu: gradien parameter selalu memiliki bentuk yang sama dengan parameternya. Bila `W` berukuran dua kali tiga maka `dW` juga dua kali tiga. Bila hasil perhitungan gradienmu berbentuk lain, hampir pasti ada transpos yang salah atau perkalian yang tertukar.\n\nAturan ini juga berlaku untuk bias dan masukan. Memeriksa bentuk adalah gradient check termurah yang bisa dilakukan, dan menangkap sebagian besar kesalahan sebelum kamu sempat menjalankan pelatihan. Biasakan menulis pernyataan assert bentuk di kode backward buatan sendiri."
+            },
+            {
+              "type": "text",
+              "markdown": "## Batch data\n\nPada praktiknya kita memproses banyak sampel sekaligus dalam satu batch. Masukan menjadi matriks `X` berukuran `batch x n`, dan lapisan linear menjadi `Y = X W^T`. Rumus mundurnya berubah sedikit: `dW = dY^T X` dan `dX = dY W`, dengan gradien dijumlahkan atau dirata-ratakan atas batch.\n\nPenjumlahan atas batch muncul secara alami dari aturan akumulasi: parameter yang sama dipakai oleh setiap sampel, sehingga gradiennya adalah jumlah kontribusi tiap sampel. Itu alasan loss biasanya dirata-ratakan atas batch agar skala gradien tidak bergantung pada ukuran batch."
+            }
+          ],
+          "quick_check": {
+            "question": "ReLU pada backward?",
+            "options": [
+              "Topeng unit aktif",
+              "Mengalikan dua"
+            ],
+            "answer_index": 0,
+            "explanation": "Gradien hanya lewat di unit positif.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-04-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `relu_backward(z, g)` yang menerima list masukan `z` dan list turunan datang `g` dan mengembalikan list turunan setelah melewati ReLU: `g_i` bila `z_i > 0` dan `0.0` bila tidak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def relu_backward(z, g):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "relu_backward([-1, 2, 0.5, -3], [1, 1, 1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert relu_backward([-1, 2, 0.5, -3], [1, 1, 1, 1]) == [0, 1, 1, 0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "relu_backward([1, 2], [0.5, 0.25])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert relu_backward([1, 2], [0.5, 0.25]) == [0.5, 0.25]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "relu_backward([0], [5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert relu_backward([0], [5]) == [0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "relu_backward([], [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert relu_backward([], []) == []"
+              }
+            ]
+          },
+          "hint": "Teruskan g hanya di posisi tempat z positif.",
+          "solution": "def relu_backward(z, g):\n    return [gi if zi > 0 else 0.0 for zi, gi in zip(z, g)]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-04-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `linear_backward(W, x, dy)` untuk lapisan `y = W x` (list of list dan list).",
+          "note": "Kembalikan tuple `(dW, dx)` dengan `dW[i][j] = dy[i] * x[j]` dan `dx[j] = sum_i W[i][j] * dy[i]`.",
+          "filename": "solution.py",
+          "starter_code": "def linear_backward(W, x, dy):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "linear_backward([[1, 2, 0], [0, 1, -1]], [1, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert linear_backward([[1, 2, 0], [0, 1, -1]], [1, 2, 3], [10, -2]) == ([[10, 20, 30], [-2, -4, -6]], [10, 18, 2])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "linear_backward([[2]], [3], [1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert linear_backward([[2]], [3], [1]) == ([[3]], [2])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "linear_backward([[1, 0], [0, 1]], [1, 1], [0,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert linear_backward([[1, 0], [0, 1]], [1, 1], [0, 0]) == ([[0, 0], [0, 0]], [0, 0])"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "linear_backward([[1, 2]], [1, 1], [2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert linear_backward([[1, 2]], [1, 1], [2]) == ([[2, 2]], [2, 4])"
+              }
+            ]
+          },
+          "hint": "Bentuk perkalian luar untuk dW dan perkalian transpos W dengan dy untuk dx.",
+          "solution": "def linear_backward(W, x, dy):\n    m, n = len(W), len(x)\n    dW = [[dy[i] * x[j] for j in range(n)] for i in range(m)]\n    dx = [sum(W[i][j] * dy[i] for i in range(m)) for j in range(n)]\n    return (dW, dx)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-04-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `mse_backward(y, t)` yang mengembalikan tuple `(loss, dy)`.",
+          "note": "`loss` adalah rata-rata `(y_i - t_i)^2` dibulatkan 4 desimal dan `dy` adalah list `2 (y_i - t_i) / n` dibulatkan 4 desimal. Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def mse_backward(y, t):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "mse_backward([1, 2], [0, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mse_backward([1, 2], [0, 0]) == (2.5, [1.0, 2.0])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "mse_backward([3], [3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mse_backward([3], [3]) == (0.0, [0.0])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "mse_backward([0, 0, 0], [1, 1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mse_backward([0, 0, 0], [1, 1, 1]) == (1.0, [-0.6667, -0.6667, -0.6667])"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "mse_backward([2, 4], [1, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mse_backward([2, 4], [1, 6]) == (2.5, [1.0, -2.0])"
+              }
+            ]
+          },
+          "hint": "Hitung galat per elemen lalu rata-ratakan kuadratnya untuk loss dan bagi dua kali galat dengan n untuk turunan.",
+          "solution": "def mse_backward(y, t):\n    n = len(y)\n    galat = [a - b for a, b in zip(y, t)]\n    loss = round(sum(e * e for e in galat) / n, 4)\n    dy = [round(2 * e / n, 4) + 0.0 for e in galat]\n    return (loss, dy)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-04-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `backprop_mlp(x, W1, b1, W2, b2, t)` untuk jaringan dengan lapisan tersembunyi ReLU dan keluaran linear: `h = relu(W1 x + b1)`, `y = W2 h + b2`, `L = sum (y - t)^2`.",
+          "note": "Semua masukan list atau list of list. Kembalikan tuple `(L, dW1, db1, dW2, db2)` sebagai float, tanpa `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def backprop_mlp(x, W1, b1, W2, b2, t):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "backprop_mlp([1], [[2]], [0], [[3]], [0], [0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert backprop_mlp([1], [[2]], [0], [[3]], [0], [0]) == (36.0, [[36.0]], [36.0], [[24.0]], [12.0])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "backprop_mlp([-1], [[2]], [0], [[3]], [0], [0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert backprop_mlp([-1], [[2]], [0], [[3]], [0], [0]) == (0.0, [[0.0]], [0.0], [[0.0]], [0.0])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "backprop_mlp([1, 2], [[1, 0], [0, 1]], [0, -5...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert backprop_mlp([1, 2], [[1, 0], [0, 1]], [0, -5], [[1, 1]], [0], [0]) == (1.0, [[2.0, 4.0], [0.0, 0.0]], [2.0, 0.0], [[2.0, 0.0]], [2.0])"
+              }
+            ]
+          },
+          "hint": "Lakukan pass maju sambil menyimpan z dan h lalu pass mundur dengan rumus linear dan topeng ReLU.",
+          "solution": "def backprop_mlp(x, W1, b1, W2, b2, t):\n    m, n = len(W1), len(x)\n    k = len(W2)\n    z = [sum(W1[i][j] * x[j] for j in range(n)) + b1[i] for i in range(m)]\n    h = [v if v > 0 else 0.0 for v in z]\n    y = [sum(W2[r][i] * h[i] for i in range(m)) + b2[r] for r in range(k)]\n    L = sum((y[r] - t[r]) ** 2 for r in range(k))\n    dy = [2 * (y[r] - t[r]) for r in range(k)]\n    dW2 = [[dy[r] * h[i] for i in range(m)] for r in range(k)]\n    db2 = list(dy)\n    dh = [sum(W2[r][i] * dy[r] for r in range(k)) for i in range(m)]\n    dz = [dh[i] if z[i] > 0 else 0.0 for i in range(m)]\n    dW1 = [[dz[i] * x[j] for j in range(n)] for i in range(m)]\n    db1 = list(dz)\n    f = lambda v: float(v) + 0.0\n    return (f(L), [[f(v) for v in r] for r in dW1], [f(v) for v in db1], [[f(v) for v in r] for r in dW2], [f(v) for v in db2])",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Gradien bobot lapisan y = W x?",
+          "code": null,
+          "options": [
+            {
+              "label": "dy x^T",
+              "description": ""
+            },
+            {
+              "label": "W dy",
+              "description": ""
+            },
+            {
+              "label": "x dy^T W",
+              "description": ""
+            },
+            {
+              "label": "dy + x",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ukuran sama dengan W.",
+          "explanation": "Perkalian luar."
+        },
+        {
+          "q": "Gradien masukan?",
+          "code": null,
+          "options": [
+            {
+              "label": "W dy",
+              "description": ""
+            },
+            {
+              "label": "W^T dy",
+              "description": ""
+            },
+            {
+              "label": "dy",
+              "description": ""
+            },
+            {
+              "label": "x",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Mundur.",
+          "explanation": "Pakai transpos."
+        },
+        {
+          "q": "ReLU pada backward?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mengalikan dua",
+              "description": ""
+            },
+            {
+              "label": "Topeng unit aktif",
+              "description": ""
+            },
+            {
+              "label": "Menjumlah",
+              "description": ""
+            },
+            {
+              "label": "Mengurangi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Aktif.",
+          "explanation": "Gradien hanya lewat di unit positif."
+        },
+        {
+          "q": "Turunan lokal tanh?",
+          "code": null,
+          "options": [
+            {
+              "label": "1 - tanh^2",
+              "description": ""
+            },
+            {
+              "label": "tanh",
+              "description": ""
+            },
+            {
+              "label": "1 + tanh",
+              "description": ""
+            },
+            {
+              "label": "tanh^2",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Maksimum satu.",
+          "explanation": "Satu dikurangi kuadrat."
+        },
+        {
+          "q": "Gradien menghilang karena?",
+          "code": null,
+          "options": [
+            {
+              "label": "Banyak faktor kecil dikalikan",
+              "description": ""
+            },
+            {
+              "label": "Learning rate",
+              "description": ""
+            },
+            {
+              "label": "Data kurang",
+              "description": ""
+            },
+            {
+              "label": "Bias",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sigmoid.",
+          "explanation": "Hasil kali menyusut."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Lupa transpos pada gradien masukan lapisan linear. Lebih baik: dx = W^T dy.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Lupa transpos pada gradien masukan lapisan linear.",
+          "fix": "dx = W^T dy."
+        },
+        {
+          "mistake": "Memakai sigmoid pada banyak lapisan tersembunyi.",
+          "fix": "Pakai ReLU atau varian agar gradien tidak menghilang."
+        },
+        {
+          "mistake": "Tidak memeriksa gradien dengan turunan numerik.",
+          "fix": "Lakukan gradient check pada jaringan kecil."
+        }
+      ],
+      "summary": [
+        "Lapisan linear menurunkan dW sebagai perkalian luar dan dx lewat transpos W.",
+        "ReLU meneruskan gradien hanya di unit aktif dan tanh mengalikan 1 - tanh^2.",
+        "Backprop jaringan dua lapis memakai enam langkah mundur.",
+        "Aktivasi jenuh dan rantai panjang menyebabkan gradien menghilang."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Backpropagation pada lapisan dan jaringan"
+          },
+          {
+            "type": "text",
+            "source": "Gradien bobot adalah perkalian luar turunan keluaran dan masukan, dan gradien masukan memakai transpos bobot. Hasilnya cocok dengan turunan numerik."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nW = np.array([[1.0, 2.0, 0.0], [0.0, 1.0, -1.0]])\nx = np.array([1.0, 2.0, 3.0])\ny = W @ x\nL = float(np.sum(y ** 2))\nprint(y.tolist(), L)\ndy = 2 * y\ndW = np.outer(dy, x)\ndx = W.T @ dy\nprint(dW.tolist())\nprint(dx.tolist())\n\ndef loss(W, x):\n    return float(np.sum((W @ x) ** 2))\n\nh = 1e-6\ndx_num = np.array([(loss(W, x + h * e) - loss(W, x - h * e)) / (2 * h) for e in np.eye(3)])\nprint(np.allclose(dx, dx_num, atol=1e-4))"
+          },
+          {
+            "type": "text",
+            "source": "Gradien ReLU hanya lewat di unit aktif. Sigmoid jenuh memiliki turunan hampir nol dan hasil kali sepuluh turunan maksimalnya sudah di bawah sepersejuta."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nz = np.array([-1.0, 2.0, 0.5, -3.0])\ng = np.ones(4)\nprint((g * (z > 0)).tolist())\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nz2 = np.array([-10.0, 0.0, 10.0])\ns = sigmoid(z2)\nprint((s * (1 - s)).round(4).tolist())\nprint(f\"{0.25 ** 10:.4e}\")"
+          },
+          {
+            "type": "text",
+            "source": "Dua elemen gradien yang dipilih cocok dengan turunan numerik. Pemeriksaan seperti ini adalah gradient check pada jaringan penuh."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nW1 = np.array([[0.1, 0.2], [0.3, -0.1], [-0.2, 0.4]])\nb1 = np.zeros(3)\nw2 = np.array([0.5, -0.3, 0.8])\nb2 = 0.1\nx = np.array([1.0, 2.0])\nt = 1.0\n\ndef maju(W1, b1, w2, b2):\n    z1 = W1 @ x + b1\n    h = np.tanh(z1)\n    y = float(w2 @ h + b2)\n    return z1, h, y, (y - t) ** 2\n\nz1, h, y, L = maju(W1, b1, w2, b2)\ndy = 2 * (y - t)\ndw2 = dy * h\ndb2 = dy\ndh = dy * w2\ndz1 = dh * (1 - h ** 2)\ndW1 = np.outer(dz1, x)\ndb1 = dz1\nprint(round(L, 4))\n\neps = 1e-6\nW1p = W1.copy()\nW1p[2, 1] += eps\nW1m = W1.copy()\nW1m[2, 1] -= eps\nnum = (maju(W1p, b1, w2, b2)[3] - maju(W1m, b1, w2, b2)[3]) / (2 * eps)\nprint(round(float(dW1[2, 1]), 4), round(num, 4))\nw2p = w2.copy()\nw2p[0] += eps\nw2m = w2.copy()\nw2m[0] -= eps\nnum2 = (maju(W1, b1, w2p, b2)[3] - maju(W1, b1, w2m, b2)[3]) / (2 * eps)\nprint(round(float(dw2[0]), 4), round(num2, 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A3-04-3",
+      "title": "Membangun mini autograd dari nol",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Mengimplementasikan kelas Value yang melacak graf komputasi",
+        "Menjalankan backward dengan urutan topologis",
+        "Melatih parameter sederhana memakai autograd buatan sendiri",
+        "Memverifikasi autograd dengan turunan numerik"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Ide autograd",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ide autograd\n\nMenurunkan tangan setiap model tidak praktis. **Diferensiasi otomatis** menghitung turunan secara mekanis dari program yang menghitung fungsi. Ide intinya: bungkus tiap bilangan dalam objek yang mengingat dari operasi mana ia berasal. Setiap operasi mencatat siapa masukannya dan bagaimana menyebarkan gradien mundur. Setelah nilai akhir dihitung, kita menelusuri catatan itu dari belakang.\n\nPada pelajaran ini kamu membangun versi mini, kelas `Value`, dalam sekitar tiga puluh baris. Meski kecil, ia memuat seluruh gagasan PyTorch dan TensorFlow: graf dinamis, pass mundur, dan akumulasi gradien. Setelah ini kerja pustaka besar tidak lagi terasa seperti sihir."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rancangan kelas Value\n\nTiap `Value` menyimpan empat hal: `data` yaitu nilainya, `grad` yaitu turunan keluaran akhir terhadap nilai ini, `_prev` yaitu himpunan simpul masukannya, dan `_back` yaitu fungsi kecil yang menyebarkan `grad` ke simpul-simpul masukan. Operasi seperti `+` dan `*` membuat `Value` baru dan mendefinisikan `_back` yang sesuai dengan aturan lokal.\n\nUntuk penjumlahan, `_back` menambahkan `out.grad` ke kedua masukan. Untuk perkalian, ia menambahkan `out.grad` dikali nilai masukan lainnya. Perhatikan `+=`: gradien harus diakumulasi karena sebuah simpul boleh dipakai berkali-kali. Gradien awal semua simpul adalah nol, dan simpul keluaran diberi gradien satu."
+            },
+            {
+              "type": "code_example",
+              "filename": "mini_autograd.py",
+              "runnable": true,
+              "code": "import math\n\nclass Value:\n    def __init__(self, data, anak=()):\n        self.data = data\n        self.grad = 0.0\n        self._back = lambda: None\n        self._prev = set(anak)\n\n    def __add__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data + o.data, (self, o))\n        def _b():\n            self.grad += out.grad\n            o.grad += out.grad\n        out._back = _b\n        return out\n\n    __radd__ = __add__\n\n    def __mul__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data * o.data, (self, o))\n        def _b():\n            self.grad += o.data * out.grad\n            o.grad += self.data * out.grad\n        out._back = _b\n        return out\n\n    __rmul__ = __mul__\n\n    def __neg__(self):\n        return self * -1\n\n    def __sub__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        return self + (-o)\n\n    def __pow__(self, n):\n        out = Value(self.data ** n, (self,))\n        def _b():\n            self.grad += n * self.data ** (n - 1) * out.grad\n        out._back = _b\n        return out\n\n    def tanh(self):\n        t = math.tanh(self.data)\n        out = Value(t, (self,))\n        def _b():\n            self.grad += (1 - t * t) * out.grad\n        out._back = _b\n        return out\n\n    def backward(self):\n        urut, terlihat = [], set()\n        def bangun(v):\n            if v not in terlihat:\n                terlihat.add(v)\n                for p in v._prev:\n                    bangun(p)\n                urut.append(v)\n        bangun(self)\n        self.grad = 1.0\n        for v in reversed(urut):\n            v._back()\n\na, b, c = Value(2.0), Value(-3.0), Value(10.0)\nd = a * b + c\nd.backward()\nprint(d.data, a.grad, b.grad, c.grad)\nx, w, bb = Value(2.0), Value(3.0), Value(1.0)\nL = (w * x + bb - 5) ** 2\nL.backward()\nprint(L.data, w.grad, bb.grad, x.grad)\nz = Value(3.0)\nq = z * z\nq.backward()\nprint(z.grad)",
+              "expected_output_note": "4.0 -3.0 2.0 1.0\n4.0 8.0 4.0 12.0\n6.0",
+              "explanation": "Hasilnya sama dengan hitungan tangan pada pelajaran sebelumnya, termasuk akumulasi pada `z * z` yang memakai `z` dua kali."
+            },
+            {
+              "type": "text",
+              "markdown": "## Urutan topologis\n\nFungsi `backward` perlu memproses simpul dalam urutan yang benar: sebuah simpul hanya boleh menyebarkan gradiennya setelah semua simpul yang bergantung padanya selesai menyumbang. Urutan seperti itu disebut **urutan topologis** graf berarah tanpa siklus. Kita membangunnya dengan penelusuran depth-first: kunjungi semua masukan lebih dulu, lalu tambahkan simpul itu ke daftar.\n\nDaftar yang dihasilkan memuat masukan sebelum keluaran. Membaliknya memberi urutan pass mundur yang tepat. Tanpa urutan ini gradien bisa disebarkan terlalu cepat sebelum nilainya lengkap, dan hasilnya salah secara diam-diam, jenis bug yang sulit ditemukan."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Nol-kan gradien",
+              "markdown": "Selalu nol-kan gradien parameter sebelum pass mundur baru. Karena gradien diakumulasi dengan `+=`, gradien lama akan menumpuk dan merusak pembaruan."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang disimpan Value?",
+            "options": [
+              "Data, grad, masukan, dan fungsi mundur",
+              "Hanya data"
+            ],
+            "answer_index": 0,
+            "explanation": "Empat hal itu.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Melatih dengan autograd",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Melatih dengan autograd\n\nDengan autograd, melatih model menjadi perulangan sederhana. Bungkus parameter dalam `Value`. Pada tiap iterasi: hitung loss lewat pass maju, nol-kan gradien parameter, panggil `loss.backward()`, lalu perbarui setiap parameter dengan `data -= lr * grad`. Tidak ada turunan yang ditulis tangan, karena semuanya datang dari graf yang direkam.\n\nContoh di bawah mencocokkan `y = 2x + 1` dari empat titik data dengan model `w x + b`. Meski mini, perulangan ini bentuknya identik dengan pelatihan di PyTorch: maju, nol-kan, mundur, perbarui. Satu-satunya perbedaan adalah skala dan kecepatan."
+            },
+            {
+              "type": "code_example",
+              "filename": "latih_neuron.py",
+              "runnable": true,
+              "code": "import math\n\nclass Value:\n    def __init__(self, data, anak=()):\n        self.data = data\n        self.grad = 0.0\n        self._back = lambda: None\n        self._prev = set(anak)\n\n    def __add__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data + o.data, (self, o))\n        def _b():\n            self.grad += out.grad\n            o.grad += out.grad\n        out._back = _b\n        return out\n\n    __radd__ = __add__\n\n    def __mul__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data * o.data, (self, o))\n        def _b():\n            self.grad += o.data * out.grad\n            o.grad += self.data * out.grad\n        out._back = _b\n        return out\n\n    __rmul__ = __mul__\n\n    def __neg__(self):\n        return self * -1\n\n    def __sub__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        return self + (-o)\n\n    def __pow__(self, n):\n        out = Value(self.data ** n, (self,))\n        def _b():\n            self.grad += n * self.data ** (n - 1) * out.grad\n        out._back = _b\n        return out\n\n    def backward(self):\n        urut, terlihat = [], set()\n        def bangun(v):\n            if v not in terlihat:\n                terlihat.add(v)\n                for p in v._prev:\n                    bangun(p)\n                urut.append(v)\n        bangun(self)\n        self.grad = 1.0\n        for v in reversed(urut):\n            v._back()\n\nxs = [0.0, 1.0, 2.0, 3.0]\nys = [1.0, 3.0, 5.0, 7.0]\nw, b = Value(0.0), Value(0.0)\nfor _ in range(500):\n    loss = Value(0.0)\n    for x, y in zip(xs, ys):\n        loss = loss + (w * x + b - y) ** 2\n    loss = loss * (1 / len(xs))\n    w.grad = 0.0\n    b.grad = 0.0\n    loss.backward()\n    w.data -= 0.1 * w.grad\n    b.data -= 0.1 * b.grad\nprint(round(w.data, 3), round(b.data, 3), round(loss.data, 4))",
+              "expected_output_note": "2.0 1.0 0.0",
+              "explanation": "Setelah 500 iterasi parameter mendekati dua dan satu, yaitu garis yang membentuk data, dan loss mendekati nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memverifikasi autograd\n\nSetiap autograd harus diuji. Cara baku: hitung gradien dengan autograd dan bandingkan dengan turunan numerik pada beberapa fungsi, terutama yang memakai operasi berbeda dan variabel berulang. Bila selisihnya kecil, implementasimu benar. Bila tidak, curigai aturan lokal yang salah atau gradien yang tidak diakumulasi.\n\nContoh di bawah memeriksa fungsi `tanh(x y + x)`, yang memakai `x` dua kali dan satu operasi nonlinear. Autograd harus menghasilkan turunan terhadap `x` dan `y` yang sama dengan turunan numerik sampai beberapa desimal."
+            },
+            {
+              "type": "code_example",
+              "filename": "gradient_check_autograd.py",
+              "runnable": true,
+              "code": "import math\n\nclass Value:\n    def __init__(self, data, anak=()):\n        self.data = data\n        self.grad = 0.0\n        self._back = lambda: None\n        self._prev = set(anak)\n\n    def __add__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data + o.data, (self, o))\n        def _b():\n            self.grad += out.grad\n            o.grad += out.grad\n        out._back = _b\n        return out\n\n    def __mul__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data * o.data, (self, o))\n        def _b():\n            self.grad += o.data * out.grad\n            o.grad += self.data * out.grad\n        out._back = _b\n        return out\n\n    def tanh(self):\n        t = math.tanh(self.data)\n        out = Value(t, (self,))\n        def _b():\n            self.grad += (1 - t * t) * out.grad\n        out._back = _b\n        return out\n\n    def backward(self):\n        urut, terlihat = [], set()\n        def bangun(v):\n            if v not in terlihat:\n                terlihat.add(v)\n                for p in v._prev:\n                    bangun(p)\n                urut.append(v)\n        bangun(self)\n        self.grad = 1.0\n        for v in reversed(urut):\n            v._back()\n\ndef f(x, y):\n    return math.tanh(x * y + x)\n\nx, y = Value(0.5), Value(1.5)\nout = (x * y + x).tanh()\nout.backward()\neps = 1e-6\ngx = (f(0.5 + eps, 1.5) - f(0.5 - eps, 1.5)) / (2 * eps)\ngy = (f(0.5, 1.5 + eps) - f(0.5, 1.5 - eps)) / (2 * eps)\nprint(round(out.data, 4))\nprint(round(x.grad, 4), round(gx, 4))\nprint(round(y.grad, 4), round(gy, 4))",
+              "expected_output_note": "0.8483\n0.701 0.701\n0.1402 0.1402",
+              "explanation": "Gradien autograd terhadap `x` dan `y` cocok dengan turunan numerik, termasuk kontribusi dua jalur dari `x`."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa urutan topologis?",
+            "options": [
+              "Agar cepat",
+              "Gradien lengkap sebelum disebarkan"
+            ],
+            "answer_index": 1,
+            "explanation": "Simpul keluaran harus selesai dulu.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dari mini ke pustaka nyata",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari mini ke pustaka nyata\n\nAutograd mini tadi bekerja pada skalar sehingga lambat. Pustaka nyata memakai tensor dan menjalankan operasi pada GPU, tetapi mekanismenya sama: simpul menyimpan fungsi mundur, graf dibangun saat pass maju, dan backward menelusuri urutan topologis. Pada PyTorch, `loss.backward()` melakukan persis hal ini dan `optimizer.zero_grad()` menol-kan gradien.\n\nSetelah membangun sendiri, pesan galat pustaka akan terasa lebih masuk akal. Misalnya galat bahwa gradien tidak bisa dihitung terhadap bilangan bulat, atau peringatan bahwa graf sudah dibebaskan, kini punya arti konkret bagimu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merangkum modul\n\nKamu mulai dari aturan rantai satu variabel, melihat bahwa ia adalah pembukuan faktor penguatan, lalu menggambarnya sebagai graf komputasi. Kamu menurunkan backpropagation untuk lapisan linear, ReLU, dan jaringan dua lapis, dan akhirnya membangun mesin autograd sendiri yang melatih model sederhana.\n\nDengan fondasi ini, modul berikutnya yaitu gradient descent dari nol akan terasa wajar. Tinggal menambah perulangan pelatihan dan memilih ukuran langkah yang tepat di atas mesin turunan yang sudah kamu pahami."
+            }
+          ],
+          "quick_check": {
+            "question": "Gradien simpul keluaran awal?",
+            "options": [
+              "1",
+              "0"
+            ],
+            "answer_index": 0,
+            "explanation": "dL/dL = 1.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-04-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `langkah_sgd(params, grads, lr)` yang mengembalikan list parameter baru `p - lr * g` dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def langkah_sgd(params, grads, lr):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "langkah_sgd([1, 2], [0.5, -1], 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_sgd([1, 2], [0.5, -1], 0.1) == [0.95, 2.1]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "langkah_sgd([0], [0], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_sgd([0], [0], 1) == [0.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "langkah_sgd([5], [10], 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_sgd([5], [10], 0.5) == [0.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "langkah_sgd([1, 1, 1], [1, 2, 3], 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_sgd([1, 1, 1], [1, 2, 3], 0.1) == [0.9, 0.8, 0.7]"
+              }
+            ]
+          },
+          "hint": "Kurangkan lr kali gradien dari tiap parameter.",
+          "solution": "def langkah_sgd(params, grads, lr):\n    return [round(p - lr * g, 4) + 0.0 for p, g in zip(params, grads)]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-04-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `tanh_backward(z, g)` yang mengembalikan `g * (1 - tanh(z)^2)` dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef tanh_backward(z, g):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tanh_backward(0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanh_backward(0, 1) == 1.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tanh_backward(1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanh_backward(1, 1) == 0.42"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tanh_backward(1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanh_backward(1, 2) == 0.8399"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tanh_backward(-1, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanh_backward(-1, 0.5) == 0.21"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "tanh_backward(10, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanh_backward(10, 1) == 0.0"
+              }
+            ]
+          },
+          "hint": "Kalikan turunan datang dengan satu dikurangi kuadrat tanh.",
+          "solution": "import math\n\ndef tanh_backward(z, g):\n    return round(g * (1 - math.tanh(z) ** 2), 4) + 0.0",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-04-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `urutan_topologis(graf)` yang menerima dict dari nama simpul ke list nama simpul masukannya, dan mengembalikan list nama semua simpul sehingga setiap simpul muncul setelah semua masukannya.",
+          "note": "Telusuri dengan DFS.",
+          "filename": "solution.py",
+          "starter_code": "def urutan_topologis(graf):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "sorted(r1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "g1 = {'L': ['d'], 'd': ['v', 't'], 'v': ['u', 'b'], 'u': ['w', 'x'], 'w': [], 'x': [], 'b': [], 't': []}\nr1 = urutan_topologis(g1)\nassert sorted(r1) == sorted(g1)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "all(r1.index(p) < r1.index(n) for n in g1 for...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert all(r1.index(p) < r1.index(n) for n in g1 for p in g1[n])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "g2 = {'a': [], 'b': ['a'], 'c': ['a', 'b']}\nr2 = urutan_topologis(g2)\nassert r2 == ['a', 'b', 'c']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "urutan_topologis(g3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "g3 = {'x': []}\nassert urutan_topologis(g3) == ['x']"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "urutan_topologis(g4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "g4 = {'z': ['y'], 'y': ['x'], 'x': []}\nassert urutan_topologis(g4) == ['x', 'y', 'z']"
+              }
+            ]
+          },
+          "hint": "Kunjungi masukan dahulu secara rekursif lalu tambahkan simpul ke hasil.",
+          "solution": "def urutan_topologis(graf):\n    hasil, terlihat = [], set()\n    def kunjungi(n):\n        if n in terlihat:\n            return\n        terlihat.add(n)\n        for p in graf[n]:\n            kunjungi(p)\n        hasil.append(n)\n    for n in graf:\n        kunjungi(n)\n    return hasil",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-04-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis kelas `Value` autograd mini: konstruktor `Value(data)`, atribut `data` dan `grad` (awal `0.0`), operator `+`, `-`, `*`, `**` dengan pangkat bilangan biasa, dukungan bilangan biasa di kiri atau kanan untuk `+` dan `*`, metode `tanh()`, dan metode `backward()` dengan urutan topologis dan akumulasi gradien.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "class Value:\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a, b, c = Value(2.0), Value(-3.0), Value(10.0)\nd = a * b + c\nd.backward()\nassert (d.data, a.grad, b.grad, c.grad) == (4.0, -3.0, 2.0, 1.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "x, w, bb = Value(2.0), Value(3.0), Value(1.0)\nL = (w * x + bb - 5) ** 2\nL.backward()\nassert (L.data, w.grad, bb.grad, x.grad) == (4.0, 8.0, 4.0, 12.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "z = Value(3.0)\nq = z * z\nq.backward()\nassert z.grad == 6.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "round(y.data, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = Value(0.5)\ny = t.tanh()\ny.backward()\nassert round(y.data, 4) == 0.4621 and round(t.grad, 4) == 0.7864"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = Value(2.0)\ns = 3 + r * 4 - r\ns.backward()\nassert s.data == 9.0 and r.grad == 3.0"
+              }
+            ]
+          },
+          "hint": "Tiap operasi membuat Value baru dengan fungsi _back yang menambahkan gradien ke masukan sesuai aturan lokal.",
+          "solution": "import math\n\nclass Value:\n    def __init__(self, data, anak=()):\n        self.data = data\n        self.grad = 0.0\n        self._back = lambda: None\n        self._prev = set(anak)\n\n    def __add__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data + o.data, (self, o))\n        def _b():\n            self.grad += out.grad\n            o.grad += out.grad\n        out._back = _b\n        return out\n\n    __radd__ = __add__\n\n    def __mul__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data * o.data, (self, o))\n        def _b():\n            self.grad += o.data * out.grad\n            o.grad += self.data * out.grad\n        out._back = _b\n        return out\n\n    __rmul__ = __mul__\n\n    def __neg__(self):\n        return self * -1\n\n    def __sub__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        return self + (-o)\n\n    def __pow__(self, n):\n        out = Value(self.data ** n, (self,))\n        def _b():\n            self.grad += n * self.data ** (n - 1) * out.grad\n        out._back = _b\n        return out\n\n    def tanh(self):\n        t = math.tanh(self.data)\n        out = Value(t, (self,))\n        def _b():\n            self.grad += (1 - t * t) * out.grad\n        out._back = _b\n        return out\n\n    def backward(self):\n        urut, terlihat = [], set()\n        def bangun(v):\n            if v not in terlihat:\n                terlihat.add(v)\n                for p in v._prev:\n                    bangun(p)\n                urut.append(v)\n        bangun(self)\n        self.grad = 1.0\n        for v in reversed(urut):\n            v._back()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa yang disimpan Value?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hanya data",
+              "description": ""
+            },
+            {
+              "label": "Data, grad, masukan, dan fungsi mundur",
+              "description": ""
+            },
+            {
+              "label": "Hanya grad",
+              "description": ""
+            },
+            {
+              "label": "Hanya operasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Rekam.",
+          "explanation": "Empat hal itu."
+        },
+        {
+          "q": "Mengapa urutan topologis?",
+          "code": null,
+          "options": [
+            {
+              "label": "Agar cepat",
+              "description": ""
+            },
+            {
+              "label": "Gradien lengkap sebelum disebarkan",
+              "description": ""
+            },
+            {
+              "label": "Agar rapi",
+              "description": ""
+            },
+            {
+              "label": "Agar acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bergantung.",
+          "explanation": "Simpul keluaran harus selesai dulu."
+        },
+        {
+          "q": "Gradien simpul keluaran awal?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "Loss",
+              "description": ""
+            },
+            {
+              "label": "Tak terdefinisi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Mulai.",
+          "explanation": "dL/dL = 1."
+        },
+        {
+          "q": "Langkah latih setelah backward?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hapus graf",
+              "description": ""
+            },
+            {
+              "label": "data -= lr * grad",
+              "description": ""
+            },
+            {
+              "label": "Tambah data",
+              "description": ""
+            },
+            {
+              "label": "Ganti loss",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Turun.",
+          "explanation": "Perbarui parameter."
+        },
+        {
+          "q": "Cara menguji autograd?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lihat kode saja",
+              "description": ""
+            },
+            {
+              "label": "Bandingkan dengan turunan numerik",
+              "description": ""
+            },
+            {
+              "label": "Tambah lapisan",
+              "description": ""
+            },
+            {
+              "label": "Tanpa uji",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Numerik.",
+          "explanation": "Gradient check."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Tidak menol-kan gradien sebelum backward berikutnya. Lebih baik: Reset grad parameter tiap iterasi.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Tidak menol-kan gradien sebelum backward berikutnya.",
+          "fix": "Reset grad parameter tiap iterasi."
+        },
+        {
+          "mistake": "Memproses simpul tanpa urutan topologis.",
+          "fix": "Telusuri DFS lalu balik daftarnya."
+        },
+        {
+          "mistake": "Mengganti gradien dengan = bukan +=.",
+          "fix": "Akumulasikan agar variabel berulang benar."
+        }
+      ],
+      "summary": [
+        "Autograd merekam operasi dan menyebarkan gradien mundur dengan aturan lokal.",
+        "Backward memakai urutan topologis dan akumulasi gradien.",
+        "Pelatihan: maju, nol-kan gradien, mundur, perbarui.",
+        "Uji autograd dengan turunan numerik."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Membangun mini autograd dari nol"
+          },
+          {
+            "type": "text",
+            "source": "Hasilnya sama dengan hitungan tangan pada pelajaran sebelumnya, termasuk akumulasi pada `z * z` yang memakai `z` dua kali."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nclass Value:\n    def __init__(self, data, anak=()):\n        self.data = data\n        self.grad = 0.0\n        self._back = lambda: None\n        self._prev = set(anak)\n\n    def __add__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data + o.data, (self, o))\n        def _b():\n            self.grad += out.grad\n            o.grad += out.grad\n        out._back = _b\n        return out\n\n    __radd__ = __add__\n\n    def __mul__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data * o.data, (self, o))\n        def _b():\n            self.grad += o.data * out.grad\n            o.grad += self.data * out.grad\n        out._back = _b\n        return out\n\n    __rmul__ = __mul__\n\n    def __neg__(self):\n        return self * -1\n\n    def __sub__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        return self + (-o)\n\n    def __pow__(self, n):\n        out = Value(self.data ** n, (self,))\n        def _b():\n            self.grad += n * self.data ** (n - 1) * out.grad\n        out._back = _b\n        return out\n\n    def tanh(self):\n        t = math.tanh(self.data)\n        out = Value(t, (self,))\n        def _b():\n            self.grad += (1 - t * t) * out.grad\n        out._back = _b\n        return out\n\n    def backward(self):\n        urut, terlihat = [], set()\n        def bangun(v):\n            if v not in terlihat:\n                terlihat.add(v)\n                for p in v._prev:\n                    bangun(p)\n                urut.append(v)\n        bangun(self)\n        self.grad = 1.0\n        for v in reversed(urut):\n            v._back()\n\na, b, c = Value(2.0), Value(-3.0), Value(10.0)\nd = a * b + c\nd.backward()\nprint(d.data, a.grad, b.grad, c.grad)\nx, w, bb = Value(2.0), Value(3.0), Value(1.0)\nL = (w * x + bb - 5) ** 2\nL.backward()\nprint(L.data, w.grad, bb.grad, x.grad)\nz = Value(3.0)\nq = z * z\nq.backward()\nprint(z.grad)"
+          },
+          {
+            "type": "text",
+            "source": "Setelah 500 iterasi parameter mendekati dua dan satu, yaitu garis yang membentuk data, dan loss mendekati nol."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nclass Value:\n    def __init__(self, data, anak=()):\n        self.data = data\n        self.grad = 0.0\n        self._back = lambda: None\n        self._prev = set(anak)\n\n    def __add__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data + o.data, (self, o))\n        def _b():\n            self.grad += out.grad\n            o.grad += out.grad\n        out._back = _b\n        return out\n\n    __radd__ = __add__\n\n    def __mul__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data * o.data, (self, o))\n        def _b():\n            self.grad += o.data * out.grad\n            o.grad += self.data * out.grad\n        out._back = _b\n        return out\n\n    __rmul__ = __mul__\n\n    def __neg__(self):\n        return self * -1\n\n    def __sub__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        return self + (-o)\n\n    def __pow__(self, n):\n        out = Value(self.data ** n, (self,))\n        def _b():\n            self.grad += n * self.data ** (n - 1) * out.grad\n        out._back = _b\n        return out\n\n    def backward(self):\n        urut, terlihat = [], set()\n        def bangun(v):\n            if v not in terlihat:\n                terlihat.add(v)\n                for p in v._prev:\n                    bangun(p)\n                urut.append(v)\n        bangun(self)\n        self.grad = 1.0\n        for v in reversed(urut):\n            v._back()\n\nxs = [0.0, 1.0, 2.0, 3.0]\nys = [1.0, 3.0, 5.0, 7.0]\nw, b = Value(0.0), Value(0.0)\nfor _ in range(500):\n    loss = Value(0.0)\n    for x, y in zip(xs, ys):\n        loss = loss + (w * x + b - y) ** 2\n    loss = loss * (1 / len(xs))\n    w.grad = 0.0\n    b.grad = 0.0\n    loss.backward()\n    w.data -= 0.1 * w.grad\n    b.data -= 0.1 * b.grad\nprint(round(w.data, 3), round(b.data, 3), round(loss.data, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Gradien autograd terhadap `x` dan `y` cocok dengan turunan numerik, termasuk kontribusi dua jalur dari `x`."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nclass Value:\n    def __init__(self, data, anak=()):\n        self.data = data\n        self.grad = 0.0\n        self._back = lambda: None\n        self._prev = set(anak)\n\n    def __add__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data + o.data, (self, o))\n        def _b():\n            self.grad += out.grad\n            o.grad += out.grad\n        out._back = _b\n        return out\n\n    def __mul__(self, o):\n        o = o if isinstance(o, Value) else Value(o)\n        out = Value(self.data * o.data, (self, o))\n        def _b():\n            self.grad += o.data * out.grad\n            o.grad += self.data * out.grad\n        out._back = _b\n        return out\n\n    def tanh(self):\n        t = math.tanh(self.data)\n        out = Value(t, (self,))\n        def _b():\n            self.grad += (1 - t * t) * out.grad\n        out._back = _b\n        return out\n\n    def backward(self):\n        urut, terlihat = [], set()\n        def bangun(v):\n            if v not in terlihat:\n                terlihat.add(v)\n                for p in v._prev:\n                    bangun(p)\n                urut.append(v)\n        bangun(self)\n        self.grad = 1.0\n        for v in reversed(urut):\n            v._back()\n\ndef f(x, y):\n    return math.tanh(x * y + x)\n\nx, y = Value(0.5), Value(1.5)\nout = (x * y + x).tanh()\nout.backward()\neps = 1e-6\ngx = (f(0.5 + eps, 1.5) - f(0.5 - eps, 1.5)) / (2 * eps)\ngy = (f(0.5, 1.5 + eps) - f(0.5, 1.5 - eps)) / (2 * eps)\nprint(round(out.data, 4))\nprint(round(x.grad, 4), round(gx, 4))\nprint(round(y.grad, 4), round(gy, 4))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

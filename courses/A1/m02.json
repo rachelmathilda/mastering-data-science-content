@@ -1,0 +1,1574 @@
+{
+  "schema_version": 2,
+  "course_id": "A1",
+  "module_no": 2,
+  "title": "Kontrol alur: kondisi dan perulangan",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menulis percabangan dengan if, elif, else, dan match",
+    "Memakai for dan while beserta break, continue, dan else",
+    "Mengolah data tabel kecil dengan perulangan bersarang"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A1-02-1",
+    "exercise_id": "A1-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def jalankan(teks):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A1-02-1",
+      "title": "Percabangan: if, elif, else, dan match",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menulis percabangan if, elif, dan else dengan indentasi yang benar",
+        "Menyusun kondisi majemuk dan memakai ekspresi kondisional satu baris",
+        "Memanfaatkan truthiness untuk memeriksa nilai kosong",
+        "Memakai match untuk memilih berdasarkan pola nilai"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Program yang mengambil keputusan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Program yang mengambil keputusan\n\nProgram yang hanya berjalan lurus dari atas ke bawah sangat terbatas. Data nyata menuntut keputusan: jika nilai kosong maka lewati, jika suhu terlalu tinggi maka beri peringatan, jika akurasi di bawah target maka latih ulang. Pernyataan `if` adalah cara Python mengekspresikan keputusan tersebut.\n\nBentuknya sederhana. Kata `if` diikuti sebuah kondisi, lalu tanda titik dua, lalu blok kode yang menjorok ke dalam. Blok itu hanya berjalan bila kondisinya benar. Di Python, indentasi bukan sekadar gaya penulisan. Indentasi adalah sintaks yang menentukan batas blok. Standar komunitas memakai empat spasi, dan kamu sebaiknya konsisten karena mencampur tab dan spasi menghasilkan `IndentationError`.\n\nKondisi di `if` bisa berupa ekspresi apa pun yang menghasilkan nilai. Python akan menafsirkannya sebagai benar atau salah menurut aturan truthiness yang sudah kamu pelajari di modul sebelumnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## if, elif, dan else\n\nKetika ada lebih dari dua kemungkinan, rangkai `elif`, singkatan dari else if. Python memeriksa kondisi dari atas ke bawah dan menjalankan blok pertama yang kondisinya benar, lalu melewati sisanya. Blok `else` di akhir menangkap semua kasus yang tidak cocok dengan kondisi sebelumnya.\n\nUrutan kondisi sangat penting. Misalkan kamu mengelompokkan nilai ujian: jika nilai di atas 90 maka A, jika di atas 80 maka B. Bila kamu menulis kondisi di atas 80 lebih dulu, nilai 95 akan terjebak di B karena 95 memang lebih dari 80. Selalu susun dari kondisi paling spesifik atau paling ketat ke yang paling longgar.\n\nHindari bertingkat terlalu dalam. Bila kamu menulis `if` di dalam `if` di dalam `if`, kodenya sulit dibaca. Gunakan kondisi majemuk dengan `and` dan `or`, atau pecah menjadi fungsi, atau gunakan pola guard: periksa kasus buruk di awal dan segera kembalikan hasil."
+            },
+            {
+              "type": "code_example",
+              "filename": "predikat.py",
+              "runnable": true,
+              "code": "def predikat(nilai):\n    if nilai >= 90:\n        return \"A\"\n    elif nilai >= 80:\n        return \"B\"\n    elif nilai >= 70:\n        return \"C\"\n    else:\n        return \"D\"\n\nfor n in [95, 85, 72, 40, 90, 80]:\n    print(n, predikat(n))",
+              "expected_output_note": "95 A\n85 B\n72 C\n40 D\n90 A\n80 B",
+              "explanation": "Kondisi diperiksa dari yang paling ketat. Nilai tepat 90 dan 80 jatuh ke batas atas kelasnya karena memakai `>=`."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa urutan elif penting?",
+            "options": [
+              "Python memeriksa dari atas dan berhenti di yang pertama benar",
+              "Python memeriksa semua"
+            ],
+            "answer_index": 0,
+            "explanation": "Blok pertama yang kondisinya benar dijalankan dan sisanya dilewati.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Kondisi majemuk dan ekspresi satu baris",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kondisi majemuk dan ekspresi satu baris\n\nKondisi bisa digabung memakai `and`, `or`, dan `not`. Contohnya `if umur >= 17 and punya_ktp:`. Ingat short-circuit: bila bagian kiri `and` sudah salah, bagian kanan tidak dievaluasi. Sifat ini berguna untuk mengamankan pemeriksaan, misalnya `if data and data[0] > 0`, yang tidak akan mengakses elemen pertama bila `data` kosong.\n\nUntuk memilih satu dari dua nilai, Python menyediakan **ekspresi kondisional**: `nilai_a if kondisi else nilai_b`. Bentuk ini ringkas untuk penugasan sederhana seperti `status = \"lulus\" if skor >= 60 else \"remedial\"`. Namun jangan dirantai berlebihan, karena ekspresi bersarang cepat menjadi sulit dibaca.\n\nPerbedaan penting dengan pernyataan `if` biasa: ekspresi kondisional menghasilkan nilai, sedangkan pernyataan `if` menjalankan blok. Pilih ekspresi hanya ketika kedua cabang berupa nilai singkat."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Pola guard",
+              "markdown": "Gunakan pola guard untuk menghindari penumpukan indentasi. Tangani kasus tidak valid di awal fungsi dengan `return` atau `raise`, lalu biarkan jalur utama berada di tingkat indentasi paling luar."
+            },
+            {
+              "type": "code_example",
+              "filename": "guard_bmi.py",
+              "runnable": true,
+              "code": "def kategori_bmi(berat, tinggi_m):\n    if tinggi_m <= 0 or berat <= 0:\n        return \"tidak valid\"\n    bmi = berat / tinggi_m ** 2\n    if bmi < 18.5:\n        return \"kurang\"\n    if bmi < 25:\n        return \"normal\"\n    return \"lebih\"\n\nprint(kategori_bmi(50, 1.7), kategori_bmi(65, 1.7), kategori_bmi(90, 1.7), kategori_bmi(0, 1.7))\ndata = []\nprint(bool(data and data[0] > 0))\nskor = 72\nprint(\"lulus\" if skor >= 60 else \"remedial\")",
+              "expected_output_note": "kurang normal lebih tidak valid\nFalse\nlulus",
+              "explanation": "Pola guard menangani input tidak valid di awal, sehingga jalur utama tidak bersarang. Pemeriksaan `data and data[0] > 0` aman untuk daftar kosong."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kesalahan umum pada kondisi\n\nAda beberapa jebakan yang sering menjerat pemula. Pertama, membandingkan nilai boolean dengan `== True`, padahal cukup menulis `if aktif:`. Kedua, memakai `is` untuk membandingkan angka atau teks, padahal `is` memeriksa identitas objek dan hanya tepat untuk `None`. Ketiga, lupa bahwa `if x == 1 or 2` selalu benar karena angka 2 bernilai benar sendiri. Tulislah `if x == 1 or x == 2`, atau lebih ringkas `if x in (1, 2)`.\n\nOperator `in` sangat berguna untuk memeriksa keanggotaan pada list, tuple, himpunan, dan string. Pemeriksaan di himpunan jauh lebih cepat daripada di list untuk data besar, sebuah hal yang akan kamu temui lagi di modul struktur data."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil dari 'lulus' if 50 >= 60 else 'remedial'?",
+            "options": [
+              "lulus",
+              "remedial"
+            ],
+            "answer_index": 1,
+            "explanation": "Kondisi salah sehingga cabang else dipakai.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "match untuk memilih berdasarkan pola",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## match untuk memilih berdasarkan pola\n\nSejak Python 3.10 tersedia pernyataan `match` yang mirip switch di bahasa lain tetapi lebih kuat. Kamu mencocokkan sebuah nilai dengan beberapa pola `case`, dan blok pertama yang cocok dijalankan. Tanda garis bawah `_` adalah pola penangkap semua sisanya.\n\nPola bisa berupa nilai literal, beberapa nilai digabung dengan garis tegak (`\"a\" | \"b\"`), atau struktur seperti tuple dan list. Ini nyaman ketika kamu memilih tindakan berdasarkan perintah teks atau berdasarkan bentuk data.\n\nMeski begitu, `if` dan `elif` tetap pilihan yang tepat untuk rentang numerik dan kondisi majemuk. Gunakan `match` ketika kamu membandingkan satu nilai dengan daftar kemungkinan diskret. Pyodide yang dipakai di app ini berbasis Python 3.12, jadi `match` tersedia."
+            },
+            {
+              "type": "code_example",
+              "filename": "match_perintah.py",
+              "runnable": true,
+              "code": "def perintah(teks):\n    match teks.split():\n        case [\"mulai\"]:\n            return \"memulai\"\n        case [\"berhenti\" | \"stop\"]:\n            return \"berhenti\"\n        case [\"tambah\", angka]:\n            return \"tambah \" + angka\n        case []:\n            return \"kosong\"\n        case _:\n            return \"tidak dikenal\"\n\nfor t in [\"mulai\", \"stop\", \"tambah 5\", \"\", \"loncat tinggi\"]:\n    print(repr(t), \"->\", perintah(t))",
+              "expected_output_note": "'mulai' -> memulai\n'stop' -> berhenti\n'tambah 5' -> tambah 5\n'' -> kosong\n'loncat tinggi' -> tidak dikenal",
+              "explanation": "Pola list mencocokkan jumlah dan isi elemen. Pola `_` menangkap semua perintah lain."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa fungsi case _ pada match?",
+            "options": [
+              "Menangkap semua pola sisanya",
+              "Menghentikan program"
+            ],
+            "answer_index": 0,
+            "explanation": "Garis bawah cocok dengan apa pun sehingga menjadi pola default.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `tanda(n)` yang mengembalikan `\"positif\"`, `\"negatif\"`, atau `\"nol\"` sesuai nilai `n`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def tanda(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tanda(5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanda(5) == \"positif\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tanda(-2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanda(-2) == \"negatif\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tanda(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanda(0) == \"nol\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tanda(0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanda(0.1) == \"positif\""
+              }
+            ]
+          },
+          "hint": "Gunakan if, elif, else.",
+          "solution": "def tanda(n):\n    if n > 0:\n        return \"positif\"\n    elif n < 0:\n        return \"negatif\"\n    return \"nol\"",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-02-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `predikat(nilai)` yang mengembalikan \"A\" untuk nilai 90 ke atas, \"B\" untuk 80 sampai 89, \"C\" untuk 70 sampai 79, dan \"D\" selainnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def predikat(nilai):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "predikat(95)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert predikat(95) == \"A\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "predikat(90)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert predikat(90) == \"A\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "predikat(85)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert predikat(85) == \"B\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "predikat(70)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert predikat(70) == \"C\""
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "predikat(69)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert predikat(69) == \"D\""
+              }
+            ]
+          },
+          "hint": "Periksa dari batas tertinggi ke terendah.",
+          "solution": "def predikat(nilai):\n    if nilai >= 90:\n        return \"A\"\n    if nilai >= 80:\n        return \"B\"\n    if nilai >= 70:\n        return \"C\"\n    return \"D\"",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tarif_tiket(umur, hari_libur)` yang mengembalikan harga: anak di bawah 5 tahun gratis (0), umur 5 sampai 12 harga 20000, umur 13 ke atas harga 35000.",
+          "note": "Bila `hari_libur` benar, tambahkan 10000 kecuali untuk anak gratis. Jika umur negatif naikkan `ValueError`.",
+          "filename": "solution.py",
+          "starter_code": "def tarif_tiket(umur, hari_libur):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tarif_tiket(3, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tarif_tiket(3, True) == 0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tarif_tiket(8, False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tarif_tiket(8, False) == 20000"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tarif_tiket(8, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tarif_tiket(8, True) == 30000"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tarif_tiket(20, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tarif_tiket(20, True) == 45000"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "gagal()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def gagal():\n    try:\n        tarif_tiket(-1, False)\n    except ValueError:\n        return True\n    return False\nassert gagal()"
+              }
+            ]
+          },
+          "hint": "Tangani umur negatif di awal sebagai guard, lalu hitung harga dasar dan tambahan.",
+          "solution": "def tarif_tiket(umur, hari_libur):\n    if umur < 0:\n        raise ValueError(\"umur negatif\")\n    if umur < 5:\n        return 0\n    harga = 20000 if umur <= 12 else 35000\n    if hari_libur:\n        harga += 10000\n    return harga",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `jalankan(teks)` memakai `match`.",
+          "note": "Perintah `\"naik\"` mengembalikan `(0, 1)`, `\"turun\"` mengembalikan `(0, -1)`, `\"kiri\"` mengembalikan `(-1, 0)`, `\"kanan\"` mengembalikan `(1, 0)`, dan `\"lompat N\"` dengan N bilangan bulat mengembalikan `(0, N)`. Perintah lain mengembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "def jalankan(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jalankan(\"naik\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jalankan(\"naik\") == (0, 1)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jalankan(\"turun\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jalankan(\"turun\") == (0, -1)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jalankan(\"kiri\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jalankan(\"kiri\") == (-1, 0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jalankan(\"kanan\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jalankan(\"kanan\") == (1, 0)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "jalankan(\"lompat 3\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jalankan(\"lompat 3\") == (0, 3)"
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "jalankan(\"terbang\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jalankan(\"terbang\") is None"
+              },
+              {
+                "id": 7,
+                "name": "Kasus 7",
+                "label": "jalankan(\"lompat x\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jalankan(\"lompat x\") is None"
+              }
+            ]
+          },
+          "hint": "Pecah teks dengan split lalu cocokkan list. Untuk lompat, periksa bahwa argumen adalah angka dengan isdigit.",
+          "solution": "def jalankan(teks):\n    match teks.split():\n        case [\"naik\"]:\n            return (0, 1)\n        case [\"turun\"]:\n            return (0, -1)\n        case [\"kiri\"]:\n            return (-1, 0)\n        case [\"kanan\"]:\n            return (1, 0)\n        case [\"lompat\", n] if n.isdigit():\n            return (0, int(n))\n        case _:\n            return None",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Mengapa urutan elif penting?",
+          "code": null,
+          "options": [
+            {
+              "label": "Python memeriksa dari atas dan berhenti di yang pertama benar",
+              "description": ""
+            },
+            {
+              "label": "Python memeriksa semua",
+              "description": ""
+            },
+            {
+              "label": "Urutan tidak berpengaruh",
+              "description": ""
+            },
+            {
+              "label": "Hanya else yang penting",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Apa yang terjadi setelah satu kondisi benar?",
+          "explanation": "Blok pertama yang kondisinya benar dijalankan dan sisanya dilewati."
+        },
+        {
+          "q": "Hasil dari 'lulus' if 50 >= 60 else 'remedial'?",
+          "code": null,
+          "options": [
+            {
+              "label": "lulus",
+              "description": ""
+            },
+            {
+              "label": "remedial",
+              "description": ""
+            },
+            {
+              "label": "True",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Evaluasi kondisi 50 >= 60 dulu.",
+          "explanation": "Kondisi salah sehingga cabang else dipakai."
+        },
+        {
+          "q": "Apa fungsi case _ pada match?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menangkap semua pola sisanya",
+              "description": ""
+            },
+            {
+              "label": "Menghentikan program",
+              "description": ""
+            },
+            {
+              "label": "Membuat variabel",
+              "description": ""
+            },
+            {
+              "label": "Mengulang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pikirkan peran else.",
+          "explanation": "Garis bawah cocok dengan apa pun sehingga menjadi pola default."
+        },
+        {
+          "q": "Pernyataan if data and data[0] > 0 aman untuk list kosong karena?",
+          "code": null,
+          "options": [
+            {
+              "label": "Python mengabaikan error",
+              "description": ""
+            },
+            {
+              "label": "Short-circuit berhenti saat data kosong",
+              "description": ""
+            },
+            {
+              "label": "List kosong bernilai True",
+              "description": ""
+            },
+            {
+              "label": "and selalu benar",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ingat short-circuit.",
+          "explanation": "List kosong bernilai salah sehingga bagian kanan tidak dievaluasi."
+        },
+        {
+          "q": "Berapa spasi indentasi standar Python?",
+          "code": null,
+          "options": [
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "2",
+              "description": ""
+            },
+            {
+              "label": "4",
+              "description": ""
+            },
+            {
+              "label": "8",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Ini angka yang paling umum.",
+          "explanation": "Konvensi PEP 8 memakai empat spasi."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menyusun elif dari kondisi longgar ke ketat. Lebih baik: Mulai dari kondisi paling ketat agar tidak tertangkap lebih dulu.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menyusun elif dari kondisi longgar ke ketat.",
+          "fix": "Mulai dari kondisi paling ketat agar tidak tertangkap lebih dulu."
+        },
+        {
+          "mistake": "Mencampur tab dan spasi pada indentasi.",
+          "fix": "Pakai empat spasi secara konsisten."
+        },
+        {
+          "mistake": "Menumpuk if bersarang terlalu dalam.",
+          "fix": "Pakai pola guard atau kondisi majemuk."
+        }
+      ],
+      "summary": [
+        "if, elif, else memilih blok pertama yang kondisinya benar.",
+        "Pola guard dan ekspresi kondisional mengurangi indentasi.",
+        "match cocok untuk memilih dari nilai atau bentuk diskret.",
+        "Indentasi adalah sintaks dan harus konsisten."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Percabangan: if, elif, else, dan match"
+          },
+          {
+            "type": "text",
+            "source": "Kondisi diperiksa dari yang paling ketat. Nilai tepat 90 dan 80 jatuh ke batas atas kelasnya karena memakai `>=`."
+          },
+          {
+            "type": "code",
+            "source": "def predikat(nilai):\n    if nilai >= 90:\n        return \"A\"\n    elif nilai >= 80:\n        return \"B\"\n    elif nilai >= 70:\n        return \"C\"\n    else:\n        return \"D\"\n\nfor n in [95, 85, 72, 40, 90, 80]:\n    print(n, predikat(n))"
+          },
+          {
+            "type": "text",
+            "source": "Pola guard menangani input tidak valid di awal, sehingga jalur utama tidak bersarang. Pemeriksaan `data and data[0] > 0` aman untuk daftar kosong."
+          },
+          {
+            "type": "code",
+            "source": "def kategori_bmi(berat, tinggi_m):\n    if tinggi_m <= 0 or berat <= 0:\n        return \"tidak valid\"\n    bmi = berat / tinggi_m ** 2\n    if bmi < 18.5:\n        return \"kurang\"\n    if bmi < 25:\n        return \"normal\"\n    return \"lebih\"\n\nprint(kategori_bmi(50, 1.7), kategori_bmi(65, 1.7), kategori_bmi(90, 1.7), kategori_bmi(0, 1.7))\ndata = []\nprint(bool(data and data[0] > 0))\nskor = 72\nprint(\"lulus\" if skor >= 60 else \"remedial\")"
+          },
+          {
+            "type": "text",
+            "source": "Pola list mencocokkan jumlah dan isi elemen. Pola `_` menangkap semua perintah lain."
+          },
+          {
+            "type": "code",
+            "source": "def perintah(teks):\n    match teks.split():\n        case [\"mulai\"]:\n            return \"memulai\"\n        case [\"berhenti\" | \"stop\"]:\n            return \"berhenti\"\n        case [\"tambah\", angka]:\n            return \"tambah \" + angka\n        case []:\n            return \"kosong\"\n        case _:\n            return \"tidak dikenal\"\n\nfor t in [\"mulai\", \"stop\", \"tambah 5\", \"\", \"loncat tinggi\"]:\n    print(repr(t), \"->\", perintah(t))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-02-2",
+      "title": "Perulangan: for, while, dan kendalinya",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menelusuri urutan dengan for dan range",
+        "Memakai enumerate dan zip untuk menelusuri beberapa urutan",
+        "Menulis while dengan kondisi berhenti yang pasti",
+        "Mengendalikan perulangan dengan break, continue, dan else"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "for: menelusuri elemen satu per satu",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## for: menelusuri elemen satu per satu\n\nPerulangan `for` mengambil elemen dari sebuah urutan satu per satu dan menjalankan blok untuk tiap elemen. Urutan itu bisa berupa list, tuple, string, dictionary, atau objek apa pun yang bisa ditelusuri. Berbeda dengan bahasa yang memakai penghitung indeks, Python langsung memberi kamu elemennya: `for nama in daftar_nama:`.\n\nUntuk mengulang sejumlah kali tertentu, pakai `range`. `range(5)` menghasilkan 0 sampai 4, `range(2, 6)` menghasilkan 2 sampai 5, dan `range(0, 10, 3)` menghasilkan 0, 3, 6, 9. Ingat bahwa batas akhir tidak ikut. Aturan setengah terbuka ini konsisten di seluruh Python, termasuk pemotongan list.\n\nKebiasaan buruk yang sering muncul adalah menulis `for i in range(len(daftar))` hanya untuk mengambil elemen. Pola itu jarang dibutuhkan. Telusuri elemennya langsung, dan bila butuh nomor urut pakai `enumerate`."
+            },
+            {
+              "type": "code_example",
+              "filename": "for_dasar.py",
+              "runnable": true,
+              "code": "buah = [\"apel\", \"jeruk\", \"mangga\"]\nfor b in buah:\n    print(b.upper())\nprint(list(range(5)), list(range(2, 6)), list(range(0, 10, 3)), list(range(5, 0, -2)))\nfor i, b in enumerate(buah, start=1):\n    print(i, b)\nharga = [5000, 7000, 12000]\nfor b, h in zip(buah, harga):\n    print(f\"{b}: {h}\")",
+              "expected_output_note": "APEL\nJERUK\nMANGGA\n[0, 1, 2, 3, 4] [2, 3, 4, 5] [0, 3, 6, 9] [5, 3, 1]\n1 apel\n2 jeruk\n3 mangga\napel: 5000\njeruk: 7000\nmangga: 12000",
+              "explanation": "`enumerate` memberi nomor urut dan `zip` menelusuri dua urutan berpasangan. `range` bisa menurun dengan langkah negatif."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menelusuri string dan dictionary\n\nString juga urutan, jadi `for huruf in \"data\":` menelusuri huruf demi huruf. Dictionary menelusuri kuncinya secara bawaan. Untuk mendapatkan pasangan kunci dan nilai sekaligus, pakai `.items()`. Untuk nilainya saja, pakai `.values()`.\n\nSejak Python 3.7, dictionary mempertahankan urutan penyisipan, sehingga hasil penelusuran dapat diprediksi. Jangan menambah atau menghapus kunci selagi menelusuri dictionary yang sama karena Python akan menimbulkan `RuntimeError`. Bila perlu mengubah, telusuri salinan seperti `list(d.items())`."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil list(range(2, 6))?",
+            "options": [
+              "[2, 3, 4, 5]",
+              "[2, 3, 4, 5, 6]"
+            ],
+            "answer_index": 0,
+            "explanation": "Batas akhir tidak ikut.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Pola akumulator",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pola akumulator\n\nBanyak perulangan memiliki pola yang sama: siapkan variabel awal, perbarui di setiap putaran, lalu gunakan hasilnya setelah selesai. Variabel itu disebut **akumulator**. Untuk menjumlahkan, mulai dari nol. Untuk mengalikan, mulai dari satu. Untuk mencari nilai terbesar, mulai dari elemen pertama atau dari nilai yang sangat kecil.\n\nPython sudah punya fungsi bawaan `sum`, `max`, `min`, dan `len` untuk kasus umum, dan kamu sebaiknya memakainya bila sesuai. Tetapi menulis akumulator sendiri penting karena melatih pola pikir yang sama untuk kasus yang tidak punya fungsi bawaan, seperti menghitung rata-rata bergerak atau menghitung frekuensi kata.\n\nDalam data science kamu akan sering menulis perulangan yang menghitung statistik dari kumpulan baris. Pola akumulator adalah dasar dari semuanya, dan nanti kamu akan menggantikannya dengan operasi vektor di NumPy dan pandas."
+            },
+            {
+              "type": "code_example",
+              "filename": "akumulator.py",
+              "runnable": true,
+              "code": "nilai = [70, 85, 90, 65, 100]\ntotal = 0\nterbesar = nilai[0]\nfor n in nilai:\n    total += n\n    if n > terbesar:\n        terbesar = n\nprint(total, total / len(nilai), terbesar)\n\nkalimat = \"kopi teh kopi susu teh kopi\"\nfrekuensi = {}\nfor kata in kalimat.split():\n    frekuensi[kata] = frekuensi.get(kata, 0) + 1\nprint(frekuensi)",
+              "expected_output_note": "410 82.0 100\n{'kopi': 3, 'teh': 2, 'susu': 1}",
+              "explanation": "Akumulator `total` dan `terbesar` diperbarui tiap putaran. Dictionary dipakai sebagai penghitung frekuensi dengan `get` untuk nilai awal nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## while: berulang selama kondisi benar\n\nPerulangan `while` berjalan selama kondisinya benar. Gunakan `while` ketika jumlah putaran tidak diketahui sebelumnya, misalnya membaca input sampai valid atau mengulang optimasi sampai konvergen. Setiap `while` harus punya jalan keluar: sesuatu di dalam blok yang akhirnya membuat kondisi menjadi salah. Bila tidak, program terjebak dalam perulangan tak hingga.\n\nPernyataan `break` menghentikan perulangan seketika, sedangkan `continue` melompat ke putaran berikutnya. Python juga punya klausa `else` pada perulangan yang berjalan hanya bila perulangan selesai normal tanpa `break`. Pola ini cocok untuk pencarian: `else` berarti tidak ketemu.\n\nContoh nyata dalam machine learning adalah early stopping: latih model sampai galat validasi tidak membaik selama beberapa putaran berturut-turut. Perulangan `while` dengan penghitung kesabaran adalah bentuk paling alami untuk itu."
+            },
+            {
+              "type": "code_example",
+              "filename": "while_break.py",
+              "runnable": true,
+              "code": "n = 27\nlangkah = 0\nwhile n != 1:\n    n = n // 2 if n % 2 == 0 else 3 * n + 1\n    langkah += 1\nprint(\"collatz 27:\", langkah)\n\nfor angka in range(2, 20):\n    if angka % 2 == 0:\n        continue\n    if angka > 11:\n        break\n    print(angka, end=\" \")\nprint()\n\nfor x in [3, 5, 7]:\n    if x % 2 == 0:\n        print(\"ada genap\")\n        break\nelse:\n    print(\"tidak ada genap\")",
+              "expected_output_note": "collatz 27: 111\n3 5 7 9 11\ntidak ada genap",
+              "explanation": "`while` berjalan sampai kondisi salah. `continue` melewati angka genap dan `break` menghentikan setelah 11. Klausa `else` pada `for` aktif karena tidak ada `break`."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang dilakukan continue?",
+            "options": [
+              "Menghentikan perulangan",
+              "Melompat ke putaran berikutnya"
+            ],
+            "answer_index": 1,
+            "explanation": "continue melewati sisa blok dan lanjut ke elemen berikutnya.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih for atau while",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih for atau while\n\nAturan praktisnya sederhana. Bila kamu tahu apa yang ditelusuri, pakai `for`. Bila kamu menunggu sebuah kondisi tercapai tanpa tahu berapa lama, pakai `while`. Hampir semua perulangan `for` bisa ditulis sebagai `while`, tetapi bentuk `for` lebih aman karena tidak punya risiko lupa memperbarui penghitung, dan pembaca kodemu langsung tahu bahwa jumlah putarannya terbatas.\n\nSatu pola yang berguna adalah `while True` dengan `break` di dalam saat syarat berhenti terpenuhi. Pola ini menghindari penulisan ganda untuk membaca input pertama kali dan seterusnya. Pastikan selalu ada `break` yang dapat dicapai, atau program akan berjalan selamanya.\n\nDalam eksperimen machine learning, pola ini muncul ketika kamu melatih model sampai metrik berhenti membaik. Tambahkan juga batas maksimum putaran sebagai pengaman, sehingga eksperimen tidak berjalan tanpa akhir bila metriknya tidak pernah stabil."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Hati-hati memodifikasi saat menelusuri",
+              "markdown": "Jangan mengubah list yang sedang kamu telusuri dengan menambah atau menghapus elemennya. Hasilnya bisa melewatkan elemen. Buat salinan atau bangun list baru."
+            }
+          ],
+          "quick_check": {
+            "question": "Kapan else pada for dijalankan?",
+            "options": [
+              "Saat perulangan selesai tanpa break",
+              "Selalu"
+            ],
+            "answer_index": 0,
+            "explanation": "else pada perulangan berjalan bila tidak ada break.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_kuadrat(n)` yang mengembalikan jumlah kuadrat bilangan 1 sampai `n`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def jumlah_kuadrat(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_kuadrat(3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_kuadrat(3) == 14"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_kuadrat(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_kuadrat(1) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_kuadrat(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_kuadrat(0) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_kuadrat(10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_kuadrat(10) == 385"
+              }
+            ]
+          },
+          "hint": "Gunakan range(1, n + 1) dan sebuah akumulator.",
+          "solution": "def jumlah_kuadrat(n):\n    total = 0\n    for i in range(1, n + 1):\n        total += i * i\n    return total",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-02-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `frekuensi_kata(kalimat)` yang mengembalikan dictionary jumlah kemunculan tiap kata, dengan kata dibuat huruf kecil.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def frekuensi_kata(kalimat):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "frekuensi_kata(\"kopi teh kopi\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert frekuensi_kata(\"kopi teh kopi\") == {\"kopi\": 2, \"teh\": 1}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "frekuensi_kata(\"A a A\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert frekuensi_kata(\"A a A\") == {\"a\": 3}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "frekuensi_kata(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert frekuensi_kata(\"\") == {}"
+              }
+            ]
+          },
+          "hint": "Pecah dengan split dan pakai get untuk nilai awal.",
+          "solution": "def frekuensi_kata(kalimat):\n    hasil = {}\n    for k in kalimat.lower().split():\n        hasil[k] = hasil.get(k, 0) + 1\n    return hasil",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `langkah_collatz(n)` yang mengembalikan banyak langkah untuk mencapai 1: bila genap bagi dua, bila ganjil kalikan tiga tambah satu.",
+          "note": "Jika `n` kurang dari 1 naikkan `ValueError`.",
+          "filename": "solution.py",
+          "starter_code": "def langkah_collatz(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "langkah_collatz(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_collatz(1) == 0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "langkah_collatz(6)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_collatz(6) == 8"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "langkah_collatz(27)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_collatz(27) == 111"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "gagal(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def gagal(x):\n    try:\n        langkah_collatz(x)\n    except ValueError:\n        return True\n    return False\nassert gagal(0)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "gagal(-5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gagal(-5)"
+              }
+            ]
+          },
+          "hint": "Pakai while n != 1 dengan penghitung langkah.",
+          "solution": "def langkah_collatz(n):\n    if n < 1:\n        raise ValueError(\"n harus positif\")\n    langkah = 0\n    while n != 1:\n        n = n // 2 if n % 2 == 0 else 3 * n + 1\n        langkah += 1\n    return langkah",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `early_stop(loss, kesabaran)` yang menerima list loss validasi dan mengembalikan indeks putaran terbaik (loss terendah pertama).",
+          "note": "Perulangan berhenti bila selama `kesabaran` putaran berturut-turut tidak ada loss yang lebih rendah dari terbaik.",
+          "filename": "solution.py",
+          "starter_code": "def early_stop(loss, kesabaran):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "early_stop([0.9, 0.7, 0.6, 0.65, 0.66, 0.4], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert early_stop([0.9, 0.7, 0.6, 0.65, 0.66, 0.4], 2) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "early_stop([0.9, 0.7, 0.6, 0.65, 0.66, 0.4], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert early_stop([0.9, 0.7, 0.6, 0.65, 0.66, 0.4], 3) == 5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "early_stop([0.5, 0.6, 0.7], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert early_stop([0.5, 0.6, 0.7], 1) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "early_stop([0.3], 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert early_stop([0.3], 5) == 0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "early_stop([0.9, 0.8, 0.7], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert early_stop([0.9, 0.8, 0.7], 2) == 2"
+              }
+            ]
+          },
+          "hint": "Simpan indeks dan nilai terbaik serta penghitung tanpa perbaikan. Reset penghitung saat ada loss yang lebih rendah.",
+          "solution": "def early_stop(loss, kesabaran):\n    terbaik = 0\n    tanpa_perbaikan = 0\n    for i in range(1, len(loss)):\n        if loss[i] < loss[terbaik]:\n            terbaik = i\n            tanpa_perbaikan = 0\n        else:\n            tanpa_perbaikan += 1\n            if tanpa_perbaikan >= kesabaran:\n                break\n    return terbaik",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Hasil list(range(2, 6))?",
+          "code": null,
+          "options": [
+            {
+              "label": "[2, 3, 4, 5, 6]",
+              "description": ""
+            },
+            {
+              "label": "[2, 3, 4, 5]",
+              "description": ""
+            },
+            {
+              "label": "[3, 4, 5]",
+              "description": ""
+            },
+            {
+              "label": "[2, 6]",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Setengah terbuka.",
+          "explanation": "Batas akhir tidak ikut."
+        },
+        {
+          "q": "Apa yang dilakukan continue?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menghentikan perulangan",
+              "description": ""
+            },
+            {
+              "label": "Melompat ke putaran berikutnya",
+              "description": ""
+            },
+            {
+              "label": "Mengulang dari awal program",
+              "description": ""
+            },
+            {
+              "label": "Keluar dari fungsi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bedakan dengan break.",
+          "explanation": "continue melewati sisa blok dan lanjut ke elemen berikutnya."
+        },
+        {
+          "q": "Kapan else pada for dijalankan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Selalu",
+              "description": ""
+            },
+            {
+              "label": "Saat perulangan selesai tanpa break",
+              "description": ""
+            },
+            {
+              "label": "Saat ada break",
+              "description": ""
+            },
+            {
+              "label": "Tidak pernah",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Cocok untuk pencarian tidak ketemu.",
+          "explanation": "else pada perulangan berjalan bila tidak ada break."
+        },
+        {
+          "q": "Fungsi enumerate memberi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Elemen saja",
+              "description": ""
+            },
+            {
+              "label": "Pasangan nomor dan elemen",
+              "description": ""
+            },
+            {
+              "label": "Hanya indeks",
+              "description": ""
+            },
+            {
+              "label": "Salinan list",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bandingkan dengan zip.",
+          "explanation": "enumerate menghasilkan pasangan nomor urut dan elemen."
+        },
+        {
+          "q": "Risiko utama while tanpa pembaruan kondisi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Error sintaks",
+              "description": ""
+            },
+            {
+              "label": "Perulangan tak hingga",
+              "description": ""
+            },
+            {
+              "label": "Hasil salah tipe",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Apa yang membuat kondisi berubah?",
+          "explanation": "Kondisi tidak pernah salah sehingga program tidak berhenti."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai range(len(x)) hanya untuk mengambil elemen. Lebih baik: Telusuri elemennya langsung atau pakai enumerate bila butuh nomor urut.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai range(len(x)) hanya untuk mengambil elemen.",
+          "fix": "Telusuri elemennya langsung atau pakai enumerate bila butuh nomor urut."
+        },
+        {
+          "mistake": "Lupa memperbarui variabel kondisi di dalam while.",
+          "fix": "Pastikan ada langkah yang akhirnya membuat kondisi salah."
+        },
+        {
+          "mistake": "Menambah atau menghapus elemen list saat menelusurinya.",
+          "fix": "Buat list baru atau telusuri salinan."
+        }
+      ],
+      "summary": [
+        "for menelusuri elemen langsung dan range menghasilkan angka berurutan.",
+        "Pola akumulator menyiapkan nilai awal dan memperbaruinya tiap putaran.",
+        "while cocok bila jumlah putaran tidak pasti dan harus punya jalan keluar.",
+        "break, continue, dan else mengendalikan jalannya perulangan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Perulangan: for, while, dan kendalinya"
+          },
+          {
+            "type": "text",
+            "source": "`enumerate` memberi nomor urut dan `zip` menelusuri dua urutan berpasangan. `range` bisa menurun dengan langkah negatif."
+          },
+          {
+            "type": "code",
+            "source": "buah = [\"apel\", \"jeruk\", \"mangga\"]\nfor b in buah:\n    print(b.upper())\nprint(list(range(5)), list(range(2, 6)), list(range(0, 10, 3)), list(range(5, 0, -2)))\nfor i, b in enumerate(buah, start=1):\n    print(i, b)\nharga = [5000, 7000, 12000]\nfor b, h in zip(buah, harga):\n    print(f\"{b}: {h}\")"
+          },
+          {
+            "type": "text",
+            "source": "Akumulator `total` dan `terbesar` diperbarui tiap putaran. Dictionary dipakai sebagai penghitung frekuensi dengan `get` untuk nilai awal nol."
+          },
+          {
+            "type": "code",
+            "source": "nilai = [70, 85, 90, 65, 100]\ntotal = 0\nterbesar = nilai[0]\nfor n in nilai:\n    total += n\n    if n > terbesar:\n        terbesar = n\nprint(total, total / len(nilai), terbesar)\n\nkalimat = \"kopi teh kopi susu teh kopi\"\nfrekuensi = {}\nfor kata in kalimat.split():\n    frekuensi[kata] = frekuensi.get(kata, 0) + 1\nprint(frekuensi)"
+          },
+          {
+            "type": "text",
+            "source": "`while` berjalan sampai kondisi salah. `continue` melewati angka genap dan `break` menghentikan setelah 11. Klausa `else` pada `for` aktif karena tidak ada `break`."
+          },
+          {
+            "type": "code",
+            "source": "n = 27\nlangkah = 0\nwhile n != 1:\n    n = n // 2 if n % 2 == 0 else 3 * n + 1\n    langkah += 1\nprint(\"collatz 27:\", langkah)\n\nfor angka in range(2, 20):\n    if angka % 2 == 0:\n        continue\n    if angka > 11:\n        break\n    print(angka, end=\" \")\nprint()\n\nfor x in [3, 5, 7]:\n    if x % 2 == 0:\n        print(\"ada genap\")\n        break\nelse:\n    print(\"tidak ada genap\")"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-02-3",
+      "title": "Perulangan bersarang dan pola umum",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menulis perulangan bersarang untuk data dua dimensi",
+        "Menghitung total, filter, dan transformasi dengan perulangan",
+        "Mengenali kompleksitas waktu sederhana dari kedalaman perulangan",
+        "Menerapkan pola pencarian dan penyaringan pada data tabel kecil"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Perulangan di dalam perulangan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Perulangan di dalam perulangan\n\nData tabel memiliki baris dan kolom, dan menelusurinya butuh dua perulangan: satu untuk baris dan satu untuk kolom di dalamnya. Perulangan bersarang bekerja dengan aturan sederhana: untuk setiap putaran luar, perulangan dalam berjalan penuh dari awal sampai selesai. Jika luar berputar 3 kali dan dalam 4 kali, blok terdalam berjalan 12 kali.\n\nRepresentasi tabel yang paling sederhana di Python adalah list berisi list. Setiap list dalam adalah satu baris. Dengan `tabel[i][j]` kamu mengambil baris ke-i dan kolom ke-j. Pola ini adalah cikal bakal array dua dimensi di NumPy dan DataFrame di pandas, yang nanti akan melakukan hal sama dengan jauh lebih cepat.\n\nKarena indeks Python mulai dari nol, baris pertama adalah `tabel[0]`. Kesalahan satu-per-satu (off-by-one) adalah bug paling sering pada perulangan bersarang, jadi uji kasus tepi: tabel kosong, satu baris, dan satu kolom."
+            },
+            {
+              "type": "code_example",
+              "filename": "tabel_bersarang.py",
+              "runnable": true,
+              "code": "tabel = [\n    [1, 2, 3],\n    [4, 5, 6],\n    [7, 8, 9],\n]\ntotal_baris = []\nfor baris in tabel:\n    s = 0\n    for sel in baris:\n        s += sel\n    total_baris.append(s)\nprint(total_baris)\n\ndiagonal = 0\nfor i in range(len(tabel)):\n    diagonal += tabel[i][i]\nprint(diagonal)\n\ntranspos = []\nfor j in range(len(tabel[0])):\n    kolom = []\n    for i in range(len(tabel)):\n        kolom.append(tabel[i][j])\n    transpos.append(kolom)\nprint(transpos)",
+              "expected_output_note": "[6, 15, 24]\n15\n[[1, 4, 7], [2, 5, 8], [3, 6, 9]]",
+              "explanation": "Jumlah per baris memakai dua perulangan, diagonal memakai satu indeks, dan transpos menukar peran baris dan kolom."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memetakan indeks dengan benar\n\nSaat menelusuri tabel, jelaskan pada dirimu sendiri apa arti tiap indeks. Beri nama `baris` dan `kolom` alih-alih `i` dan `j` bila bentuk datanya tidak jelas. Nama yang bermakna mengurangi kekeliruan tertukar indeks, bug yang sulit ditemukan karena kode tetap berjalan tanpa error tetapi menghasilkan angka salah.\n\nJika semua baris panjangnya sama, tabel disebut persegi panjang. Jika panjangnya berbeda, tabel disebut bergerigi dan kamu harus memeriksa panjang tiap baris. Dalam data nyata, baris bergerigi sering muncul karena nilai hilang, jadi jangan berasumsi semua baris sama panjang."
+            }
+          ],
+          "quick_check": {
+            "question": "Dua perulangan bersarang masing-masing 10 putaran menjalankan blok dalam berapa kali?",
+            "options": [
+              "100",
+              "20"
+            ],
+            "answer_index": 0,
+            "explanation": "Putaran dalam penuh untuk tiap putaran luar sehingga 10 kali 10.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Menyaring dan mengubah data",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menyaring dan mengubah data\n\nDua tugas yang sangat sering muncul adalah menyaring (memilih elemen yang memenuhi syarat) dan mengubah (menghasilkan nilai baru dari tiap elemen). Dengan perulangan biasa, kamu membuat list kosong, menelusuri data, dan menambahkan ke list hasil dengan `append`.\n\nPenyaringan memakai `if` di dalam perulangan, sedangkan transformasi menambahkan nilai yang sudah diolah. Keduanya bisa digabung dalam satu perulangan. Di modul selanjutnya kamu akan mempelajari comprehension, yang menyingkat pola ini menjadi satu baris yang ekspresif, tetapi pemahaman bentuk perulangan eksplisitnya tetap fondasi.\n\nWaspadai biaya perulangan bersarang. Dua perulangan yang masing-masing menelusuri n elemen membuat n kali n operasi. Untuk seribu elemen itu sejuta operasi, masih cepat. Untuk sejuta elemen itu satu triliun operasi dan program tidak akan selesai. Mengenali pertumbuhan seperti ini sejak dini mencegah kode yang tidak skalabel."
+            },
+            {
+              "type": "code_example",
+              "filename": "saring_kelompok.py",
+              "runnable": true,
+              "code": "data = [\n    {\"nama\": \"Ani\", \"kota\": \"Depok\", \"skor\": 82},\n    {\"nama\": \"Budi\", \"kota\": \"Jakarta\", \"skor\": 55},\n    {\"nama\": \"Citra\", \"kota\": \"Depok\", \"skor\": 91},\n    {\"nama\": \"Dedi\", \"kota\": \"Bogor\", \"skor\": 67},\n]\nlulus = []\nfor r in data:\n    if r[\"skor\"] >= 60:\n        lulus.append(r[\"nama\"])\nprint(lulus)\n\nper_kota = {}\nfor r in data:\n    per_kota.setdefault(r[\"kota\"], []).append(r[\"skor\"])\nrata = {}\nfor kota, skors in per_kota.items():\n    rata[kota] = sum(skors) / len(skors)\nprint(rata)",
+              "expected_output_note": "['Ani', 'Citra', 'Dedi']\n{'Depok': 86.5, 'Jakarta': 55.0, 'Bogor': 67.0}",
+              "explanation": "Penyaringan memakai kondisi di dalam perulangan. Pengelompokan per kota memakai `setdefault` lalu rata-rata dihitung per kelompok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menguji perulangan dengan contoh kecil\n\nCara terbaik memastikan perulangan bersarang benar adalah menjalankannya dengan tangan pada contoh kecil. Tulis tabel tiga kali tiga, telusuri nilai indeks pada kertas, lalu bandingkan dengan keluaran program. Setelah cocok, uji kasus tepi: tabel kosong, satu baris, satu kolom, dan baris bergerigi.\n\nKebiasaan ini menghemat waktu debugging berjam-jam kelak. Dalam proyek data science, pengujian kecil seperti ini juga mencegah kesalahan yang diam-diam merusak hasil analisis, karena angka yang salah sering tampak masuk akal.\n\nBiasakan menulis beberapa pernyataan assert sederhana setelah fungsi selesai ditulis. Assert yang memeriksa hasil pada contoh kecil bertindak sebagai jaring pengaman setiap kali kamu mengubah kode di kemudian hari."
+            }
+          ],
+          "quick_check": {
+            "question": "Pada tabel [[1,2],[3,4]], berapa tabel[1][0]?",
+            "options": [
+              "1",
+              "3"
+            ],
+            "answer_index": 1,
+            "explanation": "Baris indeks 1 adalah [3, 4] dan kolom indeks 0 adalah 3.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Pola pencarian dan pasangan",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pola pencarian dan pasangan\n\nPola umum lainnya adalah mencari pasangan elemen yang memenuhi syarat, misalnya dua bilangan yang berjumlah target. Cara langsung memakai dua perulangan: untuk tiap elemen i, periksa semua elemen j setelahnya. Ini berjalan dalam waktu kuadrat. Nanti kamu akan belajar bahwa memakai himpunan atau dictionary dapat menurunkannya menjadi linear.\n\nSaat menulis perulangan bersarang untuk pasangan, mulai indeks dalam dari `i + 1` supaya setiap pasangan hanya dihitung sekali dan elemen tidak dipasangkan dengan dirinya sendiri. Kesalahan memulai dari nol menghasilkan pasangan ganda dan pasangan dengan diri sendiri.\n\nSelalu uji dengan contoh kecil yang bisa kamu hitung tangan. Perulangan bersarang sulit dilacak di kepala, jadi cetak nilai indeks pada contoh kecil untuk memastikan urutannya sesuai harapan sebelum dijalankan pada data besar."
+            },
+            {
+              "type": "code_example",
+              "filename": "pasangan.py",
+              "runnable": true,
+              "code": "def pasangan_jumlah(angka, target):\n    hasil = []\n    for i in range(len(angka)):\n        for j in range(i + 1, len(angka)):\n            if angka[i] + angka[j] == target:\n                hasil.append((angka[i], angka[j]))\n    return hasil\n\nprint(pasangan_jumlah([1, 2, 3, 4, 5, 6], 7))\nprint(pasangan_jumlah([2, 2, 2], 4))\njumlah_operasi = 0\nn = 100\nfor i in range(n):\n    for j in range(n):\n        jumlah_operasi += 1\nprint(jumlah_operasi)",
+              "expected_output_note": "[(1, 6), (2, 5), (3, 4)]\n[(2, 2), (2, 2), (2, 2)]\n10000",
+              "explanation": "Indeks dalam dimulai dari `i + 1` sehingga tiap pasangan dihitung sekali. Dua perulangan 100 kali menghasilkan 10.000 operasi."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa indeks dalam pasangan dimulai dari i + 1?",
+            "options": [
+              "Agar pasangan tidak ganda dan tidak dengan diri sendiri",
+              "Agar lebih lambat"
+            ],
+            "answer_index": 0,
+            "explanation": "Setiap pasangan hanya dihitung sekali.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_tabel(tabel)` yang mengembalikan jumlah semua sel pada list berisi list angka.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def jumlah_tabel(tabel):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_tabel([[1, 2], [3, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_tabel([[1, 2], [3, 4]]) == 10"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_tabel([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_tabel([]) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_tabel([[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_tabel([[5]]) == 5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_tabel([[1, 2, 3], []])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_tabel([[1, 2, 3], []]) == 6"
+              }
+            ]
+          },
+          "hint": "Dua perulangan bersarang dan satu akumulator.",
+          "solution": "def jumlah_tabel(tabel):\n    total = 0\n    for baris in tabel:\n        for sel in baris:\n            total += sel\n    return total",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-02-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `saring_lulus(data, batas)` yang menerima list dictionary dengan kunci `nama` dan `skor` dan mengembalikan list nama dengan skor di atas atau sama dengan `batas` sesuai urutan asal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def saring_lulus(data, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "saring_lulus(d, 60)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "d = [{\"nama\": \"A\", \"skor\": 80}, {\"nama\": \"B\", \"skor\": 50}, {\"nama\": \"C\", \"skor\": 60}]\nassert saring_lulus(d, 60) == [\"A\", \"C\"]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "saring_lulus(d, 90)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert saring_lulus(d, 90) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "saring_lulus([], 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert saring_lulus([], 10) == []"
+              }
+            ]
+          },
+          "hint": "Perulangan dengan if dan append.",
+          "solution": "def saring_lulus(data, batas):\n    hasil = []\n    for r in data:\n        if r[\"skor\"] >= batas:\n            hasil.append(r[\"nama\"])\n    return hasil",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `transpos(tabel)` yang mengembalikan transpos list berisi list persegi panjang.",
+          "note": "Untuk tabel kosong kembalikan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "def transpos(tabel):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "transpos([[1, 2, 3], [4, 5, 6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transpos([[1, 2, 3], [4, 5, 6]]) == [[1, 4], [2, 5], [3, 6]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "transpos([[1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transpos([[1]]) == [[1]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "transpos([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transpos([]) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "transpos([[1, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transpos([[1, 2]]) == [[1], [2]]"
+              }
+            ]
+          },
+          "hint": "Perulangan luar atas kolom dan perulangan dalam atas baris.",
+          "solution": "def transpos(tabel):\n    if not tabel:\n        return []\n    hasil = []\n    for j in range(len(tabel[0])):\n        kolom = []\n        for i in range(len(tabel)):\n            kolom.append(tabel[i][j])\n        hasil.append(kolom)\n    return hasil",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pasangan_jumlah(angka, target)` yang mengembalikan list tuple `(a, b)` dari pasangan indeks `i < j` dengan `angka[i] + angka[j] == target`, urut menurut `i` lalu `j`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pasangan_jumlah(angka, target):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pasangan_jumlah([1, 2, 3, 4, 5, 6], 7)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pasangan_jumlah([1, 2, 3, 4, 5, 6], 7) == [(1, 6), (2, 5), (3, 4)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pasangan_jumlah([2, 2, 2], 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pasangan_jumlah([2, 2, 2], 4) == [(2, 2), (2, 2), (2, 2)]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pasangan_jumlah([1, 2], 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pasangan_jumlah([1, 2], 10) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pasangan_jumlah([], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pasangan_jumlah([], 3) == []"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "pasangan_jumlah([5], 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pasangan_jumlah([5], 10) == []"
+              }
+            ]
+          },
+          "hint": "Indeks dalam dimulai dari i + 1.",
+          "solution": "def pasangan_jumlah(angka, target):\n    hasil = []\n    for i in range(len(angka)):\n        for j in range(i + 1, len(angka)):\n            if angka[i] + angka[j] == target:\n                hasil.append((angka[i], angka[j]))\n    return hasil",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Dua perulangan bersarang masing-masing 10 putaran menjalankan blok dalam berapa kali?",
+          "code": null,
+          "options": [
+            {
+              "label": "20",
+              "description": ""
+            },
+            {
+              "label": "10",
+              "description": ""
+            },
+            {
+              "label": "100",
+              "description": ""
+            },
+            {
+              "label": "1000",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Kalikan kedua jumlah putaran.",
+          "explanation": "Putaran dalam penuh untuk tiap putaran luar sehingga 10 kali 10."
+        },
+        {
+          "q": "Pada tabel [[1,2],[3,4]], berapa tabel[1][0]?",
+          "code": null,
+          "options": [
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "2",
+              "description": ""
+            },
+            {
+              "label": "3",
+              "description": ""
+            },
+            {
+              "label": "4",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Baris dulu lalu kolom.",
+          "explanation": "Baris indeks 1 adalah [3, 4] dan kolom indeks 0 adalah 3."
+        },
+        {
+          "q": "Mengapa indeks dalam pasangan dimulai dari i + 1?",
+          "code": null,
+          "options": [
+            {
+              "label": "Agar lebih lambat",
+              "description": ""
+            },
+            {
+              "label": "Agar pasangan tidak ganda dan tidak dengan diri sendiri",
+              "description": ""
+            },
+            {
+              "label": "Aturan Python",
+              "description": ""
+            },
+            {
+              "label": "Agar urut",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pikirkan pasangan (a, b) dan (b, a).",
+          "explanation": "Setiap pasangan hanya dihitung sekali."
+        },
+        {
+          "q": "Untuk n elemen, dua perulangan bersarang menjalankan blok dalam kira-kira?",
+          "code": null,
+          "options": [
+            {
+              "label": "n kali",
+              "description": ""
+            },
+            {
+              "label": "n kali n",
+              "description": ""
+            },
+            {
+              "label": "2 kali n",
+              "description": ""
+            },
+            {
+              "label": "log n",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kalikan.",
+          "explanation": "Pertumbuhannya kuadrat terhadap n."
+        },
+        {
+          "q": "Struktur data dasar untuk tabel tanpa pustaka?",
+          "code": null,
+          "options": [
+            {
+              "label": "String",
+              "description": ""
+            },
+            {
+              "label": "List berisi list",
+              "description": ""
+            },
+            {
+              "label": "Set",
+              "description": ""
+            },
+            {
+              "label": "Tuple kosong",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Cikal bakal array dua dimensi.",
+          "explanation": "List dalam list merepresentasikan baris dan kolom."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memulai indeks dalam dari nol saat mencari pasangan. Lebih baik: Mulai dari i + 1 agar pasangan tidak ganda.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memulai indeks dalam dari nol saat mencari pasangan.",
+          "fix": "Mulai dari i + 1 agar pasangan tidak ganda."
+        },
+        {
+          "mistake": "Tidak menguji tabel kosong atau satu elemen.",
+          "fix": "Selalu uji kasus tepi."
+        },
+        {
+          "mistake": "Memakai perulangan bersarang pada data sangat besar.",
+          "fix": "Perkirakan jumlah operasi dan cari pendekatan yang lebih efisien."
+        }
+      ],
+      "summary": [
+        "Perulangan bersarang menjalankan putaran dalam penuh untuk tiap putaran luar.",
+        "Tabel kecil bisa dipakai sebagai list berisi list.",
+        "Penyaringan dan transformasi memakai perulangan dengan if dan append.",
+        "Perulangan bersarang tumbuh kuadrat sehingga perlu diwaspadai pada data besar."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Perulangan bersarang dan pola umum"
+          },
+          {
+            "type": "text",
+            "source": "Jumlah per baris memakai dua perulangan, diagonal memakai satu indeks, dan transpos menukar peran baris dan kolom."
+          },
+          {
+            "type": "code",
+            "source": "tabel = [\n    [1, 2, 3],\n    [4, 5, 6],\n    [7, 8, 9],\n]\ntotal_baris = []\nfor baris in tabel:\n    s = 0\n    for sel in baris:\n        s += sel\n    total_baris.append(s)\nprint(total_baris)\n\ndiagonal = 0\nfor i in range(len(tabel)):\n    diagonal += tabel[i][i]\nprint(diagonal)\n\ntranspos = []\nfor j in range(len(tabel[0])):\n    kolom = []\n    for i in range(len(tabel)):\n        kolom.append(tabel[i][j])\n    transpos.append(kolom)\nprint(transpos)"
+          },
+          {
+            "type": "text",
+            "source": "Penyaringan memakai kondisi di dalam perulangan. Pengelompokan per kota memakai `setdefault` lalu rata-rata dihitung per kelompok."
+          },
+          {
+            "type": "code",
+            "source": "data = [\n    {\"nama\": \"Ani\", \"kota\": \"Depok\", \"skor\": 82},\n    {\"nama\": \"Budi\", \"kota\": \"Jakarta\", \"skor\": 55},\n    {\"nama\": \"Citra\", \"kota\": \"Depok\", \"skor\": 91},\n    {\"nama\": \"Dedi\", \"kota\": \"Bogor\", \"skor\": 67},\n]\nlulus = []\nfor r in data:\n    if r[\"skor\"] >= 60:\n        lulus.append(r[\"nama\"])\nprint(lulus)\n\nper_kota = {}\nfor r in data:\n    per_kota.setdefault(r[\"kota\"], []).append(r[\"skor\"])\nrata = {}\nfor kota, skors in per_kota.items():\n    rata[kota] = sum(skors) / len(skors)\nprint(rata)"
+          },
+          {
+            "type": "text",
+            "source": "Indeks dalam dimulai dari `i + 1` sehingga tiap pasangan dihitung sekali. Dua perulangan 100 kali menghasilkan 10.000 operasi."
+          },
+          {
+            "type": "code",
+            "source": "def pasangan_jumlah(angka, target):\n    hasil = []\n    for i in range(len(angka)):\n        for j in range(i + 1, len(angka)):\n            if angka[i] + angka[j] == target:\n                hasil.append((angka[i], angka[j]))\n    return hasil\n\nprint(pasangan_jumlah([1, 2, 3, 4, 5, 6], 7))\nprint(pasangan_jumlah([2, 2, 2], 4))\njumlah_operasi = 0\nn = 100\nfor i in range(n):\n    for j in range(n):\n        jumlah_operasi += 1\nprint(jumlah_operasi)"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa kode dan contoh singkat yang cukup jelas dalam teks dan latihan.",
+    "brief": []
+  },
+  "references": []
+}

@@ -1,0 +1,1520 @@
+{
+  "schema_version": 2,
+  "course_id": "A2",
+  "module_no": 5,
+  "title": "Eigenvalue dan eigenvector",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menghitung dan menafsirkan eigenvalue serta eigenvector",
+    "Memakai diagonalisasi dan dekomposisi spektral",
+    "Menerapkan eigen pada power iteration, rantai Markov, dan PageRank"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A2-05-1",
+    "exercise_id": "A2-05-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def eigenvector_2x2(m, lam):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A2-05-1",
+      "title": "Eigenvalue dan eigenvector",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami eigenvector sebagai arah yang hanya diskalakan oleh sebuah matriks",
+        "Menghitung eigenvalue 2x2 lewat persamaan karakteristik",
+        "Memakai np.linalg.eig dan memverifikasi hasilnya",
+        "Menafsirkan eigenvalue sebagai faktor penskalaan sepanjang arah tertentu"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Arah yang tidak berubah",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Arah yang tidak berubah\n\nSebuah matriks `A` mengubah hampir semua vektor: panjangnya berubah dan arahnya berputar. Namun untuk sebagian arah khusus, matriks hanya meregangkan atau memampatkan vektor tanpa mengubah arahnya. Vektor seperti itu disebut **eigenvector**, dan faktor peregangannya disebut **eigenvalue**. Secara matematis: `A v = lambda v`, dengan `v` tak nol dan `lambda` sebuah bilangan.\n\nContoh: `A = [[2, 0], [0, 3]]` meregangkan sumbu pertama dua kali dan sumbu kedua tiga kali. Vektor `[1, 0]` adalah eigenvector dengan eigenvalue 2, dan `[0, 1]` adalah eigenvector dengan eigenvalue 3. Pada matriks yang tidak diagonal, arah khusus itu tidak lagi searah dengan sumbu koordinat, tetapi tetap ada.\n\nMengapa ini penting? Bayangkan kamu menekan sebuah karet gelang pada dua arah berbeda: ada arah tempat karet hanya memanjang tanpa berputar. Itulah arah eigen. Eigenvector mengungkap struktur terdalam sebuah transformasi. Dalam data science, eigenvector matriks kovariansi menunjukkan arah variasi terbesar dalam data, dasar PCA. Dalam analisis jaringan, eigenvector menentukan simpul paling berpengaruh. Dalam sistem dinamis, eigenvalue menentukan apakah sebuah sistem stabil."
+            },
+            {
+              "type": "code_example",
+              "filename": "arah_khusus.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[2.0, 0.0], [0.0, 3.0]])\nfor v in ([1.0, 0.0], [0.0, 1.0], [1.0, 1.0]):\n    v = np.array(v)\n    print((A @ v).tolist())\n\nB = np.array([[2.0, 1.0], [1.0, 2.0]])\nv = np.array([1.0, 1.0])\nprint((B @ v).tolist())\nw = np.array([1.0, -1.0])\nprint((B @ w).tolist())",
+              "expected_output_note": "[2.0, 0.0]\n[0.0, 3.0]\n[2.0, 3.0]\n[3.0, 3.0]\n[1.0, -1.0]",
+              "explanation": "Pada matriks diagonal sumbu koordinat tetap searah setelah transformasi, sedangkan `[1, 1]` berubah arah. Pada `B`, vektor `[1, 1]` diskalakan tiga kali dan `[1, -1]` diskalakan satu kali."
+            },
+            {
+              "type": "text",
+              "markdown": "## Persamaan karakteristik\n\nUntuk mencari eigenvalue, tulis `A v = lambda v` sebagai `(A - lambda I) v = 0`. Agar ada `v` tak nol yang memenuhinya, matriks `A - lambda I` harus singular, yaitu determinannya nol: `det(A - lambda I) = 0`. Persamaan ini disebut **persamaan karakteristik**, dan akar-akarnya adalah eigenvalue.\n\nUntuk matriks `2 x 2`, `[[a, b], [c, d]]`, persamaannya menjadi `lambda^2 - (a + d) lambda + (a d - b c) = 0`. Koefisiennya punya makna: `a + d` adalah **trace** (jumlah diagonal) dan `a d - b c` adalah **determinan**. Jadi `lambda^2 - trace * lambda + det = 0`, yang bisa diselesaikan dengan rumus abc.\n\nLangkah ini tampak abstrak, tetapi pada praktiknya hanya perlu menghitung trace dan determinan lalu menyelesaikan persamaan kuadrat sederhana. Setelah eigenvalue ditemukan, eigenvector didapat dengan menyelesaikan `(A - lambda I) v = 0` untuk tiap `lambda`. Eigenvector tidak tunggal: kelipatan skalar eigenvector juga eigenvector, jadi biasanya kita menormalkannya menjadi panjang satu."
+            },
+            {
+              "type": "code_example",
+              "filename": "persamaan_karakteristik.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef eigen_2x2(m):\n    (a, b), (c, d) = m\n    tr = a + d\n    det = a * d - b * c\n    disk = tr * tr - 4 * det\n    akar = disk ** 0.5\n    return sorted([(tr - akar) / 2, (tr + akar) / 2])\n\nprint(eigen_2x2([[2, 1], [1, 2]]))\nprint(eigen_2x2([[4, 1], [2, 3]]))\nprint(sorted(np.linalg.eigvals(np.array([[4.0, 1.0], [2.0, 3.0]])).real.round(4).tolist()))\n\nA = np.array([[4.0, 1.0], [2.0, 3.0]])\nfor lam in (2.0, 5.0):\n    print(round(float(np.linalg.det(A - lam * np.eye(2))), 6))",
+              "expected_output_note": "[1.0, 3.0]\n[2.0, 5.0]\n[2.0, 5.0]\n0.0\n0.0",
+              "explanation": "Rumus trace dan determinan memberi eigenvalue 2x2. Pada eigenvalue yang benar, matriks `A - lambda I` singular sehingga determinannya nol."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Pemeriksaan cepat",
+              "markdown": "Untuk matriks 2x2, jumlah eigenvalue sama dengan trace dan hasil kalinya sama dengan determinan. Ini jalan pintas bagus untuk memeriksa jawabanmu."
+            }
+          ],
+          "quick_check": {
+            "question": "Persamaan dasar eigen?",
+            "options": [
+              "A v = lambda v",
+              "A v = v"
+            ],
+            "answer_index": 0,
+            "explanation": "Eigenvector hanya diskalakan oleh eigenvalue.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Memakai np.linalg.eig",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memakai np.linalg.eig\n\nUntuk matriks umum, gunakan `np.linalg.eig(A)`. Fungsi ini mengembalikan dua hal: array eigenvalue, dan matriks yang **kolom-kolomnya** adalah eigenvector yang bersesuaian. Perhatikan bahwa eigenvector berada di kolom, bukan baris, kesalahan yang sangat umum. Eigenvector yang dikembalikan sudah dinormalkan menjadi panjang satu.\n\nUrutan eigenvalue tidak dijamin, dan tanda eigenvector bisa positif atau negatif. Karena itu jangan bergantung pada urutan atau tanda saat menulis tes. Cara andal memverifikasi hasil adalah memeriksa persamaan dasar: `A v` harus sama dengan `lambda v` untuk tiap pasangan.\n\nEigenvalue bisa berupa bilangan kompleks, misalnya pada matriks rotasi, yang tidak punya arah real yang tetap. Untuk matriks simetris real, semua eigenvalue pasti real, dan lebih baik memakai `np.linalg.eigh` yang dirancang khusus untuk itu: lebih cepat, lebih akurat, dan mengurutkan eigenvalue dari kecil ke besar."
+            },
+            {
+              "type": "code_example",
+              "filename": "eig_numpy.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[4.0, 1.0], [2.0, 3.0]])\nnilai, vektor = np.linalg.eig(A)\nurut = np.argsort(-nilai.real)\nnilai, vektor = nilai.real[urut], vektor.real[:, urut]\nfor i in range(2):\n    v = vektor[:, i]\n    print(round(float(nilai[i]), 4), np.allclose(A @ v, nilai[i] * v), round(float(np.linalg.norm(v)), 4))\n\nS = np.array([[2.0, 1.0], [1.0, 2.0]])\nn2, v2 = np.linalg.eigh(S)\nprint(n2.round(4).tolist(), np.allclose(S @ v2, v2 * n2))\n\nR = np.array([[0.0, -1.0], [1.0, 0.0]])\nprint(np.linalg.eigvals(R))",
+              "expected_output_note": "5.0 True 1.0\n2.0 True 1.0\n[1.0, 3.0] True\n[0.+1.j 0.-1.j]",
+              "explanation": "Kolom matriks vektor adalah eigenvector dan memenuhi `A v = lambda v`. Matriks simetris memakai `eigh` dengan eigenvalue terurut, dan rotasi 90 derajat punya eigenvalue kompleks."
+            }
+          ],
+          "quick_check": {
+            "question": "Jumlah eigenvalue sama dengan?",
+            "options": [
+              "Determinan",
+              "Trace"
+            ],
+            "answer_index": 1,
+            "explanation": "Jumlah diagonal.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Tafsir geometris dan jumlah eigenvector",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tafsir geometris dan jumlah eigenvector\n\nEigenvalue memberi tahu apa yang terjadi sepanjang tiap arah khusus. Nilai lebih besar dari satu meregangkan, antara nol dan satu memampatkan, negatif membalik arah sekaligus meregangkan atau memampatkan, dan nol meruntuhkan arah itu sepenuhnya. Matriks dengan eigenvalue nol singular, sebab ada arah yang hilang.\n\nMatriks `n x n` memiliki `n` eigenvalue bila dihitung dengan kelipatan dan boleh kompleks. Namun jumlah eigenvector yang bebas linear bisa kurang dari `n`. Matriks seperti `[[1, 1], [0, 1]]` hanya punya satu arah eigen walau eigenvalue 1 muncul dua kali. Matriks demikian disebut *defektif* dan tidak bisa didiagonalkan.\n\nKabar baiknya, matriks simetris real, yang paling sering muncul dalam statistik, tidak pernah defektif. Ia selalu punya `n` eigenvector yang saling ortogonal. Itu fakta kunci di balik PCA dan akan dimanfaatkan penuh pada pelajaran selanjutnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil kali eigenvalue sama dengan?",
+            "options": [
+              "Determinan",
+              "Trace"
+            ],
+            "answer_index": 0,
+            "explanation": "Hasil kali eigenvalue adalah determinan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-05-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `trace(m)` yang mengembalikan jumlah elemen diagonal matriks persegi (list of list).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def trace(m):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "trace([[2, 1], [1, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert trace([[2, 1], [1, 2]]) == 4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "trace([[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert trace([[5]]) == 5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "trace([[1, 2, 3], [4, 5, 6], [7, 8, 9]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert trace([[1, 2, 3], [4, 5, 6], [7, 8, 9]]) == 15"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "trace([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert trace([]) == 0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan m[i][i].",
+          "solution": "def trace(m):\n    return sum(m[i][i] for i in range(len(m)))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-05-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `adalah_eigen(A, v, lam)` yang mengembalikan `True` bila `A v = lam v` dalam toleransi 1e-9, untuk `A` list of list, `v` list, dan `lam` bilangan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def adalah_eigen(A, v, lam):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "adalah_eigen([[2, 1], [1, 2]], [1, 1], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert adalah_eigen([[2, 1], [1, 2]], [1, 1], 3) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "adalah_eigen([[2, 1], [1, 2]], [1, -1], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert adalah_eigen([[2, 1], [1, 2]], [1, -1], 1) is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "adalah_eigen([[2, 1], [1, 2]], [1, 0], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert adalah_eigen([[2, 1], [1, 2]], [1, 0], 2) is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "adalah_eigen([[2, 0], [0, 3]], [0, 5], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert adalah_eigen([[2, 0], [0, 3]], [0, 5], 3) is True"
+              }
+            ]
+          },
+          "hint": "Hitung A v lalu bandingkan dengan lam kali v komponen demi komponen.",
+          "solution": "def adalah_eigen(A, v, lam):\n    av = [sum(a * b for a, b in zip(baris, v)) for baris in A]\n    return all(abs(x - lam * y) < 1e-9 for x, y in zip(av, v))",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-05-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `eigenvalue_2x2(m)` yang mengembalikan list dua eigenvalue real matriks 2x2 terurut naik, dibulatkan 6 desimal, memakai trace dan determinan.",
+          "note": "Bila diskriminan negatif kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "def eigenvalue_2x2(m):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "eigenvalue_2x2([[2, 1], [1, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert eigenvalue_2x2([[2, 1], [1, 2]]) == [1.0, 3.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "eigenvalue_2x2([[4, 1], [2, 3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert eigenvalue_2x2([[4, 1], [2, 3]]) == [2.0, 5.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "eigenvalue_2x2([[0, -1], [1, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert eigenvalue_2x2([[0, -1], [1, 0]]) is None"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "eigenvalue_2x2([[5, 0], [0, 5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert eigenvalue_2x2([[5, 0], [0, 5]]) == [5.0, 5.0]"
+              }
+            ]
+          },
+          "hint": "Selesaikan lambda kuadrat dikurangi trace kali lambda ditambah det sama dengan nol.",
+          "solution": "def eigenvalue_2x2(m):\n    (a, b), (c, d) = m\n    tr, det = a + d, a * d - b * c\n    disk = tr * tr - 4 * det\n    if disk < 0:\n        return None\n    akar = disk ** 0.5\n    return [round((tr - akar) / 2, 6), round((tr + akar) / 2, 6)]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-05-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `eigenvector_2x2(m, lam)` yang mengembalikan satu eigenvector satuan (list dua komponen dibulatkan 6 desimal, komponen pertama tidak negatif) untuk eigenvalue `lam` dari matriks 2x2 yang bukan kelipatan identitas.",
+          "note": "Selesaikan `(A - lam I) v = 0` dengan memakai baris yang tidak nol.",
+          "filename": "solution.py",
+          "starter_code": "def eigenvector_2x2(m, lam):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = eigenvector_2x2([[2, 1], [1, 2]], 3)\nassert r == [0.707107, 0.707107]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r2 = eigenvector_2x2([[2, 1], [1, 2]], 1)\nassert r2 == [0.707107, -0.707107]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r3 = eigenvector_2x2([[4, 1], [2, 3]], 5)\nassert r3 == [0.707107, 0.707107]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r4 = eigenvector_2x2([[2, 0], [0, 3]], 3)\nassert r4 == [0.0, 1.0]"
+              }
+            ]
+          },
+          "hint": "Dari baris (a - lam, b) vektor (b, lam - a) memenuhi persamaan. Bila baris itu nol pakai baris kedua. Normalkan dan atur tandanya.",
+          "solution": "def eigenvector_2x2(m, lam):\n    (a, b), (c, d) = m\n    if abs(a - lam) > 1e-12 or abs(b) > 1e-12:\n        v = (b, lam - a)\n    else:\n        v = (lam - d, c)\n    if abs(v[0]) < 1e-12 and abs(v[1]) < 1e-12:\n        v = (lam - d, c)\n    n = (v[0] ** 2 + v[1] ** 2) ** 0.5\n    if n < 1e-12:\n        v = (1.0, 0.0)\n        n = 1.0\n    x, y = v[0] / n, v[1] / n\n    if x < -1e-12 or (abs(x) < 1e-12 and y < 0):\n        x, y = -x, -y\n    return [round(x + 0.0, 6), round(y + 0.0, 6)]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Persamaan dasar eigen?",
+          "code": null,
+          "options": [
+            {
+              "label": "A v = v",
+              "description": ""
+            },
+            {
+              "label": "A v = lambda v",
+              "description": ""
+            },
+            {
+              "label": "A + v = lambda",
+              "description": ""
+            },
+            {
+              "label": "A v = 0",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Arah tetap.",
+          "explanation": "Eigenvector hanya diskalakan oleh eigenvalue."
+        },
+        {
+          "q": "Jumlah eigenvalue sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Determinan",
+              "description": ""
+            },
+            {
+              "label": "Trace",
+              "description": ""
+            },
+            {
+              "label": "Peringkat",
+              "description": ""
+            },
+            {
+              "label": "Norma",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Diagonal.",
+          "explanation": "Jumlah diagonal."
+        },
+        {
+          "q": "Hasil kali eigenvalue sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Trace",
+              "description": ""
+            },
+            {
+              "label": "Determinan",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Satu",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Singular bila nol.",
+          "explanation": "Hasil kali eigenvalue adalah determinan."
+        },
+        {
+          "q": "Di mana eigenvector pada hasil eig?",
+          "code": null,
+          "options": [
+            {
+              "label": "Di baris",
+              "description": ""
+            },
+            {
+              "label": "Di kolom",
+              "description": ""
+            },
+            {
+              "label": "Di diagonal",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "vektor[:, i].",
+          "explanation": "Kolom ke-i untuk eigenvalue ke-i."
+        },
+        {
+          "q": "Matriks simetris real memiliki eigenvalue?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kompleks",
+              "description": ""
+            },
+            {
+              "label": "Selalu real",
+              "description": ""
+            },
+            {
+              "label": "Selalu nol",
+              "description": ""
+            },
+            {
+              "label": "Negatif",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dipakai PCA.",
+          "explanation": "Semua real dan eigenvectornya ortogonal."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengambil baris matriks eigenvector dari eig. Lebih baik: Eigenvector ada di kolom.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengambil baris matriks eigenvector dari eig.",
+          "fix": "Eigenvector ada di kolom."
+        },
+        {
+          "mistake": "Mengandalkan urutan atau tanda hasil eig.",
+          "fix": "Verifikasi dengan A v = lambda v."
+        },
+        {
+          "mistake": "Memakai eig untuk matriks simetris.",
+          "fix": "Pakai eigh yang lebih akurat dan terurut."
+        }
+      ],
+      "summary": [
+        "Eigenvector adalah arah yang hanya diskalakan oleh matriks dengan faktor eigenvalue.",
+        "Eigenvalue berasal dari det(A - lambda I) = 0 dan jumlahnya sama dengan trace.",
+        "np.linalg.eig mengembalikan eigenvector di kolom, eigh untuk matriks simetris.",
+        "Matriks simetris real punya eigenvector ortogonal lengkap."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Eigenvalue dan eigenvector"
+          },
+          {
+            "type": "text",
+            "source": "Pada matriks diagonal sumbu koordinat tetap searah setelah transformasi, sedangkan `[1, 1]` berubah arah. Pada `B`, vektor `[1, 1]` diskalakan tiga kali dan `[1, -1]` diskalakan satu kali."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[2.0, 0.0], [0.0, 3.0]])\nfor v in ([1.0, 0.0], [0.0, 1.0], [1.0, 1.0]):\n    v = np.array(v)\n    print((A @ v).tolist())\n\nB = np.array([[2.0, 1.0], [1.0, 2.0]])\nv = np.array([1.0, 1.0])\nprint((B @ v).tolist())\nw = np.array([1.0, -1.0])\nprint((B @ w).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Rumus trace dan determinan memberi eigenvalue 2x2. Pada eigenvalue yang benar, matriks `A - lambda I` singular sehingga determinannya nol."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef eigen_2x2(m):\n    (a, b), (c, d) = m\n    tr = a + d\n    det = a * d - b * c\n    disk = tr * tr - 4 * det\n    akar = disk ** 0.5\n    return sorted([(tr - akar) / 2, (tr + akar) / 2])\n\nprint(eigen_2x2([[2, 1], [1, 2]]))\nprint(eigen_2x2([[4, 1], [2, 3]]))\nprint(sorted(np.linalg.eigvals(np.array([[4.0, 1.0], [2.0, 3.0]])).real.round(4).tolist()))\n\nA = np.array([[4.0, 1.0], [2.0, 3.0]])\nfor lam in (2.0, 5.0):\n    print(round(float(np.linalg.det(A - lam * np.eye(2))), 6))"
+          },
+          {
+            "type": "text",
+            "source": "Kolom matriks vektor adalah eigenvector dan memenuhi `A v = lambda v`. Matriks simetris memakai `eigh` dengan eigenvalue terurut, dan rotasi 90 derajat punya eigenvalue kompleks."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[4.0, 1.0], [2.0, 3.0]])\nnilai, vektor = np.linalg.eig(A)\nurut = np.argsort(-nilai.real)\nnilai, vektor = nilai.real[urut], vektor.real[:, urut]\nfor i in range(2):\n    v = vektor[:, i]\n    print(round(float(nilai[i]), 4), np.allclose(A @ v, nilai[i] * v), round(float(np.linalg.norm(v)), 4))\n\nS = np.array([[2.0, 1.0], [1.0, 2.0]])\nn2, v2 = np.linalg.eigh(S)\nprint(n2.round(4).tolist(), np.allclose(S @ v2, v2 * n2))\n\nR = np.array([[0.0, -1.0], [1.0, 0.0]])\nprint(np.linalg.eigvals(R))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-05-2",
+      "title": "Diagonalisasi dan sifat eigen",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami diagonalisasi A = P D P^-1",
+        "Menghitung pangkat matriks dengan diagonalisasi",
+        "Memakai dekomposisi spektral untuk matriks simetris",
+        "Menghubungkan eigenvalue dengan trace, determinan, dan invers"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Diagonalisasi",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Diagonalisasi\n\nBila matriks `A` berukuran `n x n` memiliki `n` eigenvector yang bebas linear, kita dapat menulis `A = P D P^-1`. Kolom-kolom `P` adalah eigenvector, dan `D` adalah matriks diagonal berisi eigenvalue yang bersesuaian. Proses ini disebut **diagonalisasi**. Intinya: dalam sistem koordinat yang sumbunya adalah eigenvector, transformasi `A` hanya meregangkan tiap sumbu, tanpa memutar.\n\nBayangkan tiga langkah: `P^-1` mengubah koordinat dari sumbu biasa ke sumbu eigen, `D` meregangkan tiap sumbu, lalu `P` kembali ke sumbu biasa. Transformasi rumit menjadi sederhana bila dilihat dari sudut yang tepat. Ini ide besar aljabar linear: pilih basis yang membuat masalah mudah.\n\nDengan kata lain, diagonalisasi adalah cara mengganti kacamata agar matriks yang tampak rumit terlihat sebagai peregangan sederhana. Tidak semua matriks bisa didiagonalkan. Syaratnya cukup eigenvector bebas linear. Matriks defektif gagal, tetapi matriks simetris real selalu berhasil, dan eigenvector-nya bahkan ortogonal sehingga `P^-1` sama dengan `P^T`."
+            },
+            {
+              "type": "code_example",
+              "filename": "diagonalisasi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[4.0, 1.0], [2.0, 3.0]])\nnilai, P = np.linalg.eig(A)\nnilai, P = nilai.real, P.real\nD = np.diag(nilai)\nprint(np.allclose(P @ D @ np.linalg.inv(P), A))\nprint(sorted(nilai.round(4).tolist()))\n\nS = np.array([[2.0, 1.0], [1.0, 2.0]])\nn, Q = np.linalg.eigh(S)\nprint(np.allclose(Q @ np.diag(n) @ Q.T, S), np.allclose(Q.T @ Q, np.eye(2)))\n\ndefektif = np.array([[1.0, 1.0], [0.0, 1.0]])\nnilai2, P2 = np.linalg.eig(defektif)\nprint(nilai2.real.tolist(), round(float(abs(np.linalg.det(P2.real))), 6) < 1e-6)",
+              "expected_output_note": "True\n[2.0, 5.0]\nTrue True\n[1.0, 1.0] True",
+              "explanation": "`P D P^-1` merekonstruksi `A`. Untuk matriks simetris `P` ortogonal sehingga inversnya adalah transpos. Matriks defektif menghasilkan `P` yang hampir singular."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pangkat matriks\n\nKeuntungan terbesar diagonalisasi adalah menghitung pangkat matriks. Karena `A = P D P^-1`, maka `A^2 = P D P^-1 P D P^-1 = P D^2 P^-1`, dan secara umum `A^k = P D^k P^-1`. Memangkatkan matriks diagonal mudah: cukup memangkatkan tiap elemen diagonal. Jadi alih-alih mengalikan matriks `k` kali, kita hanya memangkatkan `n` bilangan.\n\nIni berguna untuk memahami perilaku jangka panjang. Bila semua eigenvalue bernilai mutlak kurang dari satu, `A^k` menuju nol saat `k` besar, sistem stabil. Bila ada eigenvalue yang bernilai mutlak lebih dari satu, `A^k` meledak. Bila eigenvalue terbesar tepat satu, sistem menuju keadaan tetap.\n\nCara ini menghemat banyak komputasi, terutama bila pangkatnya sangat besar atau matriksnya berukuran besar. Contoh klasik adalah barisan Fibonacci, yang dapat dihitung dengan memangkatkan matriks `[[1, 1], [1, 0]]`. Eigenvalue terbesarnya adalah rasio emas, dan inilah mengapa Fibonacci tumbuh secara eksponensial dengan laju rasio emas."
+            },
+            {
+              "type": "code_example",
+              "filename": "pangkat_matriks.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[4.0, 1.0], [2.0, 3.0]])\nnilai, P = np.linalg.eig(A)\nnilai, P = nilai.real, P.real\nk = 5\nAk = P @ np.diag(nilai ** k) @ np.linalg.inv(P)\nprint(np.allclose(Ak, np.linalg.matrix_power(A, k)))\nprint(Ak.round(2).tolist())\n\nF = np.array([[1.0, 1.0], [1.0, 0.0]])\nprint(np.linalg.matrix_power(F, 10).astype(int).tolist())\nnf = np.linalg.eigvals(F).real\nprint(round(float(max(nf)), 6), round((1 + 5 ** 0.5) / 2, 6))",
+              "expected_output_note": "True\n[[2094.0, 1031.0], [2062.0, 1063.0]]\n[[89, 55], [55, 34]]\n1.618034 1.618034",
+              "explanation": "Memangkatkan eigenvalue lalu kembali ke basis asal setara dengan memangkatkan matriks. Fibonacci muncul dari pangkat matriks dan eigenvalue terbesarnya adalah rasio emas."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Syarat diagonalisasi",
+              "markdown": "Rumus `A^k = P D^k P^-1` hanya berlaku bila `A` bisa didiagonalkan. Untuk matriks defektif, pakai `np.linalg.matrix_power` langsung."
+            }
+          ],
+          "quick_check": {
+            "question": "Bentuk diagonalisasi?",
+            "options": [
+              "A = P D P^-1",
+              "A = P + D"
+            ],
+            "answer_index": 0,
+            "explanation": "P berisi eigenvector dan D eigenvalue.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Dekomposisi spektral untuk matriks simetris",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dekomposisi spektral untuk matriks simetris\n\nUntuk matriks simetris real `S`, diagonalisasi mengambil bentuk istimewa: `S = Q D Q^T` dengan `Q` ortogonal. Ini disebut **dekomposisi spektral** atau teorema spektral. Ia setara dengan menulis `S` sebagai jumlah `lambda1 v1 v1^T + lambda2 v2 v2^T + ...`, yaitu jumlah matriks peringkat satu, masing-masing sepanjang satu eigenvector dan berbobot eigenvalue.\n\nBentuk jumlah ini sangat kuat. Bila kamu hanya menyimpan suku-suku dengan eigenvalue terbesar, kamu mendapat pendekatan terbaik peringkat rendah dari `S`. Itulah inti kompresi dan reduksi dimensi: buang arah-arah dengan eigenvalue kecil karena sumbangannya sedikit.\n\nMatriks kovariansi dan matriks korelasi selalu simetris, dan semua eigenvalue-nya tidak negatif. Eigenvalue nol atau sangat kecil menandakan arah tanpa variasi, tanda adanya redundansi antar fitur. Semua ini menjadi fondasi PCA di modul-modul berikutnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "dekomposisi_spektral.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nS = np.array([[4.0, 2.0], [2.0, 3.0]])\nnilai, Q = np.linalg.eigh(S)\nprint(nilai.round(4).tolist())\nrekon = sum(nilai[i] * np.outer(Q[:, i], Q[:, i]) for i in range(2))\nprint(np.allclose(rekon, S))\nperingkat1 = nilai[1] * np.outer(Q[:, 1], Q[:, 1])\nprint(peringkat1.round(3).tolist())\nprint(round(float(np.linalg.norm(S - peringkat1)), 4), round(float(nilai[0]), 4))\n\nrng = np.random.default_rng(0)\nX = rng.normal(size=(100, 3))\nkov = np.cov(X.T)\nprint(bool(np.all(np.linalg.eigvalsh(kov) >= 0)))",
+              "expected_output_note": "[1.4384, 5.5616]\nTrue\n[[3.455, 2.698], [2.698, 2.106]]\n1.4384 1.4384\nTrue",
+              "explanation": "Matriks simetris dapat ditulis sebagai jumlah matriks peringkat satu berbobot eigenvalue. Galat pendekatan peringkat satu sama dengan eigenvalue yang dibuang, dan matriks kovariansi memiliki eigenvalue tak negatif."
+            }
+          ],
+          "quick_check": {
+            "question": "Rumus pangkat dengan diagonalisasi?",
+            "options": [
+              "A^k = k A",
+              "A^k = P D^k P^-1"
+            ],
+            "answer_index": 1,
+            "explanation": "Cukup memangkatkan diagonal.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Hubungan eigenvalue dengan sifat lain",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Hubungan eigenvalue dengan sifat lain\n\nEigenvalue terhubung erat dengan konsep yang sudah kamu pelajari. Jumlahnya sama dengan trace, hasil kalinya sama dengan determinan, sehingga matriks singular tepat bila memiliki eigenvalue nol. Eigenvalue `A^-1` adalah kebalikan eigenvalue `A`, dengan eigenvector yang sama. Eigenvalue `A^k` adalah pangkat ke-`k` dari eigenvalue `A`. Eigenvalue `A + c I` adalah eigenvalue `A` ditambah `c`, dengan eigenvector sama.\n\nUntuk matriks simetris, bilangan kondisi sama dengan rasio nilai mutlak eigenvalue terbesar terhadap terkecil. Matriks simetris dengan semua eigenvalue positif disebut **positif definit**. Ini terjadi misalnya pada `X^T X` bila kolom `X` bebas linear. Matriks positif definit selalu punya invers dan menjadi syarat banyak algoritma optimasi.\n\nPengetahuan ini memberimu alat cepat. Dari eigenvalue saja kamu bisa menyimpulkan singular atau tidak, stabil atau tidak, serta baik atau buruknya kondisi. Latihan berikut melatih penggunaannya."
+            }
+          ],
+          "quick_check": {
+            "question": "Dekomposisi spektral berlaku untuk?",
+            "options": [
+              "Matriks simetris real",
+              "Semua matriks"
+            ],
+            "answer_index": 0,
+            "explanation": "S = Q D Q^T.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-05-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pangkat_diagonal(d, k)` yang menerima list elemen diagonal dan bilangan bulat `k` dan mengembalikan list elemen diagonal matriks diagonal itu dipangkatkan `k`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pangkat_diagonal(d, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pangkat_diagonal([2, 3], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat_diagonal([2, 3], 3) == [8, 27]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pangkat_diagonal([5], 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat_diagonal([5], 0) == [1]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pangkat_diagonal([], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat_diagonal([], 2) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pangkat_diagonal([0.5, 2], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat_diagonal([0.5, 2], 2) == [0.25, 4]"
+              }
+            ]
+          },
+          "hint": "Pangkatkan tiap elemen.",
+          "solution": "def pangkat_diagonal(d, k):\n    return [x ** k for x in d]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-05-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `stabil(eigenvalue)` yang mengembalikan `True` bila semua eigenvalue (list bilangan real) bernilai mutlak kurang dari 1, artinya pangkat matriks menuju nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def stabil(eigenvalue):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "stabil([0.5, -0.9])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert stabil([0.5, -0.9]) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "stabil([0.5, 1.0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert stabil([0.5, 1.0]) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "stabil([1.2, 0.1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert stabil([1.2, 0.1]) is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "stabil([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert stabil([]) is True"
+              }
+            ]
+          },
+          "hint": "Periksa semua nilai mutlak.",
+          "solution": "def stabil(eigenvalue):\n    return all(abs(x) < 1 for x in eigenvalue)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-05-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `fibonacci_matriks(n)` yang mengembalikan bilangan Fibonacci ke-`n` (dengan F(0)=0, F(1)=1) memakai pemangkatan matriks `[[1,1],[1,0]]` dengan perkalian matriks 2x2 manual dan pangkat berulang (kuadrat berulang).",
+          "note": "`n` boleh sampai 90.",
+          "filename": "solution.py",
+          "starter_code": "def fibonacci_matriks(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "fibonacci_matriks(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fibonacci_matriks(0) == 0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "fibonacci_matriks(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fibonacci_matriks(1) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "fibonacci_matriks(10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fibonacci_matriks(10) == 55"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "fibonacci_matriks(50)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fibonacci_matriks(50) == 12586269025"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "fibonacci_matriks(90)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fibonacci_matriks(90) == 2880067194370816120"
+              }
+            ]
+          },
+          "hint": "Kalikan matriks 2x2 dengan fungsi bantu dan pangkatkan dengan pembagian dua.",
+          "solution": "def fibonacci_matriks(n):\n    def kali(a, b):\n        return [[a[0][0] * b[0][0] + a[0][1] * b[1][0], a[0][0] * b[0][1] + a[0][1] * b[1][1]],\n                [a[1][0] * b[0][0] + a[1][1] * b[1][0], a[1][0] * b[0][1] + a[1][1] * b[1][1]]]\n    hasil = [[1, 0], [0, 1]]\n    dasar = [[1, 1], [1, 0]]\n    while n > 0:\n        if n % 2 == 1:\n            hasil = kali(hasil, dasar)\n        dasar = kali(dasar, dasar)\n        n //= 2\n    return hasil[0][1]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-05-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `rekonstruksi(nilai, vektor)` yang menerima list eigenvalue dan list eigenvector satuan (tiap eigenvector adalah list) dari matriks simetris, dan mengembalikan matriks `sum(lambda_i * v_i v_i^T)` sebagai list of list dibulatkan 6 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def rekonstruksi(nilai, vektor):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rekonstruksi([3, 1], [[r, r], [r, -r]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = 0.5 ** 0.5\nassert rekonstruksi([3, 1], [[r, r], [r, -r]]) == [[2.0, 1.0], [1.0, 2.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rekonstruksi([2, 3], [[1, 0], [0, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rekonstruksi([2, 3], [[1, 0], [0, 1]]) == [[2.0, 0.0], [0.0, 3.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rekonstruksi([5], [[1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rekonstruksi([5], [[1]]) == [[5.0]]"
+              }
+            ]
+          },
+          "hint": "Untuk tiap elemen (i, j) jumlahkan lambda kali v[i] kali v[j] atas seluruh pasangan.",
+          "solution": "def rekonstruksi(nilai, vektor):\n    n = len(vektor[0])\n    return [[round(sum(l * v[i] * v[j] for l, v in zip(nilai, vektor)) + 0.0, 6) for j in range(n)] for i in range(n)]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Bentuk diagonalisasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "A = P D P^-1",
+              "description": ""
+            },
+            {
+              "label": "A = P + D",
+              "description": ""
+            },
+            {
+              "label": "A = D P",
+              "description": ""
+            },
+            {
+              "label": "A = P^T",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Basis eigen.",
+          "explanation": "P berisi eigenvector dan D eigenvalue."
+        },
+        {
+          "q": "Rumus pangkat dengan diagonalisasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "A^k = P D^k P^-1",
+              "description": ""
+            },
+            {
+              "label": "A^k = k A",
+              "description": ""
+            },
+            {
+              "label": "A^k = D P^k",
+              "description": ""
+            },
+            {
+              "label": "A^k = A / k",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hanya D yang dipangkatkan.",
+          "explanation": "Cukup memangkatkan diagonal."
+        },
+        {
+          "q": "Dekomposisi spektral berlaku untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Semua matriks",
+              "description": ""
+            },
+            {
+              "label": "Matriks simetris real",
+              "description": ""
+            },
+            {
+              "label": "Matriks singular",
+              "description": ""
+            },
+            {
+              "label": "Matriks nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ortogonal.",
+          "explanation": "S = Q D Q^T."
+        },
+        {
+          "q": "Eigenvalue mana menandakan sistem stabil?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mutlak lebih dari 1",
+              "description": ""
+            },
+            {
+              "label": "Mutlak kurang dari 1",
+              "description": ""
+            },
+            {
+              "label": "Sama dengan 5",
+              "description": ""
+            },
+            {
+              "label": "Kompleks",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Mengecil.",
+          "explanation": "Pangkat menuju nol."
+        },
+        {
+          "q": "Matriks singular memiliki eigenvalue?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Negatif",
+              "description": ""
+            },
+            {
+              "label": "Kompleks",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Hasil kali nol.",
+          "explanation": "Determinan adalah hasil kali eigenvalue."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mendiagonalkan matriks defektif. Lebih baik: Periksa apakah ada n eigenvektor bebas linear.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mendiagonalkan matriks defektif.",
+          "fix": "Periksa apakah ada n eigenvektor bebas linear."
+        },
+        {
+          "mistake": "Memakai P^-1 mahal untuk matriks simetris.",
+          "fix": "Cukup transpos karena P ortogonal."
+        },
+        {
+          "mistake": "Mengira eigenvalue nol tidak penting.",
+          "fix": "Ia menandakan matriks singular."
+        }
+      ],
+      "summary": [
+        "Diagonalisasi menulis A = P D P^-1 dalam basis eigenvector.",
+        "Pangkat matriks dihitung dengan memangkatkan eigenvalue.",
+        "Matriks simetris memiliki dekomposisi spektral dengan basis ortogonal.",
+        "Eigenvalue menentukan stabilitas, singularitas, dan kondisi matriks."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Diagonalisasi dan sifat eigen"
+          },
+          {
+            "type": "text",
+            "source": "`P D P^-1` merekonstruksi `A`. Untuk matriks simetris `P` ortogonal sehingga inversnya adalah transpos. Matriks defektif menghasilkan `P` yang hampir singular."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[4.0, 1.0], [2.0, 3.0]])\nnilai, P = np.linalg.eig(A)\nnilai, P = nilai.real, P.real\nD = np.diag(nilai)\nprint(np.allclose(P @ D @ np.linalg.inv(P), A))\nprint(sorted(nilai.round(4).tolist()))\n\nS = np.array([[2.0, 1.0], [1.0, 2.0]])\nn, Q = np.linalg.eigh(S)\nprint(np.allclose(Q @ np.diag(n) @ Q.T, S), np.allclose(Q.T @ Q, np.eye(2)))\n\ndefektif = np.array([[1.0, 1.0], [0.0, 1.0]])\nnilai2, P2 = np.linalg.eig(defektif)\nprint(nilai2.real.tolist(), round(float(abs(np.linalg.det(P2.real))), 6) < 1e-6)"
+          },
+          {
+            "type": "text",
+            "source": "Memangkatkan eigenvalue lalu kembali ke basis asal setara dengan memangkatkan matriks. Fibonacci muncul dari pangkat matriks dan eigenvalue terbesarnya adalah rasio emas."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[4.0, 1.0], [2.0, 3.0]])\nnilai, P = np.linalg.eig(A)\nnilai, P = nilai.real, P.real\nk = 5\nAk = P @ np.diag(nilai ** k) @ np.linalg.inv(P)\nprint(np.allclose(Ak, np.linalg.matrix_power(A, k)))\nprint(Ak.round(2).tolist())\n\nF = np.array([[1.0, 1.0], [1.0, 0.0]])\nprint(np.linalg.matrix_power(F, 10).astype(int).tolist())\nnf = np.linalg.eigvals(F).real\nprint(round(float(max(nf)), 6), round((1 + 5 ** 0.5) / 2, 6))"
+          },
+          {
+            "type": "text",
+            "source": "Matriks simetris dapat ditulis sebagai jumlah matriks peringkat satu berbobot eigenvalue. Galat pendekatan peringkat satu sama dengan eigenvalue yang dibuang, dan matriks kovariansi memiliki eigenvalue tak negatif."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nS = np.array([[4.0, 2.0], [2.0, 3.0]])\nnilai, Q = np.linalg.eigh(S)\nprint(nilai.round(4).tolist())\nrekon = sum(nilai[i] * np.outer(Q[:, i], Q[:, i]) for i in range(2))\nprint(np.allclose(rekon, S))\nperingkat1 = nilai[1] * np.outer(Q[:, 1], Q[:, 1])\nprint(peringkat1.round(3).tolist())\nprint(round(float(np.linalg.norm(S - peringkat1)), 4), round(float(nilai[0]), 4))\n\nrng = np.random.default_rng(0)\nX = rng.normal(size=(100, 3))\nkov = np.cov(X.T)\nprint(bool(np.all(np.linalg.eigvalsh(kov) >= 0)))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-05-3",
+      "title": "Penerapan: power iteration, rantai Markov, dan PageRank",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung eigenvalue dominan dengan power iteration",
+        "Memahami distribusi stasioner rantai Markov sebagai eigenvector",
+        "Menyusun mini PageRank dari matriks tautan",
+        "Menghubungkan eigenvalue kovariansi dengan variansi arah utama data"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Power iteration",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Power iteration\n\nMenghitung semua eigenvalue matriks besar mahal, padahal sering kita hanya butuh yang terbesar. **Power iteration** adalah algoritma sederhana untuk itu. Mulai dari vektor acak `v`, ulangi: kalikan dengan `A`, lalu normalkan menjadi panjang satu. Setelah beberapa langkah, `v` mendekati eigenvector dengan eigenvalue terbesar mutlak, dan `v^T A v` mendekati eigenvalue itu.\n\nMengapa bekerja? Vektor awal adalah kombinasi eigenvector. Setiap perkalian dengan `A` meregangkan tiap komponen sesuai eigenvalue-nya, sehingga komponen dengan eigenvalue terbesar tumbuh paling cepat dan akhirnya mendominasi. Kecepatan konvergensi bergantung pada rasio eigenvalue terbesar kedua terhadap terbesar: makin kecil rasio, makin cepat.\n\nAlgoritma ini hanya butuh perkalian matriks-vektor, sehingga cocok untuk matriks raksasa dan jarang. Ia menjadi inti PageRank Google, dan versi lanjutannya dipakai dalam berbagai pustaka untuk menghitung SVD dan PCA besar."
+            },
+            {
+              "type": "code_example",
+              "filename": "power_iteration.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef power_iteration(A, langkah=100, benih=0):\n    rng = np.random.default_rng(benih)\n    v = rng.normal(size=A.shape[0])\n    v /= np.linalg.norm(v)\n    for _ in range(langkah):\n        w = A @ v\n        v = w / np.linalg.norm(w)\n    return float(v @ A @ v), v\n\nS = np.array([[4.0, 2.0], [2.0, 3.0]])\nlam, v = power_iteration(S)\nprint(round(lam, 4), round(float(np.linalg.eigvalsh(S)[-1]), 4))\nprint(np.allclose(S @ v, lam * v))\n\nB = np.array([[2.0, 1.0, 0.0], [1.0, 3.0, 1.0], [0.0, 1.0, 4.0]])\nlam2, _ = power_iteration(B, 200)\nprint(round(lam2, 4), round(float(np.linalg.eigvalsh(B)[-1]), 4))",
+              "expected_output_note": "5.5616 5.5616\nTrue\n4.7321 4.7321",
+              "explanation": "Power iteration konvergen ke eigenvalue terbesar dan hasilnya cocok dengan `eigvalsh`. Vektor akhirnya memenuhi `A v = lambda v`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rantai Markov\n\n**Rantai Markov** memodelkan sistem yang berpindah antar keadaan dengan peluang yang hanya bergantung pada keadaan saat ini. Peluang perpindahan disusun dalam **matriks transisi** `P`, dengan `P[i, j]` peluang pindah dari keadaan `i` ke `j`. Setiap baris berjumlah satu. Bila `pi` adalah vektor baris peluang keadaan sekarang, maka peluang setelah satu langkah adalah `pi P`.\n\nSetelah banyak langkah, banyak rantai konvergen ke **distribusi stasioner** `pi*` yang tidak lagi berubah: `pi* P = pi*`. Persamaan ini berbentuk `P^T v = v`, yaitu eigenvector dari `P^T` dengan eigenvalue satu. Jadi distribusi stasioner adalah eigenvector yang dinormalkan agar jumlahnya satu.\n\nDengan begitu, memahami perilaku jangka panjang sistem cukup dengan melihat satu eigenvector. Teori menjamin eigenvalue terbesar matriks transisi adalah satu, dan sisanya bernilai mutlak kurang dari atau sama dengan satu. Bila rantainya tak reduksibel dan aperiodik, eigenvalue satu itu unik, dan konvergensi pasti terjadi. Contoh pemakaiannya: prakiraan cuaca sederhana, model perilaku pengguna, dan pembangkit teks tingkat kata."
+            },
+            {
+              "type": "code_example",
+              "filename": "rantai_markov.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nP = np.array([[0.9, 0.1],\n              [0.5, 0.5]])\npi = np.array([1.0, 0.0])\nfor _ in range(50):\n    pi = pi @ P\nprint(pi.round(4).tolist())\n\nnilai, vektor = np.linalg.eig(P.T)\ni = int(np.argmax(nilai.real))\nstasioner = vektor[:, i].real\nstasioner = stasioner / stasioner.sum()\nprint(round(float(nilai[i].real), 4), stasioner.round(4).tolist())\nprint(np.allclose(stasioner @ P, stasioner))\nprint(sorted(np.abs(nilai).round(4).tolist()))",
+              "expected_output_note": "[0.8333, 0.1667]\n1.0 [0.8333, 0.1667]\nTrue\n[0.4, 1.0]",
+              "explanation": "Iterasi dari keadaan awal mana pun menuju distribusi stasioner `[5/6, 1/6]`. Distribusi itu adalah eigenvector `P^T` untuk eigenvalue satu, dan eigenvalue lainnya bernilai mutlak kurang dari satu."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Dua jebakan klasik",
+              "markdown": "Distribusi stasioner adalah eigenvector dari `P` transpos, bukan dari `P`. Ingat normalisasinya: bagi dengan jumlah elemen agar total peluang sama dengan satu, bukan dengan norma panjang."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang dihitung power iteration?",
+            "options": [
+              "Eigenvalue terbesar mutlak",
+              "Semua eigenvalue"
+            ],
+            "answer_index": 0,
+            "explanation": "Komponen dominan tumbuh paling cepat.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "PageRank mini",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## PageRank mini\n\n**PageRank** menilai pentingnya halaman web berdasarkan tautan masuk, dengan gagasan bahwa halaman penting adalah yang ditautkan oleh halaman penting lainnya. Bayangkan peselancar acak yang di setiap langkah mengikuti satu tautan keluar secara acak. Proporsi waktu jangka panjang yang ia habiskan di tiap halaman adalah skor halaman itu, yaitu distribusi stasioner rantai Markov web.\n\nAgar rantai selalu konvergen, dipakai faktor redaman `d`, biasanya 0,85: dengan peluang `d` peselancar mengikuti tautan, dan dengan peluang `1 - d` ia melompat ke halaman acak. Matriks yang terbentuk, `d M + (1 - d)/n * 1`, bersifat positif sehingga eigenvalue satunya unik, dan power iteration menemukan skornya dengan cepat.\n\nPeselancar acak itu hanyalah model, tetapi model sederhana ini terbukti sangat andal dalam memeringkat halaman. Ide ini jauh melampaui web. Ia dipakai untuk memeringkat simpul penting pada jaringan sosial, sitasi ilmiah, dan graf pengetahuan. Dengan eigenvector, pertanyaan \"siapa yang berpengaruh\" dijawab dengan satu perhitungan aljabar linear."
+            },
+            {
+              "type": "code_example",
+              "filename": "pagerank_mini.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ntautan = {0: [1, 2], 1: [2], 2: [0], 3: [2]}\nn = 4\nM = np.zeros((n, n))\nfor dari, ke in tautan.items():\n    for t in ke:\n        M[t, dari] = 1.0 / len(ke)\nd = 0.85\nG = d * M + (1 - d) / n * np.ones((n, n))\nr = np.ones(n) / n\nfor _ in range(100):\n    r = G @ r\nprint(r.round(4).tolist(), round(float(r.sum()), 4))\nprint(int(np.argmax(r)), int(np.argmin(r)))\nnilai, vektor = np.linalg.eig(G)\ni = int(np.argmax(nilai.real))\nv = vektor[:, i].real\nv = v / v.sum()\nprint(np.allclose(v, r, atol=1e-6))",
+              "expected_output_note": "[0.3725, 0.1958, 0.3941, 0.0375] 1.0\n2 3\nTrue",
+              "explanation": "Halaman 2 menerima tautan dari tiga halaman sehingga skornya tertinggi, sedangkan halaman 3 tanpa tautan masuk memiliki skor terendah. Hasil iterasi sama dengan eigenvector utama."
+            }
+          ],
+          "quick_check": {
+            "question": "Distribusi stasioner memenuhi?",
+            "options": [
+              "pi P = 0",
+              "pi P = pi"
+            ],
+            "answer_index": 1,
+            "explanation": "Tidak berubah setelah satu langkah.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Eigenvalue kovariansi dan arah utama",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Eigenvalue kovariansi dan arah utama\n\nHubungan terpenting dengan data science: eigenvector matriks kovariansi adalah **arah utama** variasi data, dan eigenvalue-nya adalah variansi sepanjang arah itu. Eigenvector dengan eigenvalue terbesar menunjuk arah tempat data paling menyebar. Jumlah semua eigenvalue sama dengan jumlah variansi semua fitur, yaitu trace kovariansi.\n\nProporsi variansi yang dijelaskan sebuah arah adalah eigenvalue-nya dibagi total. Bila dua eigenvalue pertama menjelaskan sembilan puluh lima persen variansi, data berdimensi tinggi pada dasarnya hidup dekat bidang dua dimensi, dan kita bisa mereduksinya tanpa banyak kehilangan informasi. Itulah PCA, topik modul terakhir kursus ini.\n\nPahami dulu hubungan ini dengan baik, karena hampir semua metode reduksi dimensi bertumpu padanya. Latihan berikut membangun alat dasar yang akan dipakai di sana: power iteration, distribusi stasioner, dan proporsi variansi dari eigenvalue."
+            }
+          ],
+          "quick_check": {
+            "question": "Jumlah tiap baris matriks transisi?",
+            "options": [
+              "1",
+              "0"
+            ],
+            "answer_index": 0,
+            "explanation": "Peluang total dari satu keadaan adalah satu.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-05-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `langkah_markov(pi, P)` yang mengembalikan vektor peluang baru `pi P` (list) dibulatkan 6 desimal untuk vektor baris `pi` dan matriks transisi `P` (list of list).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def langkah_markov(pi, P):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "langkah_markov([1, 0], P)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "P = [[0.9, 0.1], [0.5, 0.5]]\nassert langkah_markov([1, 0], P) == [0.9, 0.1]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "langkah_markov([0.5, 0.5], P)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_markov([0.5, 0.5], P) == [0.7, 0.3]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "langkah_markov([0, 1], P)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_markov([0, 1], P) == [0.5, 0.5]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "langkah_markov([1], [[1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_markov([1], [[1]]) == [1.0]"
+              }
+            ]
+          },
+          "hint": "Tiap komponen baru adalah jumlah pi[i] kali P[i][j].",
+          "solution": "def langkah_markov(pi, P):\n    n = len(P[0])\n    return [round(sum(pi[i] * P[i][j] for i in range(len(pi))) + 0.0, 6) for j in range(n)]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-05-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `proporsi_variansi(eigenvalue)` yang mengembalikan list proporsi tiap eigenvalue terhadap totalnya, terurut menurun, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def proporsi_variansi(eigenvalue):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "proporsi_variansi([1, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_variansi([1, 3]) == [0.75, 0.25]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "proporsi_variansi([2, 2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_variansi([2, 2, 4]) == [0.5, 0.25, 0.25]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "proporsi_variansi([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_variansi([5]) == [1.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "proporsi_variansi([1, 1, 1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_variansi([1, 1, 1, 1]) == [0.25, 0.25, 0.25, 0.25]"
+              }
+            ]
+          },
+          "hint": "Urutkan menurun lalu bagi tiap nilai dengan jumlah semuanya.",
+          "solution": "def proporsi_variansi(eigenvalue):\n    total = sum(eigenvalue)\n    return [round(x / total, 4) for x in sorted(eigenvalue, reverse=True)]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-05-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `eigenvalue_dominan(A, langkah=200)` yang menghitung eigenvalue terbesar mutlak matriks persegi `A` (list of list) dengan power iteration mulai dari vektor semua satu, tanpa NumPy.",
+          "note": "Kembalikan hasil dibulatkan 4 desimal. Gunakan hasil bagi Rayleigh `v.T A v` dengan `v` ternormalisasi.",
+          "filename": "solution.py",
+          "starter_code": "def eigenvalue_dominan(A, langkah=200):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "eigenvalue_dominan([[2, 0], [0, 3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert eigenvalue_dominan([[2, 0], [0, 3]]) == 3.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "eigenvalue_dominan([[4, 2], [2, 3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert eigenvalue_dominan([[4, 2], [2, 3]]) == 5.5616"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "eigenvalue_dominan([[2, 1], [1, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert eigenvalue_dominan([[2, 1], [1, 2]]) == 3.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "eigenvalue_dominan([[2, 1, 0], [1, 3, 1], [0,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert eigenvalue_dominan([[2, 1, 0], [1, 3, 1], [0, 1, 4]]) == 4.7321"
+              }
+            ]
+          },
+          "hint": "Kalikan matriks dengan v, normalkan, ulangi, lalu hitung v dot (A v) pada akhir.",
+          "solution": "def eigenvalue_dominan(A, langkah=200):\n    n = len(A)\n    v = [1.0] * n\n    def kali(v):\n        return [sum(a * b for a, b in zip(baris, v)) for baris in A]\n    for _ in range(langkah):\n        w = kali(v)\n        norma = sum(x * x for x in w) ** 0.5\n        v = [x / norma for x in w]\n    av = kali(v)\n    return round(sum(a * b for a, b in zip(v, av)), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-05-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `distribusi_stasioner(P, langkah=500)` yang mengembalikan distribusi stasioner matriks transisi `P` (list of list, baris berjumlah satu, rantai tak reduksibel dan aperiodik) dengan mengulang perkalian `pi P` dari distribusi seragam.",
+          "note": "Kembalikan list dibulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def distribusi_stasioner(P, langkah=500):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "distribusi_stasioner([[0.9, 0.1], [0.5, 0.5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert distribusi_stasioner([[0.9, 0.1], [0.5, 0.5]]) == [0.8333, 0.1667]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "distribusi_stasioner([[0.5, 0.5], [0.5, 0.5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert distribusi_stasioner([[0.5, 0.5], [0.5, 0.5]]) == [0.5, 0.5]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = distribusi_stasioner([[0.5, 0.25, 0.25], [0.5, 0.0, 0.5], [0.25, 0.25, 0.5]])\nassert r == [0.4, 0.2, 0.4]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "abs(sum(distribusi_stasioner([[0.2, 0.8], [0....",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(sum(distribusi_stasioner([[0.2, 0.8], [0.6, 0.4]])) - 1) < 1e-3"
+              }
+            ]
+          },
+          "hint": "Mulai dari 1/n untuk tiap keadaan dan kalikan berulang dengan P.",
+          "solution": "def distribusi_stasioner(P, langkah=500):\n    n = len(P)\n    pi = [1.0 / n] * n\n    for _ in range(langkah):\n        pi = [sum(pi[i] * P[i][j] for i in range(n)) for j in range(n)]\n    return [round(x, 4) for x in pi]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa yang dihitung power iteration?",
+          "code": null,
+          "options": [
+            {
+              "label": "Semua eigenvalue",
+              "description": ""
+            },
+            {
+              "label": "Eigenvalue terbesar mutlak",
+              "description": ""
+            },
+            {
+              "label": "Determinan",
+              "description": ""
+            },
+            {
+              "label": "Invers",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dominan.",
+          "explanation": "Komponen dominan tumbuh paling cepat."
+        },
+        {
+          "q": "Distribusi stasioner memenuhi?",
+          "code": null,
+          "options": [
+            {
+              "label": "pi P = pi",
+              "description": ""
+            },
+            {
+              "label": "pi P = 0",
+              "description": ""
+            },
+            {
+              "label": "pi + P = 1",
+              "description": ""
+            },
+            {
+              "label": "P = I",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Eigenvalue satu.",
+          "explanation": "Tidak berubah setelah satu langkah."
+        },
+        {
+          "q": "Jumlah tiap baris matriks transisi?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "n",
+              "description": ""
+            },
+            {
+              "label": "Bebas",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Peluang.",
+          "explanation": "Peluang total dari satu keadaan adalah satu."
+        },
+        {
+          "q": "Apa fungsi faktor redaman PageRank?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mempercepat web",
+              "description": ""
+            },
+            {
+              "label": "Menjamin konvergensi lewat lompatan acak",
+              "description": ""
+            },
+            {
+              "label": "Menghapus tautan",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Peselancar acak.",
+          "explanation": "Membuat matriks positif."
+        },
+        {
+          "q": "Eigenvalue kovariansi menyatakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mean",
+              "description": ""
+            },
+            {
+              "label": "Variansi sepanjang arah utama",
+              "description": ""
+            },
+            {
+              "label": "Korelasi",
+              "description": ""
+            },
+            {
+              "label": "Jumlah data",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "PCA.",
+          "explanation": "Eigenvector menunjuk arah dan eigenvalue memberi variansi."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengambil eigenvector P bukan P transpos untuk distribusi stasioner. Lebih baik: Pakai P transpos untuk vektor kolom atau pi P untuk vektor baris.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengambil eigenvector P bukan P transpos untuk distribusi stasioner.",
+          "fix": "Pakai P transpos untuk vektor kolom atau pi P untuk vektor baris."
+        },
+        {
+          "mistake": "Menormalkan distribusi dengan norma panjang.",
+          "fix": "Bagi dengan jumlah elemen agar total satu."
+        },
+        {
+          "mistake": "Mengira power iteration memberi semua eigenvalue.",
+          "fix": "Ia hanya memberi eigenvalue dominan."
+        }
+      ],
+      "summary": [
+        "Power iteration menemukan eigenvalue dominan lewat perkalian berulang dan normalisasi.",
+        "Distribusi stasioner rantai Markov adalah eigenvector P transpos untuk eigenvalue satu.",
+        "PageRank adalah distribusi stasioner peselancar acak dengan redaman.",
+        "Eigenvalue kovariansi memberi variansi sepanjang arah utama data."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Penerapan: power iteration, rantai Markov, dan PageRank"
+          },
+          {
+            "type": "text",
+            "source": "Power iteration konvergen ke eigenvalue terbesar dan hasilnya cocok dengan `eigvalsh`. Vektor akhirnya memenuhi `A v = lambda v`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef power_iteration(A, langkah=100, benih=0):\n    rng = np.random.default_rng(benih)\n    v = rng.normal(size=A.shape[0])\n    v /= np.linalg.norm(v)\n    for _ in range(langkah):\n        w = A @ v\n        v = w / np.linalg.norm(w)\n    return float(v @ A @ v), v\n\nS = np.array([[4.0, 2.0], [2.0, 3.0]])\nlam, v = power_iteration(S)\nprint(round(lam, 4), round(float(np.linalg.eigvalsh(S)[-1]), 4))\nprint(np.allclose(S @ v, lam * v))\n\nB = np.array([[2.0, 1.0, 0.0], [1.0, 3.0, 1.0], [0.0, 1.0, 4.0]])\nlam2, _ = power_iteration(B, 200)\nprint(round(lam2, 4), round(float(np.linalg.eigvalsh(B)[-1]), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Iterasi dari keadaan awal mana pun menuju distribusi stasioner `[5/6, 1/6]`. Distribusi itu adalah eigenvector `P^T` untuk eigenvalue satu, dan eigenvalue lainnya bernilai mutlak kurang dari satu."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nP = np.array([[0.9, 0.1],\n              [0.5, 0.5]])\npi = np.array([1.0, 0.0])\nfor _ in range(50):\n    pi = pi @ P\nprint(pi.round(4).tolist())\n\nnilai, vektor = np.linalg.eig(P.T)\ni = int(np.argmax(nilai.real))\nstasioner = vektor[:, i].real\nstasioner = stasioner / stasioner.sum()\nprint(round(float(nilai[i].real), 4), stasioner.round(4).tolist())\nprint(np.allclose(stasioner @ P, stasioner))\nprint(sorted(np.abs(nilai).round(4).tolist()))"
+          },
+          {
+            "type": "text",
+            "source": "Halaman 2 menerima tautan dari tiga halaman sehingga skornya tertinggi, sedangkan halaman 3 tanpa tautan masuk memiliki skor terendah. Hasil iterasi sama dengan eigenvector utama."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ntautan = {0: [1, 2], 1: [2], 2: [0], 3: [2]}\nn = 4\nM = np.zeros((n, n))\nfor dari, ke in tautan.items():\n    for t in ke:\n        M[t, dari] = 1.0 / len(ke)\nd = 0.85\nG = d * M + (1 - d) / n * np.ones((n, n))\nr = np.ones(n) / n\nfor _ in range(100):\n    r = G @ r\nprint(r.round(4).tolist(), round(float(r.sum()), 4))\nprint(int(np.argmax(r)), int(np.argmin(r)))\nnilai, vektor = np.linalg.eig(G)\ni = int(np.argmax(nilai.real))\nv = vektor[:, i].real\nv = v / v.sum()\nprint(np.allclose(v, r, atol=1e-6))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa perhitungan dan contoh kode yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

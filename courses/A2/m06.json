@@ -1,0 +1,1540 @@
+{
+  "schema_version": 2,
+  "course_id": "A2",
+  "module_no": 6,
+  "title": "Singular Value Decomposition",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memahami dan menghitung SVD",
+    "Memakai aproksimasi peringkat rendah untuk kompresi",
+    "Menerapkan SVD pada pseudoinvers, kuadrat terkecil, dan LSA"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A2-06-1",
+    "exercise_id": "A2-06-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def rekonstruksi_k(A, k):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A2-06-1",
+      "title": "Konsep Singular Value Decomposition",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami bentuk A = U S V^T untuk matriks sembarang ukuran",
+        "Membaca bentuk dan arti U, S, dan V^T dari np.linalg.svd",
+        "Menghubungkan nilai singular dengan eigenvalue dari A^T A",
+        "Memakai nilai singular untuk peringkat dan bilangan kondisi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari eigen ke SVD",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari eigen ke SVD\n\nEigenvalue dan eigenvector hanya didefinisikan untuk matriks persegi, dan tidak semua matriks persegi bisa didiagonalkan. Padahal data nyata hampir selalu berbentuk persegi panjang: seribu baris sampel dan dua puluh kolom fitur. Kita butuh alat yang bekerja untuk matriks apa pun. Alat itu adalah **Singular Value Decomposition** atau SVD, dan sering disebut dekomposisi paling berguna dalam aljabar linear terapan.\n\nTeoremanya sederhana: setiap matriks `A` berukuran `m x n` dapat ditulis sebagai `A = U S V^T`. Matriks `U` berukuran `m x m` dan `V` berukuran `n x n` keduanya ortogonal, sedangkan `S` berukuran `m x n` berisi bilangan tak negatif yang disebut **nilai singular** pada diagonalnya, terurut dari terbesar ke terkecil. Tidak ada syarat simetris, persegi, atau bisa didiagonalkan. SVD selalu ada."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tafsir geometris\n\nOrtogonal berarti rotasi atau pencerminan, jadi SVD menguraikan transformasi apa pun menjadi tiga langkah. Pertama `V^T` memutar ruang masukan. Kedua `S` meregangkan tiap sumbu dengan faktor nilai singular, sekaligus mengubah dimensi bila matriksnya persegi panjang. Ketiga `U` memutar hasilnya di ruang keluaran. Jadi lingkaran satuan selalu berubah menjadi elips, dan nilai singular adalah panjang sumbu elips itu.\n\nKolom `V` disebut **vektor singular kanan** dan kolom `U` disebut **vektor singular kiri**. Vektor singular kanan ke-`i` dipetakan oleh `A` menjadi vektor singular kiri ke-`i` dikalikan nilai singular ke-`i`. Nilai singular terbesar adalah peregangan maksimum yang bisa dilakukan `A` pada vektor satuan, yang sama dengan norma spektral matriks."
+            },
+            {
+              "type": "code_example",
+              "filename": "bentuk_svd.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[3.0, 2.0, 2.0], [2.0, 3.0, -2.0]])\nU, s, Vt = np.linalg.svd(A)\nprint(U.shape, s.shape, Vt.shape)\nprint(s.round(4).tolist())\nS = np.zeros((2, 3))\nS[:2, :2] = np.diag(s)\nprint(np.allclose(U @ S @ Vt, A))\nU2, s2, Vt2 = np.linalg.svd(A, full_matrices=False)\nprint(Vt2.shape)",
+              "expected_output_note": "(2, 2) (2,) (3, 3)\n[5.0, 3.0]\nTrue\n(2, 3)",
+              "explanation": "Fungsi mengembalikan nilai singular sebagai vektor satu dimensi sehingga `S` harus dirakit sendiri. Opsi `full_matrices=False` memberi bentuk ringkas yang lebih hemat dan cukup untuk hampir semua keperluan."
+            }
+          ],
+          "quick_check": {
+            "question": "Bentuk SVD?",
+            "options": [
+              "A = U S V^T",
+              "A = P D P^-1"
+            ],
+            "answer_index": 0,
+            "explanation": "U dan V ortogonal serta S berisi nilai singular.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Hubungan dengan eigenvalue",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Hubungan dengan eigenvalue\n\nSVD terkait erat dengan eigen. Dari `A = U S V^T` kita peroleh `A^T A = V S^T S V^T`. Ruas kanan adalah dekomposisi spektral matriks simetris `A^T A`, sehingga kolom `V` adalah eigenvector dari `A^T A`, dan kuadrat nilai singular adalah eigenvalue-nya. Dengan cara serupa, kolom `U` adalah eigenvector dari `A A^T`.\n\nAkibatnya, nilai singular adalah akar dari eigenvalue `A^T A`, dan selalu tak negatif karena `A^T A` positif semidefinit. Untuk matriks persegi, hasil kali semua nilai singular sama dengan nilai mutlak determinan. Bila matriksnya simetris positif definit, nilai singular sama dengan eigenvalue. Hubungan ini menjelaskan mengapa SVD dan PCA begitu dekat: PCA pada data terpusat adalah SVD dari matriks data itu sendiri."
+            },
+            {
+              "type": "code_example",
+              "filename": "hubungan_eigen.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[4.0, 0.0], [3.0, -5.0]])\nnilai = np.linalg.eigvalsh(A.T @ A)[::-1]\nprint(np.sqrt(nilai).round(4).tolist())\ns = np.linalg.svd(A, compute_uv=False)\nprint(s.round(4).tolist())\nprint(round(float(np.prod(s)), 4), round(abs(float(np.linalg.det(A))), 4))\nprint(round(float(np.linalg.norm(A, 2)), 4), round(float(s[0]), 4))",
+              "expected_output_note": "[6.3246, 3.1623]\n[6.3246, 3.1623]\n20.0 20.0\n6.3246 6.3246",
+              "explanation": "Akar eigenvalue dari `A^T A` sama dengan nilai singular. Hasil kali nilai singular sama dengan determinan mutlak dan nilai singular terbesar sama dengan norma spektral."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Jangan lewat A^T A",
+              "markdown": "Untuk menghitung nilai singular saja pakai `np.linalg.svd(A, compute_uv=False)`. Jangan membentuk `A^T A` secara eksplisit pada matriks yang kondisinya buruk karena itu mengkuadratkan bilangan kondisi dan menghilangkan presisi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peringkat dan bilangan kondisi\n\nNilai singular memberi cara paling andal untuk menghitung **peringkat**: peringkat adalah jumlah nilai singular yang tidak nol. Dalam komputer tidak ada angka yang tepat nol, jadi kita memakai ambang kecil. Nilai di bawah ambang dianggap nol. Itulah yang dilakukan `np.linalg.matrix_rank` secara internal.\n\nRasio nilai singular terbesar terhadap terkecil disebut **bilangan kondisi**. Bilangan ini mengukur seberapa besar galat kecil pada masukan diperbesar pada penyelesaian sistem linear. Nilai dekat satu berarti matriks sehat dan nilai sangat besar berarti hampir singular, sehingga hasil perhitungannya tidak bisa dipercaya. Dalam regresi, bilangan kondisi besar adalah tanda kolinearitas antar fitur."
+            },
+            {
+              "type": "code_example",
+              "filename": "peringkat_svd.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nB = np.array([[1.0, 2.0, 3.0], [2.0, 4.0, 6.0], [1.0, 0.0, 1.0]])\ns = np.linalg.svd(B, compute_uv=False)\nprint(int(np.sum(s > 1e-10)), np.linalg.matrix_rank(B))\nprint(bool(s[-1] < 1e-10))\nA = np.array([[3.0, 2.0, 2.0], [2.0, 3.0, -2.0]])\nprint(round(float(np.linalg.cond(A)), 4))",
+              "expected_output_note": "2 2\nTrue\n1.6667",
+              "explanation": "Baris kedua `B` adalah dua kali baris pertama sehingga satu nilai singularnya hampir nol dan peringkatnya dua. Bilangan kondisi `A` adalah 5 dibagi 3."
+            }
+          ],
+          "quick_check": {
+            "question": "SVD berlaku untuk?",
+            "options": [
+              "Hanya matriks simetris",
+              "Semua matriks"
+            ],
+            "answer_index": 1,
+            "explanation": "SVD selalu ada.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mengapa SVD begitu penting",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa SVD begitu penting\n\nSVD sering disebut pisau lipat aljabar linear karena satu dekomposisi ini menjawab banyak pertanyaan sekaligus. Dari nilai singular kita membaca peringkat, bilangan kondisi, dan norma matriks. Dari vektor singular kita memperoleh basis ortonormal untuk ruang kolom dan ruang baris, serta ruang nol. Dari potongan sebagian suku kita mendapat aproksimasi terbaik berperingkat rendah, dan dari semuanya bersama kita menyusun pseudoinvers.\n\nKarena faktor `U` dan `V` ortogonal, algoritmenya stabil secara numerik. Rotasi tidak memperbesar galat pembulatan, jadi SVD menjadi pilihan utama saat ketepatan penting. Harganya adalah waktu hitung yang lebih besar dari dekomposisi lain, tetapi untuk data berukuran menengah biaya itu hampir selalu layak dibayar. Pelajaran berikutnya menunjukkan hasil yang bisa dipetik darinya."
+            }
+          ],
+          "quick_check": {
+            "question": "Kuadrat nilai singular adalah eigenvalue dari?",
+            "options": [
+              "A^T A",
+              "A"
+            ],
+            "answer_index": 0,
+            "explanation": "A^T A = V S^T S V^T.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-06-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bentuk_svd(m, n, penuh)` yang mengembalikan tuple tiga bentuk `(bentuk_U, bentuk_s, bentuk_Vt)` untuk matriks `m x n`.",
+          "note": "Bila `penuh` bernilai `True` gunakan bentuk penuh, bila tidak gunakan bentuk ringkas.",
+          "filename": "solution.py",
+          "starter_code": "def bentuk_svd(m, n, penuh):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bentuk_svd(2, 3, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bentuk_svd(2, 3, True) == ((2, 2), (2,), (3, 3))"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bentuk_svd(2, 3, False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bentuk_svd(2, 3, False) == ((2, 2), (2,), (2, 3))"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bentuk_svd(5, 2, False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bentuk_svd(5, 2, False) == ((5, 2), (2,), (2, 2))"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bentuk_svd(4, 4, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bentuk_svd(4, 4, True) == ((4, 4), (4,), (4, 4))"
+              }
+            ]
+          },
+          "hint": "Banyak nilai singular adalah min(m, n). Pada bentuk penuh U adalah m x m dan Vt adalah n x n.",
+          "solution": "def bentuk_svd(m, n, penuh):\n    k = min(m, n)\n    if penuh:\n        return ((m, m), (k,), (n, n))\n    return ((m, k), (k,), (k, n))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-06-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `peringkat(s, tol=1e-10)` yang menerima list nilai singular dan mengembalikan banyaknya nilai yang lebih besar dari `tol`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def peringkat(s, tol=1e-10):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peringkat([5.0, 3.0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat([5.0, 3.0]) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peringkat([4.0, 1e-12])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat([4.0, 1e-12]) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peringkat([0.0, 0.0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat([0.0, 0.0]) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peringkat([3.0, 0.5, 0.01], tol=0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat([3.0, 0.5, 0.01], tol=0.1) == 2"
+              }
+            ]
+          },
+          "hint": "Hitung elemen yang melebihi ambang.",
+          "solution": "def peringkat(s, tol=1e-10):\n    return sum(1 for x in s if x > tol)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-06-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `nilai_singular(A)` yang menerima list of list dan mengembalikan nilai singular terurut menurun sebagai list dibulatkan 4 desimal, dengan menghitung akar eigenvalue dari `A^T A` memakai `np.linalg.eigvalsh`.",
+          "note": "Potong nilai negatif kecil menjadi nol dan hanya ambil `min(m, n)` nilai terbesar.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef nilai_singular(A):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nilai_singular([[3, 0], [0, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_singular([[3, 0], [0, 4]]) == [4.0, 3.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nilai_singular([[4, 0], [3, -5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_singular([[4, 0], [3, -5]]) == [6.3246, 3.1623]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nilai_singular([[1, 1], [1, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_singular([[1, 1], [1, 1]]) == [2.0, 0.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "nilai_singular([[3, 2, 2], [2, 3, -2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_singular([[3, 2, 2], [2, 3, -2]]) == [5.0, 3.0]"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "nilai_singular([[2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_singular([[2]]) == [2.0]"
+              }
+            ]
+          },
+          "hint": "Bentuk A.T @ A lalu eigvalsh mengurutkan naik. Balik urutannya dan ambil akar.",
+          "solution": "import numpy as np\n\ndef nilai_singular(A):\n    A = np.array(A, dtype=float)\n    k = min(A.shape)\n    nilai = np.linalg.eigvalsh(A.T @ A)[::-1][:k]\n    nilai = np.clip(nilai, 0, None)\n    return [round(float(x) ** 0.5 + 0.0, 4) for x in nilai]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-06-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `rekonstruksi_k(A, k)` yang mengembalikan pendekatan peringkat `k` dari `A` (list of list) dengan memakai `np.linalg.svd` dan hanya `k` nilai singular pertama.",
+          "note": "Bulatkan setiap elemen 4 desimal dan hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef rekonstruksi_k(A, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rekonstruksi_k([[3, 0], [0, 4]], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rekonstruksi_k([[3, 0], [0, 4]], 1) == [[0.0, 0.0], [0.0, 4.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rekonstruksi_k([[3, 2, 2], [2, 3, -2]], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rekonstruksi_k([[3, 2, 2], [2, 3, -2]], 2) == [[3.0, 2.0, 2.0], [2.0, 3.0, -2.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rekonstruksi_k([[1, 1], [1, 1]], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rekonstruksi_k([[1, 1], [1, 1]], 1) == [[1.0, 1.0], [1.0, 1.0]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rekonstruksi_k([[2, 0], [0, 1]], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rekonstruksi_k([[2, 0], [0, 1]], 2) == [[2.0, 0.0], [0.0, 1.0]]"
+              }
+            ]
+          },
+          "hint": "Kalikan kolom U pertama dengan nilai singular lalu dengan baris Vt pertama.",
+          "solution": "import numpy as np\n\ndef rekonstruksi_k(A, k):\n    U, s, Vt = np.linalg.svd(np.array(A, dtype=float), full_matrices=False)\n    R = (U[:, :k] * s[:k]) @ Vt[:k]\n    return [[round(float(x), 4) + 0.0 for x in baris] for baris in R]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Bentuk SVD?",
+          "code": null,
+          "options": [
+            {
+              "label": "A = U S V^T",
+              "description": ""
+            },
+            {
+              "label": "A = P D P^-1",
+              "description": ""
+            },
+            {
+              "label": "A = L U",
+              "description": ""
+            },
+            {
+              "label": "A = Q R",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tiga faktor.",
+          "explanation": "U dan V ortogonal serta S berisi nilai singular."
+        },
+        {
+          "q": "SVD berlaku untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hanya matriks simetris",
+              "description": ""
+            },
+            {
+              "label": "Hanya matriks persegi",
+              "description": ""
+            },
+            {
+              "label": "Semua matriks",
+              "description": ""
+            },
+            {
+              "label": "Hanya matriks invertibel",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Tanpa syarat.",
+          "explanation": "SVD selalu ada."
+        },
+        {
+          "q": "Kuadrat nilai singular adalah eigenvalue dari?",
+          "code": null,
+          "options": [
+            {
+              "label": "A",
+              "description": ""
+            },
+            {
+              "label": "A^T A",
+              "description": ""
+            },
+            {
+              "label": "A^-1",
+              "description": ""
+            },
+            {
+              "label": "I",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Simetris.",
+          "explanation": "A^T A = V S^T S V^T."
+        },
+        {
+          "q": "Peringkat sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Jumlah nilai singular",
+              "description": ""
+            },
+            {
+              "label": "Banyak nilai singular bukan nol",
+              "description": ""
+            },
+            {
+              "label": "Nilai terbesar",
+              "description": ""
+            },
+            {
+              "label": "Determinan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bukan nol.",
+          "explanation": "Hitung yang melebihi ambang."
+        },
+        {
+          "q": "Bilangan kondisi adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "s terkecil dibagi terbesar",
+              "description": ""
+            },
+            {
+              "label": "s terbesar dibagi terkecil",
+              "description": ""
+            },
+            {
+              "label": "Jumlah s",
+              "description": ""
+            },
+            {
+              "label": "Trace",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Besar berarti buruk.",
+          "explanation": "Rasio terbesar terhadap terkecil."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira nilai singular sama dengan eigenvalue untuk semua matriks. Lebih baik: Nilai singular adalah akar eigenvalue dari A^T A.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira nilai singular sama dengan eigenvalue untuk semua matriks.",
+          "fix": "Nilai singular adalah akar eigenvalue dari A^T A."
+        },
+        {
+          "mistake": "Lupa bahwa svd mengembalikan s sebagai vektor dan Vt sudah transpos.",
+          "fix": "Rakit S dengan np.diag dan pakai Vt langsung."
+        },
+        {
+          "mistake": "Memakai A^T A untuk matriks berkondisi buruk.",
+          "fix": "Pakai svd langsung agar presisi terjaga."
+        }
+      ],
+      "summary": [
+        "SVD menulis matriks apa pun sebagai A = U S V^T dengan U dan V ortogonal.",
+        "Nilai singular adalah akar eigenvalue dari A^T A dan tak pernah negatif.",
+        "Peringkat dan bilangan kondisi dibaca dari nilai singular.",
+        "Pakai np.linalg.svd langsung dan bentuk ringkas bila memungkinkan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Konsep Singular Value Decomposition"
+          },
+          {
+            "type": "text",
+            "source": "Fungsi mengembalikan nilai singular sebagai vektor satu dimensi sehingga `S` harus dirakit sendiri. Opsi `full_matrices=False` memberi bentuk ringkas yang lebih hemat dan cukup untuk hampir semua keperluan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[3.0, 2.0, 2.0], [2.0, 3.0, -2.0]])\nU, s, Vt = np.linalg.svd(A)\nprint(U.shape, s.shape, Vt.shape)\nprint(s.round(4).tolist())\nS = np.zeros((2, 3))\nS[:2, :2] = np.diag(s)\nprint(np.allclose(U @ S @ Vt, A))\nU2, s2, Vt2 = np.linalg.svd(A, full_matrices=False)\nprint(Vt2.shape)"
+          },
+          {
+            "type": "text",
+            "source": "Akar eigenvalue dari `A^T A` sama dengan nilai singular. Hasil kali nilai singular sama dengan determinan mutlak dan nilai singular terbesar sama dengan norma spektral."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[4.0, 0.0], [3.0, -5.0]])\nnilai = np.linalg.eigvalsh(A.T @ A)[::-1]\nprint(np.sqrt(nilai).round(4).tolist())\ns = np.linalg.svd(A, compute_uv=False)\nprint(s.round(4).tolist())\nprint(round(float(np.prod(s)), 4), round(abs(float(np.linalg.det(A))), 4))\nprint(round(float(np.linalg.norm(A, 2)), 4), round(float(s[0]), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Baris kedua `B` adalah dua kali baris pertama sehingga satu nilai singularnya hampir nol dan peringkatnya dua. Bilangan kondisi `A` adalah 5 dibagi 3."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nB = np.array([[1.0, 2.0, 3.0], [2.0, 4.0, 6.0], [1.0, 0.0, 1.0]])\ns = np.linalg.svd(B, compute_uv=False)\nprint(int(np.sum(s > 1e-10)), np.linalg.matrix_rank(B))\nprint(bool(s[-1] < 1e-10))\nA = np.array([[3.0, 2.0, 2.0], [2.0, 3.0, -2.0]])\nprint(round(float(np.linalg.cond(A)), 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-06-2",
+      "title": "Aproksimasi peringkat rendah dan kompresi",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami teorema Eckart-Young tentang aproksimasi terbaik",
+        "Menghitung galat aproksimasi dari nilai singular yang dibuang",
+        "Memilih jumlah komponen dari energi kumulatif",
+        "Menghitung penghematan penyimpanan dari kompresi peringkat rendah"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Jumlah matriks peringkat satu",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Jumlah matriks peringkat satu\n\nTulis `A = U S V^T` kolom demi kolom, dan hasilnya adalah jumlah `s1 u1 v1^T + s2 u2 v2^T + ...`. Tiap suku adalah matriks peringkat satu: perkalian luar dua vektor yang diskalakan oleh nilai singular. Suku pertama membawa bagian terbesar dari `A`, suku kedua bagian terbesar berikutnya, dan seterusnya. Nilai singular bertindak seperti bobot kepentingan.\n\nBila kita hanya menyimpan `k` suku pertama, kita mendapat matriks `A_k` berperingkat `k`. Pertanyaannya: seberapa bagus pendekatan itu? Jawabannya luar biasa. Sering kali beberapa suku pertama sudah menangkap hampir seluruh isi matriks, dan sisanya hanya derau. Inilah dasar kompresi, penghilangan derau, dan reduksi dimensi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Teorema Eckart-Young\n\n**Teorema Eckart-Young** menyatakan bahwa `A_k` adalah pendekatan peringkat `k` terbaik dari `A`, baik diukur dengan norma Frobenius maupun norma spektral. Tidak ada matriks berperingkat `k` lain yang lebih dekat ke `A`. Jadi pemotongan SVD bukan sekadar heuristik, melainkan optimal secara matematis.\n\nGalatnya pun mudah dihitung tanpa membentuk `A_k`. Galat Frobenius sama dengan akar jumlah kuadrat nilai singular yang dibuang, yaitu `sqrt(s_{k+1}^2 + ... + s_r^2)`. Galat norma spektral sama dengan `s_{k+1}`, nilai singular pertama yang dibuang. Dari nilai singular saja kita sudah tahu seberapa mahal sebuah kompresi sebelum melakukannya."
+            },
+            {
+              "type": "code_example",
+              "filename": "peringkat_rendah.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nrng = np.random.default_rng(1)\nX = rng.normal(size=(6, 4))\nU, s, Vt = np.linalg.svd(X, full_matrices=False)\nfor k in (1, 2, 3):\n    Ak = (U[:, :k] * s[:k]) @ Vt[:k]\n    galat = np.linalg.norm(X - Ak)\n    print(k, np.allclose(galat, np.sqrt((s[k:] ** 2).sum())), np.linalg.matrix_rank(Ak))",
+              "expected_output_note": "1 True 1\n2 True 2\n3 True 3",
+              "explanation": "Galat Frobenius persis sama dengan akar jumlah kuadrat nilai singular yang dibuang dan peringkat hasil pemotongan sama dengan `k`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Energi dan memilih k\n\nBagaimana memilih `k`? Kuadrat nilai singular disebut **energi**. Total energi `sum(s^2)` sama dengan kuadrat norma Frobenius `A`. Proporsi energi komponen ke-`i` adalah `s_i^2` dibagi total, dan **energi kumulatif** adalah jumlah proporsi dari komponen pertama sampai ke-`k`.\n\nAturan praktis yang umum: pilih `k` terkecil yang energi kumulatifnya mencapai ambang seperti sembilan puluh lima persen. Cara lain adalah mencari siku pada grafik nilai singular, yaitu titik tempat penurunan tajam berubah menjadi landai. Dalam PCA ini setara dengan memilih jumlah komponen utama berdasarkan variansi yang dijelaskan, dan kamu akan memakainya langsung pada modul berikutnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "energi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.diag([10.0, 5.0, 2.0, 1.0])\ns = np.linalg.svd(A, compute_uv=False)\nenergi = s ** 2 / np.sum(s ** 2)\nprint(energi.round(4).tolist())\nkum = np.cumsum(energi)\nprint(kum.round(4).tolist())\nprint(int(np.searchsorted(kum, 0.95)) + 1)",
+              "expected_output_note": "[0.7692, 0.1923, 0.0308, 0.0077]\n[0.7692, 0.9615, 0.9923, 1.0]\n2",
+              "explanation": "Dua komponen pertama menjelaskan sekitar 96 persen energi sehingga cukup untuk ambang 95 persen."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Pusatkan data dulu",
+              "markdown": "Untuk PCA matriks data harus dipusatkan dulu dengan mengurangkan rata-rata tiap kolom. Tanpa itu komponen pertama hanya menunjuk ke arah rata-rata data, bukan arah variasi terbesar."
+            }
+          ],
+          "quick_check": {
+            "question": "Pendekatan peringkat k terbaik berasal dari?",
+            "options": [
+              "Pemotongan SVD",
+              "Pemotongan acak"
+            ],
+            "answer_index": 0,
+            "explanation": "Teorema Eckart-Young.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Kompresi dan penghilangan derau",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kompresi dan penghilangan derau\n\nMenyimpan matriks `m x n` utuh membutuhkan `m n` angka. Menyimpan `A_k` cukup membutuhkan `k` vektor `u` berukuran `m`, `k` vektor `v` berukuran `n`, dan `k` nilai singular, yaitu `k (m + n + 1)` angka. Bila `k` jauh lebih kecil daripada ukuran matriks, penghematannya besar. Inilah cara sederhana mengompres gambar abu-abu: perlakukan gambar sebagai matriks piksel dan simpan hanya komponen terkuat.\n\nDekomposisi yang sama menghilangkan derau. Sinyal asli biasanya berperingkat rendah sehingga berkumpul pada nilai singular besar, sedangkan derau acak menyebar rata ke semua nilai singular kecil. Membuang nilai singular kecil membersihkan data. Pemakaian lain adalah sistem rekomendasi, saat matriks pengguna dan film dianggap berperingkat rendah karena selera orang mengikuti beberapa pola."
+            },
+            {
+              "type": "code_example",
+              "filename": "kompres_gambar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nimg = np.add.outer(np.arange(8), np.arange(8)).astype(float)\nU, s, Vt = np.linalg.svd(img, full_matrices=False)\nprint(np.linalg.matrix_rank(img))\nrekon2 = (U[:, :2] * s[:2]) @ Vt[:2]\nprint(np.allclose(rekon2, img))\nm, n = img.shape\nk = 2\nprint(k * (m + n + 1), m * n, round(k * (m + n + 1) / (m * n), 3))\nrekon1 = (U[:, :1] * s[:1]) @ Vt[:1]\nprint(round(float(np.linalg.norm(img - rekon1)), 4), round(float(s[1]), 4))",
+              "expected_output_note": "2\nTrue\n34 64 0.531\n5.4664 5.4664",
+              "explanation": "Gambar sintetis ini berperingkat dua sehingga dua komponen merekonstruksinya sempurna dengan penyimpanan sekitar separuh. Galat memakai satu komponen sama dengan nilai singular kedua."
+            }
+          ],
+          "quick_check": {
+            "question": "Galat Frobenius sama dengan?",
+            "options": [
+              "s terbesar",
+              "Akar jumlah kuadrat s yang dibuang"
+            ],
+            "answer_index": 1,
+            "explanation": "Hanya bergantung pada s yang dibuang.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Intuisi lewat contoh",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Intuisi lewat contoh\n\nBayangkan tabel penilaian film oleh seribu orang untuk lima ratus film. Selera orang tidak acak: ada kelompok pencinta aksi, pencinta drama, dan pencinta komedi. Dengan beberapa komponen saja kita dapat menjelaskan sebagian besar pola penilaian karena setiap komponen mewakili satu pola selera. Matriks besar itu berperingkat efektif rendah walau secara aljabar berperingkat penuh akibat derau kecil.\n\nNilai singular mencerminkan hal itu. Beberapa nilai pertama besar dan sisanya turun cepat mendekati nol. Grafik nilai singular yang menurun tajam adalah tanda bahwa data mudah dikompres. Sebaliknya bila nilai singular turun landai, data tidak punya struktur sederhana dan kompresi akan mengorbankan banyak informasi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hubungan dengan PCA\n\nPCA pada data terpusat `X` berukuran `n x d` sebenarnya adalah SVD dari `X`. Vektor singular kanan adalah arah utama, nilai singular kuadrat dibagi `n - 1` adalah variansi tiap komponen, dan `U S` memberi skor tiap sampel pada komponen itu. Itu sebabnya banyak pustaka menghitung PCA lewat SVD, bukan lewat matriks kovariansi, karena cara itu lebih stabil dan menghindari pembentukan `X^T X`.\n\nDengan pemahaman ini, memilih jumlah komponen PCA sama persis dengan memilih `k` pada pemotongan SVD, dan variansi yang dijelaskan sama dengan energi kumulatif. Modul berikutnya membangun PCA dari nol berdasarkan hubungan ini."
+            }
+          ],
+          "quick_check": {
+            "question": "Energi komponen ke-i?",
+            "options": [
+              "s_i kuadrat",
+              "s_i"
+            ],
+            "answer_index": 0,
+            "explanation": "Proporsi dihitung dari kuadrat.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-06-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `energi_kumulatif(s)` yang menerima list nilai singular terurut menurun dan mengembalikan list energi kumulatif (jumlah kuadrat sampai posisi itu dibagi total kuadrat) dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def energi_kumulatif(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "energi_kumulatif([10, 5, 2, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert energi_kumulatif([10, 5, 2, 1]) == [0.7692, 0.9615, 0.9923, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "energi_kumulatif([1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert energi_kumulatif([1, 1]) == [0.5, 1.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "energi_kumulatif([3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert energi_kumulatif([3]) == [1.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "energi_kumulatif([3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert energi_kumulatif([3, 4]) == [0.36, 1.0]"
+              }
+            ]
+          },
+          "hint": "Hitung kuadrat tiap nilai lalu jumlahkan secara kumulatif dan bagi total.",
+          "solution": "def energi_kumulatif(s):\n    kuadrat = [x * x for x in s]\n    total = sum(kuadrat)\n    hasil = []\n    berjalan = 0.0\n    for x in kuadrat:\n        berjalan += x\n        hasil.append(round(berjalan / total, 4))\n    return hasil",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-06-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pilih_k(s, ambang)` yang mengembalikan `k` terkecil sehingga energi kumulatif dari `k` nilai singular pertama minimal `ambang`.",
+          "note": "Gunakan toleransi 1e-12.",
+          "filename": "solution.py",
+          "starter_code": "def pilih_k(s, ambang):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pilih_k([10, 5, 2, 1], 0.95)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_k([10, 5, 2, 1], 0.95) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pilih_k([10, 5, 2, 1], 0.99)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_k([10, 5, 2, 1], 0.99) == 3"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pilih_k([10, 5, 2, 1], 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_k([10, 5, 2, 1], 0.5) == 1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pilih_k([4, 3], 1.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pilih_k([4, 3], 1.0) == 2"
+              }
+            ]
+          },
+          "hint": "Telusuri kumulatif dan berhenti pada posisi pertama yang mencapai ambang.",
+          "solution": "def pilih_k(s, ambang):\n    total = sum(x * x for x in s)\n    berjalan = 0.0\n    for i, x in enumerate(s, start=1):\n        berjalan += x * x\n        if berjalan / total >= ambang - 1e-12:\n            return i\n    return len(s)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-06-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `penyimpanan(m, n, k)` yang mengembalikan tuple `(kompres, asli, rasio)` dengan `kompres = k * (m + n + 1)`, `asli = m * n`, dan `rasio = kompres / asli` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def penyimpanan(m, n, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "penyimpanan(100, 50, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert penyimpanan(100, 50, 5) == (755, 5000, 0.151)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "penyimpanan(8, 8, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert penyimpanan(8, 8, 1) == (17, 64, 0.2656)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "penyimpanan(10, 10, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert penyimpanan(10, 10, 10) == (210, 100, 2.1)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "penyimpanan(4, 6, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert penyimpanan(4, 6, 2) == (22, 24, 0.9167)"
+              }
+            ]
+          },
+          "hint": "Rumusnya langsung dari k kali (m + n + 1).",
+          "solution": "def penyimpanan(m, n, k):\n    kompres = k * (m + n + 1)\n    asli = m * n\n    return (kompres, asli, round(kompres / asli, 4))",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-06-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `galat_peringkat(s, k)` yang mengembalikan galat Frobenius pendekatan peringkat `k`, yaitu akar jumlah kuadrat nilai singular setelah `k` pertama, dibulatkan 4 desimal.",
+          "note": "Gunakan `math.sqrt`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef galat_peringkat(s, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "galat_peringkat([5, 3], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_peringkat([5, 3], 1) == 3.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "galat_peringkat([5, 3], 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_peringkat([5, 3], 0) == 5.831"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "galat_peringkat([5, 3], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_peringkat([5, 3], 2) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "galat_peringkat([13, 4, 3], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_peringkat([13, 4, 3], 1) == 5.0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan kuadrat elemen mulai indeks k lalu ambil akar.",
+          "solution": "import math\n\ndef galat_peringkat(s, k):\n    return round(math.sqrt(sum(x * x for x in s[k:])) + 0.0, 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Pendekatan peringkat k terbaik berasal dari?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pemotongan SVD",
+              "description": ""
+            },
+            {
+              "label": "Pemotongan acak",
+              "description": ""
+            },
+            {
+              "label": "Transpos",
+              "description": ""
+            },
+            {
+              "label": "Invers",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Optimal.",
+          "explanation": "Teorema Eckart-Young."
+        },
+        {
+          "q": "Galat Frobenius sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "s terbesar",
+              "description": ""
+            },
+            {
+              "label": "Akar jumlah kuadrat s yang dibuang",
+              "description": ""
+            },
+            {
+              "label": "Jumlah s",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kuadrat lalu akar.",
+          "explanation": "Hanya bergantung pada s yang dibuang."
+        },
+        {
+          "q": "Energi komponen ke-i?",
+          "code": null,
+          "options": [
+            {
+              "label": "s_i",
+              "description": ""
+            },
+            {
+              "label": "s_i kuadrat",
+              "description": ""
+            },
+            {
+              "label": "1 / s_i",
+              "description": ""
+            },
+            {
+              "label": "u_i",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Variansi.",
+          "explanation": "Proporsi dihitung dari kuadrat."
+        },
+        {
+          "q": "Penyimpanan peringkat k untuk matriks m x n?",
+          "code": null,
+          "options": [
+            {
+              "label": "k(m+n+1)",
+              "description": ""
+            },
+            {
+              "label": "m n k",
+              "description": ""
+            },
+            {
+              "label": "m + n",
+              "description": ""
+            },
+            {
+              "label": "k k",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tiga bagian.",
+          "explanation": "k vektor u, k vektor v, dan k nilai singular."
+        },
+        {
+          "q": "Derau acak cenderung berada di?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nilai singular besar",
+              "description": ""
+            },
+            {
+              "label": "Nilai singular kecil",
+              "description": ""
+            },
+            {
+              "label": "Hanya U",
+              "description": ""
+            },
+            {
+              "label": "Diagonal",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Menyebar rata.",
+          "explanation": "Sinyal berkumpul di nilai besar."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira pemotongan SVD hanya heuristik. Lebih baik: Eckart-Young menjamin hasilnya pendekatan terbaik.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira pemotongan SVD hanya heuristik.",
+          "fix": "Eckart-Young menjamin hasilnya pendekatan terbaik."
+        },
+        {
+          "mistake": "Memilih k tanpa melihat energi kumulatif.",
+          "fix": "Gunakan ambang energi atau siku nilai singular."
+        },
+        {
+          "mistake": "Lupa memusatkan data sebelum SVD untuk PCA.",
+          "fix": "Kurangi rata-rata tiap kolom dulu."
+        }
+      ],
+      "summary": [
+        "A adalah jumlah matriks peringkat satu berbobot nilai singular.",
+        "Pemotongan SVD memberi aproksimasi peringkat rendah terbaik.",
+        "Energi kumulatif membantu memilih jumlah komponen.",
+        "Kompresi menyimpan k(m+n+1) angka dan menyaring derau."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Aproksimasi peringkat rendah dan kompresi"
+          },
+          {
+            "type": "text",
+            "source": "Galat Frobenius persis sama dengan akar jumlah kuadrat nilai singular yang dibuang dan peringkat hasil pemotongan sama dengan `k`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nrng = np.random.default_rng(1)\nX = rng.normal(size=(6, 4))\nU, s, Vt = np.linalg.svd(X, full_matrices=False)\nfor k in (1, 2, 3):\n    Ak = (U[:, :k] * s[:k]) @ Vt[:k]\n    galat = np.linalg.norm(X - Ak)\n    print(k, np.allclose(galat, np.sqrt((s[k:] ** 2).sum())), np.linalg.matrix_rank(Ak))"
+          },
+          {
+            "type": "text",
+            "source": "Dua komponen pertama menjelaskan sekitar 96 persen energi sehingga cukup untuk ambang 95 persen."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.diag([10.0, 5.0, 2.0, 1.0])\ns = np.linalg.svd(A, compute_uv=False)\nenergi = s ** 2 / np.sum(s ** 2)\nprint(energi.round(4).tolist())\nkum = np.cumsum(energi)\nprint(kum.round(4).tolist())\nprint(int(np.searchsorted(kum, 0.95)) + 1)"
+          },
+          {
+            "type": "text",
+            "source": "Gambar sintetis ini berperingkat dua sehingga dua komponen merekonstruksinya sempurna dengan penyimpanan sekitar separuh. Galat memakai satu komponen sama dengan nilai singular kedua."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nimg = np.add.outer(np.arange(8), np.arange(8)).astype(float)\nU, s, Vt = np.linalg.svd(img, full_matrices=False)\nprint(np.linalg.matrix_rank(img))\nrekon2 = (U[:, :2] * s[:2]) @ Vt[:2]\nprint(np.allclose(rekon2, img))\nm, n = img.shape\nk = 2\nprint(k * (m + n + 1), m * n, round(k * (m + n + 1) / (m * n), 3))\nrekon1 = (U[:, :1] * s[:1]) @ Vt[:1]\nprint(round(float(np.linalg.norm(img - rekon1)), 4), round(float(s[1]), 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-06-3",
+      "title": "Penerapan: pseudoinvers, kuadrat terkecil, dan LSA",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menyusun pseudoinvers Moore-Penrose dari SVD",
+        "Menyelesaikan kuadrat terkecil dan sistem rank-deficient",
+        "Menafsirkan bilangan kondisi untuk kestabilan numerik",
+        "Membangun mini latent semantic analysis dari matriks term dokumen"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Pseudoinvers",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pseudoinvers\n\nMatriks yang tidak persegi atau singular tidak punya invers biasa. Namun lewat SVD kita dapat membuat penggantinya, yaitu **pseudoinvers Moore-Penrose** `A+ = V S+ U^T`. Matriks `S+` dibentuk dengan membalik tiap nilai singular tak nol menjadi kebalikannya dan membiarkan yang nol tetap nol, lalu mentranspos bentuknya.\n\nPseudoinvers memberi jawaban terbaik yang masuk akal untuk `A x = b`. Bila sistem punya banyak solusi, `A+ b` memilih solusi dengan norma terkecil. Bila sistem tidak punya solusi tepat, `A+ b` memilih `x` yang membuat galat `||A x - b||` sekecil mungkin. Dua kasus yang tampak berbeda ditangani oleh satu rumus yang sama, dan bila `A` punya invers maka pseudoinversnya sama dengan invers biasa."
+            },
+            {
+              "type": "code_example",
+              "filename": "pseudoinvers.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])\nU, s, Vt = np.linalg.svd(A, full_matrices=False)\nAp = Vt.T @ np.diag(1 / s) @ U.T\nprint(np.allclose(Ap, np.linalg.pinv(A)))\nb = np.array([1.0, 2.0, 2.0])\nx = Ap @ b\nprint(x.round(4).tolist())\nx2 = np.linalg.lstsq(A, b, rcond=None)[0]\nprint(np.allclose(x, x2))\nprint(np.allclose(A @ Ap @ A, A))",
+              "expected_output_note": "True\n[-0.6667, 0.9167]\nTrue\nTrue",
+              "explanation": "Rakitan manual dari SVD sama dengan `np.linalg.pinv`. Penyelesaian lewat pseudoinvers sama dengan `lstsq` dan memenuhi sifat dasar `A A+ A = A`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kuadrat terkecil dan matriks defisit peringkat\n\nRegresi linear mencari `x` yang meminimalkan `||A x - b||`, dengan `A` matriks fitur yang tinggi dan sempit. Persamaan normal `A^T A x = A^T b` memang menyelesaikannya, tetapi bila fitur saling berkolinear `A^T A` hampir singular dan penyelesaiannya tidak stabil. Pendekatan SVD jauh lebih tahan karena tidak pernah membentuk `A^T A`.\n\nKetika `A` defisit peringkat, ada banyak `x` yang sama baiknya. Pseudoinvers memilih yang normanya terkecil dengan mengabaikan nilai singular di bawah ambang. Perilaku ini sama dengan regularisasi: arah yang hampir tidak membawa informasi tidak diizinkan memperbesar galat. Pustaka seperti scikit-learn memakai ide ini di balik layar pada banyak penaksir linear."
+            },
+            {
+              "type": "code_example",
+              "filename": "kondisi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[1.0, 1.0], [1.0, 1.0]])\nb = np.array([2.0, 2.0])\nprint(np.linalg.pinv(A).round(4).tolist())\nprint((np.linalg.pinv(A) @ b).round(4).tolist())\n\ni = np.arange(4)\nH = 1.0 / (i[:, None] + i[None, :] + 1)\ns = np.linalg.svd(H, compute_uv=False)\nprint(round(float(s[0] / s[-1]), 1))\nprint(round(float(np.linalg.cond(H)), 1))",
+              "expected_output_note": "[[0.25, 0.25], [0.25, 0.25]]\n[1.0, 1.0]\n15513.7\n15513.7",
+              "explanation": "Untuk sistem dengan dua persamaan sama, pseudoinvers memilih solusi bernorma terkecil yaitu `[1, 1]`. Matriks Hilbert terkenal berkondisi buruk sehingga bilangan kondisinya jauh lebih besar dari satu."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Cara aman regresi",
+              "markdown": "Gunakan `np.linalg.lstsq` atau `np.linalg.pinv` untuk regresi. Hindari `np.linalg.inv(A.T @ A)` karena membesar-besarkan galat numerik saat fitur berkolinear."
+            }
+          ],
+          "quick_check": {
+            "question": "Rumus pseudoinvers?",
+            "options": [
+              "V S+ U^T",
+              "U S V^T"
+            ],
+            "answer_index": 0,
+            "explanation": "Balik nilai singular tak nol.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Latent semantic analysis",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Latent semantic analysis\n\n**Latent Semantic Analysis** atau LSA memakai SVD untuk menemukan topik tersembunyi dalam teks. Susun **matriks term dokumen**: baris adalah kata, kolom adalah dokumen, isinya frekuensi kemunculan. Dua dokumen yang membahas topik sama sering memakai kata berbeda, sehingga kemiripan langsung antar kolom rendah walau maknanya dekat.\n\nSVD terpotong mengatasi ini. Dengan menyimpan hanya `k` komponen pertama, tiap dokumen diwakili oleh `k` koordinat laten, dan kata yang sering muncul bersama terkumpul pada arah yang sama. Kemiripan kosinus pada ruang laten ini menangkap hubungan makna yang tidak terlihat pada hitungan kata mentah. Gagasan ini menjadi pendahulu penyematan kata modern dan masih berguna sebagai baseline yang cepat dan transparan."
+            },
+            {
+              "type": "code_example",
+              "filename": "lsa_mini.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([\n    [1, 1, 0, 0],\n    [1, 0, 0, 0],\n    [1, 1, 0, 0],\n    [0, 0, 1, 1],\n    [0, 0, 1, 0],\n    [0, 0, 1, 1],\n], dtype=float)\nU, s, Vt = np.linalg.svd(A, full_matrices=False)\nk = 2\ndoc = (np.diag(s[:k]) @ Vt[:k]).T\nnorma = np.linalg.norm(doc, axis=1)\nsim = (doc @ doc.T) / np.outer(norma, norma)\nprint(np.abs(sim).round(4).tolist())\n\nq = np.array([0, 1, 0, 0, 0, 0], dtype=float)\nqk = (U[:, :k].T @ q) / s[:k]\nsims = doc @ qk / (norma * np.linalg.norm(qk))\nprint(int(np.argmax(sims)) < 2, bool(np.all(sims[:2] > 0.99)))",
+              "expected_output_note": "[[1.0, 1.0, 0.0, 0.0], [1.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0]]\nTrue True",
+              "explanation": "Dokumen nol dan satu membahas hewan sedangkan dua dan tiga membahas kendaraan. Pada ruang laten kemiripan dalam topik adalah satu dan antar topik nol, dan kueri tentang anjing paling dekat dengan dokumen hewan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Regularisasi lewat SVD\n\nMengabaikan nilai singular kecil adalah bentuk regularisasi paling sederhana, disebut SVD terpotong. Bentuk yang lebih halus adalah regresi ridge. Pada ridge, tiap nilai singular `s` pada pseudoinvers diganti dengan `s / (s^2 + lambda)` sehingga arah berinformasi rendah diredam secara mulus, bukan dipotong tiba-tiba. Parameter `lambda` mengatur kekuatan peredaman.\n\nSudut pandang SVD menjelaskan mengapa regularisasi menolong. Galat kecil pada `b` diperbesar sebesar `1 / s` pada arah ke-`i`. Arah dengan `s` sangat kecil memperbesar derau secara dramatis, sehingga memotong atau meredamnya menukar sedikit bias dengan penurunan variansi yang besar."
+            }
+          ],
+          "quick_check": {
+            "question": "Pseudoinvers memilih solusi?",
+            "options": [
+              "Norma terbesar",
+              "Norma terkecil"
+            ],
+            "answer_index": 1,
+            "explanation": "Solusi bernorma minimum.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih k pada LSA",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih k pada LSA\n\nMemilih jumlah dimensi laten pada LSA adalah seni. Terlalu kecil membuat topik berbeda menyatu, sedangkan terlalu besar mengembalikan derau dan kata yang jarang muncul. Praktisi biasanya mencoba beberapa nilai antara seratus dan tiga ratus pada korpus besar, lalu menilai hasilnya pada tugas hilir seperti pengelompokan atau pencarian. Pada contoh mini kita dua dimensi sudah cukup karena hanya ada dua topik.\n\nSatu catatan penting: frekuensi mentah memberi bobot besar pada kata umum. Pembobotan seperti TF-IDF biasanya diterapkan sebelum SVD agar kata yang informatif lebih menentukan. Dengan begitu komponen laten lebih mencerminkan topik daripada kata penghubung yang muncul di mana-mana."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merangkum modul\n\nKita mulai dari bentuk `A = U S V^T` yang berlaku untuk matriks apa pun, membaca nilai singular sebagai peregangan sepanjang arah utama, lalu memotongnya untuk mendapat pendekatan terbaik. Dari sana lahir kompresi, penyaringan derau, pseudoinvers, penyelesaian kuadrat terkecil yang stabil, dan penemuan topik laten pada teks.\n\nBenang merahnya satu: data berdimensi tinggi sering kali punya struktur berdimensi rendah, dan SVD adalah cara paling langsung untuk menemukannya. Kamu sudah memegang semua alat yang dibutuhkan untuk modul PCA berikutnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Bilangan kondisi besar berarti?",
+            "options": [
+              "Matriks hampir singular",
+              "Matriks sehat"
+            ],
+            "answer_index": 0,
+            "explanation": "Galat kecil diperbesar.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-06-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pseudoinvers_diagonal(s, tol=1e-10)` yang mengembalikan list kebalikan tiap nilai singular yang lebih besar dari `tol` dan `0.0` untuk yang lain, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pseudoinvers_diagonal(s, tol=1e-10):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pseudoinvers_diagonal([2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pseudoinvers_diagonal([2, 4]) == [0.5, 0.25]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pseudoinvers_diagonal([3, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pseudoinvers_diagonal([3, 0]) == [0.3333, 0.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pseudoinvers_diagonal([0.0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pseudoinvers_diagonal([0.0]) == [0.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pseudoinvers_diagonal([1e-12, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pseudoinvers_diagonal([1e-12, 5]) == [0.0, 0.2]"
+              }
+            ]
+          },
+          "hint": "Balik hanya nilai yang melewati ambang.",
+          "solution": "def pseudoinvers_diagonal(s, tol=1e-10):\n    return [round(1 / x, 4) if x > tol else 0.0 for x in s]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-06-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bilangan_kondisi(s)` yang menerima list nilai singular terurut menurun dan mengembalikan rasio nilai terbesar terhadap terkecil dibulatkan 4 desimal.",
+          "note": "Bila nilai terkecil nol kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "def bilangan_kondisi(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bilangan_kondisi([5, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bilangan_kondisi([5, 3]) == 1.6667"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bilangan_kondisi([10, 10])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bilangan_kondisi([10, 10]) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bilangan_kondisi([4, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bilangan_kondisi([4, 0]) is None"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bilangan_kondisi([100, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bilangan_kondisi([100, 1]) == 100.0"
+              }
+            ]
+          },
+          "hint": "Bagi elemen pertama dengan elemen terakhir.",
+          "solution": "def bilangan_kondisi(s):\n    if s[-1] == 0:\n        return None\n    return round(s[0] / s[-1], 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-06-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kuadrat_terkecil(A, b)` yang mengembalikan solusi kuadrat terkecil bernorma minimum sebagai list dibulatkan 4 desimal, dengan memakai `np.linalg.svd` ringkas dan mengabaikan nilai singular di bawah 1e-10.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef kuadrat_terkecil(A, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kuadrat_terkecil([[1, 0], [0, 1], [0, 0]], [1...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuadrat_terkecil([[1, 0], [0, 1], [0, 0]], [1, 2, 3]) == [1.0, 2.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kuadrat_terkecil([[1, 1], [1, 2], [1, 3]], [1...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuadrat_terkecil([[1, 1], [1, 2], [1, 3]], [1, 2, 2]) == [0.6667, 0.5]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kuadrat_terkecil([[2]], [6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuadrat_terkecil([[2]], [6]) == [3.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kuadrat_terkecil([[1, 1], [1, 1]], [2, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuadrat_terkecil([[1, 1], [1, 1]], [2, 2]) == [1.0, 1.0]"
+              }
+            ]
+          },
+          "hint": "Hitung x = V diag(1/s) U^T b dengan 1/s diganti nol untuk nilai kecil.",
+          "solution": "import numpy as np\n\ndef kuadrat_terkecil(A, b):\n    U, s, Vt = np.linalg.svd(np.array(A, dtype=float), full_matrices=False)\n    sinv = np.array([1 / x if x > 1e-10 else 0.0 for x in s])\n    x = Vt.T @ (sinv * (U.T @ np.array(b, dtype=float)))\n    return [round(float(v), 4) + 0.0 for v in x]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-06-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `kemiripan_dokumen(A, k)` yang menerima matriks term dokumen (list of list) dan mengembalikan matriks kemiripan kosinus antar dokumen (kolom) pada ruang laten `k` dimensi, memakai koordinat `diag(s[:k]) @ Vt[:k]`.",
+          "note": "Bulatkan 4 desimal dan hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import numpy as np\n\ndef kemiripan_dokumen(A, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kemiripan_dokumen(B, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "B = [[1, 1, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0], [0, 0, 1, 1], [0, 0, 1, 0], [0, 0, 1, 1]]\nassert kemiripan_dokumen(B, 2) == [[1.0, 1.0, 0.0, 0.0], [1.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kemiripan_dokumen([[1, 2], [2, 4]], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kemiripan_dokumen([[1, 2], [2, 4]], 1) == [[1.0, 1.0], [1.0, 1.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kemiripan_dokumen([[1, 0], [0, 1]], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kemiripan_dokumen([[1, 0], [0, 1]], 2) == [[1.0, 0.0], [0.0, 1.0]]"
+              }
+            ]
+          },
+          "hint": "Bentuk koordinat dokumen lalu hitung hasil kali dalam dibagi hasil kali norma.",
+          "solution": "import numpy as np\n\ndef kemiripan_dokumen(A, k):\n    U, s, Vt = np.linalg.svd(np.array(A, dtype=float), full_matrices=False)\n    doc = (np.diag(s[:k]) @ Vt[:k]).T\n    norma = np.linalg.norm(doc, axis=1)\n    sim = (doc @ doc.T) / np.outer(norma, norma)\n    return [[round(float(x), 4) + 0.0 for x in baris] for baris in sim]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Rumus pseudoinvers?",
+          "code": null,
+          "options": [
+            {
+              "label": "V S+ U^T",
+              "description": ""
+            },
+            {
+              "label": "U S V^T",
+              "description": ""
+            },
+            {
+              "label": "S^-1",
+              "description": ""
+            },
+            {
+              "label": "A^T",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Faktor dibalik.",
+          "explanation": "Balik nilai singular tak nol."
+        },
+        {
+          "q": "Pseudoinvers memilih solusi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Norma terbesar",
+              "description": ""
+            },
+            {
+              "label": "Norma terkecil",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Paling hemat.",
+          "explanation": "Solusi bernorma minimum."
+        },
+        {
+          "q": "Bilangan kondisi besar berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Matriks sehat",
+              "description": ""
+            },
+            {
+              "label": "Matriks hampir singular",
+              "description": ""
+            },
+            {
+              "label": "Matriks identitas",
+              "description": ""
+            },
+            {
+              "label": "Matriks nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tidak stabil.",
+          "explanation": "Galat kecil diperbesar."
+        },
+        {
+          "q": "Baris matriks term dokumen adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dokumen",
+              "description": ""
+            },
+            {
+              "label": "Kata",
+              "description": ""
+            },
+            {
+              "label": "Topik",
+              "description": ""
+            },
+            {
+              "label": "Norma",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Term.",
+          "explanation": "Baris kata dan kolom dokumen."
+        },
+        {
+          "q": "Kenapa LSA memakai SVD terpotong?",
+          "code": null,
+          "options": [
+            {
+              "label": "Untuk menambah derau",
+              "description": ""
+            },
+            {
+              "label": "Untuk menangkap topik laten",
+              "description": ""
+            },
+            {
+              "label": "Untuk mengurutkan kata",
+              "description": ""
+            },
+            {
+              "label": "Untuk menghapus dokumen",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Makna tersembunyi.",
+          "explanation": "Kata sekonteks berkumpul pada arah yang sama."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai inv(A.T @ A) untuk regresi. Lebih baik: Pakai pinv atau lstsq yang berbasis SVD.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai inv(A.T @ A) untuk regresi.",
+          "fix": "Pakai pinv atau lstsq yang berbasis SVD."
+        },
+        {
+          "mistake": "Membalik semua nilai singular termasuk yang hampir nol.",
+          "fix": "Abaikan nilai di bawah ambang."
+        },
+        {
+          "mistake": "Membandingkan dokumen hanya dengan hitungan kata mentah.",
+          "fix": "Bandingkan pada ruang laten hasil SVD terpotong."
+        }
+      ],
+      "summary": [
+        "Pseudoinvers dari SVD memberi solusi kuadrat terkecil bernorma minimum.",
+        "Pendekatan SVD stabil untuk fitur berkolinear.",
+        "Bilangan kondisi mengukur kestabilan sistem linear.",
+        "LSA membandingkan dokumen pada ruang laten dari SVD terpotong."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Penerapan: pseudoinvers, kuadrat terkecil, dan LSA"
+          },
+          {
+            "type": "text",
+            "source": "Rakitan manual dari SVD sama dengan `np.linalg.pinv`. Penyelesaian lewat pseudoinvers sama dengan `lstsq` dan memenuhi sifat dasar `A A+ A = A`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])\nU, s, Vt = np.linalg.svd(A, full_matrices=False)\nAp = Vt.T @ np.diag(1 / s) @ U.T\nprint(np.allclose(Ap, np.linalg.pinv(A)))\nb = np.array([1.0, 2.0, 2.0])\nx = Ap @ b\nprint(x.round(4).tolist())\nx2 = np.linalg.lstsq(A, b, rcond=None)[0]\nprint(np.allclose(x, x2))\nprint(np.allclose(A @ Ap @ A, A))"
+          },
+          {
+            "type": "text",
+            "source": "Untuk sistem dengan dua persamaan sama, pseudoinvers memilih solusi bernorma terkecil yaitu `[1, 1]`. Matriks Hilbert terkenal berkondisi buruk sehingga bilangan kondisinya jauh lebih besar dari satu."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[1.0, 1.0], [1.0, 1.0]])\nb = np.array([2.0, 2.0])\nprint(np.linalg.pinv(A).round(4).tolist())\nprint((np.linalg.pinv(A) @ b).round(4).tolist())\n\ni = np.arange(4)\nH = 1.0 / (i[:, None] + i[None, :] + 1)\ns = np.linalg.svd(H, compute_uv=False)\nprint(round(float(s[0] / s[-1]), 1))\nprint(round(float(np.linalg.cond(H)), 1))"
+          },
+          {
+            "type": "text",
+            "source": "Dokumen nol dan satu membahas hewan sedangkan dua dan tiga membahas kendaraan. Pada ruang laten kemiripan dalam topik adalah satu dan antar topik nol, dan kueri tentang anjing paling dekat dengan dokumen hewan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([\n    [1, 1, 0, 0],\n    [1, 0, 0, 0],\n    [1, 1, 0, 0],\n    [0, 0, 1, 1],\n    [0, 0, 1, 0],\n    [0, 0, 1, 1],\n], dtype=float)\nU, s, Vt = np.linalg.svd(A, full_matrices=False)\nk = 2\ndoc = (np.diag(s[:k]) @ Vt[:k]).T\nnorma = np.linalg.norm(doc, axis=1)\nsim = (doc @ doc.T) / np.outer(norma, norma)\nprint(np.abs(sim).round(4).tolist())\n\nq = np.array([0, 1, 0, 0, 0, 0], dtype=float)\nqk = (U[:, :k].T @ q) / s[:k]\nsims = doc @ qk / (norma * np.linalg.norm(qk))\nprint(int(np.argmax(sims)) < 2, bool(np.all(sims[:2] > 0.99)))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa perhitungan dan contoh kode yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

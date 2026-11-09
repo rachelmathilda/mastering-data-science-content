@@ -1,0 +1,1532 @@
+{
+  "schema_version": 2,
+  "course_id": "A3",
+  "module_no": 3,
+  "title": "Turunan parsial dan gradien",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menghitung turunan parsial dan gradien",
+    "Memahami gradien sebagai arah kenaikan tercuram",
+    "Menerapkan gradien pada regresi linear serta memahami Jacobian dan Hessian"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A3-03-1",
+    "exercise_id": "A3-03-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def bidang_singgung(f, x0, y0, x, y):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A3-03-1",
+      "title": "Fungsi banyak variabel dan turunan parsial",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami fungsi dengan dua atau lebih masukan dan visualisasi kontur",
+        "Menghitung turunan parsial dengan menahan variabel lain tetap",
+        "Menyusun gradien sebagai vektor turunan parsial",
+        "Memakai turunan parsial numerik untuk memeriksa hasil"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Lebih dari satu masukan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Lebih dari satu masukan\n\nPada modul sebelumnya fungsi hanya punya satu masukan. Model ML hampir selalu punya banyak parameter: regresi dengan sepuluh fitur punya sebelas parameter, jaringan saraf punya jutaan. Fungsi loss adalah fungsi dari semua parameter itu sekaligus, `L(w1, w2, ..., wn)`. Untuk mengoptimasinya kita perlu memperluas turunan ke fungsi banyak variabel.\n\nFungsi dua variabel `f(x, y)` memetakan pasangan bilangan ke satu bilangan. Grafiknya berupa permukaan di ruang tiga dimensi: `x` dan `y` menentukan posisi di lantai, dan `f` menentukan tinggi. Bayangkan lanskap pegunungan: tiap titik di peta punya ketinggian. Tujuan optimasi adalah menemukan lembah terdalam lanskap itu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kontur sebagai peta ketinggian\n\nPermukaan tiga dimensi sulit digambar, sehingga kita sering memakai **kontur**, yaitu kurva yang menghubungkan titik-titik berketinggian sama, seperti garis tinggi pada peta topografi. Untuk `f(x, y) = x^2 + y^2` konturnya lingkaran konsentris dengan pusat di titik asal. Makin jauh dari pusat, makin tinggi nilainya.\n\nJarak antar kontur memberi informasi. Kontur rapat berarti lereng curam karena tinggi berubah cepat pada jarak pendek. Kontur renggang berarti lereng landai. Pada fungsi loss yang berbentuk lembah memanjang, kontur berbentuk elips pipih, dan itulah penyebab gradient descent bergerak zig-zag yang akan kita bahas nanti."
+            },
+            {
+              "type": "code_example",
+              "filename": "kontur.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef f(x, y):\n    return x ** 2 + y ** 2\n\ntitik = [(3, 4), (5, 0), (0, -5), (-4, 3)]\nprint([f(x, y) for x, y in titik])\nx = np.linspace(-2, 2, 5)\nX, Y = np.meshgrid(x, x)\nZ = f(X, Y)\nprint(Z.shape, Z.min(), Z.max())\nprint([int(i) for i in np.unravel_index(Z.argmin(), Z.shape)])",
+              "expected_output_note": "[25, 25, 25, 25]\n(5, 5) 0.0 8.0\n[2, 2]",
+              "explanation": "Keempat titik berada pada kontur yang sama yaitu lingkaran berjari-jari lima. Nilai terkecil pada grid berada di titik tengah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Turunan parsial\n\nUntuk menurunkan fungsi banyak variabel, kita menurunkannya terhadap satu variabel sambil menahan variabel lain tetap sebagai konstanta. Hasilnya disebut **turunan parsial**, ditulis `df/dx` atau `f_x`. Ia mengukur seberapa cepat `f` berubah bila hanya `x` yang digeser sedikit, sementara `y` dibiarkan.\n\nContoh: `f(x, y) = x^2 y + 3 y`. Menurunkan terhadap `x` dengan `y` dianggap konstanta memberi `2 x y`. Menurunkan terhadap `y` dengan `x` dianggap konstanta memberi `x^2 + 3`. Semua aturan turunan satu variabel, yaitu pangkat, kali, bagi, dan rantai, tetap berlaku. Satu-satunya perubahan adalah kebiasaan membaca variabel lain sebagai angka biasa."
+            },
+            {
+              "type": "code_example",
+              "filename": "parsial_dasar.py",
+              "runnable": true,
+              "code": "def f(x, y):\n    return x ** 2 * y + 3 * y\n\ndef pd_x(f, x, y, h=1e-6):\n    return (f(x + h, y) - f(x - h, y)) / (2 * h)\n\ndef pd_y(f, x, y, h=1e-6):\n    return (f(x, y + h) - f(x, y - h)) / (2 * h)\n\nprint(f(2, 1))\nprint(round(pd_x(f, 2, 1), 4), round(pd_y(f, 2, 1), 4))\nprint(2 * 2 * 1, 2 ** 2 + 3)",
+              "expected_output_note": "7\n4.0 7.0\n4 7",
+              "explanation": "Turunan numerik cocok dengan rumus `2xy` dan `x^2 + 3` pada titik dua dan satu."
+            }
+          ],
+          "quick_check": {
+            "question": "Turunan parsial menahan?",
+            "options": [
+              "Variabel lain tetap",
+              "Semua variabel"
+            ],
+            "answer_index": 0,
+            "explanation": "Variabel lain dianggap konstanta.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tafsir turunan parsial",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tafsir turunan parsial\n\nTurunan parsial adalah kemiringan lereng pada satu arah sumbu. `f_x` di suatu titik memberi tahu kemiringan bila kamu berjalan lurus ke arah sumbu `x`, dan `f_y` bila berjalan ke arah sumbu `y`. Tanda memberi arah: positif berarti naik, negatif turun. Besarnya memberi kecuraman.\n\nDalam ML, turunan parsial loss terhadap satu parameter menjawab pertanyaan sederhana: bila parameter ini dinaikkan sedikit sementara parameter lain tetap, apakah loss naik atau turun, dan seberapa cepat? Jawaban untuk semua parameter, dikumpulkan bersama, adalah gradien yang menjadi pusat pelajaran berikutnya."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Trik mental",
+              "markdown": "Saat menurunkan terhadap satu variabel, ganti variabel lain dengan angka sungguhan di kepalamu, misalnya `y = 5`. Ini mencegah kesalahan menurunkan variabel yang seharusnya konstan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Gradien\n\nKumpulan semua turunan parsial disusun menjadi vektor yang disebut **gradien**, ditulis `grad f` atau `nabla f`. Untuk `f(x, y)` gradiennya `[f_x, f_y]`. Untuk fungsi `n` variabel gradiennya vektor dengan `n` komponen. Gradien adalah padanan turunan untuk fungsi banyak variabel: ia merangkum seluruh informasi kemiringan di satu titik dalam satu vektor.\n\nMisalnya `f(x, y) = x^2 + 3xy + y^2` memiliki gradien `[2x + 3y, 3x + 2y]`. Di titik `(1, 2)` nilainya `[8, 7]`. Gradien ini bergantung pada titik, jadi ia adalah fungsi bernilai vektor. Pelajaran berikut menunjukkan bahwa vektor ini menunjuk ke arah kenaikan tercuram."
+            },
+            {
+              "type": "code_example",
+              "filename": "gradien_numerik.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef f(p):\n    x, y = p\n    return x ** 2 + 3 * x * y + y ** 2\n\ndef gradien(f, p, h=1e-6):\n    p = np.array(p, dtype=float)\n    g = np.zeros_like(p)\n    for i in range(len(p)):\n        e = np.zeros_like(p)\n        e[i] = h\n        g[i] = (f(p + e) - f(p - e)) / (2 * h)\n    return g\n\ng = gradien(f, [1, 2])\nprint(g.round(4).tolist())\nprint(round(float(np.linalg.norm(g)), 4))",
+              "expected_output_note": "[8.0, 7.0]\n10.6301",
+              "explanation": "Gradien di `(1, 2)` adalah `[8, 7]` sesuai rumus `[2x + 3y, 3x + 2y]`. Panjangnya akar dari 113."
+            }
+          ],
+          "quick_check": {
+            "question": "Gradien f(x,y)?",
+            "options": [
+              "Bilangan",
+              "Vektor turunan parsial"
+            ],
+            "answer_index": 1,
+            "explanation": "[f_x, f_y].",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Bidang singgung",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bidang singgung\n\nPada satu variabel, garis singgung adalah aproksimasi linear terbaik fungsi. Pada dua variabel, perannya diambil oleh **bidang singgung**: `z = f(a, b) + f_x (x - a) + f_y (y - b)`. Bidang ini menyentuh permukaan di `(a, b)` dan sangat dekat dengan permukaan di sekitarnya.\n\nAproksimasi linear ini adalah dasar banyak algoritma optimasi. Gradient descent memakai bidang singgung untuk memutuskan langkah, dengan asumsi bahwa untuk langkah yang cukup kecil permukaan lokal hampir datar. Karena itu learning rate yang kecil penting: pada langkah besar, aproksimasi bidang tidak lagi berlaku dan loss bisa justru naik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Notasi yang akan kamu temui\n\nGradien muncul dengan beberapa notasi. Selain `grad f`, kamu akan melihat simbol nabla `nabla f`, dan dalam kode sering `dL_dw` atau sekadar `grad`. Semuanya berarti hal sama: vektor turunan parsial. Pada buku pelajaran turunan parsial ditulis dengan simbol d bulat, sedangkan di sini kita memakai `f_x` agar mudah diketik."
+            }
+          ],
+          "quick_check": {
+            "question": "Kontur adalah?",
+            "options": [
+              "Kurva ketinggian sama",
+              "Titik maksimum"
+            ],
+            "answer_index": 0,
+            "explanation": "Seperti garis tinggi peta.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-03-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `parsial_x(f, x, y, h=1e-6)` yang mengembalikan turunan parsial `f` terhadap `x` di `(x, y)` dengan selisih pusat, dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def parsial_x(f, x, y, h=1e-6):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "parsial_x(lambda x, y: x ** 2 * y + 3 * y, 2, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert parsial_x(lambda x, y: x ** 2 * y + 3 * y, 2, 1) == 4.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "parsial_x(lambda x, y: x * y, 3, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert parsial_x(lambda x, y: x * y, 3, 4) == 4.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "parsial_x(lambda x, y: y ** 3, 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert parsial_x(lambda x, y: y ** 3, 1, 2) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "parsial_x(lambda x, y: x ** 2 + y ** 2, 3, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert parsial_x(lambda x, y: x ** 2 + y ** 2, 3, 4) == 6.0"
+              }
+            ]
+          },
+          "hint": "Geser x maju dan mundur sementara y tetap.",
+          "solution": "def parsial_x(f, x, y, h=1e-6):\n    return round((f(x + h, y) - f(x - h, y)) / (2 * h), 4) + 0.0",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-03-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `gradien_2d(f, x, y, h=1e-6)` yang mengembalikan list `[f_x, f_y]` di `(x, y)` dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def gradien_2d(f, x, y, h=1e-6):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "gradien_2d(lambda x, y: x ** 2 + 3 * x * y + ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_2d(lambda x, y: x ** 2 + 3 * x * y + y ** 2, 1, 2) == [8.0, 7.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "gradien_2d(lambda x, y: x * y, 3, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_2d(lambda x, y: x * y, 3, 4) == [4.0, 3.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "gradien_2d(lambda x, y: 5, 1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_2d(lambda x, y: 5, 1, 1) == [0.0, 0.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "gradien_2d(lambda x, y: x ** 2 + y ** 2, 0, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_2d(lambda x, y: x ** 2 + y ** 2, 0, 0) == [0.0, 0.0]"
+              }
+            ]
+          },
+          "hint": "Hitung dua turunan parsial dan kembalikan dalam satu list.",
+          "solution": "def gradien_2d(f, x, y, h=1e-6):\n    fx = (f(x + h, y) - f(x - h, y)) / (2 * h)\n    fy = (f(x, y + h) - f(x, y - h)) / (2 * h)\n    return [round(fx, 4) + 0.0, round(fy, 4) + 0.0]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-03-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `norma_gradien(g)` yang mengembalikan panjang (norma Euclidean) vektor `g` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef norma_gradien(g):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "norma_gradien([3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert norma_gradien([3, 4]) == 5.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "norma_gradien([8, 7])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert norma_gradien([8, 7]) == 10.6301"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "norma_gradien([0, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert norma_gradien([0, 0]) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "norma_gradien([1, 1, 1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert norma_gradien([1, 1, 1, 1]) == 2.0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan kuadrat komponen lalu ambil akar.",
+          "solution": "import math\n\ndef norma_gradien(g):\n    return round(math.sqrt(sum(v * v for v in g)), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-03-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `bidang_singgung(f, x0, y0, x, y)` yang mengembalikan nilai bidang singgung `f` di `(x0, y0)` pada titik `(x, y)`, yaitu `f(x0, y0) + f_x (x - x0) + f_y (y - y0)`, dengan turunan parsial numerik selisih pusat `h=1e-6`.",
+          "note": "Bulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def bidang_singgung(f, x0, y0, x, y):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bidang_singgung(lambda x, y: x ** 2 + y ** 2,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bidang_singgung(lambda x, y: x ** 2 + y ** 2, 1, 1, 1.1, 1.1) == 2.4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bidang_singgung(lambda x, y: x * y, 2, 3, 2, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bidang_singgung(lambda x, y: x * y, 2, 3, 2, 3) == 6.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bidang_singgung(lambda x, y: 2 * x + 3 * y + ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bidang_singgung(lambda x, y: 2 * x + 3 * y + 1, 0, 0, 1, 1) == 6.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bidang_singgung(lambda x, y: x ** 2 * y, 1, 2...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bidang_singgung(lambda x, y: x ** 2 * y, 1, 2, 1, 3) == 3.0"
+              }
+            ]
+          },
+          "hint": "Hitung dua turunan parsial di titik acuan lalu rakit rumus bidang.",
+          "solution": "def bidang_singgung(f, x0, y0, x, y):\n    h = 1e-6\n    fx = (f(x0 + h, y0) - f(x0 - h, y0)) / (2 * h)\n    fy = (f(x0, y0 + h) - f(x0, y0 - h)) / (2 * h)\n    return round(f(x0, y0) + fx * (x - x0) + fy * (y - y0), 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Turunan parsial menahan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Semua variabel",
+              "description": ""
+            },
+            {
+              "label": "Variabel lain tetap",
+              "description": ""
+            },
+            {
+              "label": "Fungsi tetap",
+              "description": ""
+            },
+            {
+              "label": "Titik tetap",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Satu variabel bergerak.",
+          "explanation": "Variabel lain dianggap konstanta."
+        },
+        {
+          "q": "Gradien f(x,y)?",
+          "code": null,
+          "options": [
+            {
+              "label": "Bilangan",
+              "description": ""
+            },
+            {
+              "label": "Vektor turunan parsial",
+              "description": ""
+            },
+            {
+              "label": "Matriks",
+              "description": ""
+            },
+            {
+              "label": "Integral",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Vektor.",
+          "explanation": "[f_x, f_y]."
+        },
+        {
+          "q": "Kontur adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Titik maksimum",
+              "description": ""
+            },
+            {
+              "label": "Kurva ketinggian sama",
+              "description": ""
+            },
+            {
+              "label": "Gradien",
+              "description": ""
+            },
+            {
+              "label": "Turunan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Peta.",
+          "explanation": "Seperti garis tinggi peta."
+        },
+        {
+          "q": "f_x untuk x^2 y?",
+          "code": null,
+          "options": [
+            {
+              "label": "2x",
+              "description": ""
+            },
+            {
+              "label": "2xy",
+              "description": ""
+            },
+            {
+              "label": "x^2",
+              "description": ""
+            },
+            {
+              "label": "y",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Aturan pangkat.",
+          "explanation": "y dianggap konstan."
+        },
+        {
+          "q": "Kontur rapat berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lereng landai",
+              "description": ""
+            },
+            {
+              "label": "Lereng curam",
+              "description": ""
+            },
+            {
+              "label": "Datar",
+              "description": ""
+            },
+            {
+              "label": "Tak terdefinisi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dekat-dekat.",
+          "explanation": "Perubahan cepat."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menurunkan variabel yang seharusnya konstan. Lebih baik: Anggap variabel lain sebagai angka.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menurunkan variabel yang seharusnya konstan.",
+          "fix": "Anggap variabel lain sebagai angka."
+        },
+        {
+          "mistake": "Mengira gradien adalah satu bilangan.",
+          "fix": "Gradien adalah vektor turunan parsial."
+        },
+        {
+          "mistake": "Mengabaikan bahwa gradien bergantung pada titik.",
+          "fix": "Gradien berubah dari titik ke titik."
+        }
+      ],
+      "summary": [
+        "Turunan parsial menurunkan satu variabel dengan variabel lain tetap.",
+        "Gradien adalah vektor semua turunan parsial.",
+        "Kontur membantu membayangkan fungsi dua variabel.",
+        "Bidang singgung adalah aproksimasi linear lokal."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Fungsi banyak variabel dan turunan parsial"
+          },
+          {
+            "type": "text",
+            "source": "Keempat titik berada pada kontur yang sama yaitu lingkaran berjari-jari lima. Nilai terkecil pada grid berada di titik tengah."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef f(x, y):\n    return x ** 2 + y ** 2\n\ntitik = [(3, 4), (5, 0), (0, -5), (-4, 3)]\nprint([f(x, y) for x, y in titik])\nx = np.linspace(-2, 2, 5)\nX, Y = np.meshgrid(x, x)\nZ = f(X, Y)\nprint(Z.shape, Z.min(), Z.max())\nprint([int(i) for i in np.unravel_index(Z.argmin(), Z.shape)])"
+          },
+          {
+            "type": "text",
+            "source": "Turunan numerik cocok dengan rumus `2xy` dan `x^2 + 3` pada titik dua dan satu."
+          },
+          {
+            "type": "code",
+            "source": "def f(x, y):\n    return x ** 2 * y + 3 * y\n\ndef pd_x(f, x, y, h=1e-6):\n    return (f(x + h, y) - f(x - h, y)) / (2 * h)\n\ndef pd_y(f, x, y, h=1e-6):\n    return (f(x, y + h) - f(x, y - h)) / (2 * h)\n\nprint(f(2, 1))\nprint(round(pd_x(f, 2, 1), 4), round(pd_y(f, 2, 1), 4))\nprint(2 * 2 * 1, 2 ** 2 + 3)"
+          },
+          {
+            "type": "text",
+            "source": "Gradien di `(1, 2)` adalah `[8, 7]` sesuai rumus `[2x + 3y, 3x + 2y]`. Panjangnya akar dari 113."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef f(p):\n    x, y = p\n    return x ** 2 + 3 * x * y + y ** 2\n\ndef gradien(f, p, h=1e-6):\n    p = np.array(p, dtype=float)\n    g = np.zeros_like(p)\n    for i in range(len(p)):\n        e = np.zeros_like(p)\n        e[i] = h\n        g[i] = (f(p + e) - f(p - e)) / (2 * h)\n    return g\n\ng = gradien(f, [1, 2])\nprint(g.round(4).tolist())\nprint(round(float(np.linalg.norm(g)), 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A3-03-2",
+      "title": "Gradien dan arah penurunan tercuram",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung turunan berarah dari gradien",
+        "Memahami bahwa gradien menunjuk kenaikan tercuram",
+        "Memahami bahwa gradien tegak lurus kontur",
+        "Menyusun langkah penurunan gradien sederhana"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Bergerak ke arah mana pun",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bergerak ke arah mana pun\n\nTurunan parsial hanya memberi kemiringan sepanjang sumbu. Tetapi kita bisa bergerak ke arah mana pun di permukaan. **Turunan berarah** `D_u f` mengukur laju perubahan `f` bila kita bergerak searah vektor satuan `u`. Rumusnya sangat sederhana: `D_u f = grad f . u`, yaitu hasil kali dalam gradien dengan arah.\n\nRumus ini luar biasa berguna. Gradien dihitung sekali, lalu laju perubahan untuk arah mana pun cukup dengan hasil kali dalam. Bila `u` searah sumbu `x`, hasilnya `f_x`. Bila `u` miring, hasilnya campuran `f_x` dan `f_y` berbobot komponen `u`."
+            },
+            {
+              "type": "code_example",
+              "filename": "arah_tercuram.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ng = np.array([8.0, 7.0])\nn = np.linalg.norm(g)\nu = g / n\nprint(round(float(n), 4), u.round(4).tolist())\nprint(round(float(g @ u), 4))\nprint(round(float(g @ -u), 4))\ntegak = np.array([-u[1], u[0]])\nprint(round(float(g @ tegak), 4) + 0.0)",
+              "expected_output_note": "10.6301 [0.7526, 0.6585]\n10.6301\n-10.6301\n0.0",
+              "explanation": "Bergerak searah gradien memberi laju sebesar norma gradien, berlawanan memberi minus norma, dan tegak lurus memberi nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Gradien menunjuk kenaikan tercuram\n\nHasil kali dalam dua vektor sama dengan hasil kali panjang keduanya dikali kosinus sudut di antaranya. Untuk `u` satuan, `grad f . u = ||grad f|| cos(theta)`. Nilai ini paling besar saat `cos(theta) = 1`, yaitu `u` searah gradien. Jadi arah kenaikan tercuram adalah arah gradien, dan laju kenaikan maksimumnya sama dengan panjang gradien.\n\nSebaliknya, arah penurunan tercuram adalah **minus gradien**. Laju penurunannya juga sebesar panjang gradien. Dua kalimat sederhana ini adalah seluruh dasar gradient descent: untuk menurunkan loss secepat mungkin, bergeraklah ke arah minus gradien. Di titik tempat gradien nol, lereng datar di semua arah dan tidak ada arah penurunan lokal."
+            },
+            {
+              "type": "code_example",
+              "filename": "turunan_arah.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ng = np.array([8.0, 7.0])\nu = np.array([0.6, 0.8])\nprint(round(float(g @ u), 4))\n\ndef f(p):\n    x, y = p\n    return x ** 2 + 3 * x * y + y ** 2\n\np = np.array([1.0, 2.0])\nh = 1e-6\nnumerik = (f(p + h * u) - f(p - h * u)) / (2 * h)\nprint(round(float(numerik), 4))",
+              "expected_output_note": "10.4\n10.4",
+              "explanation": "Turunan berarah dari rumus hasil kali dalam sama dengan hitungan numerik sepanjang arah yang sama."
+            }
+          ],
+          "quick_check": {
+            "question": "Turunan berarah?",
+            "options": [
+              "grad f . u",
+              "grad f x u"
+            ],
+            "answer_index": 0,
+            "explanation": "Hasil kali dalam dengan arah satuan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Gradien tegak lurus kontur",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Gradien tegak lurus kontur\n\nSepanjang kontur nilai fungsi tidak berubah, sehingga turunan berarah sepanjang arah singgung kontur sama dengan nol. Karena `grad f . u = 0` untuk `u` singgung, gradien tegak lurus terhadap kontur. Pada peta topografi, ini berarti arah tanjakan paling curam memotong garis tinggi secara tegak lurus, seperti yang diketahui setiap pendaki.\n\nUntuk `f(x, y) = x^2 + y^2`, gradiennya `[2x, 2y]`, tak lain dari dua kali vektor posisi. Ia menunjuk radial keluar dari pusat, tegak lurus lingkaran. Fakta geometris ini menjelaskan banyak hal tentang perilaku gradient descent pada lembah berbentuk elips, yang akan segera kamu lihat."
+            },
+            {
+              "type": "code_example",
+              "filename": "gradien_kontur.py",
+              "runnable": true,
+              "code": "import numpy as np\n\np = np.array([3.0, 4.0])\ng = 2 * p\nsinggung = np.array([-4.0, 3.0])\nprint(float(g @ singgung) == 0.0)\ncos = float(g @ p) / (np.linalg.norm(g) * np.linalg.norm(p))\nprint(round(cos, 4))",
+              "expected_output_note": "True\n1.0",
+              "explanation": "Gradien lingkaran tegak lurus arah singgungnya dan sejajar vektor posisi."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Normalkan arahnya",
+              "markdown": "Rumus `grad f . u` hanya berlaku bila `u` vektor satuan. Bila arahnya belum dinormalkan, bagi dulu dengan panjangnya atau hasilnya terlalu besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Langkah penurunan gradien\n\nGabungkan semua ide ini menjadi algoritma. Mulai dari titik `p`. Hitung gradien `g` di `p`. Bergerak sedikit ke arah `-g`: `p_baru = p - lr * g`, dengan `lr` adalah **learning rate**, ukuran langkah. Ulangi. Bila `lr` cukup kecil dan fungsinya halus, setiap langkah menurunkan nilai fungsi, dan titik bergerak menuju lembah.\n\nContoh `f = x^2 + y^2` dengan gradien `[2x, 2y]`. Dengan `lr = 0.1` tiap langkah mengalikan koordinat dengan `0.8`, sehingga titik meluruh menuju nol. Dengan `lr = 0.5` titik jatuh tepat ke nol dalam satu langkah. Dengan `lr = 1.0` titik hanya membalik tanda tanpa mendekat, dan dengan `lr > 1` titik menjauh. Memilih learning rate adalah keputusan penting yang dibahas di modul-modul selanjutnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Arah kenaikan tercuram?",
+            "options": [
+              "Minus gradien",
+              "Gradien"
+            ],
+            "answer_index": 1,
+            "explanation": "Searah gradien.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Lembah elips dan zig-zag",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Lembah elips dan zig-zag\n\nBila kontur berbentuk lingkaran, arah minus gradien menunjuk langsung ke pusat dan penurunan lancar. Tetapi pada fungsi seperti `f = x^2 + 10 y^2`, kontur berbentuk elips pipih. Minus gradien tegak lurus kontur sehingga di sisi elips ia tidak menunjuk ke pusat, melainkan miring, dan algoritma memantul bolak-balik melintasi lembah sambil perlahan maju sepanjang dasarnya.\n\nGejala zig-zag ini adalah masalah klasik. Lembah yang sangat berbeda kemiringan pada dua arah disebut berkondisi buruk, terkait bilangan kondisi matriks Hessian. Teknik seperti momentum, normalisasi fitur, dan optimizer adaptif ada untuk mengurangi masalah ini, dan kamu akan mempelajarinya pada modul terakhir kursus ini."
+            },
+            {
+              "type": "text",
+              "markdown": "## Titik datar dan kriteria berhenti\n\nDi titik gradien nol, algoritma tidak lagi bergerak karena langkahnya nol. Itulah dasar kriteria berhenti paling umum: hentikan iterasi ketika norma gradien lebih kecil dari ambang kecil, atau ketika perubahan loss antar iterasi sudah sangat kecil. Kriteria tambahan adalah batas jumlah iterasi agar program tidak berjalan selamanya.\n\nPerlu diingat bahwa gradien nol belum menjamin minimum. Titik itu bisa minimum lokal, maksimum, atau titik pelana. Pada fungsi cembung seperti MSE regresi linear, setiap titik gradien nol adalah minimum global, sehingga algoritma pasti berakhir di jawaban terbaik. Pada jaringan saraf yang tidak cembung, jaminan itu hilang, namun dalam praktik minimum lokal yang ditemukan biasanya cukup baik."
+            }
+          ],
+          "quick_check": {
+            "question": "Gradien terhadap kontur?",
+            "options": [
+              "Tegak lurus",
+              "Sejajar"
+            ],
+            "answer_index": 0,
+            "explanation": "Sepanjang kontur laju nol.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-03-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `turunan_arah(g, u)` yang mengembalikan hasil kali dalam gradien `g` dan arah satuan `u` dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def turunan_arah(g, u):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "turunan_arah([8, 7], [0.6, 0.8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_arah([8, 7], [0.6, 0.8]) == 10.4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "turunan_arah([8, 7], [1, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_arah([8, 7], [1, 0]) == 8.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "turunan_arah([1, 2, 3], [0, 0, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_arah([1, 2, 3], [0, 0, 1]) == 3.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "turunan_arah([3, 4], [0.8, -0.6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_arah([3, 4], [0.8, -0.6]) == 0.0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan hasil kali komponen yang berpasangan.",
+          "solution": "def turunan_arah(g, u):\n    return round(sum(a * b for a, b in zip(g, u)), 4) + 0.0",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-03-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `arah_tercuram(g)` yang mengembalikan vektor satuan searah `g` (list dibulatkan 4 desimal).",
+          "note": "Bila `g` vektor nol kembalikan vektor nol dengan panjang sama. Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef arah_tercuram(g):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "arah_tercuram([3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert arah_tercuram([3, 4]) == [0.6, 0.8]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "arah_tercuram([0, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert arah_tercuram([0, 5]) == [0.0, 1.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "arah_tercuram([0, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert arah_tercuram([0, 0]) == [0.0, 0.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "arah_tercuram([-8, -7])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert arah_tercuram([-8, -7]) == [-0.7526, -0.6585]"
+              }
+            ]
+          },
+          "hint": "Bagi tiap komponen dengan norma kecuali norma nol.",
+          "solution": "import math\n\ndef arah_tercuram(g):\n    n = math.sqrt(sum(v * v for v in g))\n    if n == 0:\n        return [0.0] * len(g)\n    return [round(v / n, 4) + 0.0 for v in g]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-03-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `langkah_turun(titik, g, lr)` yang mengembalikan list `titik - lr * g` dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def langkah_turun(titik, g, lr):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "langkah_turun([1, 2], [8, 7], 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_turun([1, 2], [8, 7], 0.1) == [0.2, 1.3]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "langkah_turun([0, 0], [1, -1], 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_turun([0, 0], [1, -1], 0.5) == [-0.5, 0.5]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "langkah_turun([3], [6], 0.25)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_turun([3], [6], 0.25) == [1.5]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "langkah_turun([1, 1], [0, 0], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert langkah_turun([1, 1], [0, 0], 1) == [1.0, 1.0]"
+              }
+            ]
+          },
+          "hint": "Kurangkan lr kali gradien dari tiap koordinat.",
+          "solution": "def langkah_turun(titik, g, lr):\n    return [round(p - lr * v, 4) + 0.0 for p, v in zip(titik, g)]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-03-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `turun_gradien(grad, mulai, lr, langkah)` yang menerima fungsi `grad` (menerima list titik dan mengembalikan list gradien), titik awal, learning rate, dan jumlah langkah.",
+          "note": "Ulangi `titik = titik - lr * grad(titik)` sebanyak `langkah` kali lalu kembalikan titik dibulatkan 4 desimal. Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def turun_gradien(grad, mulai, lr, langkah):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "turun_gradien(g1, [1, 1], 0.1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "g1 = lambda p: [2 * p[0], 2 * p[1]]\nassert turun_gradien(g1, [1, 1], 0.1, 2) == [0.64, 0.64]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "turun_gradien(g1, [1, 1], 0.5, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turun_gradien(g1, [1, 1], 0.5, 1) == [0.0, 0.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "turun_gradien(g1, [1, 1], 1.0, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turun_gradien(g1, [1, 1], 1.0, 3) == [-1.0, -1.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "turun_gradien(g2, [0, 0], 0.25, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "g2 = lambda p: [2 * (p[0] - 3), 2 * (p[1] + 1)]\nassert turun_gradien(g2, [0, 0], 0.25, 2) == [2.25, -0.75]"
+              }
+            ]
+          },
+          "hint": "Perbarui seluruh koordinat dengan gradien dari titik yang sama pada tiap langkah.",
+          "solution": "def turun_gradien(grad, mulai, lr, langkah):\n    p = [float(v) for v in mulai]\n    for _ in range(langkah):\n        g = grad(p)\n        p = [a - lr * b for a, b in zip(p, g)]\n    return [round(v, 4) + 0.0 for v in p]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Turunan berarah?",
+          "code": null,
+          "options": [
+            {
+              "label": "grad f . u",
+              "description": ""
+            },
+            {
+              "label": "grad f x u",
+              "description": ""
+            },
+            {
+              "label": "f(u)",
+              "description": ""
+            },
+            {
+              "label": "grad f / u",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dot.",
+          "explanation": "Hasil kali dalam dengan arah satuan."
+        },
+        {
+          "q": "Arah kenaikan tercuram?",
+          "code": null,
+          "options": [
+            {
+              "label": "Gradien",
+              "description": ""
+            },
+            {
+              "label": "Minus gradien",
+              "description": ""
+            },
+            {
+              "label": "Tegak lurus gradien",
+              "description": ""
+            },
+            {
+              "label": "Sumbu x",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kosinus satu.",
+          "explanation": "Searah gradien."
+        },
+        {
+          "q": "Gradien terhadap kontur?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sejajar",
+              "description": ""
+            },
+            {
+              "label": "Tegak lurus",
+              "description": ""
+            },
+            {
+              "label": "Berimpit",
+              "description": ""
+            },
+            {
+              "label": "Tak berhubungan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dot nol.",
+          "explanation": "Sepanjang kontur laju nol."
+        },
+        {
+          "q": "Arah minimisasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Gradien",
+              "description": ""
+            },
+            {
+              "label": "Minus gradien",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Tetap",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Berlawanan.",
+          "explanation": "Turun secepatnya."
+        },
+        {
+          "q": "Learning rate terlalu besar?",
+          "code": null,
+          "options": [
+            {
+              "label": "Selalu cepat",
+              "description": ""
+            },
+            {
+              "label": "Bisa menyebabkan divergen",
+              "description": ""
+            },
+            {
+              "label": "Tidak berpengaruh",
+              "description": ""
+            },
+            {
+              "label": "Menghapus gradien",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Aproksimasi gagal.",
+          "explanation": "Langkah melompati lembah."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai arah yang belum dinormalkan pada turunan berarah. Lebih baik: Gunakan vektor satuan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai arah yang belum dinormalkan pada turunan berarah.",
+          "fix": "Gunakan vektor satuan."
+        },
+        {
+          "mistake": "Bergerak searah gradien saat ingin meminimalkan.",
+          "fix": "Minimisasi memakai minus gradien."
+        },
+        {
+          "mistake": "Menganggap gradien menunjuk ke minimum.",
+          "fix": "Gradien hanya menunjuk kenaikan tercuram lokal."
+        }
+      ],
+      "summary": [
+        "Turunan berarah sama dengan hasil kali dalam gradien dan arah satuan.",
+        "Gradien menunjuk kenaikan tercuram dan minus gradien penurunan tercuram.",
+        "Gradien tegak lurus kontur.",
+        "Gradient descent bergerak melawan gradien dengan learning rate."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Gradien dan arah penurunan tercuram"
+          },
+          {
+            "type": "text",
+            "source": "Bergerak searah gradien memberi laju sebesar norma gradien, berlawanan memberi minus norma, dan tegak lurus memberi nol."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ng = np.array([8.0, 7.0])\nn = np.linalg.norm(g)\nu = g / n\nprint(round(float(n), 4), u.round(4).tolist())\nprint(round(float(g @ u), 4))\nprint(round(float(g @ -u), 4))\ntegak = np.array([-u[1], u[0]])\nprint(round(float(g @ tegak), 4) + 0.0)"
+          },
+          {
+            "type": "text",
+            "source": "Turunan berarah dari rumus hasil kali dalam sama dengan hitungan numerik sepanjang arah yang sama."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ng = np.array([8.0, 7.0])\nu = np.array([0.6, 0.8])\nprint(round(float(g @ u), 4))\n\ndef f(p):\n    x, y = p\n    return x ** 2 + 3 * x * y + y ** 2\n\np = np.array([1.0, 2.0])\nh = 1e-6\nnumerik = (f(p + h * u) - f(p - h * u)) / (2 * h)\nprint(round(float(numerik), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Gradien lingkaran tegak lurus arah singgungnya dan sejajar vektor posisi."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\np = np.array([3.0, 4.0])\ng = 2 * p\nsinggung = np.array([-4.0, 3.0])\nprint(float(g @ singgung) == 0.0)\ncos = float(g @ p) / (np.linalg.norm(g) * np.linalg.norm(p))\nprint(round(cos, 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A3-03-3",
+      "title": "Penerapan: gradien loss, Jacobian, dan Hessian",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menurunkan gradien MSE untuk regresi linear",
+        "Menyusun gradien dalam bentuk matriks",
+        "Menghitung Jacobian untuk fungsi vektor",
+        "Menggunakan Hessian untuk menilai jenis titik kritis"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Loss regresi linear",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Loss regresi linear\n\nMari terapkan semuanya pada model sungguhan. Regresi linear sederhana memprediksi `y_hat = w x + b` dengan parameter `w` dan `b`. Loss rata-rata galat kuadrat (MSE) adalah `L = (1/n) sum (w x_i + b - y_i)^2`. Ini fungsi dua variabel dari `w` dan `b`, sehingga kita menghitung dua turunan parsial.\n\nDengan aturan rantai: `dL/dw = (2/n) sum (y_hat_i - y_i) x_i` dan `dL/db = (2/n) sum (y_hat_i - y_i)`. Pola yang indah: gradien adalah rata-rata galat berbobot masukan. Galat positif, yaitu prediksi terlalu tinggi, mendorong parameter turun. Bentuk ini muncul lagi hampir tanpa perubahan di regresi logistik dan jaringan saraf."
+            },
+            {
+              "type": "text",
+              "markdown": "## Bentuk matriks\n\nUntuk banyak fitur, penulisan satu-satu menjadi rumit. Susun data dalam matriks `X` berukuran `n x d`, tambahkan kolom satu untuk bias, dan kumpulkan parameter dalam vektor `w`. Prediksi menjadi `X w` dan loss `L = (1/n) ||X w - y||^2`. Gradiennya menjadi `grad L = (2/n) X^T (X w - y)`.\n\nSatu rumus ringkas itu menghitung gradien untuk semua parameter sekaligus, dan memanfaatkan perkalian matriks yang sangat dioptimasi. Ini alasan kode ML ditulis dengan operasi vektor, bukan perulangan. Di bagian awal kursus kamu sudah belajar perkalian matriks, dan sekarang kamu melihat manfaat langsungnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "mse_gradien.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nx = np.array([1.0, 2.0, 3.0])\ny = np.array([2.0, 4.0, 6.0])\nX = np.column_stack([x, np.ones_like(x)])\nw = np.zeros(2)\n\ndef mse(w):\n    return np.mean((X @ w - y) ** 2)\n\ndef grad(w):\n    return 2 / len(y) * X.T @ (X @ w - y)\n\nprint(round(float(mse(w)), 4), grad(w).round(4).tolist())\ngn = np.array([(mse(w + e) - mse(w - e)) / 2e-6 for e in (np.array([1e-6, 0.0]), np.array([0.0, 1e-6]))])\nprint(np.allclose(grad(w), gn, atol=1e-4))\nw2 = np.array([2.0, 0.0])\nprint(mse(w2), grad(w2).tolist())",
+              "expected_output_note": "18.6667 [-18.6667, -8.0]\nTrue\n0.0 [0.0, 0.0]",
+              "explanation": "Pada parameter nol gradien negatif untuk kedua parameter sehingga keduanya harus dinaikkan. Pada solusi sebenarnya `w = 2` dan `b = 0` loss dan gradien nol."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Periksa dimensi",
+              "markdown": "Ingat bentuk `X^T (X w - y)`: transpos data dikali residual. Bila bentuk matriksmu tidak cocok saat mengalikan, hampir pasti transposnya terbalik."
+            }
+          ],
+          "quick_check": {
+            "question": "Gradien MSE dalam bentuk matriks?",
+            "options": [
+              "(2/n) X^T (X w - y)",
+              "X w"
+            ],
+            "answer_index": 0,
+            "explanation": "Transpos data dikali residual.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Jacobian",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Jacobian\n\nBagaimana bila fungsi mengembalikan vektor, bukan satu bilangan? Contohnya lapisan jaringan saraf yang memetakan `n` masukan ke `m` keluaran. Turunan fungsi seperti itu adalah matriks, disebut **Jacobian**, dengan `m` baris dan `n` kolom: baris ke-`i` adalah gradien keluaran ke-`i`, dan elemen `(i, j)` adalah `df_i / dx_j`.\n\nJacobian adalah generalisasi turunan paling lengkap. Aturan rantai untuk komposisi menjadi perkalian matriks Jacobian: `J_(f o g) = J_f J_g`. Backpropagation sesungguhnya adalah perkalian rantai Jacobian dari lapisan terakhir ke awal. Untungnya pustaka mengurusnya, dan kita biasanya hanya perlu hasil kali Jacobian dengan vektor, yang jauh lebih murah daripada membentuk matriks penuh."
+            },
+            {
+              "type": "code_example",
+              "filename": "jacobian.py",
+              "runnable": true,
+              "code": "import math\n\ndef F(p):\n    x, y = p\n    return [x ** 2 * y, 5 * x + math.sin(y)]\n\ndef jacobian(F, p, h=1e-6):\n    m = len(F(p))\n    n = len(p)\n    J = [[0.0] * n for _ in range(m)]\n    for j in range(n):\n        a = list(p)\n        b = list(p)\n        a[j] += h\n        b[j] -= h\n        fa, fb = F(a), F(b)\n        for i in range(m):\n            J[i][j] = (fa[i] - fb[i]) / (2 * h)\n    return J\n\nJ = jacobian(F, [1.0, 2.0])\nprint([[round(v, 4) for v in baris] for baris in J])",
+              "expected_output_note": "[[4.0, 1.0], [5.0, -0.4161]]",
+              "explanation": "Jacobian analitiknya `[[2xy, x^2], [5, cos y]]` di `(1, 2)` bernilai `[[4, 1], [5, -0.4161]]`, sama dengan hasil numerik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hessian dan jenis titik kritis\n\nTurunan kedua untuk fungsi banyak variabel adalah matriks simetris **Hessian** `H`, dengan elemen `H_ij = d^2 f / (dx_i dx_j)`. Hessian mengukur kelengkungan permukaan pada tiap arah. Di titik kritis, tempat gradien nol, eigenvalue Hessian menentukan jenisnya.\n\nBila semua eigenvalue positif, permukaan melengkung ke atas ke segala arah dan titik itu adalah minimum lokal. Bila semua negatif, maksimum lokal. Bila ada yang positif dan ada yang negatif, titik itu adalah **titik pelana**: lembah pada satu arah tetapi puncak pada arah lain. Di ruang berdimensi tinggi titik pelana jauh lebih umum daripada minimum lokal, dan itu sebabnya pelatihan jaringan sering melambat di dekatnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "hessian.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef f(p):\n    x, y = p\n    return x ** 2 + 3 * x * y + y ** 2\n\ndef hessian(f, p, h=1e-3):\n    p = np.array(p, dtype=float)\n    n = len(p)\n    H = np.zeros((n, n))\n    for i in range(n):\n        for j in range(n):\n            ei = np.zeros(n)\n            ej = np.zeros(n)\n            ei[i] = h\n            ej[j] = h\n            H[i, j] = (f(p + ei + ej) - f(p + ei - ej) - f(p - ei + ej) + f(p - ei - ej)) / (4 * h * h)\n    return H\n\nH = hessian(f, [0.0, 0.0])\nprint(H.round(3).tolist())\nnilai = np.linalg.eigvalsh(H)\nprint(nilai.round(3).tolist())\nprint(bool(nilai.min() < 0 < nilai.max()))",
+              "expected_output_note": "[[2.0, 3.0], [3.0, 2.0]]\n[-1.0, 5.0]\nTrue",
+              "explanation": "Hessian konstan `[[2, 3], [3, 2]]` memiliki eigenvalue minus satu dan lima, tanda bertentangan sehingga titik kritis di nol adalah titik pelana."
+            }
+          ],
+          "quick_check": {
+            "question": "Jacobian berukuran?",
+            "options": [
+              "n x n selalu",
+              "m x n"
+            ],
+            "answer_index": 1,
+            "explanation": "m keluaran dan n masukan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dari teori ke gradient descent",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari teori ke gradient descent\n\nSekarang semua bahan sudah ada. Gradien memberi arah penurunan tercuram, learning rate menentukan ukuran langkah, dan Hessian menjelaskan bentuk lembah serta mengapa laju konvergensi berbeda antar arah. Modul-modul berikutnya menggabungkannya: aturan rantai untuk gradien jaringan, implementasi gradient descent dari nol, dan variasi seperti momentum.\n\nLatihan di akhir pelajaran ini membangun bagian-bagian praktis: hitungan MSE, gradiennya, pelatihan regresi linear dengan gradient descent, dan Jacobian numerik. Kerjakan semuanya, karena modul selanjutnya mengandaikan kamu sudah nyaman dengan potongan-potongan ini."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih ukuran data per langkah\n\nRumus gradien MSE menjumlahkan seluruh data. Untuk data besar, menghitungnya penuh pada tiap langkah mahal. Solusinya gradient descent stokastik: pakai sebagian kecil data acak, disebut mini-batch, untuk memperkirakan gradien. Perkiraan itu berderau tetapi tidak bias, dan jauh lebih murah, sehingga pembaruan bisa dilakukan jauh lebih sering.\n\nUkuran mini-batch adalah kompromi. Batch kecil memberi derau besar yang kadang membantu keluar dari titik pelana, sedangkan batch besar memberi gradien halus tetapi lebih lambat per langkah. Modul gradient descent dari nol akan membahas hal ini lebih jauh, lengkap dengan kode yang bisa kamu jalankan."
+            }
+          ],
+          "quick_check": {
+            "question": "Hessian berisi?",
+            "options": [
+              "Turunan kedua",
+              "Turunan pertama"
+            ],
+            "answer_index": 0,
+            "explanation": "Turunan parsial kedua.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-03-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `mse(w, b, x, y)` yang mengembalikan rata-rata kuadrat galat model `w x + b` terhadap list `x` dan `y`, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def mse(w, b, x, y):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "mse(0, 0, [1, 2, 3], [2, 4, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mse(0, 0, [1, 2, 3], [2, 4, 6]) == 18.6667"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "mse(2, 0, [1, 2, 3], [2, 4, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mse(2, 0, [1, 2, 3], [2, 4, 6]) == 0.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "mse(1, 1, [1, 2], [2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mse(1, 1, [1, 2], [2, 3]) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "mse(0, 0, [1], [3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mse(0, 0, [1], [3]) == 9.0"
+              }
+            ]
+          },
+          "hint": "Hitung selisih prediksi dan target, kuadratkan, lalu rata-ratakan.",
+          "solution": "def mse(w, b, x, y):\n    n = len(x)\n    return round(sum((w * a + b - t) ** 2 for a, t in zip(x, y)) / n, 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-03-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `gradien_mse(w, b, x, y)` yang mengembalikan tuple `(dL/dw, dL/db)` dari MSE regresi linear, dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def gradien_mse(w, b, x, y):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "gradien_mse(0, 0, [1, 2, 3], [2, 4, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_mse(0, 0, [1, 2, 3], [2, 4, 6]) == (-18.6667, -8.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "gradien_mse(2, 0, [1, 2, 3], [2, 4, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_mse(2, 0, [1, 2, 3], [2, 4, 6]) == (0.0, 0.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "gradien_mse(1, 1, [1, 2], [2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_mse(1, 1, [1, 2], [2, 3]) == (0.0, 0.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "gradien_mse(0, 0, [1], [3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_mse(0, 0, [1], [3]) == (-6.0, -6.0)"
+              }
+            ]
+          },
+          "hint": "Rata-ratakan dua kali galat untuk bias dan dua kali galat dikali x untuk bobot.",
+          "solution": "def gradien_mse(w, b, x, y):\n    n = len(x)\n    galat = [w * a + b - t for a, t in zip(x, y)]\n    dw = 2 * sum(e * a for e, a in zip(galat, x)) / n\n    db = 2 * sum(galat) / n\n    return (round(dw, 4) + 0.0, round(db, 4) + 0.0)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-03-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `fit_gd(x, y, lr, langkah)` yang melatih `w` dan `b` dengan gradient descent pada MSE mulai dari nol selama `langkah` iterasi dan mengembalikan tuple `(w, b)` dibulatkan 3 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def fit_gd(x, y, lr, langkah):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "fit_gd([1, 2, 3], [2, 4, 6], 0.1, 2000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fit_gd([1, 2, 3], [2, 4, 6], 0.1, 2000) == (2.0, 0.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "fit_gd([0, 1, 2, 3], [1, 3, 5, 7], 0.05, 5000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fit_gd([0, 1, 2, 3], [1, 3, 5, 7], 0.05, 5000) == (2.0, 1.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "fit_gd([1, 2, 3], [5, 5, 5], 0.05, 5000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert fit_gd([1, 2, 3], [5, 5, 5], 0.05, 5000) == (0.0, 5.0)"
+              }
+            ]
+          },
+          "hint": "Perbarui w dan b bersamaan memakai gradien yang dihitung dari nilai sebelum diperbarui.",
+          "solution": "def fit_gd(x, y, lr, langkah):\n    n = len(x)\n    w, b = 0.0, 0.0\n    for _ in range(langkah):\n        galat = [w * a + b - t for a, t in zip(x, y)]\n        dw = 2 * sum(e * a for e, a in zip(galat, x)) / n\n        db = 2 * sum(galat) / n\n        w -= lr * dw\n        b -= lr * db\n    return (round(w, 3) + 0.0, round(b, 3) + 0.0)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-03-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `jacobian_numerik(f, titik, h=1e-6)` yang menerima fungsi `f` (menerima list dan mengembalikan list) dan list `titik`, lalu mengembalikan Jacobian sebagai list of list (baris adalah keluaran, kolom adalah masukan) dengan selisih pusat, dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef jacobian_numerik(f, titik, h=1e-6):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jacobian_numerik(lambda p: [p[0] ** 2 * p[1],...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jacobian_numerik(lambda p: [p[0] ** 2 * p[1], 5 * p[0] + math.sin(p[1])], [1, 2]) == [[4.0, 1.0], [5.0, -0.4161]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jacobian_numerik(lambda p: [p[0] + p[1]], [3,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jacobian_numerik(lambda p: [p[0] + p[1]], [3, 4]) == [[1.0, 1.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jacobian_numerik(lambda p: [p[0] * 2, p[1] * ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jacobian_numerik(lambda p: [p[0] * 2, p[1] * 3], [1, 1]) == [[2.0, 0.0], [0.0, 3.0]]"
+              }
+            ]
+          },
+          "hint": "Geser tiap masukan maju dan mundur lalu isi satu kolom Jacobian dari selisih seluruh keluaran.",
+          "solution": "import math\n\ndef jacobian_numerik(f, titik, h=1e-6):\n    n = len(titik)\n    m = len(f(list(titik)))\n    J = [[0.0] * n for _ in range(m)]\n    for j in range(n):\n        a = list(titik)\n        b = list(titik)\n        a[j] += h\n        b[j] -= h\n        fa, fb = f(a), f(b)\n        for i in range(m):\n            J[i][j] = round((fa[i] - fb[i]) / (2 * h), 4) + 0.0\n    return J",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Gradien MSE dalam bentuk matriks?",
+          "code": null,
+          "options": [
+            {
+              "label": "(2/n) X^T (X w - y)",
+              "description": ""
+            },
+            {
+              "label": "X w",
+              "description": ""
+            },
+            {
+              "label": "X^T X",
+              "description": ""
+            },
+            {
+              "label": "y - X",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dua per n.",
+          "explanation": "Transpos data dikali residual."
+        },
+        {
+          "q": "Jacobian berukuran?",
+          "code": null,
+          "options": [
+            {
+              "label": "n x n selalu",
+              "description": ""
+            },
+            {
+              "label": "m x n",
+              "description": ""
+            },
+            {
+              "label": "1 x n",
+              "description": ""
+            },
+            {
+              "label": "n x 1",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Baris keluaran.",
+          "explanation": "m keluaran dan n masukan."
+        },
+        {
+          "q": "Hessian berisi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Turunan pertama",
+              "description": ""
+            },
+            {
+              "label": "Turunan kedua",
+              "description": ""
+            },
+            {
+              "label": "Integral",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kelengkungan.",
+          "explanation": "Turunan parsial kedua."
+        },
+        {
+          "q": "Eigenvalue campuran tanda berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Minimum",
+              "description": ""
+            },
+            {
+              "label": "Maksimum",
+              "description": ""
+            },
+            {
+              "label": "Titik pelana",
+              "description": ""
+            },
+            {
+              "label": "Datar",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Pelana.",
+          "explanation": "Naik di satu arah dan turun di arah lain."
+        },
+        {
+          "q": "Aturan rantai untuk vektor memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Penjumlahan",
+              "description": ""
+            },
+            {
+              "label": "Perkalian Jacobian",
+              "description": ""
+            },
+            {
+              "label": "Integral",
+              "description": ""
+            },
+            {
+              "label": "Limit",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Matriks.",
+          "explanation": "J_f J_g."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menukar transpos pada rumus gradien matriks. Lebih baik: Gunakan X^T (X w - y) dengan dimensi yang cocok.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menukar transpos pada rumus gradien matriks.",
+          "fix": "Gunakan X^T (X w - y) dengan dimensi yang cocok."
+        },
+        {
+          "mistake": "Mengira titik kritis selalu minimum.",
+          "fix": "Periksa eigenvalue Hessian untuk membedakan pelana."
+        },
+        {
+          "mistake": "Memperbarui parameter satu per satu dengan gradien yang sudah berubah.",
+          "fix": "Hitung semua gradien dari titik yang sama."
+        }
+      ],
+      "summary": [
+        "Gradien MSE regresi linear adalah rata-rata galat berbobot masukan.",
+        "Bentuk matriks menghitung semua gradien sekaligus.",
+        "Jacobian adalah turunan fungsi vektor dan Hessian turunan kedua.",
+        "Eigenvalue Hessian membedakan minimum, maksimum, dan titik pelana."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Penerapan: gradien loss, Jacobian, dan Hessian"
+          },
+          {
+            "type": "text",
+            "source": "Pada parameter nol gradien negatif untuk kedua parameter sehingga keduanya harus dinaikkan. Pada solusi sebenarnya `w = 2` dan `b = 0` loss dan gradien nol."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nx = np.array([1.0, 2.0, 3.0])\ny = np.array([2.0, 4.0, 6.0])\nX = np.column_stack([x, np.ones_like(x)])\nw = np.zeros(2)\n\ndef mse(w):\n    return np.mean((X @ w - y) ** 2)\n\ndef grad(w):\n    return 2 / len(y) * X.T @ (X @ w - y)\n\nprint(round(float(mse(w)), 4), grad(w).round(4).tolist())\ngn = np.array([(mse(w + e) - mse(w - e)) / 2e-6 for e in (np.array([1e-6, 0.0]), np.array([0.0, 1e-6]))])\nprint(np.allclose(grad(w), gn, atol=1e-4))\nw2 = np.array([2.0, 0.0])\nprint(mse(w2), grad(w2).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Jacobian analitiknya `[[2xy, x^2], [5, cos y]]` di `(1, 2)` bernilai `[[4, 1], [5, -0.4161]]`, sama dengan hasil numerik."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef F(p):\n    x, y = p\n    return [x ** 2 * y, 5 * x + math.sin(y)]\n\ndef jacobian(F, p, h=1e-6):\n    m = len(F(p))\n    n = len(p)\n    J = [[0.0] * n for _ in range(m)]\n    for j in range(n):\n        a = list(p)\n        b = list(p)\n        a[j] += h\n        b[j] -= h\n        fa, fb = F(a), F(b)\n        for i in range(m):\n            J[i][j] = (fa[i] - fb[i]) / (2 * h)\n    return J\n\nJ = jacobian(F, [1.0, 2.0])\nprint([[round(v, 4) for v in baris] for baris in J])"
+          },
+          {
+            "type": "text",
+            "source": "Hessian konstan `[[2, 3], [3, 2]]` memiliki eigenvalue minus satu dan lima, tanda bertentangan sehingga titik kritis di nol adalah titik pelana."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef f(p):\n    x, y = p\n    return x ** 2 + 3 * x * y + y ** 2\n\ndef hessian(f, p, h=1e-3):\n    p = np.array(p, dtype=float)\n    n = len(p)\n    H = np.zeros((n, n))\n    for i in range(n):\n        for j in range(n):\n            ei = np.zeros(n)\n            ej = np.zeros(n)\n            ei[i] = h\n            ej[j] = h\n            H[i, j] = (f(p + ei + ej) - f(p + ei - ej) - f(p - ei + ej) + f(p - ei - ej)) / (4 * h * h)\n    return H\n\nH = hessian(f, [0.0, 0.0])\nprint(H.round(3).tolist())\nnilai = np.linalg.eigvalsh(H)\nprint(nilai.round(3).tolist())\nprint(bool(nilai.min() < 0 < nilai.max()))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

@@ -28,61 +28,91 @@
       "module_no": 1,
       "title": "Fungsi, limit, dan kontinuitas",
       "file": "m01.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A3-01-1",
+        "exercise_id": "A3-01-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def softplus(x):\n    ..."
+      }
     },
     {
       "module_no": 2,
       "title": "Turunan dan aturan dasarnya",
       "file": "m02.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A3-02-1",
+        "exercise_id": "A3-02-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def turunan_kedua(f, x, h=1e-3):\n    ..."
+      }
     },
     {
       "module_no": 3,
       "title": "Turunan parsial dan gradien",
       "file": "m03.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A3-03-1",
+        "exercise_id": "A3-03-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def bidang_singgung(f, x0, y0, x, y):\n    ..."
+      }
     },
     {
       "module_no": 4,
       "title": "Chain rule dan turunan komposisi",
       "file": "m04.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A3-04-1",
+        "exercise_id": "A3-04-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def backward_skalar(masukan, ops):\n    ..."
+      }
     },
     {
       "module_no": 5,
       "title": "Gradient descent dari nol",
       "file": "m05.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A3-05-1",
+        "exercise_id": "A3-05-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def lr_dan_laju(a_max, a_min):\n    ..."
+      }
     },
     {
       "module_no": 6,
       "title": "Momentum, learning rate, dan optimizer",
       "file": "m06.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A3-06-1",
+        "exercise_id": "A3-06-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def langkah_hingga(grad, x0, lr, beta, tol, maks):\n    ..."
+      }
     }
   ]
 }

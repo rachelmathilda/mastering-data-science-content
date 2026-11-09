@@ -1,0 +1,1616 @@
+{
+  "schema_version": 2,
+  "course_id": "A6",
+  "module_no": 2,
+  "title": "Filter, urutan, dan limit",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menyaring baris dengan WHERE, IN, BETWEEN, dan LIKE",
+    "Mengurutkan dengan ORDER BY dan memutus seri",
+    "Membuat halaman dengan LIMIT dan OFFSET"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A6-02-1",
+    "exercise_id": "A6-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def jakbdg_besar(c, batas):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A6-02-1",
+      "title": "WHERE dengan perbandingan dan logika",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menyaring baris dengan WHERE dan operator perbandingan",
+        "Menggabungkan kondisi dengan AND, OR, dan NOT",
+        "Menjelaskan prioritas operator dan memakai tanda kurung",
+        "Menyaring dengan parameter secara aman"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Menyaring baris",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menyaring baris\n\nKlausa `WHERE` menyaring baris: hanya baris yang kondisinya benar yang masuk ke hasil. Ia dievaluasi setelah `FROM` dan sebelum `SELECT`, jadi baris yang tersaring tidak pernah diproses lebih lanjut. Menyaring sedini mungkin adalah cara paling efektif mempercepat query pada tabel besar.\n\nDi modul ini kita memakai tabel pesanan sepuluh baris berisi pelanggan, kota, produk, jumlah, total, dan tanggal. Satu pesanan sengaja memiliki jumlah `NULL` untuk mengingatkan bahwa filter dan NULL punya aturan khusus."
+            },
+            {
+              "type": "code_example",
+              "filename": "where_dasar.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute(\"SELECT id FROM pesanan WHERE kota = 'Jakarta'\").fetchall())\nprint(c.execute('SELECT id FROM pesanan WHERE total >= 100000').fetchall())",
+              "expected_output_note": "[(1,), (3,), (6,), (10,)]\n[(2,), (4,), (6,)]",
+              "explanation": "Empat pesanan berasal dari Jakarta dan tiga pesanan bernilai seratus ribu atau lebih."
+            },
+            {
+              "type": "text",
+              "markdown": "## Operator perbandingan\n\nOperator yang tersedia adalah `=`, `<>` atau `!=` untuk tidak sama, `<`, `<=`, `>`, dan `>=`. Perhatikan bahwa SQL memakai satu tanda sama dengan untuk perbandingan, bukan dua seperti di Python. Teks dibandingkan dalam tanda kutip tunggal, sedangkan tanda kutip ganda biasanya dipakai untuk nama kolom.\n\nPerbandingan teks bergantung pada kolasi basis data. Di SQLite perbandingan dengan `=` peka huruf besar-kecil secara default, sedangkan di MySQL biasanya tidak. Seragamkan huruf dengan `lower` bila ragu."
+            },
+            {
+              "type": "text",
+              "markdown": "## AND, OR, dan NOT\n\nKondisi digabung dengan `AND` yang menuntut keduanya benar, `OR` yang cukup salah satu, dan `NOT` yang membalik. Kota Jakarta dengan total di atas 30.000 menghasilkan dua pesanan. Menambah `AND` mempersempit hasil sedangkan menambah `OR` memperluasnya, intuisi yang menghindari banyak kekeliruan.\n\nDalam bahasa sehari-hari kita sering berkata \"Jakarta dan Bandung\" padahal maksudnya \"Jakarta atau Bandung\" karena satu baris tidak mungkin berada di dua kota sekaligus. Terjemahkan maksud ke logika dengan cermat."
+            },
+            {
+              "type": "code_example",
+              "filename": "and_or_not.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute(\"SELECT id FROM pesanan WHERE kota = 'Jakarta' AND total > 30000\").fetchall())\nprint(c.execute(\"SELECT id FROM pesanan WHERE kota = 'Bandung' OR total > 100000\").fetchall())\nprint(c.execute(\"SELECT id FROM pesanan WHERE NOT kota = 'Jakarta'\").fetchall())",
+              "expected_output_note": "[(6,), (10,)]\n[(2,), (4,), (5,), (6,), (9,)]\n[(2,), (4,), (5,), (7,), (8,), (9,)]",
+              "explanation": "AND mempersempit hasil menjadi dua, OR memperluas menjadi lima, dan NOT mengambil semua selain Jakarta."
+            }
+          ],
+          "quick_check": {
+            "question": "WHERE dievaluasi?",
+            "options": [
+              "Setelah FROM sebelum SELECT",
+              "Setelah SELECT"
+            ],
+            "answer_index": 0,
+            "explanation": "Urutan logis.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Prioritas operator",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Prioritas operator\n\nSeperti perkalian sebelum penjumlahan, `AND` dievaluasi sebelum `OR`. Kondisi `kota = 'Jakarta' OR kota = 'Bandung' AND total > 100000` dibaca sebagai Jakarta, atau Bandung yang bertotal besar, sehingga semua pesanan Jakarta ikut. Itu jarang maksud penulisnya.\n\nAturan aman: selalu pakai tanda kurung bila mencampur `AND` dan `OR`. Dengan tanda kurung `(Jakarta OR Bandung) AND total > 100000` hanya dua pesanan lolos. Tanda kurung membuat maksud jelas bagi mesin dan pembaca."
+            },
+            {
+              "type": "code_example",
+              "filename": "prioritas.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\ntanpa = \"SELECT id FROM pesanan WHERE kota = 'Jakarta' OR kota = 'Bandung' AND total > 100000\"\ndengan = \"SELECT id FROM pesanan WHERE (kota = 'Jakarta' OR kota = 'Bandung') AND total > 100000\"\nprint(c.execute(tanpa).fetchall())\nprint(c.execute(dengan).fetchall())",
+              "expected_output_note": "[(1,), (2,), (3,), (6,), (10,)]\n[(2,), (6,)]",
+              "explanation": "Tanpa tanda kurung semua pesanan Jakarta ikut terpilih, sedangkan dengan tanda kurung hanya dua pesanan besar yang lolos."
+            },
+            {
+              "type": "text",
+              "markdown": "## NULL dan filter\n\nIngat logika tiga nilai: baris yang kondisinya tidak diketahui tidak lolos `WHERE`. Pesanan 9 memiliki jumlah `NULL`, sehingga `jumlah > 2` tidak memasukkannya dan `NOT jumlah > 2` juga tidak. Kedua filter tidak saling melengkapi, dan pesanan 9 hilang dari keduanya.\n\nBila ingin memasukkan baris `NULL`, tulis eksplisit dengan `OR jumlah IS NULL`. Menyadari baris yang hilang diam-diam adalah keterampilan SQL yang membedakan analis teliti dari yang ceroboh."
+            },
+            {
+              "type": "code_example",
+              "filename": "null_filter.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nbesar = c.execute('SELECT id FROM pesanan WHERE jumlah > 2').fetchall()\nkecil = c.execute('SELECT id FROM pesanan WHERE NOT jumlah > 2').fetchall()\nprint(besar)\nprint(kecil)\nprint(c.execute('SELECT id FROM pesanan WHERE jumlah IS NULL OR jumlah > 2 ORDER BY id').fetchall())",
+              "expected_output_note": "[(3,), (4,), (7,), (8,), (10,)]\n[(1,), (2,), (5,), (6,)]\n[(3,), (4,), (7,), (8,), (9,), (10,)]",
+              "explanation": "Pesanan sembilan hilang dari kedua filter yang tampak saling melengkapi, dan baru muncul dengan IS NULL eksplisit."
+            }
+          ],
+          "quick_check": {
+            "question": "AND memiliki prioritas?",
+            "options": [
+              "Lebih rendah dari OR",
+              "Lebih tinggi dari OR"
+            ],
+            "answer_index": 1,
+            "explanation": "Seperti kali dan tambah.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Filter dengan parameter",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Filter dengan parameter\n\nNilai filter yang berasal dari luar, misalnya masukan pengguna, harus dikirim sebagai parameter: `WHERE kota = ?` dengan nilai pada tuple terpisah. Jangan menyusun query dengan f-string untuk nilai karena membuka celah injeksi SQL, di mana teks jahat diperlakukan sebagai bagian perintah.\n\nParameter juga lebih efisien karena mesin dapat memakai ulang rencana eksekusi. Hanya nama tabel dan kolom yang tidak bisa diparameterkan, dan itu harus divalidasi terhadap daftar yang diizinkan."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Kurung penyelamat",
+              "markdown": "Selalu pakai tanda kurung saat mencampur AND dan OR. Prioritas AND yang lebih tinggi sering menghasilkan filter yang berbeda dari maksud penulis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kondisi antar kolom\n\nFilter tidak harus membandingkan kolom dengan konstanta. Kamu dapat membandingkan dua kolom pada baris yang sama, misalnya `total > jumlah * 20000` untuk mencari pesanan dengan harga satuan di atas dua puluh ribu. Ekspresi aritmetika apa pun boleh muncul di sisi kiri maupun kanan kondisi.\n\nPerhatikan bahwa memakai fungsi pada kolom di sisi kiri, seperti `lower(kota) = 'jakarta'`, sering mencegah pemakaian indeks. Pada tabel besar, lebih baik menyimpan data dalam bentuk seragam daripada mengandalkan fungsi pada setiap pencarian."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa hasil filter\n\nSetelah menulis filter, periksa hasilnya dengan tiga pertanyaan. Berapa banyak baris yang lolos dan apakah masuk akal? Adakah baris yang seharusnya lolos tetapi hilang, misalnya karena NULL? Adakah baris yang seharusnya tersaring tetapi lolos karena prioritas operator yang keliru?\n\nCara cepat adalah membandingkan `COUNT(*)` dengan filter dan tanpa filter, atau menghitung dua filter yang seharusnya saling melengkapi dan memeriksa bahwa jumlahnya sama dengan total. Selisih menunjukkan baris yang jatuh di celah, biasanya NULL."
+            }
+          ],
+          "quick_check": {
+            "question": "Operator tidak sama?",
+            "options": [
+              "<> atau !=",
+              "=!"
+            ],
+            "answer_index": 0,
+            "explanation": "Standar.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pesanan_kota(c, kota)` yang mengembalikan list `id` pesanan dari kota tertentu terurut menurut `id`, memakai parameter bertanda tanya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pesanan_kota(c, kota):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pesanan_kota(c, 'Jakarta')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert pesanan_kota(c, 'Jakarta') == [1, 3, 6, 10]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pesanan_kota(c, 'Medan')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pesanan_kota(c, 'Medan') == [7]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pesanan_kota(c, 'Bogor')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pesanan_kota(c, 'Bogor') == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pesanan_kota(c, 'Bogor')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (11, 'Kiki', 'Bogor', 'Buku', 1, 12000, '2026-05-01')\")\nassert pesanan_kota(c, 'Bogor') == [11]"
+              }
+            ]
+          },
+          "hint": "Pakai WHERE kota sama dengan tanda tanya dan kirim kota sebagai tuple.",
+          "solution": "import sqlite3\n\ndef pesanan_kota(c, kota):\n    return [r[0] for r in c.execute('SELECT id FROM pesanan WHERE kota = ? ORDER BY id', (kota,)).fetchall()]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-02-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `besar_di_kota(c, kota, minimum)` yang mengembalikan list `id` pesanan di kota itu dengan `total` lebih besar dari `minimum`, terurut menurut `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef besar_di_kota(c, kota, minimum):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "besar_di_kota(c, 'Jakarta', 30000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert besar_di_kota(c, 'Jakarta', 30000) == [6, 10]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "besar_di_kota(c, 'Bandung', 100000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert besar_di_kota(c, 'Bandung', 100000) == [2]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "besar_di_kota(c, 'Medan', 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert besar_di_kota(c, 'Medan', 0) == [7]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "besar_di_kota(c, 'Jakarta', 1000000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert besar_di_kota(c, 'Jakarta', 1000000) == []"
+              }
+            ]
+          },
+          "hint": "Gabungkan dua kondisi dengan AND dan dua parameter.",
+          "solution": "import sqlite3\n\ndef besar_di_kota(c, kota, minimum):\n    q = 'SELECT id FROM pesanan WHERE kota = ? AND total > ? ORDER BY id'\n    return [r[0] for r in c.execute(q, (kota, minimum)).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kota_atau_besar(c, kota, batas)` yang mengembalikan list `id` pesanan yang berasal dari kota itu ATAU bertotal lebih dari `batas`, terurut menurut `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef kota_atau_besar(c, kota, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kota_atau_besar(c, 'Bandung', 100000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert kota_atau_besar(c, 'Bandung', 100000) == [2, 4, 5, 6, 9]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kota_atau_besar(c, 'Medan', 200000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kota_atau_besar(c, 'Medan', 200000) == [6, 7]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kota_atau_besar(c, 'Jakarta', 1000000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kota_atau_besar(c, 'Jakarta', 1000000) == [1, 3, 6, 10]"
+              }
+            ]
+          },
+          "hint": "Pakai OR di antara kondisi kota dan kondisi total.",
+          "solution": "import sqlite3\n\ndef kota_atau_besar(c, kota, batas):\n    q = 'SELECT id FROM pesanan WHERE kota = ? OR total > ? ORDER BY id'\n    return [r[0] for r in c.execute(q, (kota, batas)).fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `jakbdg_besar(c, batas)` yang mengembalikan list `id` pesanan dari Jakarta atau Bandung yang bertotal lebih dari `batas`, terurut menurut `id`.",
+          "note": "Pastikan prioritas operator benar.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef jakbdg_besar(c, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jakbdg_besar(c, 100000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert jakbdg_besar(c, 100000) == [2, 6]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jakbdg_besar(c, 40000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jakbdg_besar(c, 40000) == [2, 6, 10]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jakbdg_besar(c, 1000000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jakbdg_besar(c, 1000000) == []"
+              }
+            ]
+          },
+          "hint": "Bungkus kondisi kota dengan tanda kurung sebelum AND total.",
+          "solution": "import sqlite3\n\ndef jakbdg_besar(c, batas):\n    q = \"SELECT id FROM pesanan WHERE (kota = 'Jakarta' OR kota = 'Bandung') AND total > ? ORDER BY id\"\n    return [r[0] for r in c.execute(q, (batas,)).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "WHERE dievaluasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Setelah FROM sebelum SELECT",
+              "description": ""
+            },
+            {
+              "label": "Setelah SELECT",
+              "description": ""
+            },
+            {
+              "label": "Setelah ORDER BY",
+              "description": ""
+            },
+            {
+              "label": "Terakhir",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Setelah sumber.",
+          "explanation": "Urutan logis."
+        },
+        {
+          "q": "AND memiliki prioritas?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lebih tinggi dari OR",
+              "description": ""
+            },
+            {
+              "label": "Lebih rendah dari OR",
+              "description": ""
+            },
+            {
+              "label": "Sama",
+              "description": ""
+            },
+            {
+              "label": "Tak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lebih tinggi.",
+          "explanation": "Seperti kali dan tambah."
+        },
+        {
+          "q": "Operator tidak sama?",
+          "code": null,
+          "options": [
+            {
+              "label": "<> atau !=",
+              "description": ""
+            },
+            {
+              "label": "=!",
+              "description": ""
+            },
+            {
+              "label": "<=>",
+              "description": ""
+            },
+            {
+              "label": "==",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tidak sama.",
+          "explanation": "Standar."
+        },
+        {
+          "q": "Filter jumlah > 2 pada NULL?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris tidak lolos",
+              "description": ""
+            },
+            {
+              "label": "Lolos",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "Dianggap nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NULL.",
+          "explanation": "Tidak diketahui."
+        },
+        {
+          "q": "Nilai dari pengguna dikirim lewat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Parameter",
+              "description": ""
+            },
+            {
+              "label": "f-string",
+              "description": ""
+            },
+            {
+              "label": "Komentar",
+              "description": ""
+            },
+            {
+              "label": "Nama tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tanda tanya.",
+          "explanation": "Cegah injeksi."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mencampur AND dan OR tanpa tanda kurung. Lebih baik: Selalu beri tanda kurung.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mencampur AND dan OR tanpa tanda kurung.",
+          "fix": "Selalu beri tanda kurung."
+        },
+        {
+          "mistake": "Menyusun filter dari input pengguna dengan f-string.",
+          "fix": "Pakai parameter bertanda tanya."
+        },
+        {
+          "mistake": "Mengira filter dan negasinya mencakup semua baris.",
+          "fix": "Baris NULL hilang dari keduanya."
+        }
+      ],
+      "summary": [
+        "WHERE menyaring baris sebelum diproses lebih lanjut.",
+        "AND mempersempit, OR memperluas, dan AND didahulukan.",
+        "Baris NULL tidak lolos filter perbandingan dan negasinya.",
+        "Parameter mencegah injeksi SQL."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# WHERE dengan perbandingan dan logika"
+          },
+          {
+            "type": "text",
+            "source": "Empat pesanan berasal dari Jakarta dan tiga pesanan bernilai seratus ribu atau lebih."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute(\"SELECT id FROM pesanan WHERE kota = 'Jakarta'\").fetchall())\nprint(c.execute('SELECT id FROM pesanan WHERE total >= 100000').fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "AND mempersempit hasil menjadi dua, OR memperluas menjadi lima, dan NOT mengambil semua selain Jakarta."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute(\"SELECT id FROM pesanan WHERE kota = 'Jakarta' AND total > 30000\").fetchall())\nprint(c.execute(\"SELECT id FROM pesanan WHERE kota = 'Bandung' OR total > 100000\").fetchall())\nprint(c.execute(\"SELECT id FROM pesanan WHERE NOT kota = 'Jakarta'\").fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Tanpa tanda kurung semua pesanan Jakarta ikut terpilih, sedangkan dengan tanda kurung hanya dua pesanan besar yang lolos."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\ntanpa = \"SELECT id FROM pesanan WHERE kota = 'Jakarta' OR kota = 'Bandung' AND total > 100000\"\ndengan = \"SELECT id FROM pesanan WHERE (kota = 'Jakarta' OR kota = 'Bandung') AND total > 100000\"\nprint(c.execute(tanpa).fetchall())\nprint(c.execute(dengan).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Pesanan sembilan hilang dari kedua filter yang tampak saling melengkapi, dan baru muncul dengan IS NULL eksplisit."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nbesar = c.execute('SELECT id FROM pesanan WHERE jumlah > 2').fetchall()\nkecil = c.execute('SELECT id FROM pesanan WHERE NOT jumlah > 2').fetchall()\nprint(besar)\nprint(kecil)\nprint(c.execute('SELECT id FROM pesanan WHERE jumlah IS NULL OR jumlah > 2 ORDER BY id').fetchall())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-02-2",
+      "title": "IN, BETWEEN, dan LIKE",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menyaring dengan daftar nilai memakai IN",
+        "Menyaring rentang memakai BETWEEN dan menyadari batas inklusif",
+        "Mencocokkan pola teks dengan LIKE",
+        "Menyaring tanggal teks dengan benar"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "IN untuk daftar nilai",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## IN untuk daftar nilai\n\nOperator `IN` memeriksa apakah nilai ada dalam daftar. `kota IN ('Medan', 'Surabaya')` setara dengan dua kondisi `OR` tetapi lebih ringkas dan mudah dibaca. Negasinya `NOT IN` mengambil baris yang nilainya tidak ada dalam daftar.\n\nDaftar nilai juga dapat berasal dari subquery, yang dibahas pada modul lain. Hati-hati dengan `NOT IN` bila daftar mengandung `NULL`: perbandingan dengan `NULL` tidak diketahui sehingga seluruh hasil bisa kosong tanpa peringatan."
+            },
+            {
+              "type": "code_example",
+              "filename": "in_daftar.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute(\"SELECT id FROM pesanan WHERE kota IN ('Medan', 'Surabaya')\").fetchall())\nprint(c.execute(\"SELECT id FROM pesanan WHERE kota NOT IN ('Jakarta', 'Bandung')\").fetchall())",
+              "expected_output_note": "[(4,), (7,), (8,)]\n[(4,), (7,), (8,)]",
+              "explanation": "IN dan NOT IN dengan daftar yang saling melengkapi memberi tiga pesanan yang sama pada data ini."
+            },
+            {
+              "type": "text",
+              "markdown": "## Daftar dinamis dengan parameter\n\nBila daftar nilai berasal dari kode, kita menyusun tanda tanya sebanyak anggota daftar: `','.join('?' * n)`. Query akhirnya `WHERE kota IN (?, ?)` dengan tuple nilai sebagai parameter. Cara ini tetap aman dari injeksi karena hanya jumlah tanda tanya yang disusun dari kode, sedangkan nilai tetap dikirim terpisah.\n\nDaftar kosong perlu ditangani khusus: sebagian basis data menolak `IN ()`. Untuk daftar kosong, hasil yang benar secara logika adalah himpunan kosong, sehingga fungsi dapat langsung mengembalikan list kosong."
+            },
+            {
+              "type": "text",
+              "markdown": "## BETWEEN dan batas inklusif\n\n`total BETWEEN 20000 AND 50000` setara dengan `total >= 20000 AND total <= 50000`: kedua batas termasuk. Ini berbeda dari konvensi setengah terbuka yang sering dipakai dalam pemrograman. Pesanan dengan total tepat 20000 dan tepat 50000 sama-sama lolos.\n\nKarena inklusif, hati-hati saat membagi rentang menjadi potongan yang berurutan. Nilai di batas bersama muncul di dua potongan bila memakai `BETWEEN` untuk keduanya. Untuk potongan berurutan, pakai `>=` dan `<` agar tidak tumpang tindih."
+            },
+            {
+              "type": "code_example",
+              "filename": "between.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute('SELECT id FROM pesanan WHERE total BETWEEN 20000 AND 50000').fetchall())\nprint(c.execute('SELECT id FROM pesanan WHERE total >= 20000 AND total <= 50000').fetchall())",
+              "expected_output_note": "[(1,), (3,), (7,), (8,), (9,), (10,)]\n[(1,), (3,), (7,), (8,), (9,), (10,)]",
+              "explanation": "BETWEEN sama dengan pasangan lebih-besar-sama dan kurang-dari-sama, dan pesanan bertotal tepat batas ikut lolos."
+            }
+          ],
+          "quick_check": {
+            "question": "BETWEEN a AND b?",
+            "options": [
+              "Inklusif kedua ujung",
+              "Eksklusif"
+            ],
+            "answer_index": 0,
+            "explanation": "Sama dengan >= dan <=.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tanggal sebagai teks",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tanggal sebagai teks\n\nSQLite tidak memiliki tipe tanggal khusus. Tanggal disimpan sebagai teks berformat `YYYY-MM-DD`, dan format ini istimewa karena urutan abjad sama dengan urutan kronologis. Karena itu `BETWEEN '2026-02-01' AND '2026-02-28'` bekerja dengan benar untuk menyaring bulan Februari.\n\nFormat lain seperti `DD/MM/YYYY` merusak sifat ini karena urutan abjad tidak lagi kronologis. Selalu simpan tanggal dalam format ISO. Basis data lain memiliki tipe `DATE` dan `TIMESTAMP` asli dengan fungsi tanggal lengkap."
+            },
+            {
+              "type": "code_example",
+              "filename": "tanggal_iso.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute(\"SELECT id FROM pesanan WHERE tanggal BETWEEN '2026-02-01' AND '2026-02-28'\").fetchall())\nprint(c.execute(\"SELECT id FROM pesanan WHERE tanggal >= '2026-03-01' AND tanggal < '2026-04-01'\").fetchall())",
+              "expected_output_note": "[(3,), (4,), (5,)]\n[(6,), (7,), (8,)]",
+              "explanation": "Format ISO membuat perbandingan teks sama dengan perbandingan kronologis untuk bulan Februari dan Maret."
+            },
+            {
+              "type": "text",
+              "markdown": "## LIKE untuk pola teks\n\n`LIKE` mencocokkan teks dengan pola. Tanda persen mewakili nol atau lebih karakter apa pun, dan garis bawah mewakili tepat satu karakter. `LIKE 'A%'` mencocokkan teks berawalan A, `LIKE '%a'` berakhiran a, `LIKE '%en%'` mengandung en, dan `LIKE '_o%'` berhuruf kedua o.\n\nDi SQLite `LIKE` tidak peka huruf besar-kecil untuk huruf ASCII, sedangkan PostgreSQL memakai `ILIKE` untuk itu dan `LIKE` peka huruf. Untuk pencocokan yang kompleks, tersedia ekspresi reguler, tetapi LIKE cukup untuk kebanyakan kebutuhan sehari-hari."
+            },
+            {
+              "type": "code_example",
+              "filename": "like.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nfor pola in ('%a', 'A%', '_o%', 'a%'):\n    print(pola, c.execute('SELECT pelanggan FROM pesanan WHERE pelanggan LIKE ? ORDER BY id', (pola,)).fetchall())",
+              "expected_output_note": "%a [('Citra',), ('Gita',)]\nA% [('Ani',)]\n_o% [('Joko',)]\na% [('Ani',)]",
+              "explanation": "Pola huruf kecil a persen tetap cocok dengan Ani karena LIKE di SQLite tidak peka huruf besar-kecil."
+            }
+          ],
+          "quick_check": {
+            "question": "Wildcard banyak karakter?",
+            "options": [
+              "_",
+              "%"
+            ],
+            "answer_index": 1,
+            "explanation": "Persen.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Karakter khusus dan performa",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Karakter khusus dan performa\n\nBila teks yang dicari mengandung tanda persen atau garis bawah literal, gunakan `ESCAPE`: `LIKE '50\\%%' ESCAPE '\\'`. Tanpa itu karakter tersebut ditafsirkan sebagai wildcard dan hasilnya mengejutkan.\n\nSoal performa: pola berawalan teks tetap seperti `'Ani%'` dapat memanfaatkan indeks, sedangkan pola berawalan wildcard seperti `'%ani'` memaksa pemindaian seluruh tabel. Untuk pencarian teks besar, basis data menyediakan indeks pencarian teks penuh khusus."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tanggal ISO",
+              "markdown": "Simpan tanggal dalam format ISO YYYY-MM-DD. Urutan abjadnya sama dengan urutan waktu sehingga BETWEEN dan ORDER BY bekerja benar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih antara IN dan OR\n\nSecara hasil, `IN` dan rangkaian `OR` setara, jadi pilihan murni soal keterbacaan dan pemeliharaan. Daftar sepuluh kota terbaca jauh lebih jelas dengan `IN` daripada sepuluh kondisi `OR`. Untuk daftar yang sangat panjang, simpan nilai dalam tabel tersendiri lalu gabungkan, daripada menulis ribuan nilai langsung di query.\n\nMesin basis data modern mengoptimalkan keduanya dengan baik, sehingga tidak perlu khawatir soal kecepatan pada daftar pendek. Fokuskan perhatian pada kebenaran logika dan pada penanganan NULL."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kombinasi pola dan rentang\n\nDalam praktik, filter jarang berdiri sendiri. Pencarian pelanggan bernama berawalan tertentu pada rentang tanggal tertentu dari kota tertentu menggabungkan `LIKE`, `BETWEEN`, dan `IN` dengan `AND`. Tulis tiap kondisi pada baris terpisah dengan indentasi rapi agar mudah dibaca dan diubah.\n\nUji tiap kondisi satu per satu sebelum menggabungkannya. Menghitung banyak baris setelah menambah tiap kondisi memperlihatkan seberapa besar pengaruh masing-masing, dan membantu menemukan kondisi yang salah ketik atau terlalu ketat."
+            }
+          ],
+          "quick_check": {
+            "question": "Wildcard satu karakter?",
+            "options": [
+              "_",
+              "%"
+            ],
+            "answer_index": 0,
+            "explanation": "Garis bawah.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `di_kota_daftar(c, daftar)` yang mengembalikan list `id` pesanan dengan kota di dalam `daftar`, terurut menurut `id`.",
+          "note": "Untuk daftar kosong kembalikan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef di_kota_daftar(c, daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "di_kota_daftar(c, ['Medan', 'Surabaya'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert di_kota_daftar(c, ['Medan', 'Surabaya']) == [4, 7, 8]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "di_kota_daftar(c, ['Jakarta'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert di_kota_daftar(c, ['Jakarta']) == [1, 3, 6, 10]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "di_kota_daftar(c, [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert di_kota_daftar(c, []) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "di_kota_daftar(c, ['Bogor'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert di_kota_daftar(c, ['Bogor']) == []"
+              }
+            ]
+          },
+          "hint": "Susun tanda tanya sebanyak anggota daftar dan kirim daftar sebagai parameter.",
+          "solution": "import sqlite3\n\ndef di_kota_daftar(c, daftar):\n    if not daftar:\n        return []\n    ph = ','.join('?' * len(daftar))\n    q = f'SELECT id FROM pesanan WHERE kota IN ({ph}) ORDER BY id'\n    return [r[0] for r in c.execute(q, tuple(daftar)).fetchall()]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-02-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rentang_total(c, lo, hi)` yang mengembalikan list `id` pesanan dengan `total` antara `lo` dan `hi` inklusif, terurut menurut `id`, memakai `BETWEEN`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef rentang_total(c, lo, hi):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rentang_total(c, 20000, 50000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert rentang_total(c, 20000, 50000) == [1, 3, 7, 8, 9, 10]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rentang_total(c, 12000, 12000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang_total(c, 12000, 12000) == [5]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rentang_total(c, 400000, 500000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang_total(c, 400000, 500000) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rentang_total(c, 0, 25000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang_total(c, 0, 25000) == [1, 3, 5, 7]"
+              }
+            ]
+          },
+          "hint": "Pakai BETWEEN dengan dua parameter.",
+          "solution": "import sqlite3\n\ndef rentang_total(c, lo, hi):\n    q = 'SELECT id FROM pesanan WHERE total BETWEEN ? AND ? ORDER BY id'\n    return [r[0] for r in c.execute(q, (lo, hi)).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tanggal_antara(c, awal, akhir)` yang mengembalikan list `id` pesanan dengan `tanggal` dari `awal` sampai `akhir` inklusif (teks ISO), terurut menurut `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef tanggal_antara(c, awal, akhir):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tanggal_antara(c, '2026-02-01', '2026-02-28')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert tanggal_antara(c, '2026-02-01', '2026-02-28') == [3, 4, 5]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tanggal_antara(c, '2026-03-01', '2026-03-31')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanggal_antara(c, '2026-03-01', '2026-03-31') == [6, 7, 8]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tanggal_antara(c, '2027-01-01', '2027-12-31')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanggal_antara(c, '2027-01-01', '2027-12-31') == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tanggal_antara(c, '2026-01-05', '2026-01-05')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tanggal_antara(c, '2026-01-05', '2026-01-05') == [1]"
+              }
+            ]
+          },
+          "hint": "Bandingkan teks tanggal dengan BETWEEN dua parameter.",
+          "solution": "import sqlite3\n\ndef tanggal_antara(c, awal, akhir):\n    q = 'SELECT id FROM pesanan WHERE tanggal BETWEEN ? AND ? ORDER BY id'\n    return [r[0] for r in c.execute(q, (awal, akhir)).fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `nama_pola(c, pola)` yang mengembalikan list nama `pelanggan` yang cocok dengan pola `LIKE`, terurut menurut `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef nama_pola(c, pola):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_pola(c, '%a')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert nama_pola(c, '%a') == ['Citra', 'Gita']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_pola(c, 'A%')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_pola(c, 'A%') == ['Ani']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_pola(c, '_o%')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_pola(c, '_o%') == ['Joko']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "nama_pola(c, '%i')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_pola(c, '%i') == ['Ani', 'Budi', 'Dewi', 'Hadi']"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "nama_pola(c, 'Z%')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nama_pola(c, 'Z%') == []"
+              }
+            ]
+          },
+          "hint": "Pakai LIKE dengan pola sebagai parameter.",
+          "solution": "import sqlite3\n\ndef nama_pola(c, pola):\n    q = 'SELECT pelanggan FROM pesanan WHERE pelanggan LIKE ? ORDER BY id'\n    return [r[0] for r in c.execute(q, (pola,)).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "BETWEEN a AND b?",
+          "code": null,
+          "options": [
+            {
+              "label": "Inklusif kedua ujung",
+              "description": ""
+            },
+            {
+              "label": "Eksklusif",
+              "description": ""
+            },
+            {
+              "label": "Hanya atas",
+              "description": ""
+            },
+            {
+              "label": "Hanya bawah",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Inklusif.",
+          "explanation": "Sama dengan >= dan <=."
+        },
+        {
+          "q": "Wildcard banyak karakter?",
+          "code": null,
+          "options": [
+            {
+              "label": "%",
+              "description": ""
+            },
+            {
+              "label": "_",
+              "description": ""
+            },
+            {
+              "label": "*",
+              "description": ""
+            },
+            {
+              "label": "?",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Persen.",
+          "explanation": "Persen."
+        },
+        {
+          "q": "Wildcard satu karakter?",
+          "code": null,
+          "options": [
+            {
+              "label": "_",
+              "description": ""
+            },
+            {
+              "label": "%",
+              "description": ""
+            },
+            {
+              "label": "#",
+              "description": ""
+            },
+            {
+              "label": ".",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu.",
+          "explanation": "Garis bawah."
+        },
+        {
+          "q": "Format tanggal teks yang aman diurutkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "YYYY-MM-DD",
+              "description": ""
+            },
+            {
+              "label": "DD/MM/YYYY",
+              "description": ""
+            },
+            {
+              "label": "MM-DD-YY",
+              "description": ""
+            },
+            {
+              "label": "D M Y",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tahun dulu.",
+          "explanation": "ISO."
+        },
+        {
+          "q": "LIKE pada pola berawalan wildcard?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lambat karena pemindaian penuh",
+              "description": ""
+            },
+            {
+              "label": "Cepat dengan indeks",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "Kosong",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Awalan.",
+          "explanation": "Tidak bisa pakai indeks."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira BETWEEN tidak mencakup batas atas. Lebih baik: BETWEEN inklusif di kedua ujung.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira BETWEEN tidak mencakup batas atas.",
+          "fix": "BETWEEN inklusif di kedua ujung."
+        },
+        {
+          "mistake": "Menyimpan tanggal dalam format DD/MM/YYYY.",
+          "fix": "Pakai ISO YYYY-MM-DD."
+        },
+        {
+          "mistake": "Memakai NOT IN pada daftar yang mungkin berisi NULL.",
+          "fix": "Buang NULL dari daftar atau pakai NOT EXISTS."
+        }
+      ],
+      "summary": [
+        "IN meringkas banyak kondisi OR dan harus berhati-hati dengan NULL.",
+        "BETWEEN inklusif di kedua ujung.",
+        "Tanggal ISO membuat perbandingan teks sama dengan kronologis.",
+        "LIKE memakai persen dan garis bawah sebagai wildcard."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# IN, BETWEEN, dan LIKE"
+          },
+          {
+            "type": "text",
+            "source": "IN dan NOT IN dengan daftar yang saling melengkapi memberi tiga pesanan yang sama pada data ini."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute(\"SELECT id FROM pesanan WHERE kota IN ('Medan', 'Surabaya')\").fetchall())\nprint(c.execute(\"SELECT id FROM pesanan WHERE kota NOT IN ('Jakarta', 'Bandung')\").fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "BETWEEN sama dengan pasangan lebih-besar-sama dan kurang-dari-sama, dan pesanan bertotal tepat batas ikut lolos."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute('SELECT id FROM pesanan WHERE total BETWEEN 20000 AND 50000').fetchall())\nprint(c.execute('SELECT id FROM pesanan WHERE total >= 20000 AND total <= 50000').fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Format ISO membuat perbandingan teks sama dengan perbandingan kronologis untuk bulan Februari dan Maret."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute(\"SELECT id FROM pesanan WHERE tanggal BETWEEN '2026-02-01' AND '2026-02-28'\").fetchall())\nprint(c.execute(\"SELECT id FROM pesanan WHERE tanggal >= '2026-03-01' AND tanggal < '2026-04-01'\").fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Pola huruf kecil a persen tetap cocok dengan Ani karena LIKE di SQLite tidak peka huruf besar-kecil."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nfor pola in ('%a', 'A%', '_o%', 'a%'):\n    print(pola, c.execute('SELECT pelanggan FROM pesanan WHERE pelanggan LIKE ? ORDER BY id', (pola,)).fetchall())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-02-3",
+      "title": "ORDER BY, LIMIT, dan halaman",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Mengurutkan hasil dengan ORDER BY naik dan turun",
+        "Mengurutkan berdasarkan beberapa kolom",
+        "Mengambil sebagian hasil dengan LIMIT dan OFFSET",
+        "Menangani posisi NULL dan urutan seri"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Hasil tanpa urutan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Hasil tanpa urutan\n\nTabel relasional adalah himpunan baris, dan himpunan tidak memiliki urutan. Tanpa `ORDER BY`, urutan hasil tidak dijamin walaupun tampaknya konsisten. Mesin basis data bebas mengembalikan baris dalam urutan apa pun yang paling efisien, dan urutan itu bisa berubah setelah data atau indeks berubah.\n\nKarena itu, setiap kali urutan penting, misalnya untuk menampilkan peringkat atau mengambil lima teratas, tulis `ORDER BY` secara eksplisit. Jangan pernah mengandalkan urutan sisipan atau urutan kunci primer yang kebetulan tampak benar."
+            },
+            {
+              "type": "code_example",
+              "filename": "order_limit.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute('SELECT id, total FROM pesanan ORDER BY total DESC').fetchall())\nprint(c.execute('SELECT id FROM pesanan ORDER BY total DESC LIMIT 3').fetchall())",
+              "expected_output_note": "[(6, 300000.0), (2, 150000.0), (4, 105000.0), (8, 50000.0), (10, 48000.0), (9, 35000.0), (3, 25000.0), (1, 24000.0), (7, 20000.0), (5, 12000.0)]\n[(6,), (2,), (4,)]",
+              "explanation": "Urutan menurun menempatkan pesanan terbesar pertama, dan LIMIT tiga mengambil tiga teratas."
+            },
+            {
+              "type": "text",
+              "markdown": "## ASC, DESC, dan banyak kolom\n\n`ORDER BY kolom` mengurutkan naik secara default, atau tulis `ASC`. Tambahkan `DESC` untuk menurun. Beberapa kolom dipisah koma: kolom pertama menentukan urutan utama dan kolom berikutnya hanya memutus seri. `ORDER BY kota, total DESC` mengelompokkan menurut kota abjad lalu total terbesar dulu di tiap kota.\n\nTiap kolom punya arah sendiri, sehingga kombinasi naik dan turun mudah ditulis. Urutan penulisan kolom penting: menukarnya mengubah hasil secara mendasar."
+            },
+            {
+              "type": "code_example",
+              "filename": "order_banyak.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute('SELECT id FROM pesanan ORDER BY kota, total DESC').fetchall())",
+              "expected_output_note": "[(2,), (9,), (5,), (6,), (10,), (3,), (1,), (7,), (4,), (8,)]",
+              "explanation": "Pesanan dikelompokkan menurut kota secara abjad, dan di tiap kota diurutkan dari total terbesar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memutus seri\n\nBila beberapa baris memiliki nilai urutan sama, urutan di antara mereka tidak dijamin. Pesanan 2 dan 6 sama-sama memiliki harga satuan 150.000, sehingga `ORDER BY satuan DESC LIMIT 3` bisa mengambil salah satunya secara tidak terduga dan hasilnya bisa berubah antar eksekusi.\n\nSolusinya menambahkan kolom pemutus seri yang unik, biasanya kunci primer: `ORDER BY satuan DESC, id`. Dengan begitu urutan menjadi deterministik, sifat yang wajib untuk hasil yang dapat direproduksi dan untuk halaman yang konsisten."
+            },
+            {
+              "type": "code_example",
+              "filename": "pemutus_seri.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT id, total / jumlah AS satuan FROM pesanan ORDER BY satuan DESC, id LIMIT 3'\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[(2, 150000.0), (6, 150000.0), (4, 35000.0)]",
+              "explanation": "Penambahan id sebagai pemutus seri membuat pesanan dua dan enam selalu muncul dalam urutan yang sama."
+            }
+          ],
+          "quick_check": {
+            "question": "Tanpa ORDER BY urutan hasil?",
+            "options": [
+              "Tidak dijamin",
+              "Selalu menurut id"
+            ],
+            "answer_index": 0,
+            "explanation": "Himpunan tak berurut.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Posisi NULL",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Posisi NULL\n\nDi mana `NULL` berada dalam urutan? SQLite menganggapnya paling kecil sehingga ia muncul pertama pada urutan naik dan terakhir pada urutan turun. PostgreSQL justru menganggapnya paling besar. Basis data modern menyediakan `NULLS FIRST` dan `NULLS LAST` untuk mengaturnya secara eksplisit.\n\nDi SQLite kita meniru dengan mengurutkan lebih dulu berdasarkan ekspresi `kolom IS NULL`, yang bernilai nol untuk baris berisi dan satu untuk `NULL`. Dengan begitu `NULL` selalu jatuh di akhir apa pun arah urutan kolom aslinya."
+            },
+            {
+              "type": "code_example",
+              "filename": "nulls_last.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute('SELECT id, jumlah FROM pesanan ORDER BY jumlah, id LIMIT 4').fetchall())\nq = 'SELECT id FROM pesanan ORDER BY jumlah IS NULL, jumlah DESC, id'\nprint([r[0] for r in c.execute(q).fetchall()])",
+              "expected_output_note": "[(9, None), (2, 1), (5, 1), (1, 2)]\n[8, 3, 7, 10, 4, 1, 6, 2, 5, 9]",
+              "explanation": "NULL muncul pertama pada urutan naik, dan ekspresi IS NULL memindahkannya ke akhir pada urutan turun."
+            },
+            {
+              "type": "text",
+              "markdown": "## LIMIT dan OFFSET\n\n`LIMIT n` membatasi hasil menjadi paling banyak `n` baris, dan `OFFSET m` melewati `m` baris pertama. Keduanya bersama membentuk **halaman**: halaman nomor `p` berukuran `u` memakai `LIMIT u OFFSET (p - 1) * u`. Tanpa `ORDER BY` deterministik, halaman bisa saling tumpang tindih atau melewatkan baris.\n\nUntuk tabel sangat besar, `OFFSET` besar lambat karena mesin tetap membaca dan membuang semua baris yang dilewati. Alternatif adalah paginasi kunci: ambil baris dengan `id` lebih besar dari id terakhir halaman sebelumnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "halaman.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nfor p in (1, 2, 4, 5):\n    q = 'SELECT id FROM pesanan ORDER BY id LIMIT 3 OFFSET ?'\n    print(p, [r[0] for r in c.execute(q, ((p - 1) * 3,)).fetchall()])",
+              "expected_output_note": "1 [1, 2, 3]\n2 [4, 5, 6]\n4 [10]\n5 []",
+              "explanation": "Halaman keempat hanya berisi satu baris sisa dan halaman kelima kosong."
+            }
+          ],
+          "quick_check": {
+            "question": "Halaman p berukuran u memakai OFFSET?",
+            "options": [
+              "p*u",
+              "(p-1)*u"
+            ],
+            "answer_index": 1,
+            "explanation": "Lewati halaman sebelumnya.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Top N dan pemakaiannya",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Top N dan pemakaiannya\n\nPola `ORDER BY ... DESC LIMIT n` adalah cara standar mengambil n teratas: lima produk terlaris, sepuluh pelanggan terbesar, atau tiga pesanan terbaru. Pola ini sangat umum di laporan dan dasbor.\n\nWaspadai seri pada batas. Bila peringkat kelima dan keenam bernilai sama, `LIMIT 5` memotong salah satunya secara sewenang-wenang. Jika seri penting, gunakan fungsi window peringkat yang dibahas pada modul tersendiri atau tentukan aturan pemutus seri secara eksplisit."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "LIMIT butuh urutan",
+              "markdown": "Setiap query dengan LIMIT harus punya ORDER BY dengan pemutus seri unik, jika tidak hasilnya tidak deterministik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengurutkan dengan ekspresi dan alias\n\n`ORDER BY` boleh memakai ekspresi, bukan hanya nama kolom: `ORDER BY total / jumlah` mengurutkan menurut harga satuan. Alias yang dibuat di `SELECT` juga dikenali di `ORDER BY` karena `ORDER BY` dievaluasi setelah `SELECT`, berbeda dari `WHERE`. Posisi kolom dengan angka seperti `ORDER BY 2` juga diizinkan tetapi rapuh.\n\nHindari memakai angka posisi dalam query yang akan dipelihara lama. Perubahan urutan kolom di `SELECT` diam-diam mengubah urutan hasil tanpa pesan kesalahan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menguji urutan dan halaman\n\nUntuk memastikan paginasi benar, uji tiga sifat. Gabungan semua halaman harus sama dengan hasil lengkap, tidak ada baris yang muncul di dua halaman, dan tidak ada baris yang terlewat. Uji juga halaman terakhir yang berisi lebih sedikit baris serta halaman di luar rentang yang harus kosong.\n\nBila data berubah saat pengguna menelusuri halaman, offset bisa menggeser baris. Paginasi berbasis kunci lebih tahan terhadap perubahan karena mengacu pada nilai kunci terakhir, bukan posisi."
+            }
+          ],
+          "quick_check": {
+            "question": "Kolom kedua pada ORDER BY berfungsi?",
+            "options": [
+              "Memutus seri",
+              "Menggantikan kolom pertama"
+            ],
+            "answer_index": 0,
+            "explanation": "Pemutus seri.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `terbesar(c, n)` yang mengembalikan list `id` `n` pesanan dengan `total` terbesar, dari terbesar ke terkecil.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef terbesar(c, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "terbesar(c, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert terbesar(c, 3) == [6, 2, 4]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "terbesar(c, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert terbesar(c, 1) == [6]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "terbesar(c, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert terbesar(c, 0) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "terbesar(c, 20)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert terbesar(c, 20) == [6, 2, 4, 8, 10, 9, 3, 1, 7, 5]"
+              }
+            ]
+          },
+          "hint": "Urutkan total menurun lalu batasi dengan LIMIT dan parameter.",
+          "solution": "import sqlite3\n\ndef terbesar(c, n):\n    q = 'SELECT id FROM pesanan ORDER BY total DESC LIMIT ?'\n    return [r[0] for r in c.execute(q, (n,)).fetchall()]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-02-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `halaman(c, nomor, ukuran)` yang mengembalikan list `id` pesanan pada halaman `nomor` (mulai dari 1) berukuran `ukuran`, terurut menurut `id`, memakai `LIMIT` dan `OFFSET`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef halaman(c, nomor, ukuran):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "halaman(c, 1, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert halaman(c, 1, 3) == [1, 2, 3]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "halaman(c, 2, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert halaman(c, 2, 3) == [4, 5, 6]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "halaman(c, 4, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert halaman(c, 4, 3) == [10]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "halaman(c, 5, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert halaman(c, 5, 3) == []"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "halaman(c, 1, 20)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert halaman(c, 1, 20) == list(range(1, 11))"
+              }
+            ]
+          },
+          "hint": "Hitung offset dari nomor dan ukuran lalu pakai LIMIT dan OFFSET.",
+          "solution": "import sqlite3\n\ndef halaman(c, nomor, ukuran):\n    q = 'SELECT id FROM pesanan ORDER BY id LIMIT ? OFFSET ?'\n    return [r[0] for r in c.execute(q, (ukuran, (nomor - 1) * ukuran)).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `urut_kota_total(c)` yang mengembalikan list `id` semua pesanan terurut menurut `kota` abjad, lalu `total` menurun, lalu `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef urut_kota_total(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "urut_kota_total(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert urut_kota_total(c) == [2, 9, 5, 6, 10, 3, 1, 7, 4, 8]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "urut_kota_total(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (11, 'Kiki', 'Bandung', 'Buku', 1, 200000, '2026-05-01')\")\nassert urut_kota_total(c) == [11, 2, 9, 5, 6, 10, 3, 1, 7, 4, 8]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "urut_kota_total(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (12, 'Lia', 'Aceh', 'Tas', 1, 1000, '2026-05-02')\")\nassert urut_kota_total(c)[0] == 12"
+              }
+            ]
+          },
+          "hint": "Tulis tiga kunci urutan dengan arah masing-masing.",
+          "solution": "import sqlite3\n\ndef urut_kota_total(c):\n    return [r[0] for r in c.execute('SELECT id FROM pesanan ORDER BY kota, total DESC, id').fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `jumlah_terbesar_null_akhir(c)` yang mengembalikan list `id` semua pesanan terurut menurut `jumlah` menurun, dengan `jumlah` `NULL` di akhir dan seri diputus menurut `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef jumlah_terbesar_null_akhir(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_terbesar_null_akhir(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert jumlah_terbesar_null_akhir(c) == [8, 3, 7, 10, 4, 1, 6, 2, 5, 9]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_terbesar_null_akhir(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE pesanan SET jumlah = NULL WHERE id = 8')\nassert jumlah_terbesar_null_akhir(c) == [3, 7, 10, 4, 1, 6, 2, 5, 8, 9]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_terbesar_null_akhir(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE pesanan SET jumlah = 99 WHERE id = 9')\nassert jumlah_terbesar_null_akhir(c) == [9, 3, 7, 10, 4, 1, 6, 2, 5, 8]"
+              }
+            ]
+          },
+          "hint": "Urutkan lebih dulu menurut ekspresi jumlah IS NULL lalu jumlah menurun lalu id.",
+          "solution": "import sqlite3\n\ndef jumlah_terbesar_null_akhir(c):\n    q = 'SELECT id FROM pesanan ORDER BY jumlah IS NULL, jumlah DESC, id'\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Tanpa ORDER BY urutan hasil?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak dijamin",
+              "description": ""
+            },
+            {
+              "label": "Selalu menurut id",
+              "description": ""
+            },
+            {
+              "label": "Menurut abjad",
+              "description": ""
+            },
+            {
+              "label": "Acak murni",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tak dijamin.",
+          "explanation": "Himpunan tak berurut."
+        },
+        {
+          "q": "Halaman p berukuran u memakai OFFSET?",
+          "code": null,
+          "options": [
+            {
+              "label": "(p-1)*u",
+              "description": ""
+            },
+            {
+              "label": "p*u",
+              "description": ""
+            },
+            {
+              "label": "p+u",
+              "description": ""
+            },
+            {
+              "label": "u",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dikurangi satu.",
+          "explanation": "Lewati halaman sebelumnya."
+        },
+        {
+          "q": "Kolom kedua pada ORDER BY berfungsi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Memutus seri",
+              "description": ""
+            },
+            {
+              "label": "Menggantikan kolom pertama",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan ulang semua",
+              "description": ""
+            },
+            {
+              "label": "Tak berfungsi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Seri.",
+          "explanation": "Pemutus seri."
+        },
+        {
+          "q": "NULL pada SQLite urutan naik?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pertama",
+              "description": ""
+            },
+            {
+              "label": "Terakhir",
+              "description": ""
+            },
+            {
+              "label": "Dibuang",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Terkecil.",
+          "explanation": "Dianggap terkecil."
+        },
+        {
+          "q": "OFFSET besar pada tabel besar?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lambat",
+              "description": ""
+            },
+            {
+              "label": "Cepat",
+              "description": ""
+            },
+            {
+              "label": "Gagal",
+              "description": ""
+            },
+            {
+              "label": "Tak berefek",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dibuang.",
+          "explanation": "Tetap membaca baris yang dilewati."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengandalkan urutan hasil tanpa ORDER BY. Lebih baik: Selalu tulis ORDER BY bila urutan penting.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengandalkan urutan hasil tanpa ORDER BY.",
+          "fix": "Selalu tulis ORDER BY bila urutan penting."
+        },
+        {
+          "mistake": "Memakai LIMIT tanpa pemutus seri unik.",
+          "fix": "Tambahkan id di akhir ORDER BY."
+        },
+        {
+          "mistake": "Mengira NULL selalu di akhir urutan.",
+          "fix": "Posisi NULL bergantung basis data, atur eksplisit."
+        }
+      ],
+      "summary": [
+        "ORDER BY wajib bila urutan penting karena tabel tak berurutan.",
+        "Beberapa kolom urutan memutus seri secara berurutan.",
+        "LIMIT dan OFFSET membentuk halaman dengan urutan deterministik.",
+        "Posisi NULL dalam urutan harus diatur eksplisit."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# ORDER BY, LIMIT, dan halaman"
+          },
+          {
+            "type": "text",
+            "source": "Urutan menurun menempatkan pesanan terbesar pertama, dan LIMIT tiga mengambil tiga teratas."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute('SELECT id, total FROM pesanan ORDER BY total DESC').fetchall())\nprint(c.execute('SELECT id FROM pesanan ORDER BY total DESC LIMIT 3').fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Pesanan dikelompokkan menurut kota secara abjad, dan di tiap kota diurutkan dari total terbesar."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute('SELECT id FROM pesanan ORDER BY kota, total DESC').fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Penambahan id sebagai pemutus seri membuat pesanan dua dan enam selalu muncul dalam urutan yang sama."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT id, total / jumlah AS satuan FROM pesanan ORDER BY satuan DESC, id LIMIT 3'\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "NULL muncul pertama pada urutan naik, dan ekspresi IS NULL memindahkannya ke akhir pada urutan turun."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute('SELECT id, jumlah FROM pesanan ORDER BY jumlah, id LIMIT 4').fetchall())\nq = 'SELECT id FROM pesanan ORDER BY jumlah IS NULL, jumlah DESC, id'\nprint([r[0] for r in c.execute(q).fetchall()])"
+          },
+          {
+            "type": "text",
+            "source": "Halaman keempat hanya berisi satu baris sisa dan halaman kelima kosong."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nfor p in (1, 2, 4, 5):\n    q = 'SELECT id FROM pesanan ORDER BY id LIMIT 3 OFFSET ?'\n    print(p, [r[0] for r in c.execute(q, ((p - 1) * 3,)).fetchall()])"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

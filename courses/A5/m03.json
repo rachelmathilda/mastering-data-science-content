@@ -1,0 +1,1604 @@
+{
+  "schema_version": 2,
+  "course_id": "A5",
+  "module_no": 3,
+  "title": "Ukuran penyebaran",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menghitung dan menafsirkan varians, simpangan baku, IQR, dan MAD",
+    "Mendeteksi pencilan dengan aturan pagar Tukey",
+    "Menstandardisasi dan menskalakan data dengan benar"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A5-03-1",
+    "exercise_id": "A5-03-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def varians_welford(stream):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A5-03-1",
+      "title": "Rentang, varians, dan simpangan baku",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung rentang dan menjelaskan kelemahannya",
+        "Menghitung varians dan simpangan baku populasi dan sampel",
+        "Menjelaskan koreksi Bessel dengan pembagi n dikurangi satu",
+        "Menghitung varians secara inkremental dengan satu kali lintasan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa pusat saja tidak cukup",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa pusat saja tidak cukup\n\nDua kelas bisa memiliki nilai rata-rata sama persis, tetapi di kelas pertama semua siswa bernilai sekitar 70 sedangkan di kelas kedua separuhnya 40 dan separuhnya 100. Rata-rata menyembunyikan perbedaan besar itu. **Ukuran penyebaran** mengukur seberapa tersebar data di sekitar pusatnya, sehingga melengkapi ukuran pemusatan.\n\nPenyebaran menentukan seberapa dapat dipercaya rata-rata sebagai wakil data, seberapa besar risiko dalam keuangan, dan seberapa kuat sinyal dibanding derau. Pelajaran ini membahas tiga ukuran dasar: rentang, varians, dan simpangan baku."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rentang\n\n**Rentang** adalah selisih nilai terbesar dan terkecil. Ia mudah dihitung dan mudah dijelaskan: data ini membentang dari sekian sampai sekian. Untuk data dua, empat, empat, empat, lima, lima, tujuh, sembilan, rentangnya tujuh.\n\nKelemahannya serius. Rentang hanya memakai dua nilai paling ekstrem sehingga mengabaikan semua data di antaranya, dan satu pencilan langsung mengubahnya. Selain itu rentang cenderung membesar seiring bertambahnya data, karena peluang menemukan nilai ekstrem baru ikut naik. Karena itu rentang jarang dipakai sendirian dalam analisis serius."
+            },
+            {
+              "type": "code_example",
+              "filename": "rentang.py",
+              "runnable": true,
+              "code": "d = [2, 4, 4, 4, 5, 5, 7, 9]\nprint(max(d) - min(d))\nprint(max(d + [100]) - min(d + [100]))",
+              "expected_output_note": "7\n98",
+              "explanation": "Menambah satu pencilan seratus melompatkan rentang dari tujuh menjadi sembilan puluh delapan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Varians: rata-rata kuadrat simpangan\n\nIde yang lebih baik adalah memakai semua data: ukur seberapa jauh tiap nilai dari rata-rata, lalu rata-ratakan. Namun jumlah simpangan selalu nol sehingga kita mengkuadratkannya dulu. **Varians populasi** adalah rata-rata kuadrat selisih nilai dari rata-rata: `jumlah (x - rata)^2 / n`.\n\nMengkuadratkan membuat semua suku positif dan memberi bobot lebih pada simpangan besar. Satuan varians adalah kuadrat satuan data, misalnya meter persegi untuk data panjang, sehingga sulit ditafsirkan langsung."
+            },
+            {
+              "type": "code_example",
+              "filename": "varians.py",
+              "runnable": true,
+              "code": "d = [2, 4, 4, 4, 5, 5, 7, 9]\nm = sum(d) / len(d)\nprint(sum((x - m) ** 2 for x in d) / len(d))",
+              "expected_output_note": "4.0",
+              "explanation": "Rata-rata kuadrat simpangan dari rata-rata lima menghasilkan varians populasi empat."
+            }
+          ],
+          "quick_check": {
+            "question": "Varians populasi adalah?",
+            "options": [
+              "Rata-rata kuadrat simpangan",
+              "Akar rata-rata"
+            ],
+            "answer_index": 0,
+            "explanation": "Kuadrat selisih dirata-ratakan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Simpangan baku",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Simpangan baku\n\n**Simpangan baku** adalah akar kuadrat varians. Akar mengembalikan satuan ke satuan data asli, sehingga bisa dibaca sebagai simpangan tipikal dari rata-rata. Untuk data di atas, simpangan baku populasi adalah dua: nilai biasanya berada sekitar dua satuan dari rata-rata lima.\n\nPada data berbentuk lonceng, sekitar dua pertiga data berada dalam satu simpangan baku dari rata-rata dan sekitar sembilan puluh lima persen dalam dua simpangan baku. Aturan praktis ini menjadikan simpangan baku bahasa umum untuk menyatakan sebaran."
+            },
+            {
+              "type": "text",
+              "markdown": "## Populasi atau sampel\n\nBila data adalah seluruh populasi, bagi dengan `n`. Tetapi bila data hanyalah sampel yang dipakai menaksir populasi, bagi dengan `n - 1`. Ini disebut **koreksi Bessel**. Alasannya, rata-rata sampel dihitung dari data yang sama sehingga data selalu sedikit lebih dekat ke rata-rata sampel daripada ke rata-rata populasi sebenarnya, dan pembagi `n` akan meremehkan varians.\n\nUntuk data contoh, varians sampel adalah 4,5714, sedikit lebih besar dari 4. Perbedaan mengecil seiring `n` membesar, tetapi pada sampel kecil cukup berarti. Pustaka berbeda memakai default berbeda, jadi selalu periksa."
+            },
+            {
+              "type": "code_example",
+              "filename": "populasi_sampel.py",
+              "runnable": true,
+              "code": "import statistics\n\nd = [2, 4, 4, 4, 5, 5, 7, 9]\nprint(statistics.pvariance(d), round(statistics.variance(d), 4))\nprint(statistics.pstdev(d), round(statistics.stdev(d), 4))",
+              "expected_output_note": "4 4.5714\n2.0 2.1381",
+              "explanation": "Pembagi n menghasilkan varians empat dan simpangan baku dua, sedangkan pembagi n dikurangi satu menghasilkan nilai sedikit lebih besar."
+            }
+          ],
+          "quick_check": {
+            "question": "Simpangan baku sampel memakai pembagi?",
+            "options": [
+              "n",
+              "n - 1"
+            ],
+            "answer_index": 1,
+            "explanation": "Koreksi Bessel.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Sifat penyebaran",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Sifat penyebaran\n\nPenyebaran tidak berubah bila semua nilai digeser dengan konstanta, karena selisih terhadap rata-rata tetap. Tetapi bila semua nilai dikalikan `a`, simpangan baku dikalikan `|a|` dan varians dikalikan `a` kuadrat. Jadi mengubah meter menjadi sentimeter menggandakan simpangan baku seratus kali, sedangkan menambah sepuluh pada semua nilai tidak mengubahnya.\n\nSifat ini menjelaskan mengapa simpangan baku dipakai untuk standardisasi dan mengapa varians dua variabel independen bisa dijumlahkan. Ia juga mengingatkan bahwa membandingkan simpangan baku antar satuan berbeda tidak bermakna."
+            },
+            {
+              "type": "code_example",
+              "filename": "sifat_sebaran.py",
+              "runnable": true,
+              "code": "import statistics\n\nd = [2, 4, 4, 4, 5, 5, 7, 9]\nprint(statistics.pstdev([2 * x + 3 for x in d]))\nprint(statistics.pstdev([x + 10 for x in d]))",
+              "expected_output_note": "4.0\n2.0",
+              "explanation": "Mengalikan dengan dua menggandakan simpangan baku menjadi empat, sedangkan menggeser sepuluh tidak mengubahnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Varians dalam satu lintasan\n\nRumus langsung memerlukan dua lintasan: satu untuk rata-rata dan satu untuk simpangan. Pada aliran data besar kita ingin satu lintasan. **Algoritma Welford** memperbarui rata-rata dan jumlah kuadrat simpangan `m2` secara inkremental: untuk tiap nilai baru `x`, hitung `delta = x - rata`, perbarui `rata += delta / n`, lalu `m2 += delta * (x - rata)`. Varians populasi adalah `m2 / n`.\n\nAlgoritma ini stabil secara numerik, tidak seperti rumus `rata kuadrat dikurangi kuadrat rata` yang bisa memberi hasil negatif akibat pembulatan pada data besar."
+            },
+            {
+              "type": "code_example",
+              "filename": "welford.py",
+              "runnable": true,
+              "code": "rata = 0.0\nm2 = 0.0\nn = 0\nfor x in [2, 4, 4, 4, 5, 5, 7, 9]:\n    n += 1\n    delta = x - rata\n    rata += delta / n\n    m2 += delta * (x - rata)\nprint(rata, m2 / n)",
+              "expected_output_note": "5.0 4.0",
+              "explanation": "Satu lintasan Welford menghasilkan rata-rata lima dan varians empat, sama dengan rumus dua lintasan."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Default berbeda antar pustaka",
+              "markdown": "Periksa default pustaka. NumPy memakai pembagi n secara default, sedangkan pandas memakai n dikurangi satu. Tentukan parameter ddof secara eksplisit."
+            }
+          ],
+          "quick_check": {
+            "question": "Menggeser semua nilai +10 mengubah simpangan baku?",
+            "options": [
+              "Tidak berubah",
+              "Bertambah 10"
+            ],
+            "answer_index": 0,
+            "explanation": "Selisih tetap.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-03-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `rentang(data)` yang mengembalikan selisih maksimum dan minimum, atau `None` untuk list kosong.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def rentang(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rentang([2, 4, 4, 4, 5, 5, 7, 9])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang([2, 4, 4, 4, 5, 5, 7, 9]) == 7"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rentang([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang([5]) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rentang([3, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang([3, 1]) == 2"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rentang([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rentang([]) is None"
+              }
+            ]
+          },
+          "hint": "Kurangi minimum dari maksimum setelah memeriksa list kosong.",
+          "solution": "def rentang(data):\n    if not data:\n        return None\n    return max(data) - min(data)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-03-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `varians(data, sampel=False)` yang mengembalikan varians dibulatkan 4 desimal.",
+          "note": "Bila `sampel` benar bagi dengan `n - 1`, bila tidak bagi dengan `n`.",
+          "filename": "solution.py",
+          "starter_code": "def varians(data, sampel=False):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "varians([2, 4, 4, 4, 5, 5, 7, 9])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert varians([2, 4, 4, 4, 5, 5, 7, 9]) == 4.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "varians([2, 4, 4, 4, 5, 5, 7, 9], sampel=True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert varians([2, 4, 4, 4, 5, 5, 7, 9], sampel=True) == 4.5714"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "varians([1, 2, 3, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert varians([1, 2, 3, 4, 5]) == 2.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "varians([4, 8], sampel=True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert varians([4, 8], sampel=True) == 8.0"
+              }
+            ]
+          },
+          "hint": "Hitung jumlah kuadrat selisih dari rata-rata lalu bagi dengan pembagi yang sesuai.",
+          "solution": "def varians(data, sampel=False):\n    m = sum(data) / len(data)\n    pembagi = len(data) - 1 if sampel else len(data)\n    return round(sum((x - m) ** 2 for x in data) / pembagi, 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-03-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `simpangan_baku(data, sampel=False)` yang mengembalikan akar varians dibulatkan 4 desimal.",
+          "note": "Untuk sampel dengan satu data kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef simpangan_baku(data, sampel=False):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "simpangan_baku([2, 4, 4, 4, 5, 5, 7, 9])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simpangan_baku([2, 4, 4, 4, 5, 5, 7, 9]) == 2.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "simpangan_baku([2, 4, 4, 4, 5, 5, 7, 9], samp...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simpangan_baku([2, 4, 4, 4, 5, 5, 7, 9], sampel=True) == 2.1381"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "simpangan_baku([10, 12, 14, 16, 18])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simpangan_baku([10, 12, 14, 16, 18]) == 2.8284"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "simpangan_baku([10, 12, 14, 16, 18], sampel=T...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simpangan_baku([10, 12, 14, 16, 18], sampel=True) == 3.1623"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "simpangan_baku([5], sampel=True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simpangan_baku([5], sampel=True) is None"
+              }
+            ]
+          },
+          "hint": "Tangani kasus sampel satu data lalu ambil akar dari varians.",
+          "solution": "import math\n\ndef simpangan_baku(data, sampel=False):\n    n = len(data)\n    if sampel and n < 2:\n        return None\n    m = sum(data) / n\n    pembagi = n - 1 if sampel else n\n    return round(math.sqrt(sum((x - m) ** 2 for x in data) / pembagi), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-03-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `varians_welford(stream)` yang menghitung varians populasi dalam satu lintasan dengan algoritma Welford dan mengembalikannya dibulatkan 4 desimal.",
+          "note": "List kosong mengembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "def varians_welford(stream):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "varians_welford([2, 4, 4, 4, 5, 5, 7, 9])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert varians_welford([2, 4, 4, 4, 5, 5, 7, 9]) == 4.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "varians_welford([1, 2, 3, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert varians_welford([1, 2, 3, 4, 5]) == 2.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "varians_welford([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert varians_welford([5]) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "varians_welford([2, 4, 6, 8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert varians_welford([2, 4, 6, 8]) == 5.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "varians_welford([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert varians_welford([]) is None"
+              }
+            ]
+          },
+          "hint": "Perbarui rata-rata dan m2 untuk tiap nilai, lalu bagi m2 dengan n.",
+          "solution": "def varians_welford(stream):\n    rata = 0.0\n    m2 = 0.0\n    n = 0\n    for x in stream:\n        n += 1\n        delta = x - rata\n        rata += delta / n\n        m2 += delta * (x - rata)\n    if n == 0:\n        return None\n    return round(m2 / n, 4) + 0.0",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Varians populasi adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata kuadrat simpangan",
+              "description": ""
+            },
+            {
+              "label": "Akar rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Maks - min",
+              "description": ""
+            },
+            {
+              "label": "Median simpangan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kuadrat.",
+          "explanation": "Kuadrat selisih dirata-ratakan."
+        },
+        {
+          "q": "Simpangan baku sampel memakai pembagi?",
+          "code": null,
+          "options": [
+            {
+              "label": "n",
+              "description": ""
+            },
+            {
+              "label": "n - 1",
+              "description": ""
+            },
+            {
+              "label": "n + 1",
+              "description": ""
+            },
+            {
+              "label": "2n",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bessel.",
+          "explanation": "Koreksi Bessel."
+        },
+        {
+          "q": "Menggeser semua nilai +10 mengubah simpangan baku?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak berubah",
+              "description": ""
+            },
+            {
+              "label": "Bertambah 10",
+              "description": ""
+            },
+            {
+              "label": "Dikali 10",
+              "description": ""
+            },
+            {
+              "label": "Menjadi nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Geser.",
+          "explanation": "Selisih tetap."
+        },
+        {
+          "q": "Kelemahan rentang?",
+          "code": null,
+          "options": [
+            {
+              "label": "Peka pada pencilan",
+              "description": ""
+            },
+            {
+              "label": "Terlalu rumit",
+              "description": ""
+            },
+            {
+              "label": "Selalu nol",
+              "description": ""
+            },
+            {
+              "label": "Memakai semua data",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ekstrem.",
+          "explanation": "Hanya dua nilai."
+        },
+        {
+          "q": "Keunggulan Welford?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu lintasan dan stabil",
+              "description": ""
+            },
+            {
+              "label": "Lebih lambat",
+              "description": ""
+            },
+            {
+              "label": "Hanya data kecil",
+              "description": ""
+            },
+            {
+              "label": "Tanpa rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Stream.",
+          "explanation": "Inkremental."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai rentang sebagai satu-satunya ukuran sebaran. Lebih baik: Pakai simpangan baku atau IQR.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai rentang sebagai satu-satunya ukuran sebaran.",
+          "fix": "Pakai simpangan baku atau IQR."
+        },
+        {
+          "mistake": "Selalu membagi dengan n untuk data sampel.",
+          "fix": "Pakai n dikurangi satu untuk sampel."
+        },
+        {
+          "mistake": "Membandingkan simpangan baku antar satuan berbeda.",
+          "fix": "Pakai koefisien variasi."
+        }
+      ],
+      "summary": [
+        "Varians dan simpangan baku memakai semua data, rentang hanya dua nilai.",
+        "Sampel memakai n dikurangi satu untuk menaksir varians populasi.",
+        "Menggeser tidak mengubah sebaran, menskala mengalikan simpangan baku.",
+        "Welford menghitung varians dalam satu lintasan secara stabil."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Rentang, varians, dan simpangan baku"
+          },
+          {
+            "type": "text",
+            "source": "Menambah satu pencilan seratus melompatkan rentang dari tujuh menjadi sembilan puluh delapan."
+          },
+          {
+            "type": "code",
+            "source": "d = [2, 4, 4, 4, 5, 5, 7, 9]\nprint(max(d) - min(d))\nprint(max(d + [100]) - min(d + [100]))"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata kuadrat simpangan dari rata-rata lima menghasilkan varians populasi empat."
+          },
+          {
+            "type": "code",
+            "source": "d = [2, 4, 4, 4, 5, 5, 7, 9]\nm = sum(d) / len(d)\nprint(sum((x - m) ** 2 for x in d) / len(d))"
+          },
+          {
+            "type": "text",
+            "source": "Pembagi n menghasilkan varians empat dan simpangan baku dua, sedangkan pembagi n dikurangi satu menghasilkan nilai sedikit lebih besar."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\nd = [2, 4, 4, 4, 5, 5, 7, 9]\nprint(statistics.pvariance(d), round(statistics.variance(d), 4))\nprint(statistics.pstdev(d), round(statistics.stdev(d), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Mengalikan dengan dua menggandakan simpangan baku menjadi empat, sedangkan menggeser sepuluh tidak mengubahnya."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\nd = [2, 4, 4, 4, 5, 5, 7, 9]\nprint(statistics.pstdev([2 * x + 3 for x in d]))\nprint(statistics.pstdev([x + 10 for x in d]))"
+          },
+          {
+            "type": "text",
+            "source": "Satu lintasan Welford menghasilkan rata-rata lima dan varians empat, sama dengan rumus dua lintasan."
+          },
+          {
+            "type": "code",
+            "source": "rata = 0.0\nm2 = 0.0\nn = 0\nfor x in [2, 4, 4, 4, 5, 5, 7, 9]:\n    n += 1\n    delta = x - rata\n    rata += delta / n\n    m2 += delta * (x - rata)\nprint(rata, m2 / n)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A5-03-2",
+      "title": "Kuartil, IQR, dan MAD yang kokoh",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung kuartil dan IQR dengan interpolasi linear",
+        "Menghitung median simpangan mutlak atau MAD",
+        "Mendeteksi pencilan dengan aturan 1,5 kali IQR",
+        "Menyusun ringkasan lima angka"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Penyebaran yang tahan pencilan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Penyebaran yang tahan pencilan\n\nSimpangan baku sangat dipengaruhi pencilan karena simpangan dikuadratkan. Satu nilai ekstrem dapat melipatgandakannya. Untuk data berekor panjang atau kotor kita membutuhkan ukuran sebaran yang kokoh, seperti rentang antarkuartil dan median simpangan mutlak. Keduanya memadankan median pada sisi pemusatan.\n\nDalam laporan, pasangan yang konsisten adalah rata-rata dengan simpangan baku untuk data simetris bersih, dan median dengan IQR atau MAD untuk data miring atau berpencilan. Mencampur pasangan itu membingungkan pembaca."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kuartil dan IQR\n\n**Kuartil** membagi data terurut menjadi empat bagian sama banyak. Kuartil pertama Q1 adalah kuantil ke-0,25, median Q2 kuantil ke-0,5, dan Q3 kuantil ke-0,75. **Rentang antarkuartil** atau IQR adalah `Q3 - Q1`, lebar setengah data tengah. Pencilan di ujung tidak memengaruhinya selama tidak mencapai seperempat data.\n\nUntuk data satu sampai sembilan dan seratus, rentangnya 99 tetapi IQR hanya 4,5. IQR menggambarkan sebaran data utama dengan jujur sementara rentang terdistorsi oleh satu nilai."
+            },
+            {
+              "type": "code_example",
+              "filename": "iqr.py",
+              "runnable": true,
+              "code": "def kuantil(data, q):\n    s = sorted(data)\n    p = (len(s) - 1) * q\n    lo = int(p)\n    hi = min(lo + 1, len(s) - 1)\n    return s[lo] + (s[hi] - s[lo]) * (p - lo)\n\nd = [1, 2, 3, 4, 5, 6, 7, 8, 9, 100]\nq1, q3 = kuantil(d, 0.25), kuantil(d, 0.75)\nprint(q1, q3, q3 - q1)",
+              "expected_output_note": "3.25 7.75 4.5",
+              "explanation": "Kuartil pertama tiga koma dua lima dan ketiga tujuh koma tujuh lima memberi IQR empat koma lima walau ada pencilan seratus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Median simpangan mutlak\n\n**MAD** atau median absolute deviation adalah median dari nilai mutlak selisih tiap data terhadap median data. Ia mudah dihitung dan memiliki titik patah lima puluh persen, sama seperti median. Untuk data satu sampai sembilan dan seratus, median 5,5, selisih mutlaknya dimulai dari 0,5, dan MAD hasilnya 2,5.\n\nUntuk data berdistribusi normal, `1,4826 * MAD` mendekati simpangan baku, sehingga MAD terskala sering dipakai sebagai penaksir simpangan baku yang kokoh dalam deteksi anomali."
+            },
+            {
+              "type": "code_example",
+              "filename": "mad.py",
+              "runnable": true,
+              "code": "import statistics\n\ndef mad(data):\n    med = statistics.median(data)\n    return statistics.median([abs(x - med) for x in data])\n\nprint(mad([1, 2, 3, 4, 5, 6, 7, 8, 9, 100]))\nprint(mad([5, 6, 5, 7, 6, 100]))",
+              "expected_output_note": "2.5\n1.0",
+              "explanation": "MAD tetap kecil pada data dengan satu pencilan besar karena hanya bergantung pada median selisih."
+            }
+          ],
+          "quick_check": {
+            "question": "IQR adalah?",
+            "options": [
+              "Q3 - Q1",
+              "Maks - min"
+            ],
+            "answer_index": 0,
+            "explanation": "Lebar setengah data tengah.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Aturan pagar untuk pencilan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Aturan pagar untuk pencilan\n\nJohn Tukey mengusulkan aturan sederhana: nilai di bawah `Q1 - 1,5 * IQR` atau di atas `Q3 + 1,5 * IQR` ditandai sebagai pencilan potensial. Batas itu disebut pagar. Pada data gaji lima, lima, enam, enam, tujuh, seratus, Q1 5,25 dan Q3 6,75 memberi IQR 1,5 dan pagar atas sembilan, sehingga seratus ditandai.\n\nPerhatikan kata potensial. Pencilan bisa berupa kesalahan input atau kejadian langka nyata yang justru paling menarik. Aturan hanya menunjuk kandidat, keputusan membuang atau menyimpan harus berdasarkan pemahaman domain."
+            },
+            {
+              "type": "code_example",
+              "filename": "pagar_tukey.py",
+              "runnable": true,
+              "code": "def kuantil(data, q):\n    s = sorted(data)\n    p = (len(s) - 1) * q\n    lo = int(p)\n    hi = min(lo + 1, len(s) - 1)\n    return s[lo] + (s[hi] - s[lo]) * (p - lo)\n\ng = [5, 6, 5, 7, 6, 100]\nq1, q3 = kuantil(g, 0.25), kuantil(g, 0.75)\niqr = q3 - q1\nprint(q1, q3, iqr)\nprint([x for x in g if x < q1 - 1.5 * iqr or x > q3 + 1.5 * iqr])",
+              "expected_output_note": "5.25 6.75 1.5\n[100]",
+              "explanation": "Pagar atas sembilan menandai gaji seratus juta sebagai pencilan potensial."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan lima angka\n\n**Ringkasan lima angka** terdiri atas minimum, Q1, median, Q3, dan maksimum. Dalam lima bilangan, ia menggambarkan pusat, sebaran, dan kemiringan sekaligus, tanpa asumsi bentuk distribusi. Bila jarak median ke Q3 jauh lebih besar daripada jarak median ke Q1, distribusi miring ke kanan.\n\nDiagram kotak atau boxplot adalah gambar dari ringkasan ini: kotak dari Q1 ke Q3 dengan garis di median, kumis hingga pagar, dan titik untuk pencilan. Pelajaran berikutnya membahas bentuk distribusi lebih dalam."
+            },
+            {
+              "type": "code_example",
+              "filename": "lima_angka.py",
+              "runnable": true,
+              "code": "import statistics\n\ndef kuantil(data, q):\n    s = sorted(data)\n    p = (len(s) - 1) * q\n    lo = int(p)\n    hi = min(lo + 1, len(s) - 1)\n    return s[lo] + (s[hi] - s[lo]) * (p - lo)\n\nd = [1, 2, 3, 4, 5, 6, 7, 8, 9, 100]\nprint(min(d), kuantil(d, 0.25), statistics.median(d), kuantil(d, 0.75), max(d))",
+              "expected_output_note": "1 3.25 5.5 7.75 100",
+              "explanation": "Lima angka memperlihatkan pusat di sekitar lima koma lima dan ekor kanan yang sangat panjang akibat seratus."
+            }
+          ],
+          "quick_check": {
+            "question": "MAD adalah?",
+            "options": [
+              "Rata-rata selisih",
+              "Median selisih mutlak dari median"
+            ],
+            "answer_index": 1,
+            "explanation": "Kokoh.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Metode kuantil berbeda",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Metode kuantil berbeda\n\nAda banyak definisi kuantil sampel. Interpolasi linear pada posisi `(n - 1) * q`, yang kita pakai, adalah default NumPy dan pandas. Excel memiliki dua fungsi berbeda, dan beberapa buku teks memakai aturan yang membagi dua bagian data lalu mengambil median masing-masing. Pada data kecil hasilnya bisa berbeda sedikit.\n\nKarena itu, saat membandingkan hasil antar alat atau mereproduksi laporan, periksa definisi yang dipakai. Perbedaan menjadi tidak berarti pada data besar, tetapi pada data berukuran puluhan ia bisa mengubah satu pencilan menjadi bukan pencilan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Pasangan yang konsisten",
+              "markdown": "Untuk data miring atau berpencilan, laporkan median bersama IQR atau MAD. Untuk data simetris bersih, rata-rata dengan simpangan baku sudah cukup."
+            },
+            {
+              "type": "text",
+              "markdown": "## Boxplot dan membaca bentuk\n\nBoxplot memadatkan distribusi menjadi gambar kecil yang mudah dibandingkan antar kelompok. Dengan menjajarkan beberapa kotak, kita langsung melihat kelompok mana yang bergeser, lebih lebar, atau lebih miring, tanpa membaca tabel angka. Inilah alasan boxplot menjadi alat standar pada analisis eksploratif.\n\nNamun boxplot menyembunyikan jumlah puncak. Dua distribusi dengan satu dan dua puncak bisa menghasilkan kotak serupa. Pasangkan boxplot dengan histogram atau plot biola bila bentuk detail penting bagi kesimpulanmu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan memakai yang kokoh\n\nUkuran kokoh tidak selalu lebih baik. Pada data normal bersih, simpangan baku lebih efisien: ia memberi taksiran lebih presisi dari sampel sama banyak. Ukuran kokoh mengorbankan sedikit efisiensi demi perlindungan terhadap data kotor, dan pertukaran ini hampir selalu layak pada data nyata.\n\nCara praktis adalah menghitung keduanya. Bila simpangan baku jauh lebih besar dari `1,4826 * MAD`, curigai pencilan atau ekor berat, lalu telusuri datanya sebelum memutuskan ukuran mana yang dilaporkan."
+            }
+          ],
+          "quick_check": {
+            "question": "Pagar atas Tukey?",
+            "options": [
+              "Q3 + 1.5 IQR",
+              "Q3 + IQR"
+            ],
+            "answer_index": 0,
+            "explanation": "Aturan 1,5.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-03-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `kuartil_iqr(data)` yang mengembalikan tuple `(q1, q3, iqr)` memakai interpolasi linear pada posisi `(n - 1) * q`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def kuartil_iqr(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kuartil_iqr([1, 2, 3, 4, 5, 6, 7, 8, 9, 100])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuartil_iqr([1, 2, 3, 4, 5, 6, 7, 8, 9, 100]) == (3.25, 7.75, 4.5)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kuartil_iqr([1, 2, 3, 4, 5, 6, 7, 8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuartil_iqr([1, 2, 3, 4, 5, 6, 7, 8]) == (2.75, 6.25, 3.5)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kuartil_iqr([1, 2, 3, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuartil_iqr([1, 2, 3, 4, 5]) == (2.0, 4.0, 2.0)"
+              }
+            ]
+          },
+          "hint": "Hitung dua kuantil dengan interpolasi lalu kurangkan.",
+          "solution": "def kuartil_iqr(data):\n    s = sorted(data)\n\n    def kuantil(q):\n        p = (len(s) - 1) * q\n        lo = int(p)\n        hi = min(lo + 1, len(s) - 1)\n        return s[lo] + (s[hi] - s[lo]) * (p - lo)\n\n    q1, q3 = kuantil(0.25), kuantil(0.75)\n    return (q1, q3, q3 - q1)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-03-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `mad(data)` yang mengembalikan median dari selisih mutlak tiap data terhadap median data.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def mad(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "mad([1, 2, 3, 4, 5, 6, 7, 8, 9, 100])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mad([1, 2, 3, 4, 5, 6, 7, 8, 9, 100]) == 2.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "mad([5, 6, 5, 7, 6, 100])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mad([5, 6, 5, 7, 6, 100]) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "mad([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mad([1, 2, 3]) == 1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "mad([4, 4, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert mad([4, 4, 4]) == 0"
+              }
+            ]
+          },
+          "hint": "Cari median data, lalu median dari selisih mutlaknya.",
+          "solution": "def mad(data):\n    def med(v):\n        s = sorted(v)\n        n = len(s)\n        return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2\n\n    m = med(data)\n    return med([abs(x - m) for x in data])",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-03-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pencilan_iqr(data)` yang mengembalikan list terurut nilai di luar pagar `Q1 - 1.5 * IQR` dan `Q3 + 1.5 * IQR`, memakai interpolasi linear.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pencilan_iqr(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pencilan_iqr([1, 2, 3, 4, 5, 6, 7, 8, 9, 100])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pencilan_iqr([1, 2, 3, 4, 5, 6, 7, 8, 9, 100]) == [100]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pencilan_iqr([1, 2, 3, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pencilan_iqr([1, 2, 3, 4, 5]) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pencilan_iqr([5, 6, 5, 7, 6, 100])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pencilan_iqr([5, 6, 5, 7, 6, 100]) == [100]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pencilan_iqr([-50, 5, 6, 5, 7, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pencilan_iqr([-50, 5, 6, 5, 7, 6]) == [-50]"
+              }
+            ]
+          },
+          "hint": "Hitung kuartil dan pagar lalu saring nilai di luarnya.",
+          "solution": "def pencilan_iqr(data):\n    s = sorted(data)\n\n    def kuantil(q):\n        p = (len(s) - 1) * q\n        lo = int(p)\n        hi = min(lo + 1, len(s) - 1)\n        return s[lo] + (s[hi] - s[lo]) * (p - lo)\n\n    q1, q3 = kuantil(0.25), kuantil(0.75)\n    iqr = q3 - q1\n    return [x for x in s if x < q1 - 1.5 * iqr or x > q3 + 1.5 * iqr]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-03-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ringkasan_lima(data)` yang mengembalikan tuple `(min, q1, median, q3, max)` memakai interpolasi linear untuk kuartil dan median.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def ringkasan_lima(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ringkasan_lima([1, 2, 3, 4, 5, 6, 7, 8, 9, 100])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkasan_lima([1, 2, 3, 4, 5, 6, 7, 8, 9, 100]) == (1, 3.25, 5.5, 7.75, 100)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ringkasan_lima([1, 2, 3, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkasan_lima([1, 2, 3, 4, 5]) == (1, 2.0, 3.0, 4.0, 5)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ringkasan_lima([10, 20])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkasan_lima([10, 20]) == (10, 12.5, 15.0, 17.5, 20)"
+              }
+            ]
+          },
+          "hint": "Pakai satu fungsi kuantil untuk tiga nilai tengah lalu tambahkan minimum dan maksimum.",
+          "solution": "def ringkasan_lima(data):\n    s = sorted(data)\n\n    def kuantil(q):\n        p = (len(s) - 1) * q\n        lo = int(p)\n        hi = min(lo + 1, len(s) - 1)\n        return s[lo] + (s[hi] - s[lo]) * (p - lo)\n\n    return (s[0], kuantil(0.25), kuantil(0.5), kuantil(0.75), s[-1])",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "IQR adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Q3 - Q1",
+              "description": ""
+            },
+            {
+              "label": "Maks - min",
+              "description": ""
+            },
+            {
+              "label": "Median - rata",
+              "description": ""
+            },
+            {
+              "label": "Q2 - Q1 + Q3",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kuartil.",
+          "explanation": "Lebar setengah data tengah."
+        },
+        {
+          "q": "MAD adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Median selisih mutlak dari median",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata selisih",
+              "description": ""
+            },
+            {
+              "label": "Akar varians",
+              "description": ""
+            },
+            {
+              "label": "Maks selisih",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Median.",
+          "explanation": "Kokoh."
+        },
+        {
+          "q": "Pagar atas Tukey?",
+          "code": null,
+          "options": [
+            {
+              "label": "Q3 + 1.5 IQR",
+              "description": ""
+            },
+            {
+              "label": "Q3 + IQR",
+              "description": ""
+            },
+            {
+              "label": "Maks",
+              "description": ""
+            },
+            {
+              "label": "Q3 + 3 IQR",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu setengah.",
+          "explanation": "Aturan 1,5."
+        },
+        {
+          "q": "Ringkasan lima angka memuat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Min Q1 median Q3 maks",
+              "description": ""
+            },
+            {
+              "label": "Rata simpangan",
+              "description": ""
+            },
+            {
+              "label": "Modus",
+              "description": ""
+            },
+            {
+              "label": "Varians",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Boxplot.",
+          "explanation": "Lima bilangan."
+        },
+        {
+          "q": "Untuk data berpencilan pasangkan median dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "IQR atau MAD",
+              "description": ""
+            },
+            {
+              "label": "Simpangan baku",
+              "description": ""
+            },
+            {
+              "label": "Rentang saja",
+              "description": ""
+            },
+            {
+              "label": "Varians",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kokoh.",
+          "explanation": "Pasangan kokoh."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membuang semua titik di luar pagar tanpa memeriksa penyebabnya. Lebih baik: Selidiki dulu apakah kesalahan atau kejadian nyata.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membuang semua titik di luar pagar tanpa memeriksa penyebabnya.",
+          "fix": "Selidiki dulu apakah kesalahan atau kejadian nyata."
+        },
+        {
+          "mistake": "Mencampur rata-rata dengan IQR dalam satu laporan.",
+          "fix": "Pasangkan rata-rata dengan simpangan baku, median dengan IQR atau MAD."
+        },
+        {
+          "mistake": "Menganggap semua alat memakai definisi kuantil yang sama.",
+          "fix": "Periksa metode interpolasi."
+        }
+      ],
+      "summary": [
+        "IQR dan MAD adalah ukuran sebaran yang kokoh terhadap pencilan.",
+        "Aturan pagar Tukey menandai pencilan potensial.",
+        "Ringkasan lima angka menggambarkan pusat, sebaran, dan kemiringan.",
+        "Definisi kuantil berbeda antar alat sehingga perlu diperiksa."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Kuartil, IQR, dan MAD yang kokoh"
+          },
+          {
+            "type": "text",
+            "source": "Kuartil pertama tiga koma dua lima dan ketiga tujuh koma tujuh lima memberi IQR empat koma lima walau ada pencilan seratus."
+          },
+          {
+            "type": "code",
+            "source": "def kuantil(data, q):\n    s = sorted(data)\n    p = (len(s) - 1) * q\n    lo = int(p)\n    hi = min(lo + 1, len(s) - 1)\n    return s[lo] + (s[hi] - s[lo]) * (p - lo)\n\nd = [1, 2, 3, 4, 5, 6, 7, 8, 9, 100]\nq1, q3 = kuantil(d, 0.25), kuantil(d, 0.75)\nprint(q1, q3, q3 - q1)"
+          },
+          {
+            "type": "text",
+            "source": "MAD tetap kecil pada data dengan satu pencilan besar karena hanya bergantung pada median selisih."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\ndef mad(data):\n    med = statistics.median(data)\n    return statistics.median([abs(x - med) for x in data])\n\nprint(mad([1, 2, 3, 4, 5, 6, 7, 8, 9, 100]))\nprint(mad([5, 6, 5, 7, 6, 100]))"
+          },
+          {
+            "type": "text",
+            "source": "Pagar atas sembilan menandai gaji seratus juta sebagai pencilan potensial."
+          },
+          {
+            "type": "code",
+            "source": "def kuantil(data, q):\n    s = sorted(data)\n    p = (len(s) - 1) * q\n    lo = int(p)\n    hi = min(lo + 1, len(s) - 1)\n    return s[lo] + (s[hi] - s[lo]) * (p - lo)\n\ng = [5, 6, 5, 7, 6, 100]\nq1, q3 = kuantil(g, 0.25), kuantil(g, 0.75)\niqr = q3 - q1\nprint(q1, q3, iqr)\nprint([x for x in g if x < q1 - 1.5 * iqr or x > q3 + 1.5 * iqr])"
+          },
+          {
+            "type": "text",
+            "source": "Lima angka memperlihatkan pusat di sekitar lima koma lima dan ekor kanan yang sangat panjang akibat seratus."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\ndef kuantil(data, q):\n    s = sorted(data)\n    p = (len(s) - 1) * q\n    lo = int(p)\n    hi = min(lo + 1, len(s) - 1)\n    return s[lo] + (s[hi] - s[lo]) * (p - lo)\n\nd = [1, 2, 3, 4, 5, 6, 7, 8, 9, 100]\nprint(min(d), kuantil(d, 0.25), statistics.median(d), kuantil(d, 0.75), max(d))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A5-03-3",
+      "title": "Koefisien variasi, standardisasi, dan Chebyshev",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menghitung koefisien variasi untuk membandingkan sebaran relatif",
+        "Menghitung z-score dan min-max scaling",
+        "Menerapkan ketaksamaan Chebyshev",
+        "Memilih skala yang tepat untuk membandingkan variabel"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Membandingkan sebaran antar variabel",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Membandingkan sebaran antar variabel\n\nMana yang lebih tersebar: tinggi badan dengan simpangan baku 7 sentimeter, atau berat badan dengan simpangan baku 10 kilogram? Pertanyaan itu tidak bermakna bila diajukan langsung, karena satuannya berbeda. Kita membutuhkan ukuran tanpa satuan atau ukuran yang menyesuaikan dengan besar nilainya.\n\nPelajaran ini membahas koefisien variasi untuk sebaran relatif, serta standardisasi dan penskalaan yang membawa banyak variabel ke skala yang sebanding. Keduanya sangat sering dipakai dalam persiapan data untuk pemodelan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Koefisien variasi\n\n**Koefisien variasi** atau CV adalah simpangan baku dibagi rata-rata. Ia menyatakan sebaran sebagai pecahan dari rata-rata, tanpa satuan. Simpangan baku 10 pada rata-rata 1000 berarti sebaran satu persen, sedangkan simpangan baku 10 pada rata-rata 20 berarti lima puluh persen, dua situasi yang sangat berbeda meski simpangan bakunya sama.\n\nCV hanya bermakna untuk data rasio dengan nol alami dan rata-rata jauh dari nol. Bila rata-rata mendekati nol, CV meledak dan menyesatkan. Untuk data interval seperti suhu Celsius, CV tidak bermakna sama sekali."
+            },
+            {
+              "type": "code_example",
+              "filename": "koefisien_variasi.py",
+              "runnable": true,
+              "code": "import statistics\n\na = [100, 200, 300]\nb = [10, 12, 14, 16, 18]\nprint(round(statistics.stdev(a) / statistics.mean(a), 4))\nprint(round(statistics.stdev(b) / statistics.mean(b), 4))",
+              "expected_output_note": "0.5 0.2259",
+              "explanation": "Data pertama memiliki sebaran relatif lima puluh persen, jauh lebih besar dari data kedua walau simpangan bakunya besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Z-score\n\n**Z-score** menyatakan seberapa banyak simpangan baku sebuah nilai berada dari rata-rata: `(x - rata) / simpangan baku`. Nilai nol berarti tepat di rata-rata, nilai satu berarti satu simpangan baku di atasnya, dan nilai negatif berarti di bawahnya. Setelah standardisasi, data memiliki rata-rata nol dan simpangan baku satu.\n\nZ-score memungkinkan perbandingan antar variabel berbeda. Nilai ujian 85 pada ujian dengan rata-rata 70 dan simpangan baku 10 memiliki z 1,5, mungkin lebih baik daripada nilai 90 pada ujian berrata-rata 85 dan simpangan baku 10 dengan z 0,5."
+            },
+            {
+              "type": "code_example",
+              "filename": "zscore.py",
+              "runnable": true,
+              "code": "import statistics\n\nx = [1, 2, 3, 4, 5]\nm = statistics.mean(x)\ns = statistics.pstdev(x)\nprint([round((v - m) / s, 4) for v in x])",
+              "expected_output_note": "[-1.4142, -0.7071, 0.0, 0.7071, 1.4142]",
+              "explanation": "Z-score simetris di sekitar nol dan menunjukkan jarak tiap nilai dari rata-rata dalam satuan simpangan baku."
+            }
+          ],
+          "quick_check": {
+            "question": "Koefisien variasi adalah?",
+            "options": [
+              "Simpangan baku / rata-rata",
+              "Rata-rata / simpangan baku"
+            ],
+            "answer_index": 0,
+            "explanation": "Sebaran relatif.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Min-max scaling",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Min-max scaling\n\n**Min-max scaling** memetakan data secara linear ke rentang nol sampai satu: `(x - min) / (maks - min)`. Nilai terkecil menjadi nol, terbesar menjadi satu, dan lainnya proporsional. Hasilnya mudah ditafsirkan dan terbatas, yang berguna untuk algoritma yang mengharapkan masukan berrentang tetap seperti jaringan saraf dengan sigmoid.\n\nKelemahannya adalah kepekaan pada pencilan: satu nilai ekstrem menekan semua nilai lain ke ujung sempit. Z-score kurang rentan, dan skala kokoh memakai median dan IQR sebagai pengganti rata-rata dan simpangan baku."
+            },
+            {
+              "type": "code_example",
+              "filename": "minmax.py",
+              "runnable": true,
+              "code": "x = [10, 20, 40]\nlo, hi = min(x), max(x)\nprint([round((v - lo) / (hi - lo), 4) for v in x])",
+              "expected_output_note": "[0.0, 0.3333, 1.0]",
+              "explanation": "Nilai terkecil menjadi nol dan terbesar menjadi satu, dengan nilai tengah proporsional pada sepertiga."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ketaksamaan Chebyshev\n\nBagaimana bila kita tidak tahu bentuk distribusi? **Ketaksamaan Chebyshev** menjamin bahwa untuk distribusi apa pun, paling sedikit `1 - 1/k^2` data berada dalam `k` simpangan baku dari rata-rata, untuk `k` lebih dari satu. Dengan `k` sama dengan dua, paling sedikit 75 persen data berada dalam dua simpangan baku, dan dengan tiga paling sedikit sekitar 89 persen.\n\nBatas ini longgar dibanding aturan distribusi normal yang menjamin 95 persen, tetapi berlaku tanpa asumsi. Ia berguna sebagai pengaman ketika kita tidak yakin dengan bentuk distribusi."
+            },
+            {
+              "type": "code_example",
+              "filename": "chebyshev.py",
+              "runnable": true,
+              "code": "d = [2, 4, 4, 4, 5, 5, 7, 9]\nm = sum(d) / len(d)\ns = (sum((x - m) ** 2 for x in d) / len(d)) ** 0.5\nfor k in (1, 2):\n    dalam = sum(1 for x in d if abs(x - m) <= k * s) / len(d)\n    print(k, dalam, round(1 - 1 / k ** 2, 4))",
+              "expected_output_note": "1 0.75 0.0\n2 1.0 0.75",
+              "explanation": "Proporsi nyata dalam dua simpangan baku adalah satu, di atas jaminan Chebyshev tujuh puluh lima persen."
+            }
+          ],
+          "quick_check": {
+            "question": "Z-score data standardisasi memiliki rata-rata?",
+            "options": [
+              "Satu",
+              "Nol"
+            ],
+            "answer_index": 1,
+            "explanation": "Rata-rata nol dan simpangan baku satu.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih skala",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih skala\n\nAlgoritma berbasis jarak seperti k-NN dan k-means sangat dipengaruhi skala fitur: fitur dengan angka besar mendominasi jarak. Standardisasi atau min-max menyamakan kontribusi. Model berbasis pohon tidak peka skala sehingga tidak memerlukannya. Regresi dengan regularisasi juga memerlukan skala sama agar penalti adil.\n\nAturan penting: hitung parameter skala dari data latih saja, lalu terapkan ke data uji. Menghitung dari seluruh data membocorkan informasi uji ke pelatihan, kesalahan halus yang membuat evaluasi terlalu optimistis."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Kebocoran data pada penskalaan",
+              "markdown": "Hitung rata-rata dan simpangan baku untuk standardisasi dari data latih saja, lalu terapkan dengan angka yang sama ke data uji."
+            },
+            {
+              "type": "text",
+              "markdown": "## Skala kokoh\n\nPadanan kokoh dari standardisasi mengurangi median lalu membagi dengan IQR, atau dengan MAD terskala. Hasilnya tidak terpengaruh pencilan, sehingga nilai normal tetap berada pada rentang masuk akal sementara pencilan tetap tampak ekstrem. Pustaka pembelajaran mesin umumnya menyediakannya sebagai skala kokoh.\n\nPada data keuangan dan sensor yang sering berpencilan, pilihan ini sering lebih stabil daripada z-score biasa. Tetapi untuk model yang mengharapkan data berdistribusi mendekati normal, standardisasi biasa tetap pilihan lazim."
+            },
+            {
+              "type": "text",
+              "markdown": "## Standardisasi bukan normalisasi bentuk\n\nStandardisasi hanya menggeser dan menskala, sehingga bentuk distribusi tidak berubah. Data miring tetap miring setelah dijadikan z-score. Bila model membutuhkan data mendekati simetris, gunakan transformasi lain seperti logaritma terlebih dahulu, baru standardisasi.\n\nKekeliruan umum adalah mengira z-score membuat data berdistribusi normal. Ia hanya membuat rata-rata nol dan simpangan baku satu. Menyebut data terstandardisasi sebagai data normal adalah klaim berbeda yang harus diuji tersendiri."
+            }
+          ],
+          "quick_check": {
+            "question": "Min-max memetakan ke?",
+            "options": [
+              "0 sampai 1",
+              "-1 sampai 1"
+            ],
+            "answer_index": 0,
+            "explanation": "Rentang tetap.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-03-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `koefisien_variasi(data)` yang mengembalikan simpangan baku sampel dibagi rata-rata dibulatkan 4 desimal.",
+          "note": "Bila rata-rata nol kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "import statistics\n\ndef koefisien_variasi(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "koefisien_variasi([100, 200, 300])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert koefisien_variasi([100, 200, 300]) == 0.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "koefisien_variasi([10, 12, 14, 16, 18])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert koefisien_variasi([10, 12, 14, 16, 18]) == 0.2259"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "koefisien_variasi([-1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert koefisien_variasi([-1, 1]) is None"
+              }
+            ]
+          },
+          "hint": "Bagi simpangan baku sampel dengan rata-rata setelah memeriksa rata-rata nol.",
+          "solution": "import statistics\n\ndef koefisien_variasi(data):\n    m = statistics.mean(data)\n    if m == 0:\n        return None\n    return round(statistics.stdev(data) / m, 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-03-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `zscore(data)` yang mengembalikan list z-score memakai simpangan baku populasi, dibulatkan 4 desimal.",
+          "note": "Bila simpangan baku nol kembalikan list nol.",
+          "filename": "solution.py",
+          "starter_code": "import statistics\n\ndef zscore(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "zscore([1, 2, 3, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert zscore([1, 2, 3, 4, 5]) == [-1.4142, -0.7071, 0.0, 0.7071, 1.4142]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "zscore([5, 5, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert zscore([5, 5, 5]) == [0.0, 0.0, 0.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "zscore([0, 10])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert zscore([0, 10]) == [-1.0, 1.0]"
+              }
+            ]
+          },
+          "hint": "Kurangi rata-rata lalu bagi simpangan baku populasi, tangani data konstan.",
+          "solution": "import statistics\n\ndef zscore(data):\n    m = statistics.mean(data)\n    s = statistics.pstdev(data)\n    if s == 0:\n        return [0.0 for _ in data]\n    return [round((x - m) / s, 4) + 0.0 for x in data]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-03-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `minmax(data)` yang memetakan data ke rentang nol sampai satu dan mengembalikan list dibulatkan 4 desimal.",
+          "note": "Bila semua nilai sama kembalikan list nol.",
+          "filename": "solution.py",
+          "starter_code": "def minmax(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "minmax([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert minmax([1, 2, 3]) == [0.0, 0.5, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "minmax([10, 20, 40])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert minmax([10, 20, 40]) == [0.0, 0.3333, 1.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "minmax([4, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert minmax([4, 4]) == [0.0, 0.0]"
+              }
+            ]
+          },
+          "hint": "Kurangi minimum lalu bagi dengan rentang, tangani rentang nol.",
+          "solution": "def minmax(data):\n    lo, hi = min(data), max(data)\n    if hi == lo:\n        return [0.0 for _ in data]\n    return [round((x - lo) / (hi - lo), 4) for x in data]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-03-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `proporsi_dalam(data, k)` yang mengembalikan proporsi data dengan `abs(x - rata) <= k * simpangan_baku_populasi`, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def proporsi_dalam(data, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "proporsi_dalam([1, 2, 3, 4, 5], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_dalam([1, 2, 3, 4, 5], 1) == 0.6"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "proporsi_dalam([1, 2, 3, 4, 5], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_dalam([1, 2, 3, 4, 5], 2) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "proporsi_dalam([2, 4, 4, 4, 5, 5, 7, 9], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_dalam([2, 4, 4, 4, 5, 5, 7, 9], 1) == 0.75"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "proporsi_dalam([2, 4, 4, 4, 5, 5, 7, 9], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_dalam([2, 4, 4, 4, 5, 5, 7, 9], 2) == 1.0"
+              }
+            ]
+          },
+          "hint": "Hitung rata-rata dan simpangan baku populasi lalu hitung porsi data dalam k simpangan baku.",
+          "solution": "def proporsi_dalam(data, k):\n    n = len(data)\n    m = sum(data) / n\n    s = (sum((x - m) ** 2 for x in data) / n) ** 0.5\n    dalam = sum(1 for x in data if abs(x - m) <= k * s)\n    return round(dalam / n, 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Koefisien variasi adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Simpangan baku / rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata / simpangan baku",
+              "description": ""
+            },
+            {
+              "label": "Varians / n",
+              "description": ""
+            },
+            {
+              "label": "IQR / median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tanpa satuan.",
+          "explanation": "Sebaran relatif."
+        },
+        {
+          "q": "Z-score data standardisasi memiliki rata-rata?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Satu",
+              "description": ""
+            },
+            {
+              "label": "Seratus",
+              "description": ""
+            },
+            {
+              "label": "Tak tentu",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pusat.",
+          "explanation": "Rata-rata nol dan simpangan baku satu."
+        },
+        {
+          "q": "Min-max memetakan ke?",
+          "code": null,
+          "options": [
+            {
+              "label": "0 sampai 1",
+              "description": ""
+            },
+            {
+              "label": "-1 sampai 1",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata nol",
+              "description": ""
+            },
+            {
+              "label": "Tak terbatas",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Rentang.",
+          "explanation": "Rentang tetap."
+        },
+        {
+          "q": "Chebyshev menjamin dalam 2 simpangan baku minimal?",
+          "code": null,
+          "options": [
+            {
+              "label": "75 persen",
+              "description": ""
+            },
+            {
+              "label": "95 persen",
+              "description": ""
+            },
+            {
+              "label": "50 persen",
+              "description": ""
+            },
+            {
+              "label": "99 persen",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "1 - 1/k kuadrat.",
+          "explanation": "1 - 1/4."
+        },
+        {
+          "q": "Parameter skala dihitung dari?",
+          "code": null,
+          "options": [
+            {
+              "label": "Data latih",
+              "description": ""
+            },
+            {
+              "label": "Data uji",
+              "description": ""
+            },
+            {
+              "label": "Seluruh data",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Latih.",
+          "explanation": "Cegah kebocoran."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membandingkan simpangan baku antar satuan berbeda. Lebih baik: Pakai koefisien variasi atau z-score.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membandingkan simpangan baku antar satuan berbeda.",
+          "fix": "Pakai koefisien variasi atau z-score."
+        },
+        {
+          "mistake": "Menghitung parameter skala dari seluruh data sebelum membagi latih dan uji.",
+          "fix": "Hitung dari data latih saja."
+        },
+        {
+          "mistake": "Memakai CV pada data dengan rata-rata mendekati nol.",
+          "fix": "CV hanya untuk data rasio dengan rata-rata jauh dari nol."
+        }
+      ],
+      "summary": [
+        "Koefisien variasi menyatakan sebaran relatif tanpa satuan.",
+        "Z-score dan min-max menyamakan skala antar variabel.",
+        "Chebyshev menjamin proporsi data tanpa asumsi distribusi.",
+        "Parameter penskalaan dihitung dari data latih saja."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Koefisien variasi, standardisasi, dan Chebyshev"
+          },
+          {
+            "type": "text",
+            "source": "Data pertama memiliki sebaran relatif lima puluh persen, jauh lebih besar dari data kedua walau simpangan bakunya besar."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\na = [100, 200, 300]\nb = [10, 12, 14, 16, 18]\nprint(round(statistics.stdev(a) / statistics.mean(a), 4))\nprint(round(statistics.stdev(b) / statistics.mean(b), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Z-score simetris di sekitar nol dan menunjukkan jarak tiap nilai dari rata-rata dalam satuan simpangan baku."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\nx = [1, 2, 3, 4, 5]\nm = statistics.mean(x)\ns = statistics.pstdev(x)\nprint([round((v - m) / s, 4) for v in x])"
+          },
+          {
+            "type": "text",
+            "source": "Nilai terkecil menjadi nol dan terbesar menjadi satu, dengan nilai tengah proporsional pada sepertiga."
+          },
+          {
+            "type": "code",
+            "source": "x = [10, 20, 40]\nlo, hi = min(x), max(x)\nprint([round((v - lo) / (hi - lo), 4) for v in x])"
+          },
+          {
+            "type": "text",
+            "source": "Proporsi nyata dalam dua simpangan baku adalah satu, di atas jaminan Chebyshev tujuh puluh lima persen."
+          },
+          {
+            "type": "code",
+            "source": "d = [2, 4, 4, 4, 5, 5, 7, 9]\nm = sum(d) / len(d)\ns = (sum((x - m) ** 2 for x in d) / len(d)) ** 0.5\nfor k in (1, 2):\n    dalam = sum(1 for x in d if abs(x - m) <= k * s) / len(d)\n    print(k, dalam, round(1 - 1 / k ** 2, 4))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

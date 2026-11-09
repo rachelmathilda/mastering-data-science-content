@@ -1,0 +1,1614 @@
+{
+  "schema_version": 2,
+  "course_id": "A4",
+  "module_no": 2,
+  "title": "Peluang bersyarat dan teorema Bayes",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menghitung peluang bersyarat",
+    "Menerapkan hukum peluang total dan teorema Bayes",
+    "Membangun klasifier Naive Bayes sederhana"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A4-02-1",
+    "exercise_id": "A4-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def peluang_jumlah_syarat(k, syarat):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A4-02-1",
+      "title": "Peluang bersyarat",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Mendefinisikan peluang bersyarat sebagai penyempitan ruang sampel",
+        "Menghitung peluang bersyarat dari enumerasi dan tabel",
+        "Memakai aturan perkalian umum untuk urutan kejadian",
+        "Menjelaskan hubungan peluang bersyarat dengan independensi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Informasi mengubah peluang",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Informasi mengubah peluang\n\nPeluang tidak selalu tetap. Begitu kita mendapat informasi baru, peluang suatu kejadian bisa berubah. Peluang hujan hari ini berbeda bila kita tahu langit sedang mendung. Peluang pelanggan berhenti berlangganan berbeda bila kita tahu ia menerima promo. Cara matematis menyatakan perubahan ini adalah **peluang bersyarat**.\n\nPeluang bersyarat adalah dasar hampir semua pembelajaran mesin probabilistik. Setiap kali model memprediksi label berdasarkan fitur, ia sedang menghitung peluang label dengan syarat fitur itu. Karena itu pemahaman yang kokoh di sini akan terpakai terus sepanjang kursus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Definisi\n\nPeluang `A` dengan syarat `B` ditulis `P(A | B)` dan dibaca peluang A diberikan B. Rumusnya `P(A | B) = P(A dan B) / P(B)`, dengan syarat `P(B) > 0`. Maknanya: kita menyempitkan ruang sampel menjadi hanya hasil yang masuk `B`, lalu bertanya berapa bagian dari ruang baru itu yang juga masuk `A`.\n\nDengan hasil sama mungkin, ini setara dengan `|A dan B| / |B|`. Penyebutnya bukan lagi seluruh ruang sampel melainkan hanya hasil yang konsisten dengan informasi yang kita punya. Memahami pembagian ini sebagai penyempitan ruang jauh lebih bermanfaat daripada menghafal rumus."
+            },
+            {
+              "type": "code_example",
+              "filename": "bersyarat_dadu.py",
+              "runnable": true,
+              "code": "from itertools import product\n\nS = list(product(range(1, 7), repeat=2))\nA = [h for h in S if h[0] + h[1] == 8]\nB = [h for h in S if h[0] % 2 == 0]\nAB = [h for h in A if h in B]\nprint(round(len(A) / len(S), 4), round(len(AB) / len(B), 4))",
+              "expected_output_note": "0.1389 0.1667",
+              "explanation": "Peluang jumlah delapan adalah lima per tiga puluh enam. Setelah tahu dadu pertama genap, ruang sampel menyempit menjadi delapan belas hasil dan peluangnya naik menjadi tiga per delapan belas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Aturan perkalian umum\n\nDengan menata ulang definisi diperoleh `P(A dan B) = P(B) * P(A | B)`. Inilah aturan perkalian umum yang berlaku tanpa asumsi independensi. Kita hitung peluang kejadian pertama, lalu peluang kejadian kedua dengan memperhitungkan bahwa kejadian pertama sudah terjadi.\n\nContohnya mengambil dua bola dari kantong tanpa pengembalian. Peluang bola kedua merah bergantung pada bola pertama karena komposisi isi kantong berubah. Aturan ini menyelesaikan semua soal pengambilan berurutan tanpa pengembalian dan menjadi dasar pohon peluang."
+            },
+            {
+              "type": "code_example",
+              "filename": "dua_bola.py",
+              "runnable": true,
+              "code": "import math\n\nlangsung = 5 / 8 * 4 / 7\nkombinasi = math.comb(5, 2) / math.comb(8, 2)\nprint(round(langsung, 4), round(kombinasi, 4))",
+              "expected_output_note": "0.3571 0.3571",
+              "explanation": "Lima merah dan tiga biru: peluang merah pertama lima per delapan dan merah kedua empat per tujuh. Hasil sama dengan hitungan kombinasi."
+            }
+          ],
+          "quick_check": {
+            "question": "P(A | B) dihitung sebagai?",
+            "options": [
+              "P(A dan B) / P(B)",
+              "P(A)P(B)"
+            ],
+            "answer_index": 0,
+            "explanation": "Penyempitan ke B.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Membaca tabel kontingensi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Membaca tabel kontingensi\n\nDalam data, peluang bersyarat paling mudah dihitung dari tabel silang jumlah. Misalnya 300 pelanggan: 100 menerima promo dan 200 tidak. Dari yang menerima promo, 10 berhenti berlangganan. Dari yang tidak, 40 berhenti. Maka `P(berhenti | promo) = 10/100 = 0,1` dan `P(berhenti | tanpa promo) = 40/200 = 0,2`.\n\nPerhatikan bahwa penyebutnya adalah total baris yang menjadi syarat, bukan total seluruh data. Kesalahan menggunakan total keseluruhan sebagai penyebut sangat umum dan menghasilkan peluang gabungan, bukan bersyarat."
+            },
+            {
+              "type": "code_example",
+              "filename": "tabel_kontingensi.py",
+              "runnable": true,
+              "code": "promo = {\"berhenti\": 10, \"tetap\": 90}\ntanpa = {\"berhenti\": 40, \"tetap\": 160}\np1 = promo[\"berhenti\"] / sum(promo.values())\np2 = tanpa[\"berhenti\"] / sum(tanpa.values())\ntotal = (promo[\"berhenti\"] + tanpa[\"berhenti\"]) / (sum(promo.values()) + sum(tanpa.values()))\nprint(round(p1, 4), round(p2, 4), round(total, 4))",
+              "expected_output_note": "0.1 0.2 0.1667",
+              "explanation": "Berhenti berlangganan lebih jarang pada penerima promo. Peluang keseluruhan berada di antara keduanya."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Arah syarat",
+              "markdown": "P(A | B) tidak sama dengan P(B | A). Peluang seseorang pemain basket bertinggi lebih dari 190 cm tidak sama dengan peluang orang bertinggi lebih dari 190 cm adalah pemain basket."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hubungan dengan independensi\n\nBila `A` dan `B` independen maka mengetahui `B` tidak mengubah peluang `A`, yaitu `P(A | B) = P(A)`. Ini cara lain menyatakan independensi dan sering lebih intuitif daripada hasil kali. Sebaliknya, bila `P(A | B)` berbeda dari `P(A)`, kedua kejadian berhubungan.\n\nPada contoh promo, `P(berhenti | promo) = 0,1` berbeda dari `P(berhenti) = 0,1667`, sehingga promo dan berhenti berlangganan tidak independen. Selisih itu adalah sinyal awal bahwa promo berasosiasi dengan retensi, walau belum membuktikan sebab akibat."
+            }
+          ],
+          "quick_check": {
+            "question": "Penyebut peluang bersyarat adalah?",
+            "options": [
+              "Seluruh data",
+              "Peluang syarat"
+            ],
+            "answer_index": 1,
+            "explanation": "P(B).",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kebiasaan yang baik",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kebiasaan yang baik\n\nSaat menghadapi soal bersyarat, tulis dulu mana syaratnya dan mana kejadian yang ditanyakan. Kata kunci seperti jika, diketahui bahwa, atau di antara menandakan syarat. Lalu pilih: hitung dengan penyempitan ruang sampel, dengan tabel, atau dengan aturan perkalian.\n\nLatih juga membalik pertanyaan secara sadar. Banyak kesalahan penalaran dalam berita dan laporan berawal dari menukar `P(A | B)` dengan `P(B | A)`. Pelajaran berikutnya memberi alat resmi, yaitu teorema Bayes, untuk membalik arah syarat dengan benar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pohon peluang\n\nUntuk kejadian berurutan, gambarlah pohon: tiap cabang membawa peluang bersyarat, dan peluang sebuah jalur adalah hasil kali peluang di sepanjang cabangnya. Pada pengambilan dua bola, cabang pertama merah atau biru, lalu cabang kedua bergantung pada hasil pertama.\n\nPohon memaksa kita menuliskan semua kemungkinan dan memeriksa bahwa peluang cabang dari satu simpul berjumlah satu. Bila tidak berjumlah satu, ada kasus yang terlewat. Ini kebiasaan verifikasi yang murah dan sangat efektif."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh penalaran\n\nSebuah klinik mencatat bahwa 30 persen pasien datang dengan demam, dan 20 persen dari yang demam ternyata terkena infeksi tertentu. Peluang pasien demam dan terinfeksi adalah `0,3 * 0,2 = 0,06`. Perhatikan bahwa 20 persen tadi adalah peluang bersyarat, bukan peluang terhadap seluruh pasien. Menyebut keduanya dengan cermat mencegah salah baca laporan."
+            }
+          ],
+          "quick_check": {
+            "question": "Bila independen maka P(A | B)?",
+            "options": [
+              "P(A)",
+              "0"
+            ],
+            "answer_index": 0,
+            "explanation": "Informasi tidak mengubah peluang.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `peluang_bersyarat(pab, pb)` yang mengembalikan `P(A | B)` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def peluang_bersyarat(pab, pb):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_bersyarat(0.2, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_bersyarat(0.2, 0.5) == 0.4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_bersyarat(0.1, 0.4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_bersyarat(0.1, 0.4) == 0.25"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_bersyarat(0, 0.3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_bersyarat(0, 0.3) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_bersyarat(0.3, 0.3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_bersyarat(0.3, 0.3) == 1.0"
+              }
+            ]
+          },
+          "hint": "Bagi peluang irisan dengan peluang syarat.",
+          "solution": "def peluang_bersyarat(pab, pb):\n    return round(pab / pb, 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-02-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `peluang_dua_merah(m, b)` yang mengembalikan peluang dua bola yang diambil tanpa pengembalian dari `m` merah dan `b` biru keduanya merah, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def peluang_dua_merah(m, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_dua_merah(5, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_dua_merah(5, 3) == 0.3571"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_dua_merah(2, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_dua_merah(2, 0) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_dua_merah(1, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_dua_merah(1, 5) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_dua_merah(4, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_dua_merah(4, 4) == 0.2143"
+              }
+            ]
+          },
+          "hint": "Kalikan peluang merah pertama dengan peluang merah kedua setelah satu merah terambil.",
+          "solution": "def peluang_dua_merah(m, b):\n    n = m + b\n    return round(m / n * (m - 1) / (n - 1), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `peluang_kolom(tabel, baris, kolom)` yang menerima dict bersarang berisi jumlah, misalnya `{'promo': {'berhenti': 10, 'tetap': 90}}`, dan mengembalikan peluang `kolom` dengan syarat `baris`, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def peluang_kolom(tabel, baris, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_kolom(t, 'promo', 'berhenti')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = {'promo': {'berhenti': 10, 'tetap': 90}, 'tanpa': {'berhenti': 40, 'tetap': 160}}\nassert peluang_kolom(t, 'promo', 'berhenti') == 0.1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_kolom(t, 'tanpa', 'berhenti')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_kolom(t, 'tanpa', 'berhenti') == 0.2"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_kolom(t, 'tanpa', 'tetap')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_kolom(t, 'tanpa', 'tetap') == 0.8"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_kolom(t, 'promo', 'tetap')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_kolom(t, 'promo', 'tetap') == 0.9"
+              }
+            ]
+          },
+          "hint": "Bagi jumlah sel dengan jumlah seluruh baris yang menjadi syarat.",
+          "solution": "def peluang_kolom(tabel, baris, kolom):\n    total = sum(tabel[baris].values())\n    return round(tabel[baris][kolom] / total, 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `peluang_jumlah_syarat(k, syarat)` yang mengembalikan peluang jumlah dua dadu adil sama dengan `k` dengan syarat `syarat(a, b)` bernilai True, dibulatkan 4 desimal.",
+          "note": "Bila tidak ada hasil yang memenuhi syarat, kembalikan 0.0.",
+          "filename": "solution.py",
+          "starter_code": "from itertools import product\n\ndef peluang_jumlah_syarat(k, syarat):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_jumlah_syarat(8, lambda a, b: a % 2 =...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_jumlah_syarat(8, lambda a, b: a % 2 == 0) == 0.1667"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_jumlah_syarat(7, lambda a, b: max(a, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_jumlah_syarat(7, lambda a, b: max(a, b) == 6) == 0.1818"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_jumlah_syarat(7, lambda a, b: a > b)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_jumlah_syarat(7, lambda a, b: a > b) == 0.2"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_jumlah_syarat(7, lambda a, b: False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_jumlah_syarat(7, lambda a, b: False) == 0.0"
+              }
+            ]
+          },
+          "hint": "Saring pasangan yang memenuhi syarat lalu hitung yang berjumlah k di antaranya.",
+          "solution": "from itertools import product\n\ndef peluang_jumlah_syarat(k, syarat):\n    S = [h for h in product(range(1, 7), repeat=2) if syarat(*h)]\n    if not S:\n        return 0.0\n    return round(sum(1 for a, b in S if a + b == k) / len(S), 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "P(A | B) dihitung sebagai?",
+          "code": null,
+          "options": [
+            {
+              "label": "P(A)P(B)",
+              "description": ""
+            },
+            {
+              "label": "P(A dan B) / P(B)",
+              "description": ""
+            },
+            {
+              "label": "P(A) + P(B)",
+              "description": ""
+            },
+            {
+              "label": "P(B) / P(A)",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bagi dengan syarat.",
+          "explanation": "Penyempitan ke B."
+        },
+        {
+          "q": "Penyebut peluang bersyarat adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Seluruh data",
+              "description": ""
+            },
+            {
+              "label": "Peluang syarat",
+              "description": ""
+            },
+            {
+              "label": "Satu",
+              "description": ""
+            },
+            {
+              "label": "Peluang A",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ruang baru.",
+          "explanation": "P(B)."
+        },
+        {
+          "q": "Bila independen maka P(A | B)?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "P(A)",
+              "description": ""
+            },
+            {
+              "label": "P(B)",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Tidak berubah.",
+          "explanation": "Informasi tidak mengubah peluang."
+        },
+        {
+          "q": "Aturan perkalian umum?",
+          "code": null,
+          "options": [
+            {
+              "label": "P(A)P(B)",
+              "description": ""
+            },
+            {
+              "label": "P(B)P(A | B)",
+              "description": ""
+            },
+            {
+              "label": "P(A)+P(B)",
+              "description": ""
+            },
+            {
+              "label": "P(A | B)+P(B)",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Berurutan.",
+          "explanation": "Tanpa asumsi independen."
+        },
+        {
+          "q": "Pengambilan tanpa pengembalian membuat kejadian?",
+          "code": null,
+          "options": [
+            {
+              "label": "Independen",
+              "description": ""
+            },
+            {
+              "label": "Bergantung",
+              "description": ""
+            },
+            {
+              "label": "Mustahil",
+              "description": ""
+            },
+            {
+              "label": "Pasti",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Isi berkurang.",
+          "explanation": "Komposisi berubah."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai total seluruh data sebagai penyebut peluang bersyarat. Lebih baik: Penyebutnya hanya total baris syarat.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai total seluruh data sebagai penyebut peluang bersyarat.",
+          "fix": "Penyebutnya hanya total baris syarat."
+        },
+        {
+          "mistake": "Menukar P(A | B) dengan P(B | A).",
+          "fix": "Arah syarat menentukan makna."
+        },
+        {
+          "mistake": "Mengira P(A | B) = P(A) selalu.",
+          "fix": "Itu hanya berlaku bila independen."
+        }
+      ],
+      "summary": [
+        "Peluang bersyarat adalah penyempitan ruang sampel.",
+        "P(A | B) tidak sama dengan P(B | A).",
+        "Aturan perkalian umum berlaku tanpa independensi.",
+        "Independen berarti syarat tidak mengubah peluang."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Peluang bersyarat"
+          },
+          {
+            "type": "text",
+            "source": "Peluang jumlah delapan adalah lima per tiga puluh enam. Setelah tahu dadu pertama genap, ruang sampel menyempit menjadi delapan belas hasil dan peluangnya naik menjadi tiga per delapan belas."
+          },
+          {
+            "type": "code",
+            "source": "from itertools import product\n\nS = list(product(range(1, 7), repeat=2))\nA = [h for h in S if h[0] + h[1] == 8]\nB = [h for h in S if h[0] % 2 == 0]\nAB = [h for h in A if h in B]\nprint(round(len(A) / len(S), 4), round(len(AB) / len(B), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Lima merah dan tiga biru: peluang merah pertama lima per delapan dan merah kedua empat per tujuh. Hasil sama dengan hitungan kombinasi."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nlangsung = 5 / 8 * 4 / 7\nkombinasi = math.comb(5, 2) / math.comb(8, 2)\nprint(round(langsung, 4), round(kombinasi, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Berhenti berlangganan lebih jarang pada penerima promo. Peluang keseluruhan berada di antara keduanya."
+          },
+          {
+            "type": "code",
+            "source": "promo = {\"berhenti\": 10, \"tetap\": 90}\ntanpa = {\"berhenti\": 40, \"tetap\": 160}\np1 = promo[\"berhenti\"] / sum(promo.values())\np2 = tanpa[\"berhenti\"] / sum(tanpa.values())\ntotal = (promo[\"berhenti\"] + tanpa[\"berhenti\"]) / (sum(promo.values()) + sum(tanpa.values()))\nprint(round(p1, 4), round(p2, 4), round(total, 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-02-2",
+      "title": "Peluang total dan teorema Bayes",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memakai hukum peluang total untuk menggabungkan skenario",
+        "Menurunkan dan menerapkan teorema Bayes",
+        "Menghitung posterior uji diagnostik dengan prevalensi",
+        "Memperbarui keyakinan dengan bukti berurutan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Memecah menjadi skenario",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memecah menjadi skenario\n\nSering kita tahu peluang suatu kejadian pada tiap skenario terpisah, tetapi ingin peluang keseluruhan. Pabrik punya dua mesin dengan tingkat cacat berbeda, dan kita ingin peluang sebuah produk acak cacat. Caranya: bobot tiap skenario dengan peluangnya, lalu jumlahkan. Ini **hukum peluang total**.\n\nSyaratnya skenario harus saling lepas dan bersama-sama mencakup seluruh ruang sampel, disebut partisi. Dengan partisi `B1, B2, ..., Bn`, peluang `A` adalah jumlah `P(A | Bi) * P(Bi)`. Hukum ini sederhana tetapi menjadi penyebut dalam teorema Bayes."
+            },
+            {
+              "type": "code_example",
+              "filename": "peluang_total.py",
+              "runnable": true,
+              "code": "prior = [0.6, 0.4]\ncacat = [0.02, 0.05]\ntotal = sum(p * c for p, c in zip(prior, cacat))\nprint(round(total, 4))",
+              "expected_output_note": "0.032",
+              "explanation": "Mesin A menghasilkan enam puluh persen dengan cacat dua persen, mesin B empat puluh persen dengan cacat lima persen, sehingga cacat keseluruhan tiga koma dua persen."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membalik syarat: teorema Bayes\n\nMisalkan kita menemukan produk cacat dan ingin tahu mesin mana yang membuatnya. Itu `P(mesin | cacat)`, kebalikan dari yang kita ketahui yaitu `P(cacat | mesin)`. **Teorema Bayes** membalik arah syarat: `P(B | A) = P(A | B) * P(B) / P(A)`, dengan `P(A)` dihitung lewat hukum peluang total.\n\nTurunannya sederhana. Aturan perkalian memberi `P(A dan B) = P(A | B) P(B) = P(B | A) P(A)`. Membagi kedua sisi dengan `P(A)` menghasilkan rumus Bayes. Meski turunannya satu baris, dampaknya besar karena memungkinkan kita belajar dari bukti."
+            },
+            {
+              "type": "text",
+              "markdown": "## Prior, likelihood, dan posterior\n\nDalam bahasa Bayes, `P(B)` disebut **prior**, keyakinan awal sebelum melihat bukti. `P(A | B)` disebut **likelihood**, seberapa mungkin bukti muncul bila hipotesis benar. `P(B | A)` disebut **posterior**, keyakinan setelah melihat bukti. `P(A)` adalah normalisasi agar posterior berjumlah satu.\n\nPola pikirnya: posterior sebanding dengan prior kali likelihood. Hipotesis yang awalnya kurang meyakinkan bisa menjadi dominan bila bukti sangat cocok dengannya, dan sebaliknya. Kerangka ini menopang filter spam, diagnosis medis, dan banyak model prediksi."
+            },
+            {
+              "type": "code_example",
+              "filename": "bayes_mesin.py",
+              "runnable": true,
+              "code": "prior = [0.6, 0.4]\ncacat = [0.02, 0.05]\ntotal = sum(p * c for p, c in zip(prior, cacat))\npost = [p * c / total for p, c in zip(prior, cacat)]\nprint([round(x, 4) for x in post])",
+              "expected_output_note": "[0.375, 0.625]",
+              "explanation": "Walau mesin A menghasilkan lebih banyak produk, produk cacat lebih mungkin berasal dari mesin B karena tingkat cacatnya lebih tinggi."
+            }
+          ],
+          "quick_check": {
+            "question": "Hukum peluang total menjumlahkan?",
+            "options": [
+              "P(A|Bi)P(Bi)",
+              "P(Bi)"
+            ],
+            "answer_index": 0,
+            "explanation": "Bobot tiap skenario.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Paradoks uji diagnostik",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Paradoks uji diagnostik\n\nContoh paling terkenal: penyakit langka dengan prevalensi satu persen. Tes memiliki sensitivitas 95 persen, artinya mendeteksi 95 persen orang sakit, dan spesifisitas 90 persen, artinya 10 persen orang sehat tetap positif palsu. Bila seseorang positif, berapa peluang ia benar-benar sakit?\n\nJawaban intuitifnya mendekati 95 persen, tetapi jawaban benarnya hanya sekitar 8,8 persen. Penyakit yang langka berarti sebagian besar orang sehat, dan 10 persen dari kelompok besar itu menghasilkan banyak positif palsu yang jumlahnya jauh melebihi positif benar."
+            },
+            {
+              "type": "code_example",
+              "filename": "uji_diagnostik.py",
+              "runnable": true,
+              "code": "prev, sens, spes = 0.01, 0.95, 0.90\np_pos = prev * sens + (1 - prev) * (1 - spes)\npost = prev * sens / p_pos\nprint(round(p_pos, 4), round(post, 4))",
+              "expected_output_note": "0.1085 0.0876",
+              "explanation": "Sekitar sepuluh persen orang akan positif, tetapi hanya sekitar delapan koma delapan persen dari yang positif itu benar sakit."
+            },
+            {
+              "type": "text",
+              "markdown": "## Frekuensi alami\n\nCara memahami hasil tadi tanpa rumus adalah memakai frekuensi alami. Bayangkan 10.000 orang. Satu persen atau 100 orang sakit, dan 95 di antaranya positif. Dari 9.900 orang sehat, 10 persen atau 990 positif palsu. Total positif 1.085, dan hanya 95 yang sakit.\n\nJadi peluang sakit di antara yang positif adalah `95 / 1085`, sekitar 8,8 persen. Penjelasan dengan hitungan orang seperti ini jauh lebih mudah diterima oleh pasien dan manajer daripada rumus pecahan. Gunakan tiap kali kamu harus menjelaskan hasil Bayes kepada orang awam."
+            },
+            {
+              "type": "code_example",
+              "filename": "frekuensi_alami.py",
+              "runnable": true,
+              "code": "sakit = 10000 * 0.01\ntp = sakit * 0.95\nfp = (10000 - sakit) * 0.10\nprint(int(tp), int(fp), round(tp / (tp + fp), 4))",
+              "expected_output_note": "95 990 0.0876",
+              "explanation": "Sembilan puluh lima positif benar dan sembilan ratus sembilan puluh positif palsu, sehingga rasio positif benar terhadap seluruh positif sekitar delapan koma delapan persen."
+            }
+          ],
+          "quick_check": {
+            "question": "Posterior sebanding dengan?",
+            "options": [
+              "Prior saja",
+              "Prior kali likelihood"
+            ],
+            "answer_index": 1,
+            "explanation": "Rumus Bayes.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memperbarui berurutan",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memperbarui berurutan\n\nPosterior dari satu bukti bisa menjadi prior untuk bukti berikutnya. Bila tes kedua yang independen juga positif, kita pakai posterior 8,8 persen sebagai prior baru dan ulangi rumus Bayes. Hasilnya melompat menjadi sekitar 47,7 persen, dan setelah tes ketiga sekitar 89,7 persen.\n\nInilah alasan dokter meminta tes konfirmasi. Satu tes positif pada penyakit langka lemah, tetapi bukti yang saling bebas menumpuk dengan cepat. Pembaruan berurutan ini adalah inti inferensi Bayesian dan akan muncul lagi pada model yang belajar dari aliran data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengomunikasikan hasil\n\nHasil Bayes sering kontraintuitif sehingga cara menyampaikannya penting. Mulailah dengan frekuensi alami, seratus atau sepuluh ribu orang, lalu sebutkan berapa yang positif benar dan positif palsu. Baru setelah itu tunjukkan rumus bagi yang menginginkannya.\n\nDalam laporan model klasifikasi, cantumkan prevalensi bersama presisi. Presisi model bergantung pada prevalensi, sehingga model yang tampak bagus pada data seimbang bisa menghasilkan banyak alarm palsu pada populasi nyata yang tidak seimbang."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa positif palsu mendominasi pada penyakit langka?",
+            "options": [
+              "Banyak orang sehat",
+              "Tes buruk"
+            ],
+            "answer_index": 0,
+            "explanation": "Persen kecil dari kelompok besar.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `peluang_total(prior, lik)` yang menerima list prior partisi dan list likelihood masing-masing, lalu mengembalikan peluang total dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def peluang_total(prior, lik):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_total([0.6, 0.4], [0.02, 0.05])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_total([0.6, 0.4], [0.02, 0.05]) == 0.032"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_total([0.5, 0.5], [0.1, 0.3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_total([0.5, 0.5], [0.1, 0.3]) == 0.2"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_total([1], [0.7])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_total([1], [0.7]) == 0.7"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_total([0.2, 0.3, 0.5], [0.1, 0.2, 0.3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_total([0.2, 0.3, 0.5], [0.1, 0.2, 0.3]) == 0.23"
+              }
+            ]
+          },
+          "hint": "Jumlahkan hasil kali prior dan likelihood.",
+          "solution": "def peluang_total(prior, lik):\n    return round(sum(p * l for p, l in zip(prior, lik)), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-02-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bayes(prior, lik, i)` yang mengembalikan peluang posterior skenario ke-`i` (dimulai dari 0) dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def bayes(prior, lik, i):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bayes([0.6, 0.4], [0.02, 0.05], 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bayes([0.6, 0.4], [0.02, 0.05], 0) == 0.375"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bayes([0.6, 0.4], [0.02, 0.05], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bayes([0.6, 0.4], [0.02, 0.05], 1) == 0.625"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bayes([0.2, 0.3, 0.5], [0.1, 0.2, 0.3], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bayes([0.2, 0.3, 0.5], [0.1, 0.2, 0.3], 2) == 0.6522"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bayes([0.5, 0.5], [0.1, 0.1], 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bayes([0.5, 0.5], [0.1, 0.1], 0) == 0.5"
+              }
+            ]
+          },
+          "hint": "Bagi prior kali likelihood skenario i dengan peluang total.",
+          "solution": "def bayes(prior, lik, i):\n    total = sum(p * l for p, l in zip(prior, lik))\n    return round(prior[i] * lik[i] / total, 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `posterior_uji(prev, sens, spes)` yang mengembalikan peluang sakit bila hasil tes positif, dibulatkan 4 desimal.",
+          "note": "`sens` adalah peluang positif bagi yang sakit dan `spes` peluang negatif bagi yang sehat.",
+          "filename": "solution.py",
+          "starter_code": "def posterior_uji(prev, sens, spes):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "posterior_uji(0.01, 0.95, 0.9)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_uji(0.01, 0.95, 0.9) == 0.0876"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "posterior_uji(0.5, 0.9, 0.9)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_uji(0.5, 0.9, 0.9) == 0.9"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "posterior_uji(0.1, 0.9, 0.9)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_uji(0.1, 0.9, 0.9) == 0.5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "posterior_uji(0.0, 0.9, 0.9)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_uji(0.0, 0.9, 0.9) == 0.0"
+              }
+            ]
+          },
+          "hint": "Positif palsu memiliki peluang satu dikurangi spesifisitas.",
+          "solution": "def posterior_uji(prev, sens, spes):\n    pos = prev * sens + (1 - prev) * (1 - spes)\n    return round(prev * sens / pos, 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `posterior_berurutan(prev, sens, spes, n)` yang memperbarui peluang sakit setelah `n` tes positif independen secara berurutan, memakai posterior tiap tes sebagai prior tes berikutnya.",
+          "note": "Bulatkan 4 desimal. Untuk `n = 0` kembalikan prior.",
+          "filename": "solution.py",
+          "starter_code": "def posterior_berurutan(prev, sens, spes, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "posterior_berurutan(0.01, 0.95, 0.9, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_berurutan(0.01, 0.95, 0.9, 0) == 0.01"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "posterior_berurutan(0.01, 0.95, 0.9, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_berurutan(0.01, 0.95, 0.9, 1) == 0.0876"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "posterior_berurutan(0.01, 0.95, 0.9, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_berurutan(0.01, 0.95, 0.9, 2) == 0.4769"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "posterior_berurutan(0.01, 0.95, 0.9, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_berurutan(0.01, 0.95, 0.9, 3) == 0.8965"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "posterior_berurutan(0.01, 0.99, 0.99, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_berurutan(0.01, 0.99, 0.99, 2) == 0.99"
+              }
+            ]
+          },
+          "hint": "Ulangi rumus Bayes n kali dengan posterior sebelumnya sebagai prior.",
+          "solution": "def posterior_berurutan(prev, sens, spes, n):\n    p = prev\n    for _ in range(n):\n        p = p * sens / (p * sens + (1 - p) * (1 - spes))\n    return round(p, 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Hukum peluang total menjumlahkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "P(A|Bi)P(Bi)",
+              "description": ""
+            },
+            {
+              "label": "P(Bi)",
+              "description": ""
+            },
+            {
+              "label": "P(A)",
+              "description": ""
+            },
+            {
+              "label": "P(A|Bi)",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Prior kali likelihood.",
+          "explanation": "Bobot tiap skenario."
+        },
+        {
+          "q": "Posterior sebanding dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Prior kali likelihood",
+              "description": ""
+            },
+            {
+              "label": "Prior saja",
+              "description": ""
+            },
+            {
+              "label": "Likelihood saja",
+              "description": ""
+            },
+            {
+              "label": "Prior dibagi likelihood",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Perkalian.",
+          "explanation": "Rumus Bayes."
+        },
+        {
+          "q": "Mengapa positif palsu mendominasi pada penyakit langka?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tes buruk",
+              "description": ""
+            },
+            {
+              "label": "Banyak orang sehat",
+              "description": ""
+            },
+            {
+              "label": "Prior tinggi",
+              "description": ""
+            },
+            {
+              "label": "Sensitivitas nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Basis besar.",
+          "explanation": "Persen kecil dari kelompok besar."
+        },
+        {
+          "q": "Spesifisitas adalah peluang?",
+          "code": null,
+          "options": [
+            {
+              "label": "Positif bagi sakit",
+              "description": ""
+            },
+            {
+              "label": "Negatif bagi sehat",
+              "description": ""
+            },
+            {
+              "label": "Sakit bagi positif",
+              "description": ""
+            },
+            {
+              "label": "Sehat bagi negatif",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Sehat.",
+          "explanation": "Mengenali yang sehat."
+        },
+        {
+          "q": "Mengapa tes konfirmasi berguna?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mengganti prior",
+              "description": ""
+            },
+            {
+              "label": "Bukti independen menumpuk",
+              "description": ""
+            },
+            {
+              "label": "Mengurangi biaya",
+              "description": ""
+            },
+            {
+              "label": "Meniadakan error",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Berurutan.",
+          "explanation": "Posterior menjadi prior baru."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengabaikan prior dan menganggap sensitivitas sama dengan posterior. Lebih baik: Hitung dengan Bayes.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengabaikan prior dan menganggap sensitivitas sama dengan posterior.",
+          "fix": "Hitung dengan Bayes."
+        },
+        {
+          "mistake": "Lupa normalisasi dengan peluang total.",
+          "fix": "Bagi dengan P(A) dari hukum total."
+        },
+        {
+          "mistake": "Menjumlahkan skenario yang tidak membentuk partisi.",
+          "fix": "Skenario harus lepas dan lengkap."
+        }
+      ],
+      "summary": [
+        "Hukum peluang total menggabungkan skenario menjadi peluang tunggal.",
+        "Bayes membalik syarat dengan prior, likelihood, dan normalisasi.",
+        "Prevalensi rendah membuat positif palsu mendominasi.",
+        "Bukti independen dapat diperbarui berurutan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Peluang total dan teorema Bayes"
+          },
+          {
+            "type": "text",
+            "source": "Mesin A menghasilkan enam puluh persen dengan cacat dua persen, mesin B empat puluh persen dengan cacat lima persen, sehingga cacat keseluruhan tiga koma dua persen."
+          },
+          {
+            "type": "code",
+            "source": "prior = [0.6, 0.4]\ncacat = [0.02, 0.05]\ntotal = sum(p * c for p, c in zip(prior, cacat))\nprint(round(total, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Walau mesin A menghasilkan lebih banyak produk, produk cacat lebih mungkin berasal dari mesin B karena tingkat cacatnya lebih tinggi."
+          },
+          {
+            "type": "code",
+            "source": "prior = [0.6, 0.4]\ncacat = [0.02, 0.05]\ntotal = sum(p * c for p, c in zip(prior, cacat))\npost = [p * c / total for p, c in zip(prior, cacat)]\nprint([round(x, 4) for x in post])"
+          },
+          {
+            "type": "text",
+            "source": "Sekitar sepuluh persen orang akan positif, tetapi hanya sekitar delapan koma delapan persen dari yang positif itu benar sakit."
+          },
+          {
+            "type": "code",
+            "source": "prev, sens, spes = 0.01, 0.95, 0.90\np_pos = prev * sens + (1 - prev) * (1 - spes)\npost = prev * sens / p_pos\nprint(round(p_pos, 4), round(post, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Sembilan puluh lima positif benar dan sembilan ratus sembilan puluh positif palsu, sehingga rasio positif benar terhadap seluruh positif sekitar delapan koma delapan persen."
+          },
+          {
+            "type": "code",
+            "source": "sakit = 10000 * 0.01\ntp = sakit * 0.95\nfp = (10000 - sakit) * 0.10\nprint(int(tp), int(fp), round(tp / (tp + fp), 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-02-3",
+      "title": "Bayes dalam praktik: filter spam dan Naive Bayes",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menerapkan Bayes untuk klasifikasi teks sederhana",
+        "Memakai asumsi independen bersyarat Naive Bayes",
+        "Mencegah underflow dengan log peluang",
+        "Memakai smoothing Laplace untuk kata tak terlihat"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari teorema ke klasifier",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari teorema ke klasifier\n\nTeorema Bayes dapat langsung dipakai sebagai klasifier. Untuk email dengan kata tertentu, kita ingin `P(spam | kata)`. Kita biasanya mudah mengestimasi arah sebaliknya dari data berlabel: seberapa sering kata itu muncul di email spam dan di email biasa. Bayes membalik keduanya menjadi peluang spam yang kita inginkan.\n\nDengan satu kata, rumusnya persis seperti di pelajaran sebelumnya. Prior adalah proporsi spam, likelihood adalah frekuensi kata pada tiap kelas. Hasilnya posterior yang menyatakan seberapa mencurigakan email itu berdasarkan kata tersebut."
+            },
+            {
+              "type": "code_example",
+              "filename": "spam_satu_kata.py",
+              "runnable": true,
+              "code": "prior = 0.4\np_kata_spam = 0.5\np_kata_ham = 0.05\nspam = prior * p_kata_spam\nham = (1 - prior) * p_kata_ham\nprint(round(spam / (spam + ham), 4))",
+              "expected_output_note": "0.8696",
+              "explanation": "Kata gratis jauh lebih sering di spam, sehingga email berkata itu memiliki peluang spam sekitar delapan puluh tujuh persen."
+            },
+            {
+              "type": "text",
+              "markdown": "## Banyak kata dan asumsi naif\n\nEmail memiliki banyak kata, dan kombinasi kata sangat banyak. Menaksir peluang kombinasi lengkap butuh data yang tidak realistis. **Naive Bayes** menyederhanakan dengan asumsi bahwa kata-kata independen satu sama lain **bila kelas diketahui**. Maka likelihood seluruh email adalah hasil kali likelihood tiap kata.\n\nAsumsi ini jelas tidak sepenuhnya benar, karena kata gratis dan menang cenderung muncul bersama. Namun dalam praktik klasifier tetap bekerja baik karena yang dibutuhkan hanya urutan peringkat kelas yang benar, bukan peluang yang akurat sempurna. Kesederhanaan membuatnya cepat dilatih dan tahan terhadap data sedikit."
+            },
+            {
+              "type": "code_example",
+              "filename": "spam_dua_kata.py",
+              "runnable": true,
+              "code": "prior = 0.4\nspam_k = [0.5, 0.3]\nham_k = [0.05, 0.02]\ns = prior\nfor p in spam_k:\n    s *= p\nh = 1 - prior\nfor p in ham_k:\n    h *= p\nprint(round(s / (s + h), 4))",
+              "expected_output_note": "0.9901",
+              "explanation": "Dua kata yang sama-sama dominan di spam menaikkan peluang spam menjadi sekitar sembilan puluh sembilan persen."
+            },
+            {
+              "type": "text",
+              "markdown": "## Underflow dan log\n\nMengalikan banyak peluang kecil menghasilkan bilangan yang sangat kecil. Seratus kata dengan peluang masing-masing 0,01 menghasilkan `1e-200`, dan dua ratus kata menghasilkan nilai di bawah batas representasi float, yang dibulatkan menjadi nol. Peristiwa ini disebut **underflow** dan membuat dua kelas sama-sama bernilai nol sehingga tidak bisa dibandingkan.\n\nSolusi standar adalah bekerja dengan logaritma. Logaritma mengubah perkalian menjadi penjumlahan: `log(a * b) = log(a) + log(b)`. Karena log monoton naik, kelas dengan skor log terbesar juga kelas dengan peluang terbesar. Semua implementasi Naive Bayes yang serius memakai log peluang."
+            },
+            {
+              "type": "code_example",
+              "filename": "underflow.py",
+              "runnable": true,
+              "code": "import math\n\nprint(0.01 ** 200)\nprint(round(200 * math.log(0.01), 2))",
+              "expected_output_note": "0.0\n-921.03",
+              "explanation": "Hasil kali langsung menjadi nol karena underflow, sedangkan jumlah log tetap bilangan wajar yang bisa dibandingkan."
+            }
+          ],
+          "quick_check": {
+            "question": "Naive Bayes mengasumsikan fitur?",
+            "options": [
+              "Independen bersyarat pada kelas",
+              "Sama"
+            ],
+            "answer_index": 0,
+            "explanation": "Independen diberikan kelas.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Smoothing Laplace",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Smoothing Laplace\n\nMasalah lain muncul bila sebuah kata tidak pernah terlihat di data latih untuk kelas tertentu. Estimasi frekuensinya nol, dan karena semua dikalikan, satu kata asing meniadakan seluruh skor kelas itu menjadi nol. Padahal kata baru mungkin saja muncul pada email spam yang asli.\n\n**Smoothing Laplace** menambahkan hitungan semu pada tiap kata: `p = (hitung + alpha) / (total + alpha * k)`, dengan `k` banyaknya kemungkinan nilai dan `alpha` biasanya satu. Estimasi tidak pernah nol dan, bila data banyak, hampir tidak berbeda dari frekuensi asli. Ini sama dengan menyatakan prior lemah bahwa semua kata mungkin muncul."
+            },
+            {
+              "type": "code_example",
+              "filename": "smoothing.py",
+              "runnable": true,
+              "code": "def laplace(hitung, total, alpha=1, k=2):\n    return (hitung + alpha) / (total + alpha * k)\n\nprint(round(laplace(0, 100), 4))\nprint(round(laplace(50, 100), 4))",
+              "expected_output_note": "0.0098\n0.5",
+              "explanation": "Kata yang tidak pernah terlihat tetap mendapat peluang kecil positif, sedangkan frekuensi seimbang tidak berubah."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Baseline cepat",
+              "markdown": "Naive Bayes adalah baseline teks yang sangat baik. Latih dalam hitungan detik, bandingkan dengan model rumit, dan pakai log peluang serta smoothing sejak awal."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kekuatan dan batas\n\nNaive Bayes cepat, butuh data sedikit, dan mudah diinterpretasikan: kamu bisa melihat kata mana yang paling menyumbang ke skor spam. Ia cocok untuk klasifikasi teks, filter spam, dan baseline awal. Peluang posterior yang dihasilkan sering terlalu ekstrem mendekati nol atau satu, jadi jangan diperlakukan sebagai peluang terkalibrasi.\n\nBatasnya muncul ketika fitur saling bergantung kuat. Model yang menangkap interaksi, seperti regresi logistik atau pohon keputusan, sering lebih akurat. Namun nilai Naive Bayes sebagai pembanding pertama tetap sulit disaingi dalam hal kesederhanaan."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa memakai log peluang?",
+            "options": [
+              "Agar lebih besar",
+              "Mencegah underflow"
+            ],
+            "answer_index": 1,
+            "explanation": "Perkalian jadi penjumlahan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Alur lengkap pelatihan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Alur lengkap pelatihan\n\nMelatih Naive Bayes untuk teks mengikuti langkah yang pendek. Pecah tiap dokumen menjadi kata, hitung berapa kali tiap kata muncul pada tiap kelas, terapkan smoothing Laplace, lalu simpan log peluang per kata dan log prior per kelas. Seluruh pelatihan hanya satu kali melewati data.\n\nSaat prediksi, jumlahkan log prior dengan log peluang tiap kata dokumen untuk setiap kelas dan pilih kelas bernilai terbesar. Kata yang tidak ada di kosakata biasanya diabaikan. Karena hanya penjumlahan, prediksi sangat cepat dan cocok dijalankan langsung di perangkat tanpa server."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih fitur teks\n\nPilihan fitur memengaruhi hasil sama besarnya dengan pilihan model. Representasi kantong kata menghitung kemunculan, sedangkan versi biner hanya mencatat ada atau tidaknya kata. Menghapus kata sangat umum seperti dan atau yang sering membantu, dan menormalkan huruf kecil mengurangi kosakata tanpa kehilangan banyak makna.\n\nBandingkan beberapa variasi dengan validasi silang pada data berlabelmu sendiri, karena bahasa Indonesia informal dan singkatan membuat aturan bawaan dari bahasa lain kurang cocok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengevaluasi klasifier\n\nAkurasi saja menyesatkan bila spam hanya sepuluh persen email, karena klasifier yang selalu menjawab bukan spam sudah mencapai sembilan puluh persen. Gunakan presisi, yaitu berapa banyak yang ditandai spam benar-benar spam, dan recall, yaitu berapa banyak spam yang tertangkap. Pilih keseimbangan sesuai biaya: menandai email penting sebagai spam biasanya lebih mahal daripada membiarkan satu spam lolos."
+            }
+          ],
+          "quick_check": {
+            "question": "Smoothing Laplace mencegah?",
+            "options": [
+              "Peluang nol",
+              "Peluang satu"
+            ],
+            "answer_index": 0,
+            "explanation": "Menambah hitungan semu.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `posterior_spam(prior, p_kata_spam, p_kata_ham)` yang mengembalikan peluang spam bila sebuah kata muncul, dibulatkan 4 desimal.",
+          "note": "`prior` adalah peluang awal spam.",
+          "filename": "solution.py",
+          "starter_code": "def posterior_spam(prior, p_kata_spam, p_kata_ham):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "posterior_spam(0.4, 0.5, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_spam(0.4, 0.5, 0.05) == 0.8696"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "posterior_spam(0.5, 0.5, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_spam(0.5, 0.5, 0.5) == 0.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "posterior_spam(0.1, 0.9, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_spam(0.1, 0.9, 0.1) == 0.5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "posterior_spam(0.4, 0, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_spam(0.4, 0, 0.05) == 0.0"
+              }
+            ]
+          },
+          "hint": "Bandingkan skor spam dan skor bukan spam lalu normalisasikan.",
+          "solution": "def posterior_spam(prior, p_kata_spam, p_kata_ham):\n    s = prior * p_kata_spam\n    h = (1 - prior) * p_kata_ham\n    return round(s / (s + h), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-02-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `posterior_banyak(prior, pk_spam, pk_ham)` untuk list peluang kata di kelas spam dan bukan spam yang diasumsikan independen bersyarat.",
+          "note": "Kembalikan peluang spam dibulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def posterior_banyak(prior, pk_spam, pk_ham):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "posterior_banyak(0.4, [0.5, 0.3], [0.05, 0.02])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_banyak(0.4, [0.5, 0.3], [0.05, 0.02]) == 0.9901"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "posterior_banyak(0.4, [], [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_banyak(0.4, [], []) == 0.4"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "posterior_banyak(0.5, [0.2], [0.2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_banyak(0.5, [0.2], [0.2]) == 0.5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "posterior_banyak(0.4, [0.5], [0.05])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert posterior_banyak(0.4, [0.5], [0.05]) == 0.8696"
+              }
+            ]
+          },
+          "hint": "Kalikan prior dengan semua peluang kata tiap kelas lalu normalisasikan.",
+          "solution": "def posterior_banyak(prior, pk_spam, pk_ham):\n    s = prior\n    for p in pk_spam:\n        s *= p\n    h = 1 - prior\n    for p in pk_ham:\n        h *= p\n    return round(s / (s + h), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `laplace(hitung, total, alpha=1, k=2)` yang mengembalikan estimasi `(hitung + alpha) / (total + alpha * k)` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def laplace(hitung, total, alpha=1, k=2):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "laplace(0, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert laplace(0, 100) == 0.0098"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "laplace(50, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert laplace(50, 100) == 0.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "laplace(10, 20, 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert laplace(10, 20, 1, 2) == 0.5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "laplace(0, 10, 1, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert laplace(0, 10, 1, 3) == 0.0769"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "laplace(3, 10, 0.5, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert laplace(3, 10, 0.5, 2) == 0.3182"
+              }
+            ]
+          },
+          "hint": "Tambahkan alpha pada pembilang dan alpha kali k pada penyebut.",
+          "solution": "def laplace(hitung, total, alpha=1, k=2):\n    return round((hitung + alpha) / (total + alpha * k), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `klasifikasi(prior, kata, tabel)` yang menerima dict prior kelas, list kata, dan dict tabel berisi peluang tiap kata per kelas.",
+          "note": "Kembalikan nama kelas dengan skor log terbesar (log prior ditambah jumlah log peluang kata). Harus tetap benar untuk daftar kata yang sangat panjang.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef klasifikasi(prior, kata, tabel):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "klasifikasi(prior, ['gratis', 'menang'], tabel)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "prior = {'spam': 0.4, 'ham': 0.6}\ntabel = {'spam': {'gratis': 0.5, 'menang': 0.3, 'rapat': 0.01}, 'ham': {'gratis': 0.05, 'menang': 0.02, 'rapat': 0.4}}\nassert klasifikasi(prior, ['gratis', 'menang'], tabel) == 'spam'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "klasifikasi(prior, ['rapat'], tabel)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert klasifikasi(prior, ['rapat'], tabel) == 'ham'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "klasifikasi(prior, ['gratis', 'rapat'], tabel)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert klasifikasi(prior, ['gratis', 'rapat'], tabel) == 'ham'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "klasifikasi(prior, [], tabel)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert klasifikasi(prior, [], tabel) == 'ham'"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "klasifikasi(prior, ['gratis', 'rapat'] * 400,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert klasifikasi(prior, ['gratis', 'rapat'] * 400, tabel) == 'ham'"
+              }
+            ]
+          },
+          "hint": "Jumlahkan log peluang daripada mengalikan peluang agar tidak underflow.",
+          "solution": "import math\n\ndef klasifikasi(prior, kata, tabel):\n    def skor(c):\n        return math.log(prior[c]) + sum(math.log(tabel[c][w]) for w in kata)\n    return max(prior, key=skor)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Naive Bayes mengasumsikan fitur?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sama",
+              "description": ""
+            },
+            {
+              "label": "Independen bersyarat pada kelas",
+              "description": ""
+            },
+            {
+              "label": "Berkorelasi",
+              "description": ""
+            },
+            {
+              "label": "Konstan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Naif.",
+          "explanation": "Independen diberikan kelas."
+        },
+        {
+          "q": "Mengapa memakai log peluang?",
+          "code": null,
+          "options": [
+            {
+              "label": "Agar lebih besar",
+              "description": ""
+            },
+            {
+              "label": "Mencegah underflow",
+              "description": ""
+            },
+            {
+              "label": "Menambah data",
+              "description": ""
+            },
+            {
+              "label": "Menghapus prior",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bilangan sangat kecil.",
+          "explanation": "Perkalian jadi penjumlahan."
+        },
+        {
+          "q": "Smoothing Laplace mencegah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Peluang nol",
+              "description": ""
+            },
+            {
+              "label": "Peluang satu",
+              "description": ""
+            },
+            {
+              "label": "Overfitting data",
+              "description": ""
+            },
+            {
+              "label": "Prior",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kata baru.",
+          "explanation": "Menambah hitungan semu."
+        },
+        {
+          "q": "Kelas dipilih dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Skor log terbesar",
+              "description": ""
+            },
+            {
+              "label": "Skor terkecil",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            },
+            {
+              "label": "Prior saja",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Maksimum.",
+          "explanation": "Log monoton naik."
+        },
+        {
+          "q": "Kelebihan Naive Bayes?",
+          "code": null,
+          "options": [
+            {
+              "label": "Akurat selalu",
+              "description": ""
+            },
+            {
+              "label": "Cepat dan sederhana",
+              "description": ""
+            },
+            {
+              "label": "Tanpa asumsi",
+              "description": ""
+            },
+            {
+              "label": "Kalibrasi sempurna",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Sederhana.",
+          "explanation": "Baseline kuat."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengalikan banyak peluang kecil langsung. Lebih baik: Pakai jumlah log peluang.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengalikan banyak peluang kecil langsung.",
+          "fix": "Pakai jumlah log peluang."
+        },
+        {
+          "mistake": "Membiarkan peluang kata nol.",
+          "fix": "Terapkan smoothing Laplace."
+        },
+        {
+          "mistake": "Menganggap posterior Naive Bayes terkalibrasi.",
+          "fix": "Pakai untuk peringkat, kalibrasi terpisah."
+        }
+      ],
+      "summary": [
+        "Bayes membalik peluang kata di tiap kelas menjadi peluang kelas.",
+        "Naive Bayes mengalikan peluang kata dengan asumsi independen bersyarat.",
+        "Log peluang mencegah underflow.",
+        "Smoothing Laplace menghindari peluang nol."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Bayes dalam praktik: filter spam dan Naive Bayes"
+          },
+          {
+            "type": "text",
+            "source": "Kata gratis jauh lebih sering di spam, sehingga email berkata itu memiliki peluang spam sekitar delapan puluh tujuh persen."
+          },
+          {
+            "type": "code",
+            "source": "prior = 0.4\np_kata_spam = 0.5\np_kata_ham = 0.05\nspam = prior * p_kata_spam\nham = (1 - prior) * p_kata_ham\nprint(round(spam / (spam + ham), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Dua kata yang sama-sama dominan di spam menaikkan peluang spam menjadi sekitar sembilan puluh sembilan persen."
+          },
+          {
+            "type": "code",
+            "source": "prior = 0.4\nspam_k = [0.5, 0.3]\nham_k = [0.05, 0.02]\ns = prior\nfor p in spam_k:\n    s *= p\nh = 1 - prior\nfor p in ham_k:\n    h *= p\nprint(round(s / (s + h), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Hasil kali langsung menjadi nol karena underflow, sedangkan jumlah log tetap bilangan wajar yang bisa dibandingkan."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nprint(0.01 ** 200)\nprint(round(200 * math.log(0.01), 2))"
+          },
+          {
+            "type": "text",
+            "source": "Kata yang tidak pernah terlihat tetap mendapat peluang kecil positif, sedangkan frekuensi seimbang tidak berubah."
+          },
+          {
+            "type": "code",
+            "source": "def laplace(hitung, total, alpha=1, k=2):\n    return (hitung + alpha) / (total + alpha * k)\n\nprint(round(laplace(0, 100), 4))\nprint(round(laplace(50, 100), 4))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

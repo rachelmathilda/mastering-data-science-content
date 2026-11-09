@@ -28,71 +28,106 @@
       "module_no": 1,
       "title": "Ruang sampel dan aturan peluang",
       "file": "m01.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A4-01-1",
+        "exercise_id": "A4-01-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def ruang_koin(n):\n    ..."
+      }
     },
     {
       "module_no": 2,
       "title": "Peluang bersyarat dan teorema Bayes",
       "file": "m02.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A4-02-1",
+        "exercise_id": "A4-02-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def peluang_jumlah_syarat(k, syarat):\n    ..."
+      }
     },
     {
       "module_no": 3,
       "title": "Variabel acak diskrit",
       "file": "m03.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A4-03-1",
+        "exercise_id": "A4-03-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def pmf_transformasi(pmf, f):\n    ..."
+      }
     },
     {
       "module_no": 4,
       "title": "Variabel acak kontinu",
       "file": "m04.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A4-04-1",
+        "exercise_id": "A4-04-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def peluang_rentang_pdf(f, a, b, n=20000):\n    ..."
+      }
     },
     {
       "module_no": 5,
       "title": "Distribusi yang sering dipakai",
       "file": "m05.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A4-05-1",
+        "exercise_id": "A4-05-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def modus_binomial(n, p):\n    ..."
+      }
     },
     {
       "module_no": 6,
       "title": "Ekspektasi, varians, dan kovarians",
       "file": "m06.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A4-06-1",
+        "exercise_id": "A4-06-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def ekspektasi_kontinu(f, a, b, n=100000):\n    ..."
+      }
     },
     {
       "module_no": 7,
       "title": "Hukum bilangan besar dan CLT",
       "file": "m07.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A4-07-1",
+        "exercise_id": "A4-07-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def simulasi_varians_rata(n, trial, seed):\n    ..."
+      }
     },
     {
       "module_no": 8,

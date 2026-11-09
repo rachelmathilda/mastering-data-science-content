@@ -1,13 +1,13 @@
 # Status Konten
 
-Courses: 62. Modul: 413. Siap: 9.
+Courses: 62. Modul: 413. Siap: 36.
 
 | Kode | Judul | Siap | Total |
 |---|---|---|---|
-| A1 | Python untuk Data Science | 1 | 8 |
-| A2 | Aljabar Linear untuk Data Science | 0 | 7 |
-| A3 | Kalkulus dan Optimasi untuk ML | 0 | 6 |
-| A4 | Probabilitas untuk Data Science | 0 | 8 |
+| A1 | Python untuk Data Science | 8 | 8 |
+| A2 | Aljabar Linear untuk Data Science | 7 | 7 |
+| A3 | Kalkulus dan Optimasi untuk ML | 6 | 6 |
+| A4 | Probabilitas untuk Data Science | 7 | 8 |
 | A5 | Statistika Deskriptif | 0 | 6 |
 | A6 | SQL untuk Analisis Data | 0 | 9 |
 | A7 | Git dan Alur Kerja Reproducible | 0 | 4 |

@@ -1,0 +1,1566 @@
+{
+  "schema_version": 2,
+  "course_id": "A1",
+  "module_no": 4,
+  "title": "Fungsi, argumen, dan lambda",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Mendefinisikan fungsi dengan parameter dan nilai kembalian yang jelas",
+    "Memakai argumen posisi, kata kunci, bawaan, args, dan kwargs",
+    "Memakai lambda dan fungsi tingkat tinggi untuk mengolah data"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A1-04-1",
+    "exercise_id": "A1-04-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def bilangan_prima(n):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A1-04-1",
+      "title": "Mendefinisikan fungsi dan nilai kembalian",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Mendefinisikan fungsi dengan def, parameter, dan return",
+        "Membedakan parameter dari argumen dan return dari print",
+        "Menulis docstring dan memahami cakupan variabel lokal dan global",
+        "Mengembalikan beberapa nilai dan memecah masalah menjadi fungsi kecil"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa fungsi",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa fungsi\n\n**Fungsi** adalah blok kode bernama yang bisa dipanggil berulang kali. Tanpa fungsi, kamu menyalin kode yang sama di banyak tempat, dan setiap perbaikan harus dilakukan di semua salinan. Dengan fungsi, logika ditulis sekali, diberi nama yang bermakna, lalu dipakai di mana saja. Dalam analisis data, fungsi membungkus langkah seperti membersihkan teks, menghitung metrik, atau memuat file, sehingga skripmu terbaca seperti rangkaian kalimat.\n\nFungsi didefinisikan dengan kata kunci `def`, diikuti nama, parameter dalam kurung, tanda titik dua, lalu badan fungsi yang menjorok. Nilai yang dikirim saat pemanggilan disebut **argumen**, sedangkan nama yang menampungnya di dalam fungsi disebut **parameter**. Fungsi yang tidak mengembalikan apa pun secara eksplisit mengembalikan `None`.\n\nNama fungsi sebaiknya berupa kata kerja yang jelas, seperti `hitung_rata_rata` atau `bersihkan_teks`. Nama yang baik menghemat banyak komentar."
+            },
+            {
+              "type": "code_example",
+              "filename": "def_dasar.py",
+              "runnable": true,
+              "code": "def sapa(nama):\n    return \"Halo, \" + nama\n\ndef kuadrat(x):\n    return x * x\n\ndef cetak_saja(x):\n    print(\"nilai\", x)\n\nprint(sapa(\"Sari\"))\nprint(kuadrat(7))\nhasil = cetak_saja(3)\nprint(hasil)",
+              "expected_output_note": "Halo, Sari\n49\nnilai 3\nNone",
+              "explanation": "`return` mengirim nilai ke pemanggil, sedangkan `print` hanya menampilkan teks. Fungsi tanpa `return` mengembalikan `None`."
+            },
+            {
+              "type": "text",
+              "markdown": "## return berbeda dari print\n\nIni kebingungan paling umum bagi pemula. `print` menulis sesuatu ke layar untuk dibaca manusia, tetapi nilainya hilang setelah itu. `return` menyerahkan nilai kembali ke kode yang memanggil sehingga bisa disimpan, dihitung lagi, atau dikirim ke fungsi lain. Fungsi yang baik umumnya mengembalikan nilai dan membiarkan pemanggil memutuskan apakah akan mencetaknya.\n\nBegitu `return` dieksekusi, fungsi langsung berhenti. Baris setelahnya tidak dijalankan. Sifat ini sering dimanfaatkan untuk *early return*: periksa kondisi tidak valid di awal dan keluar segera, sehingga sisa kode tidak perlu bersarang dalam banyak `if`.\n\nSebuah fungsi boleh punya beberapa `return` di cabang berbeda. Pastikan setiap jalur eksekusi mengembalikan sesuatu yang konsisten, karena jalur yang lupa `return` diam-diam menghasilkan `None` dan sering memicu error di tempat lain."
+            },
+            {
+              "type": "code_example",
+              "filename": "return_dini.py",
+              "runnable": true,
+              "code": "def kategori(nilai):\n    if nilai < 0 or nilai > 100:\n        return \"tidak valid\"\n    if nilai >= 75:\n        return \"lulus\"\n    return \"remedial\"\n\nfor n in [90, 60, 101]:\n    print(n, kategori(n))\n\ndef lupa_return(x):\n    hasil = x * 2\n\nprint(lupa_return(4))\nprint(kategori(80).upper())",
+              "expected_output_note": "90 lulus\n60 remedial\n101 tidak valid\nNone\nLULUS",
+              "explanation": "Early return menyederhanakan percabangan. Fungsi yang lupa `return` menghasilkan `None`, dan hasil `return` bisa langsung dipakai dalam ekspresi lain."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Fungsi kecil lebih mudah diuji",
+              "markdown": "Satu fungsi sebaiknya melakukan satu hal. Jika kamu sulit memberi nama yang singkat dan jelas, kemungkinan fungsinya terlalu besar dan perlu dipecah."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang dikembalikan fungsi tanpa return?",
+            "options": [
+              "None",
+              "0"
+            ],
+            "answer_index": 0,
+            "explanation": "Tanpa return eksplisit Python mengembalikan None.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Docstring dan cakupan variabel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Docstring dan cakupan variabel\n\n**Docstring** adalah string tiga tanda kutip di baris pertama badan fungsi yang menjelaskan apa yang dilakukannya. Alat bantu seperti `help(fungsi)` dan editor menampilkannya, dan ia tersimpan di atribut `__doc__`. Tulis satu kalimat ringkas tentang tujuan, parameter, dan nilai kembalian.\n\n**Cakupan** (*scope*) menentukan di mana sebuah nama dapat dipakai. Variabel yang dibuat di dalam fungsi bersifat lokal dan lenyap saat fungsi selesai. Fungsi dapat membaca variabel global, tetapi menugaskan nama yang sama di dalam fungsi membuat variabel lokal baru, bukan mengubah yang global. Mengubah variabel global memerlukan kata kunci `global`, praktik yang sebaiknya dihindari karena membuat kode sulit dilacak.\n\nCara yang lebih bersih: kirim data lewat parameter dan terima hasil lewat `return`. Fungsi seperti ini bersifat *murni*, hasilnya hanya bergantung pada argumen, sehingga mudah diuji dan diprediksi."
+            },
+            {
+              "type": "code_example",
+              "filename": "docstring_scope.py",
+              "runnable": true,
+              "code": "total = 100\n\ndef tambah_lokal(x):\n    total = x + 1\n    return total\n\ndef hitung_pajak(harga, tarif=0.1):\n    \"\"\"Mengembalikan pajak dari harga dengan tarif tertentu.\"\"\"\n    return harga * tarif\n\nprint(tambah_lokal(5), total)\nprint(hitung_pajak(200))\nprint(hitung_pajak.__doc__)\n\ndef min_maks_rata(d):\n    return min(d), max(d), sum(d) / len(d)\n\na, b, c = min_maks_rata([2, 4, 9])\nprint(a, b, round(c, 2))",
+              "expected_output_note": "6 100\n20.0\nMengembalikan pajak dari harga dengan tarif tertentu.\n2 9 5.0",
+              "explanation": "Penugasan di dalam fungsi membuat variabel lokal sehingga `total` global tidak berubah. Fungsi dapat mengembalikan beberapa nilai sebagai tuple lalu di-unpack."
+            }
+          ],
+          "quick_check": {
+            "question": "Beda parameter dan argumen?",
+            "options": [
+              "Tidak ada beda",
+              "Parameter di definisi, argumen saat pemanggilan"
+            ],
+            "answer_index": 1,
+            "explanation": "Parameter adalah nama di definisi dan argumen adalah nilai yang dikirim.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memecah masalah menjadi fungsi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memecah masalah menjadi fungsi\n\nKeahlian terpenting dalam menulis fungsi adalah dekomposisi. Ambil tugas besar, misalnya menghitung ringkasan nilai satu kelas, lalu pecah menjadi langkah kecil: membersihkan data, menghitung rata-rata, menentukan kategori, dan menyusun laporan. Setiap langkah menjadi satu fungsi yang bisa diuji sendiri.\n\nManfaatnya terasa saat ada bug. Jika laporan salah, kamu menguji fungsi satu per satu dan menemukan bagian yang keliru dengan cepat. Tanpa dekomposisi, kamu harus menelusuri skrip panjang baris demi baris.\n\nDalam proyek data science, pola ini berlanjut menjadi pipeline: fungsi muat data, fungsi bersihkan, fungsi hitung fitur, fungsi latih. Kebiasaan memecah sejak sekarang akan sangat menolongmu nanti. Kerjakan latihan di bawah dengan memikirkan satu tugas per fungsi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menguji fungsi dengan assert\n\nCara paling sederhana memastikan fungsi benar adalah menuliskan beberapa pemanggilan beserta hasil yang kamu harapkan memakai `assert`. Bila ekspresi bernilai salah, Python menghentikan program dengan `AssertionError`. Pilih kasus yang mewakili: nilai umum, nilai batas seperti nol atau list kosong, dan nilai yang tidak valid.\n\nKebiasaan ini disebut pengujian unit dan menjadi fondasi pengembangan perangkat lunak yang andal. Latihan di aplikasi ini bekerja persis dengan cara itu: kode kamu dijalankan lalu serangkaian assert memeriksa hasilnya. Biasakan memikirkan kasus batas sebelum menulis fungsi, karena di sanalah kebanyakan bug bersembunyi.\n\nSaat sebuah assert gagal, baca pesan galat dengan teliti. Ia menunjukkan baris yang gagal sehingga kamu tahu kasus mana yang belum tertangani."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang terjadi setelah return dieksekusi?",
+            "options": [
+              "Fungsi berhenti",
+              "Fungsi lanjut"
+            ],
+            "answer_index": 0,
+            "explanation": "Eksekusi fungsi langsung berakhir.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-04-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `luas_persegi_panjang(p, l)` yang mengembalikan luasnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def luas_persegi_panjang(p, l):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "luas_persegi_panjang(3, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_persegi_panjang(3, 4) == 12"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "luas_persegi_panjang(0, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_persegi_panjang(0, 5) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "luas_persegi_panjang(2.5, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_persegi_panjang(2.5, 2) == 5.0"
+              }
+            ]
+          },
+          "hint": "Kembalikan hasil kali dengan return.",
+          "solution": "def luas_persegi_panjang(p, l):\n    return p * l",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-04-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `genap(n)` yang mengembalikan `True` bila `n` genap dan `False` bila tidak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def genap(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "genap(4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert genap(4) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "genap(7)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert genap(7) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "genap(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert genap(0) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "genap(-2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert genap(-2) is True"
+              }
+            ]
+          },
+          "hint": "Pakai operator sisa bagi.",
+          "solution": "def genap(n):\n    return n % 2 == 0",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-04-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `statistik(daftar)` yang mengembalikan tuple `(minimum, maksimum, rata_rata)` dengan rata-rata dibulatkan 2 desimal.",
+          "note": "Bila list kosong kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "def statistik(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "statistik([2, 4, 9])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert statistik([2, 4, 9]) == (2, 9, 5.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "statistik([1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert statistik([1, 2]) == (1, 2, 1.5)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "statistik([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert statistik([]) is None"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "statistik([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert statistik([5]) == (5, 5, 5.0)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "statistik([1, 2, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert statistik([1, 2, 2]) == (1, 2, 1.67)"
+              }
+            ]
+          },
+          "hint": "Periksa list kosong lebih dulu lalu hitung dengan min, max, dan sum.",
+          "solution": "def statistik(daftar):\n    if not daftar:\n        return None\n    return min(daftar), max(daftar), round(sum(daftar) / len(daftar), 2)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-04-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `bilangan_prima(n)` yang mengembalikan `True` bila `n` bilangan prima dan `False` bila tidak.",
+          "note": "Bilangan kurang dari 2 bukan prima. Lalu tulis `prima_sampai(n)` yang mengembalikan list semua prima dari 2 sampai `n` termasuk, memakai `bilangan_prima`.",
+          "filename": "solution.py",
+          "starter_code": "def bilangan_prima(n):\n    # TODO: implementasikan\n    pass\n\ndef prima_sampai(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bilangan_prima(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bilangan_prima(2) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bilangan_prima(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bilangan_prima(1) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bilangan_prima(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bilangan_prima(0) is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bilangan_prima(15)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bilangan_prima(15) is False"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "bilangan_prima(97)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bilangan_prima(97) is True"
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "prima_sampai(20)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert prima_sampai(20) == [2, 3, 5, 7, 11, 13, 17, 19]"
+              },
+              {
+                "id": 7,
+                "name": "Kasus 7",
+                "label": "prima_sampai(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert prima_sampai(1) == []"
+              },
+              {
+                "id": 8,
+                "name": "Kasus 8",
+                "label": "prima_sampai(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert prima_sampai(2) == [2]"
+              }
+            ]
+          },
+          "hint": "Uji pembagi dari 2 sampai akar n, dan pakai fungsi pertama di fungsi kedua.",
+          "solution": "def bilangan_prima(n):\n    if n < 2:\n        return False\n    i = 2\n    while i * i <= n:\n        if n % i == 0:\n            return False\n        i += 1\n    return True\n\ndef prima_sampai(n):\n    return [k for k in range(2, n + 1) if bilangan_prima(k)]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa yang dikembalikan fungsi tanpa return?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "''",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            },
+            {
+              "label": "False",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Nilai khusus tidak ada.",
+          "explanation": "Tanpa return eksplisit Python mengembalikan None."
+        },
+        {
+          "q": "Beda parameter dan argumen?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak ada beda",
+              "description": ""
+            },
+            {
+              "label": "Parameter di definisi, argumen saat pemanggilan",
+              "description": ""
+            },
+            {
+              "label": "Argumen di definisi, parameter saat pemanggilan",
+              "description": ""
+            },
+            {
+              "label": "Parameter hanya angka",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Satu menampung, satu dikirim.",
+          "explanation": "Parameter adalah nama di definisi dan argumen adalah nilai yang dikirim."
+        },
+        {
+          "q": "Apa yang terjadi setelah return dieksekusi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Fungsi lanjut",
+              "description": ""
+            },
+            {
+              "label": "Fungsi berhenti",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "Fungsi diulang",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Baris sesudahnya tidak jalan.",
+          "explanation": "Eksekusi fungsi langsung berakhir."
+        },
+        {
+          "q": "Fungsi mengembalikan return a, b. Apa tipenya?",
+          "code": null,
+          "options": [
+            {
+              "label": "list",
+              "description": ""
+            },
+            {
+              "label": "dict",
+              "description": ""
+            },
+            {
+              "label": "tuple",
+              "description": ""
+            },
+            {
+              "label": "set",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Tidak ada kurung tetap sama.",
+          "explanation": "Koma membentuk tuple."
+        },
+        {
+          "q": "Variabel yang dibuat di dalam fungsi bersifat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Global",
+              "description": ""
+            },
+            {
+              "label": "Lokal",
+              "description": ""
+            },
+            {
+              "label": "Permanen",
+              "description": ""
+            },
+            {
+              "label": "Konstan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ia hanya hidup di dalam fungsi.",
+          "explanation": "Variabel itu lenyap saat fungsi selesai."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai print di tempat yang seharusnya return. Lebih baik: Gunakan return agar hasil bisa dipakai kode lain.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai print di tempat yang seharusnya return.",
+          "fix": "Gunakan return agar hasil bisa dipakai kode lain."
+        },
+        {
+          "mistake": "Lupa return di salah satu cabang.",
+          "fix": "Pastikan setiap jalur mengembalikan nilai konsisten."
+        },
+        {
+          "mistake": "Mengira penugasan di fungsi mengubah variabel global.",
+          "fix": "Penugasan membuat variabel lokal baru."
+        }
+      ],
+      "summary": [
+        "def mendefinisikan fungsi dan return mengirim nilai ke pemanggil.",
+        "return berbeda dari print dan menghentikan fungsi seketika.",
+        "Variabel di dalam fungsi bersifat lokal, kirim data lewat parameter.",
+        "Pecah tugas besar menjadi fungsi kecil yang bisa diuji sendiri."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Mendefinisikan fungsi dan nilai kembalian"
+          },
+          {
+            "type": "text",
+            "source": "`return` mengirim nilai ke pemanggil, sedangkan `print` hanya menampilkan teks. Fungsi tanpa `return` mengembalikan `None`."
+          },
+          {
+            "type": "code",
+            "source": "def sapa(nama):\n    return \"Halo, \" + nama\n\ndef kuadrat(x):\n    return x * x\n\ndef cetak_saja(x):\n    print(\"nilai\", x)\n\nprint(sapa(\"Sari\"))\nprint(kuadrat(7))\nhasil = cetak_saja(3)\nprint(hasil)"
+          },
+          {
+            "type": "text",
+            "source": "Early return menyederhanakan percabangan. Fungsi yang lupa `return` menghasilkan `None`, dan hasil `return` bisa langsung dipakai dalam ekspresi lain."
+          },
+          {
+            "type": "code",
+            "source": "def kategori(nilai):\n    if nilai < 0 or nilai > 100:\n        return \"tidak valid\"\n    if nilai >= 75:\n        return \"lulus\"\n    return \"remedial\"\n\nfor n in [90, 60, 101]:\n    print(n, kategori(n))\n\ndef lupa_return(x):\n    hasil = x * 2\n\nprint(lupa_return(4))\nprint(kategori(80).upper())"
+          },
+          {
+            "type": "text",
+            "source": "Penugasan di dalam fungsi membuat variabel lokal sehingga `total` global tidak berubah. Fungsi dapat mengembalikan beberapa nilai sebagai tuple lalu di-unpack."
+          },
+          {
+            "type": "code",
+            "source": "total = 100\n\ndef tambah_lokal(x):\n    total = x + 1\n    return total\n\ndef hitung_pajak(harga, tarif=0.1):\n    \"\"\"Mengembalikan pajak dari harga dengan tarif tertentu.\"\"\"\n    return harga * tarif\n\nprint(tambah_lokal(5), total)\nprint(hitung_pajak(200))\nprint(hitung_pajak.__doc__)\n\ndef min_maks_rata(d):\n    return min(d), max(d), sum(d) / len(d)\n\na, b, c = min_maks_rata([2, 4, 9])\nprint(a, b, round(c, 2))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-04-2",
+      "title": "Argumen: posisi, kata kunci, bawaan, args, dan kwargs",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memakai argumen posisi, argumen kata kunci, dan nilai bawaan",
+        "Menghindari jebakan nilai bawaan yang bisa berubah",
+        "Menerima jumlah argumen bebas dengan *args dan **kwargs",
+        "Membongkar list dan dictionary menjadi argumen saat pemanggilan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Argumen posisi dan kata kunci",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Argumen posisi dan kata kunci\n\nSaat memanggil fungsi, argumen bisa dikirim berdasarkan **posisi** atau berdasarkan **nama** (kata kunci). `bagi(10, 2)` memetakan 10 ke parameter pertama dan 2 ke yang kedua. `bagi(b=2, a=10)` memetakan lewat nama sehingga urutan bebas. Argumen kata kunci membuat pemanggilan lebih mudah dibaca, terutama pada fungsi dengan banyak parameter, misalnya `buat_grafik(data, warna=\"biru\", tebal=2)`.\n\nAturannya: argumen posisi harus mendahului argumen kata kunci. Mengirim argumen yang kurang atau berlebih menimbulkan `TypeError`. Pustaka data science seperti pandas dan scikit-learn sangat banyak memakai argumen kata kunci, jadi kamu perlu nyaman membacanya.\n\nKamu dapat memaksa parameter menjadi hanya-kata-kunci dengan menaruh tanda bintang sebelum parameter itu di definisi, misalnya `def f(a, *, b)`. Teknik ini mencegah kesalahan urutan pada fungsi dengan banyak opsi."
+            },
+            {
+              "type": "code_example",
+              "filename": "argumen_posisi.py",
+              "runnable": true,
+              "code": "def bagi(a, b):\n    return a / b\n\nprint(bagi(10, 2), bagi(b=2, a=10), bagi(10, b=4))\n\ndef f(a, *, b):\n    return a - b\n\nprint(f(5, b=2))\ntry:\n    f(5, 2)\nexcept TypeError as e:\n    print(\"TypeError\")\ntry:\n    bagi(1)\nexcept TypeError:\n    print(\"kurang argumen\")",
+              "expected_output_note": "5.0 5.0 2.5\n3\nTypeError\nkurang argumen",
+              "explanation": "Argumen kata kunci boleh diurutkan bebas. Parameter setelah tanda bintang wajib dikirim dengan nama, dan argumen yang kurang menimbulkan `TypeError`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Nilai bawaan dan jebakannya\n\nParameter dapat diberi **nilai bawaan** sehingga argumen menjadi opsional: `def hitung_pajak(harga, tarif=0.1)`. Parameter dengan nilai bawaan harus berada setelah parameter tanpa nilai bawaan. Ini membuat fungsi fleksibel: kasus umum cukup satu argumen, kasus khusus mengubah opsi.\n\nAda jebakan terkenal: **jangan memakai objek yang bisa diubah**, seperti list atau dictionary kosong, sebagai nilai bawaan. Nilai bawaan dibuat sekali saat fungsi didefinisikan, bukan setiap pemanggilan. Akibatnya list yang sama dipakai bersama oleh semua pemanggilan dan terus bertambah isinya. Solusi standarnya: gunakan `None` sebagai bawaan lalu buat list baru di dalam fungsi bila nilainya `None`.\n\nJebakan ini sering muncul pada kode yang terlihat benar dan baru bermasalah pada pemanggilan kedua. Mengenalinya sejak awal menghemat banyak waktu debugging."
+            },
+            {
+              "type": "code_example",
+              "filename": "bawaan_berubah.py",
+              "runnable": true,
+              "code": "def salah(x, hasil=[]):\n    hasil.append(x)\n    return hasil\n\nprint(salah(1))\nprint(salah(2))\n\ndef benar(x, hasil=None):\n    if hasil is None:\n        hasil = []\n    hasil.append(x)\n    return hasil\n\nprint(benar(1))\nprint(benar(2))\nprint(benar(3, [9]))",
+              "expected_output_note": "[1]\n[1, 2]\n[1]\n[2]\n[9, 3]",
+              "explanation": "List bawaan dibuat sekali sehingga dipakai bersama antar pemanggilan. Pola `None` lalu buat list baru menghindarinya."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Bawaan yang bisa diubah",
+              "markdown": "Jangan pernah menulis `def f(x, daftar=[])` atau `def f(x, d={})`. Pakai `None` sebagai bawaan dan buat objek baru di dalam fungsi."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa tipe *args di dalam fungsi?",
+            "options": [
+              "tuple",
+              "list"
+            ],
+            "answer_index": 0,
+            "explanation": "Argumen posisi tambahan dikumpulkan dalam tuple.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "*args dan **kwargs",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## *args dan **kwargs\n\nKadang jumlah argumen tidak diketahui sebelumnya. Parameter `*args` mengumpulkan semua argumen posisi tambahan ke dalam sebuah tuple, dan `**kwargs` mengumpulkan semua argumen kata kunci tambahan ke dalam sebuah dictionary. Nama `args` dan `kwargs` hanya konvensi, yang penting adalah tanda bintangnya.\n\nContoh klasik adalah fungsi `jumlah(*angka)` yang menjumlahkan berapa pun bilangan. Fungsi bawaan `print` dan `max` bekerja dengan cara serupa. Pola `**kwargs` berguna untuk fungsi pembungkus yang meneruskan opsi ke fungsi lain tanpa harus menuliskan setiap opsi.\n\nKebalikannya juga ada. Saat memanggil, `*daftar` membongkar list menjadi argumen posisi dan `**kamus` membongkar dictionary menjadi argumen kata kunci. Dua operator ini sering dipakai bersama untuk meneruskan konfigurasi dari satu fungsi ke fungsi lain."
+            },
+            {
+              "type": "code_example",
+              "filename": "args_kwargs.py",
+              "runnable": true,
+              "code": "def jumlah(*angka):\n    return sum(angka)\n\ndef info(**data):\n    return sorted(data.items())\n\ndef campur(a, *sisa, **opsi):\n    return a, sisa, opsi\n\nprint(jumlah(1, 2, 3), jumlah())\nprint(info(nama=\"Sari\", umur=21))\nprint(campur(1, 2, 3, x=4))\nnilai = [4, 5, 6]\nprint(jumlah(*nilai))\nkonfig = {\"a\": 7, \"x\": 1}\nprint(campur(**konfig))",
+              "expected_output_note": "6 0\n[('nama', 'Sari'), ('umur', 21)]\n(1, (2, 3), {'x': 4})\n15\n(7, (), {'x': 1})",
+              "explanation": "`*args` menjadi tuple dan `**kwargs` menjadi dictionary di dalam fungsi. Saat pemanggilan, bintang membongkar list atau dictionary menjadi argumen."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa tipe **kwargs di dalam fungsi?",
+            "options": [
+              "list",
+              "dict"
+            ],
+            "answer_index": 1,
+            "explanation": "Argumen kata kunci dikumpulkan dalam dictionary.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Merancang tanda tangan fungsi yang baik",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Merancang tanda tangan fungsi yang baik\n\nTanda tangan fungsi (nama dan parameternya) adalah antarmuka yang dipakai orang lain, termasuk dirimu di masa depan. Beberapa pedoman: letakkan parameter yang wajib lebih dulu, beri nilai bawaan yang masuk akal untuk opsi, gunakan nama parameter yang menjelaskan diri, dan jangan menerima terlalu banyak parameter. Bila fungsi butuh lebih dari lima atau enam parameter, pertimbangkan mengelompokkannya dalam dictionary atau objek.\n\nUntuk opsi berupa saklar benar atau salah, argumen kata kunci memperjelas niat: `urutkan(data, menurun=True)` jauh lebih terbaca daripada `urutkan(data, True)`. Pemanggil tidak perlu menghafal arti posisi.\n\nLatihan berikut meminta kamu memakai semua teknik di atas pada fungsi kecil. Jalankan solusi dengan beberapa pemanggilan berbeda untuk memeriksa perilaku bawaan dan kata kunci."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca dokumentasi fungsi pustaka\n\nKemampuan memahami argumen sangat berguna saat membaca dokumentasi pustaka. Tanda tangan seperti `sorted(iterable, /, *, key=None, reverse=False)` memberi tahu bahwa `iterable` dikirim secara posisi, sedangkan `key` dan `reverse` hanya boleh lewat nama. Garis miring dan bintang di dalam tanda tangan itu memakai aturan yang baru kamu pelajari.\n\nBegitu pula `print(*objects, sep=' ', end='\\n')`: bintang menandakan jumlah objek bebas, dan `sep` serta `end` adalah opsi kata kunci dengan nilai bawaan. Dengan memahami pola ini, kamu dapat membaca tanda tangan fungsi pandas dan scikit-learn tanpa kebingungan, bahkan yang memiliki puluhan opsi.\n\nGunakan `help(nama_fungsi)` di kompiler untuk melihat tanda tangan dan docstring sebuah fungsi kapan pun kamu ragu."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa def f(x, a=[]) berbahaya?",
+            "options": [
+              "List bawaan dipakai bersama antar pemanggilan",
+              "Syntax error"
+            ],
+            "answer_index": 0,
+            "explanation": "Nilai bawaan dibuat sekali saat definisi.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-04-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pangkat(x, n=2)` yang mengembalikan `x` pangkat `n` dengan `n` bawaan 2.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pangkat(x, n=2):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pangkat(3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat(3) == 9"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pangkat(2, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat(2, 5) == 32"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pangkat(5, n=0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat(5, n=0) == 1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pangkat(x=4, n=3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat(x=4, n=3) == 64"
+              }
+            ]
+          },
+          "hint": "Gunakan operator **.",
+          "solution": "def pangkat(x, n=2):\n    return x ** n",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-04-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `rata_rata(*angka)` yang mengembalikan rata-rata semua argumen.",
+          "note": "Bila tidak ada argumen kembalikan 0.",
+          "filename": "solution.py",
+          "starter_code": "def rata_rata(*angka):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_rata(2, 4, 6)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata(2, 4, 6) == 4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_rata(10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata(10) == 10"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_rata()",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata() == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_rata(1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata(1, 2) == 1.5"
+              }
+            ]
+          },
+          "hint": "angka adalah tuple. Periksa kosong lebih dulu.",
+          "solution": "def rata_rata(*angka):\n    if not angka:\n        return 0\n    return sum(angka) / len(angka)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-04-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tambah_item(item, daftar=None)` yang menambahkan `item` ke `daftar` dan mengembalikannya.",
+          "note": "Bila `daftar` tidak diberikan, buat list baru. Pemanggilan tanpa `daftar` tidak boleh saling memengaruhi.",
+          "filename": "solution.py",
+          "starter_code": "def tambah_item(item, daftar=None):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tambah_item(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_item(1) == [1]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tambah_item(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_item(2) == [2]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tambah_item(3, x)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "x = [9]\nassert tambah_item(3, x) == [9, 3]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert x == [9, 3]"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "tambah_item(\"a\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tambah_item(\"a\") == [\"a\"]"
+              }
+            ]
+          },
+          "hint": "Pakai None sebagai bawaan lalu buat list baru di dalam fungsi.",
+          "solution": "def tambah_item(item, daftar=None):\n    if daftar is None:\n        daftar = []\n    daftar.append(item)\n    return daftar",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-04-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `format_tag(nama, *isi, **atribut)` yang mengembalikan string tag HTML sederhana.",
+          "note": "Isi digabung dengan spasi. Atribut ditulis terurut menurut nama sebagai `kunci=\"nilai\"` dipisah spasi. Contoh: `format_tag(\"a\", \"klik\", \"di\", \"sini\", href=\"x\", id=\"y\")` menghasilkan `<a href=\"x\" id=\"y\">klik di sini</a>`. Tanpa atribut tidak ada spasi tambahan: `<p>hai</p>`.",
+          "filename": "solution.py",
+          "starter_code": "def format_tag(nama, *isi, **atribut):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "format_tag(\"p\", \"hai\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert format_tag(\"p\", \"hai\") == \"<p>hai</p>\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "format_tag(\"a\", \"klik\", \"di\", \"sini\", href=\"x...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert format_tag(\"a\", \"klik\", \"di\", \"sini\", href=\"x\", id=\"y\") == '<a href=\"x\" id=\"y\">klik di sini</a>'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "format_tag(\"br\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert format_tag(\"br\") == \"<br></br>\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "format_tag(\"b\", \"x\", z=\"1\", a=\"2\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert format_tag(\"b\", \"x\", z=\"1\", a=\"2\") == '<b a=\"2\" z=\"1\">x</b>'"
+              }
+            ]
+          },
+          "hint": "Bangun bagian atribut dari sorted(atribut.items()) dan tambahkan spasi awal hanya bila ada.",
+          "solution": "def format_tag(nama, *isi, **atribut):\n    attr = \"\".join(' ' + k + '=\"' + str(v) + '\"' for k, v in sorted(atribut.items()))\n    return \"<\" + nama + attr + \">\" + \" \".join(isi) + \"</\" + nama + \">\"",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa tipe *args di dalam fungsi?",
+          "code": null,
+          "options": [
+            {
+              "label": "list",
+              "description": ""
+            },
+            {
+              "label": "tuple",
+              "description": ""
+            },
+            {
+              "label": "dict",
+              "description": ""
+            },
+            {
+              "label": "set",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tidak bisa diubah.",
+          "explanation": "Argumen posisi tambahan dikumpulkan dalam tuple."
+        },
+        {
+          "q": "Apa tipe **kwargs di dalam fungsi?",
+          "code": null,
+          "options": [
+            {
+              "label": "list",
+              "description": ""
+            },
+            {
+              "label": "tuple",
+              "description": ""
+            },
+            {
+              "label": "dict",
+              "description": ""
+            },
+            {
+              "label": "str",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Ada nama dan nilai.",
+          "explanation": "Argumen kata kunci dikumpulkan dalam dictionary."
+        },
+        {
+          "q": "Mengapa def f(x, a=[]) berbahaya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Syntax error",
+              "description": ""
+            },
+            {
+              "label": "List bawaan dipakai bersama antar pemanggilan",
+              "description": ""
+            },
+            {
+              "label": "Lambat",
+              "description": ""
+            },
+            {
+              "label": "Tidak berbahaya",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kapan nilai bawaan dibuat?",
+          "explanation": "Nilai bawaan dibuat sekali saat definisi."
+        },
+        {
+          "q": "Apa arti f(*[1,2,3])?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu argumen list",
+              "description": ""
+            },
+            {
+              "label": "Tiga argumen terpisah",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "Pangkat",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kebalikan dari *args.",
+          "explanation": "Bintang membongkar list menjadi argumen posisi."
+        },
+        {
+          "q": "Dalam def f(a, *, b), bagaimana b dikirim?",
+          "code": null,
+          "options": [
+            {
+              "label": "Posisi",
+              "description": ""
+            },
+            {
+              "label": "Hanya kata kunci",
+              "description": ""
+            },
+            {
+              "label": "Bebas",
+              "description": ""
+            },
+            {
+              "label": "Tidak bisa",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bintang memisahkan jenis argumen.",
+          "explanation": "Parameter setelah bintang wajib bernama."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai list kosong sebagai nilai bawaan. Lebih baik: Pakai None lalu buat list di dalam fungsi.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai list kosong sebagai nilai bawaan.",
+          "fix": "Pakai None lalu buat list di dalam fungsi."
+        },
+        {
+          "mistake": "Menaruh parameter bernilai bawaan sebelum yang wajib.",
+          "fix": "Parameter wajib harus di depan."
+        },
+        {
+          "mistake": "Lupa tanda bintang saat membongkar list ke argumen.",
+          "fix": "Tulis f(*daftar) agar elemen jadi argumen terpisah."
+        }
+      ],
+      "summary": [
+        "Argumen bisa dikirim lewat posisi atau lewat nama.",
+        "Nilai bawaan dibuat sekali, jangan memakai objek yang bisa diubah.",
+        "*args menjadi tuple dan **kwargs menjadi dictionary.",
+        "Bintang saat pemanggilan membongkar list atau dictionary."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Argumen: posisi, kata kunci, bawaan, args, dan kwargs"
+          },
+          {
+            "type": "text",
+            "source": "Argumen kata kunci boleh diurutkan bebas. Parameter setelah tanda bintang wajib dikirim dengan nama, dan argumen yang kurang menimbulkan `TypeError`."
+          },
+          {
+            "type": "code",
+            "source": "def bagi(a, b):\n    return a / b\n\nprint(bagi(10, 2), bagi(b=2, a=10), bagi(10, b=4))\n\ndef f(a, *, b):\n    return a - b\n\nprint(f(5, b=2))\ntry:\n    f(5, 2)\nexcept TypeError as e:\n    print(\"TypeError\")\ntry:\n    bagi(1)\nexcept TypeError:\n    print(\"kurang argumen\")"
+          },
+          {
+            "type": "text",
+            "source": "List bawaan dibuat sekali sehingga dipakai bersama antar pemanggilan. Pola `None` lalu buat list baru menghindarinya."
+          },
+          {
+            "type": "code",
+            "source": "def salah(x, hasil=[]):\n    hasil.append(x)\n    return hasil\n\nprint(salah(1))\nprint(salah(2))\n\ndef benar(x, hasil=None):\n    if hasil is None:\n        hasil = []\n    hasil.append(x)\n    return hasil\n\nprint(benar(1))\nprint(benar(2))\nprint(benar(3, [9]))"
+          },
+          {
+            "type": "text",
+            "source": "`*args` menjadi tuple dan `**kwargs` menjadi dictionary di dalam fungsi. Saat pemanggilan, bintang membongkar list atau dictionary menjadi argumen."
+          },
+          {
+            "type": "code",
+            "source": "def jumlah(*angka):\n    return sum(angka)\n\ndef info(**data):\n    return sorted(data.items())\n\ndef campur(a, *sisa, **opsi):\n    return a, sisa, opsi\n\nprint(jumlah(1, 2, 3), jumlah())\nprint(info(nama=\"Sari\", umur=21))\nprint(campur(1, 2, 3, x=4))\nnilai = [4, 5, 6]\nprint(jumlah(*nilai))\nkonfig = {\"a\": 7, \"x\": 1}\nprint(campur(**konfig))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-04-3",
+      "title": "Fungsi sebagai objek, lambda, dan fungsi tingkat tinggi",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Memperlakukan fungsi sebagai nilai yang dapat disimpan dan dikirim",
+        "Menulis ekspresi lambda untuk fungsi pendek sekali pakai",
+        "Memakai sorted, map, filter, dan key dengan fungsi",
+        "Memahami closure dan rekursi dasar"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Fungsi adalah objek",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi adalah objek\n\nDi Python, fungsi adalah objek seperti angka dan string. Kamu dapat menyimpannya dalam variabel, memasukkannya ke list atau dictionary, mengirimnya sebagai argumen, dan mengembalikannya dari fungsi lain. Menulis `f = kuadrat` tidak memanggil fungsi, hanya memberi nama kedua pada objek yang sama. Tanda kurung `f(3)` yang memanggilnya.\n\nKemampuan ini membuka pola yang kuat. Misalnya sebuah dictionary yang memetakan nama operasi ke fungsi menggantikan rangkaian `if elif` yang panjang. Atau fungsi `terapkan(f, data)` yang menjalankan operasi apa pun pada setiap elemen data.\n\nFungsi yang menerima atau mengembalikan fungsi lain disebut **fungsi tingkat tinggi**. Konsep ini muncul di mana-mana dalam data science: `sorted(key=...)`, `df.apply(fungsi)`, dan banyak callback dalam pustaka pembelajaran mesin."
+            },
+            {
+              "type": "code_example",
+              "filename": "fungsi_objek.py",
+              "runnable": true,
+              "code": "def kuadrat(x):\n    return x * x\n\ndef kubik(x):\n    return x ** 3\n\nf = kuadrat\nprint(f(4), kuadrat is f)\n\noperasi = {\"kuadrat\": kuadrat, \"kubik\": kubik}\nfor nama, fn in operasi.items():\n    print(nama, fn(3))\n\ndef terapkan(fn, data):\n    return [fn(x) for x in data]\n\nprint(terapkan(kuadrat, [1, 2, 3]), terapkan(kubik, [1, 2]))",
+              "expected_output_note": "16 True\nkuadrat 9\nkubik 27\n[1, 4, 9] [1, 8]",
+              "explanation": "Fungsi dapat disimpan dalam dictionary dan dikirim sebagai argumen. `terapkan` adalah fungsi tingkat tinggi sederhana."
+            },
+            {
+              "type": "text",
+              "markdown": "## Lambda\n\n**Lambda** adalah fungsi anonim satu ekspresi, ditulis `lambda parameter: ekspresi`. Ia menghasilkan nilai ekspresi secara otomatis tanpa kata `return`. Lambda cocok untuk fungsi pendek yang dipakai sekali, terutama sebagai argumen `key`. `lambda x: x * 2` setara dengan `def dua_kali(x): return x * 2`.\n\nBatasannya: lambda hanya boleh satu ekspresi, tidak boleh berisi pernyataan seperti `if` bertingkat atau perulangan. Bila logika mulai rumit, tulis fungsi `def` biasa dengan nama yang jelas. Terlalu banyak lambda yang rumit justru menyulitkan pembaca.\n\nPenggunaan paling umum adalah mengurutkan data kompleks. `sorted(siswa, key=lambda s: s[\"nilai\"])` mengurutkan list dictionary menurut kuncinya. Kamu juga dapat mengurutkan menurut beberapa kriteria dengan mengembalikan tuple, misalnya `key=lambda s: (-s[\"nilai\"], s[\"nama\"])`."
+            },
+            {
+              "type": "code_example",
+              "filename": "lambda_key.py",
+              "runnable": true,
+              "code": "dua = lambda x: x * 2\nprint(dua(5))\n\nsiswa = [\n    {\"nama\": \"Budi\", \"nilai\": 80},\n    {\"nama\": \"Ani\", \"nilai\": 90},\n    {\"nama\": \"Citra\", \"nilai\": 80},\n]\nprint([s[\"nama\"] for s in sorted(siswa, key=lambda s: s[\"nilai\"])])\nprint([s[\"nama\"] for s in sorted(siswa, key=lambda s: (-s[\"nilai\"], s[\"nama\"]))])\nprint(max(siswa, key=lambda s: s[\"nilai\"])[\"nama\"])",
+              "expected_output_note": "10\n['Budi', 'Citra', 'Ani']\n['Ani', 'Budi', 'Citra']\nAni",
+              "explanation": "Lambda dipakai sebagai `key` untuk mengurutkan dan mencari maksimum. Tuple dengan nilai negatif mengurutkan menurun lalu menurut nama."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa itu fungsi tingkat tinggi?",
+            "options": [
+              "Fungsi yang menerima atau mengembalikan fungsi",
+              "Fungsi sangat panjang"
+            ],
+            "answer_index": 0,
+            "explanation": "Ia memperlakukan fungsi sebagai nilai.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "map, filter, dan alternatifnya",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## map, filter, dan alternatifnya\n\n`map(fn, data)` menerapkan fungsi ke setiap elemen, dan `filter(fn, data)` mempertahankan elemen yang membuat fungsi bernilai benar. Keduanya mengembalikan iterator malas, jadi bungkus dengan `list(...)` untuk melihat hasil. Fungsi `sum`, `min`, `max`, `any`, dan `all` juga menerima iterator.\n\nBanyak programmer Python lebih suka comprehension daripada `map` dan `filter` karena lebih terbaca: `[x * 2 for x in data if x > 0]`. Kedua gaya benar. Yang penting kamu mampu membaca keduanya karena akan bertemu dalam kode orang lain.\n\nFungsi `any` dan `all` layak dikenal. `any(kondisi)` benar bila ada satu yang benar, dan `all(kondisi)` benar bila semuanya benar. Keduanya menghemat banyak perulangan manual saat memvalidasi data."
+            },
+            {
+              "type": "code_example",
+              "filename": "map_filter.py",
+              "runnable": true,
+              "code": "data = [3, -1, 4, -5, 9]\nprint(list(map(lambda x: x * 10, data)))\nprint(list(filter(lambda x: x > 0, data)))\nprint([x * 10 for x in data if x > 0])\nprint(any(x < 0 for x in data), all(x < 10 for x in data))\nprint(sum(x * x for x in data))",
+              "expected_output_note": "[30, -10, 40, -50, 90]\n[3, 4, 9]\n[30, 40, 90]\nTrue True\n132",
+              "explanation": "`map` dan `filter` setara dengan comprehension. `any` dan `all` memeriksa kondisi pada semua elemen."
+            },
+            {
+              "type": "text",
+              "markdown": "## Closure dan rekursi\n\n**Closure** terjadi ketika fungsi dalam mengingat variabel dari fungsi luar yang sudah selesai. Contoh: `buat_pengali(n)` mengembalikan fungsi yang mengalikan dengan `n`. Setiap pemanggilan `buat_pengali` menghasilkan fungsi baru yang membawa nilai `n`-nya sendiri. Pola ini berguna untuk membuat fungsi khusus dari templat umum.\n\n**Rekursi** adalah fungsi yang memanggil dirinya sendiri. Setiap fungsi rekursif butuh *kasus dasar* yang menghentikan pemanggilan dan *langkah rekursif* yang mendekatkan masalah ke kasus dasar. Faktorial adalah contoh klasik: `faktorial(0)` adalah 1 dan `faktorial(n)` adalah `n * faktorial(n - 1)`.\n\nPython membatasi kedalaman rekursi, secara bawaan sekitar seribu, sehingga rekursi yang terlalu dalam menimbulkan `RecursionError`. Untuk perulangan sederhana, versi iteratif biasanya lebih aman. Rekursi paling cocok untuk struktur bersarang seperti pohon atau dictionary bersarang."
+            },
+            {
+              "type": "code_example",
+              "filename": "closure_rekursi.py",
+              "runnable": true,
+              "code": "def buat_pengali(n):\n    def kali(x):\n        return x * n\n    return kali\n\ntiga = buat_pengali(3)\nsepuluh = buat_pengali(10)\nprint(tiga(5), sepuluh(5))\n\ndef faktorial(n):\n    if n <= 1:\n        return 1\n    return n * faktorial(n - 1)\n\nprint(faktorial(5), faktorial(0))\n\ndef ratakan(x):\n    if not isinstance(x, list):\n        return [x]\n    hasil = []\n    for e in x:\n        hasil += ratakan(e)\n    return hasil\n\nprint(ratakan([1, [2, [3, 4]], 5]))",
+              "expected_output_note": "15 50\n120 1\n[1, 2, 3, 4, 5]",
+              "explanation": "Closure membawa nilai `n` dari fungsi luar. Rekursi dengan kasus dasar meratakan list bersarang."
+            }
+          ],
+          "quick_check": {
+            "question": "Berapa ekspresi yang boleh di dalam lambda?",
+            "options": [
+              "Tak terbatas",
+              "Satu"
+            ],
+            "answer_index": 1,
+            "explanation": "Lambda hanya satu ekspresi tanpa pernyataan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kapan memakai gaya fungsional",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kapan memakai gaya fungsional\n\nGaya fungsional, yaitu menyusun program dari fungsi kecil yang dirangkai, membuat kode ringkas dan mudah diuji karena tiap fungsi hanya bergantung pada inputnya. Dalam data science kamu akan sering menulis rangkaian transformasi: bersihkan teks, ubah ke huruf kecil, pecah menjadi kata, lalu hitung. Tiap langkah dapat berupa fungsi terpisah yang dirangkai.\n\nMeski begitu, jangan memaksakan gaya ini. Perulangan biasa kadang lebih jelas, terutama bila ada banyak langkah yang saling bergantung. Ukuran keberhasilannya sederhana: apakah orang lain, atau dirimu enam bulan lagi, dapat membaca kode itu tanpa kebingungan?\n\nSatu catatan tentang kinerja: fungsi bawaan seperti `sum`, `min`, dan `sorted` ditulis dalam bahasa C dan jauh lebih cepat daripada perulangan buatan sendiri. Bila ada fungsi bawaan yang melakukan tugasmu, pakai itu lebih dulu.\n\nLatihan berikut memadukan lambda, closure, dan rekursi. Kerjakan pelan-pelan dan jalankan setiap solusi dengan beberapa input sendiri."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang dikembalikan map di Python 3?",
+            "options": [
+              "Iterator malas",
+              "List"
+            ],
+            "answer_index": 0,
+            "explanation": "Bungkus dengan list untuk melihat isi.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-04-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `urutkan_panjang(kata)` yang mengembalikan list kata terurut menurut panjang naik.",
+          "note": "Panjang sama mempertahankan urutan awal.",
+          "filename": "solution.py",
+          "starter_code": "def urutkan_panjang(kata):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "urutkan_panjang([\"pisang\", \"kiwi\", \"apel\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert urutkan_panjang([\"pisang\", \"kiwi\", \"apel\"]) == [\"kiwi\", \"apel\", \"pisang\"]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "urutkan_panjang([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert urutkan_panjang([]) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "urutkan_panjang([\"bb\", \"a\", \"cc\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert urutkan_panjang([\"bb\", \"a\", \"cc\"]) == [\"a\", \"bb\", \"cc\"]"
+              }
+            ]
+          },
+          "hint": "Pakai sorted dengan key=len.",
+          "solution": "def urutkan_panjang(kata):\n    return sorted(kata, key=len)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-04-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `buat_penambah(n)` yang mengembalikan fungsi yang menambahkan `n` pada inputnya.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def buat_penambah(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tambah5(10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "tambah5 = buat_penambah(5)\nassert tambah5(10) == 15"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "buat_penambah(0)(7)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert buat_penambah(0)(7) == 7"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "a(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = buat_penambah(1)\nb = buat_penambah(100)\nassert a(1) == 2 and b(1) == 101"
+              }
+            ]
+          },
+          "hint": "Definisikan fungsi dalam dan kembalikan tanpa memanggilnya.",
+          "solution": "def buat_penambah(n):\n    def tambah(x):\n        return x + n\n    return tambah",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-04-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `peringkat(siswa)` yang menerima list dictionary dengan kunci `nama` dan `nilai`, lalu mengembalikan list nama terurut menurut nilai menurun, dan menurut nama naik bila nilai sama.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def peringkat(siswa):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peringkat(s)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "s = [{\"nama\": \"Budi\", \"nilai\": 80}, {\"nama\": \"Ani\", \"nilai\": 90}, {\"nama\": \"Citra\", \"nilai\": 80}]\nassert peringkat(s) == [\"Ani\", \"Budi\", \"Citra\"]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peringkat([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat([]) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peringkat([{\"nama\": \"X\", \"nilai\": 1}])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat([{\"nama\": \"X\", \"nilai\": 1}]) == [\"X\"]"
+              }
+            ]
+          },
+          "hint": "Gunakan key yang mengembalikan tuple dengan nilai negatif.",
+          "solution": "def peringkat(siswa):\n    urut = sorted(siswa, key=lambda s: (-s[\"nilai\"], s[\"nama\"]))\n    return [s[\"nama\"] for s in urut]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-04-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi rekursif `kedalaman(x)` yang mengembalikan kedalaman maksimum list bersarang.",
+          "note": "Bukan list memiliki kedalaman 0, list kosong memiliki kedalaman 1, dan `[1, [2]]` memiliki kedalaman 2.",
+          "filename": "solution.py",
+          "starter_code": "def kedalaman(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kedalaman(5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kedalaman(5) == 0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kedalaman([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kedalaman([]) == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kedalaman([1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kedalaman([1, 2]) == 1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kedalaman([1, [2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kedalaman([1, [2]]) == 2"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "kedalaman([[[1]], 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kedalaman([[[1]], 2]) == 3"
+              }
+            ]
+          },
+          "hint": "Kasus dasar bukan list. Untuk list ambil 1 ditambah maksimum kedalaman elemen.",
+          "solution": "def kedalaman(x):\n    if not isinstance(x, list):\n        return 0\n    if not x:\n        return 1\n    return 1 + max(kedalaman(e) for e in x)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa itu fungsi tingkat tinggi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Fungsi sangat panjang",
+              "description": ""
+            },
+            {
+              "label": "Fungsi yang menerima atau mengembalikan fungsi",
+              "description": ""
+            },
+            {
+              "label": "Fungsi tanpa parameter",
+              "description": ""
+            },
+            {
+              "label": "Fungsi bawaan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Fungsi sebagai argumen.",
+          "explanation": "Ia memperlakukan fungsi sebagai nilai."
+        },
+        {
+          "q": "Berapa ekspresi yang boleh di dalam lambda?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tak terbatas",
+              "description": ""
+            },
+            {
+              "label": "Satu",
+              "description": ""
+            },
+            {
+              "label": "Dua",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tidak ada return eksplisit.",
+          "explanation": "Lambda hanya satu ekspresi tanpa pernyataan."
+        },
+        {
+          "q": "Apa yang dikembalikan map di Python 3?",
+          "code": null,
+          "options": [
+            {
+              "label": "List",
+              "description": ""
+            },
+            {
+              "label": "Iterator malas",
+              "description": ""
+            },
+            {
+              "label": "Tuple",
+              "description": ""
+            },
+            {
+              "label": "Set",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tidak langsung dihitung.",
+          "explanation": "Bungkus dengan list untuk melihat isi."
+        },
+        {
+          "q": "Apa yang diingat sebuah closure?",
+          "code": null,
+          "options": [
+            {
+              "label": "Variabel dari fungsi luar",
+              "description": ""
+            },
+            {
+              "label": "Semua global",
+              "description": ""
+            },
+            {
+              "label": "Hasil lama",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Contoh buat_pengali.",
+          "explanation": "Fungsi dalam membawa variabel fungsi luar."
+        },
+        {
+          "q": "Apa yang wajib ada pada fungsi rekursif?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lambda",
+              "description": ""
+            },
+            {
+              "label": "Kasus dasar",
+              "description": ""
+            },
+            {
+              "label": "Global",
+              "description": ""
+            },
+            {
+              "label": "Argumen bawaan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tanpa itu terjadi RecursionError.",
+          "explanation": "Kasus dasar menghentikan pemanggilan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis f = kuadrat() padahal maksudnya menyimpan fungsi. Lebih baik: Tanpa kurung berarti objek fungsi, dengan kurung berarti pemanggilan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis f = kuadrat() padahal maksudnya menyimpan fungsi.",
+          "fix": "Tanpa kurung berarti objek fungsi, dengan kurung berarti pemanggilan."
+        },
+        {
+          "mistake": "Menulis lambda yang terlalu rumit.",
+          "fix": "Pakai def bila logika lebih dari satu ekspresi sederhana."
+        },
+        {
+          "mistake": "Rekursi tanpa kasus dasar.",
+          "fix": "Selalu tentukan kasus dasar yang menghentikan pemanggilan."
+        }
+      ],
+      "summary": [
+        "Fungsi adalah objek yang bisa disimpan dan dikirim.",
+        "Lambda adalah fungsi satu ekspresi, cocok untuk key.",
+        "map, filter, any, dan all menerima fungsi dan iterator.",
+        "Closure membawa variabel luar dan rekursi butuh kasus dasar."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Fungsi sebagai objek, lambda, dan fungsi tingkat tinggi"
+          },
+          {
+            "type": "text",
+            "source": "Fungsi dapat disimpan dalam dictionary dan dikirim sebagai argumen. `terapkan` adalah fungsi tingkat tinggi sederhana."
+          },
+          {
+            "type": "code",
+            "source": "def kuadrat(x):\n    return x * x\n\ndef kubik(x):\n    return x ** 3\n\nf = kuadrat\nprint(f(4), kuadrat is f)\n\noperasi = {\"kuadrat\": kuadrat, \"kubik\": kubik}\nfor nama, fn in operasi.items():\n    print(nama, fn(3))\n\ndef terapkan(fn, data):\n    return [fn(x) for x in data]\n\nprint(terapkan(kuadrat, [1, 2, 3]), terapkan(kubik, [1, 2]))"
+          },
+          {
+            "type": "text",
+            "source": "Lambda dipakai sebagai `key` untuk mengurutkan dan mencari maksimum. Tuple dengan nilai negatif mengurutkan menurun lalu menurut nama."
+          },
+          {
+            "type": "code",
+            "source": "dua = lambda x: x * 2\nprint(dua(5))\n\nsiswa = [\n    {\"nama\": \"Budi\", \"nilai\": 80},\n    {\"nama\": \"Ani\", \"nilai\": 90},\n    {\"nama\": \"Citra\", \"nilai\": 80},\n]\nprint([s[\"nama\"] for s in sorted(siswa, key=lambda s: s[\"nilai\"])])\nprint([s[\"nama\"] for s in sorted(siswa, key=lambda s: (-s[\"nilai\"], s[\"nama\"]))])\nprint(max(siswa, key=lambda s: s[\"nilai\"])[\"nama\"])"
+          },
+          {
+            "type": "text",
+            "source": "`map` dan `filter` setara dengan comprehension. `any` dan `all` memeriksa kondisi pada semua elemen."
+          },
+          {
+            "type": "code",
+            "source": "data = [3, -1, 4, -5, 9]\nprint(list(map(lambda x: x * 10, data)))\nprint(list(filter(lambda x: x > 0, data)))\nprint([x * 10 for x in data if x > 0])\nprint(any(x < 0 for x in data), all(x < 10 for x in data))\nprint(sum(x * x for x in data))"
+          },
+          {
+            "type": "text",
+            "source": "Closure membawa nilai `n` dari fungsi luar. Rekursi dengan kasus dasar meratakan list bersarang."
+          },
+          {
+            "type": "code",
+            "source": "def buat_pengali(n):\n    def kali(x):\n        return x * n\n    return kali\n\ntiga = buat_pengali(3)\nsepuluh = buat_pengali(10)\nprint(tiga(5), sepuluh(5))\n\ndef faktorial(n):\n    if n <= 1:\n        return 1\n    return n * faktorial(n - 1)\n\nprint(faktorial(5), faktorial(0))\n\ndef ratakan(x):\n    if not isinstance(x, list):\n        return [x]\n    hasil = []\n    for e in x:\n        hasil += ratakan(e)\n    return hasil\n\nprint(ratakan([1, [2, [3, 4]], 5]))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa kode dan contoh singkat yang cukup jelas dalam teks dan latihan.",
+    "brief": []
+  },
+  "references": []
+}

@@ -1,0 +1,1572 @@
+{
+  "schema_version": 2,
+  "course_id": "A6",
+  "module_no": 1,
+  "title": "Pengantar relasional dan SELECT",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menjelaskan tabel, baris, kolom, dan kunci primer",
+    "Menulis SELECT dengan alias, ekspresi, dan DISTINCT",
+    "Menangani NULL dengan IS NULL, COALESCE, dan CASE"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A6-01-1",
+    "exercise_id": "A6-01-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def tipe_nilai(c, tabel, kolom, id_baris):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A6-01-1",
+      "title": "Tabel, baris, kolom, dan tipe data",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menjelaskan model relasional: tabel, baris, kolom, dan kunci primer",
+        "Membuat tabel dan mengisinya dengan sqlite3",
+        "Membaca struktur tabel dan tipe nilai",
+        "Menghitung banyak baris tabel"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa SQL",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa SQL\n\nHampir semua data bisnis hidup di basis data relasional: transaksi, pelanggan, log, dan inventaris. **SQL**, Structured Query Language, adalah bahasa standar untuk bertanya kepada basis data itu. Seorang analis data yang fasih SQL dapat mengambil dan meringkas jutaan baris langsung di sumbernya tanpa memindahkan datanya.\n\nDi kursus ini kita memakai SQLite, basis data kecil yang berjalan langsung di dalam Python lewat modul `sqlite3`. Sintaks dasarnya sama dengan PostgreSQL, MySQL, dan basis data lain, sehingga keterampilan yang dipelajari di sini dapat dipindahkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Model relasional\n\nDalam model **relasional**, data disimpan dalam **tabel**. Tiap tabel mewakili satu jenis entitas, misalnya produk. Tiap **baris** mewakili satu entitas, yaitu satu produk, dan tiap **kolom** mewakili satu atribut, seperti nama atau harga. Tabel mirip DataFrame pandas, tetapi disimpan dan dikelola oleh mesin basis data.\n\nSebuah tabel yang baik memiliki **kunci primer**, kolom yang nilainya unik untuk tiap baris dan mengidentifikasinya, biasanya `id`. Kunci primer memungkinkan baris dirujuk dari tabel lain, dasar dari JOIN yang dibahas pada modul berikutnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membuat tabel dan mengisinya\n\nPernyataan `CREATE TABLE` mendefinisikan nama tabel, kolom, dan tipe tiap kolom. Pernyataan `INSERT INTO ... VALUES` menambahkan baris. Tipe dasar SQLite adalah `INTEGER` untuk bilangan bulat, `REAL` untuk pecahan, `TEXT` untuk teks, dan `BLOB` untuk data biner. Nilai kosong ditulis `NULL`.\n\nKita memakai tabel produk lima baris untuk seluruh modul ini. Satu baris sengaja memiliki stok `NULL` untuk mempelajari perilaku nilai kosong, topik yang sering menjebak pemula."
+            },
+            {
+              "type": "code_example",
+              "filename": "buat_tabel.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT COUNT(*) FROM produk').fetchone())",
+              "expected_output_note": "(5,)",
+              "explanation": "Tabel produk berisi lima baris, dan COUNT bintang mengembalikan satu baris hasil berisi angka lima."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengambil semua data\n\nPernyataan paling dasar adalah `SELECT * FROM produk`. Tanda bintang berarti semua kolom, dan `FROM` menyebut tabel sumber. Metode `fetchall` mengembalikan hasilnya sebagai list tuple, satu tuple per baris. Urutan baris pada tabel tanpa `ORDER BY` tidak dijamin, jadi jangan mengandalkannya.\n\nPada tabel besar, `SELECT *` boros karena membaca semua kolom. Praktik baik adalah memilih kolom yang dibutuhkan saja, yang dibahas pada pelajaran berikutnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "select_semua.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nfor baris in c.execute('SELECT * FROM produk ORDER BY id'):\n    print(baris)",
+              "expected_output_note": "(1, 'Pensil', 'alat tulis', 2500.0, 100)\n(2, 'Buku', 'alat tulis', 12000.0, 40)\n(3, 'Tas', 'perlengkapan', 150000.0, 8)\n(4, 'Botol', 'perlengkapan', 35000.0, None)\n(5, 'Penggaris', 'alat tulis', 4000.0, 60)",
+              "explanation": "Setiap baris menjadi tuple Python, dan NULL pada stok Botol muncul sebagai None."
+            }
+          ],
+          "quick_check": {
+            "question": "Satu baris pada tabel mewakili?",
+            "options": [
+              "Satu entitas",
+              "Satu atribut"
+            ],
+            "answer_index": 0,
+            "explanation": "Baris adalah entitas.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Struktur tabel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Struktur tabel\n\nKita dapat melihat struktur tabel dengan `PRAGMA table_info`, yang mengembalikan nama, tipe, dan apakah kolom itu kunci primer. Di basis data lain perintah setara adalah `DESCRIBE` atau tabel sistem `information_schema`. Memeriksa struktur adalah langkah pertama saat bertemu basis data baru.\n\nTabel sistem `sqlite_master` menyimpan definisi semua tabel, termasuk teks `CREATE TABLE` aslinya. Dari sana kita dapat menemukan tabel apa saja yang ada dan bagaimana tiap tabel didefinisikan."
+            },
+            {
+              "type": "code_example",
+              "filename": "struktur_tabel.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\ninfo = c.execute('PRAGMA table_info(produk)').fetchall()\nprint([kolom[1] for kolom in info])\nprint([kolom[2] for kolom in info])",
+              "expected_output_note": "['id', 'nama', 'kategori', 'harga', 'stok']\n['INTEGER', 'TEXT', 'TEXT', 'REAL', 'INTEGER']",
+              "explanation": "Struktur tabel memperlihatkan lima kolom beserta tipe deklarasinya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tipe dinamis SQLite\n\nSQLite berbeda dari kebanyakan basis data karena tipenya dinamis: tipe melekat pada nilai, bukan hanya pada kolom. Fungsi `typeof` mengembalikan tipe nilai sebenarnya: `integer`, `real`, `text`, `blob`, atau `null`. Kolom bertipe `REAL` yang diisi angka bulat 2500 menyimpannya sebagai `real` karena afinitas kolom.\n\nBasis data lain seperti PostgreSQL bersifat statis dan akan menolak nilai bertipe salah. Di mana pun, memeriksa tipe nyata lewat `typeof` atau `CAST` membantu mendiagnosis hasil perhitungan yang aneh."
+            },
+            {
+              "type": "code_example",
+              "filename": "typeof.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT typeof(harga), typeof(stok), typeof(nama) FROM produk WHERE id = 4').fetchone())\nprint(c.execute('SELECT typeof(stok) FROM produk WHERE id = 1').fetchone())",
+              "expected_output_note": "('real', 'null', 'text')\n('integer',)",
+              "explanation": "Stok Botol bertipe null, sedangkan stok Pensil bertipe integer."
+            }
+          ],
+          "quick_check": {
+            "question": "Kunci primer?",
+            "options": [
+              "Kolom teks",
+              "Kolom unik pengenal baris"
+            ],
+            "answer_index": 1,
+            "explanation": "Mengidentifikasi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Menghitung baris",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menghitung baris\n\nFungsi agregat `COUNT(*)` menghitung banyak baris. Karena ia mengembalikan satu baris satu kolom, kita mengambilnya dengan `fetchone` dan indeks nol. Jumlah baris adalah pemeriksaan kewarasan yang selalu kamu lakukan: apakah tabel berisi sebanyak yang kamu harapkan setelah impor atau gabungan.\n\nAgregasi lebih lanjut dibahas pada pelajaran tersendiri. Untuk sekarang, ingat bahwa `COUNT(*)` menghitung semua baris, termasuk yang berisi `NULL`, perilaku yang akan kita bandingkan dengan `COUNT(kolom)`."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Kenali dulu datanya",
+              "markdown": "Setelah membuka basis data baru, jalankan PRAGMA table_info dan COUNT bintang untuk setiap tabel utama sebelum menulis query rumit."
+            },
+            {
+              "type": "text",
+              "markdown": "## Parameter alih-alih penempelan string\n\nSaat memasukkan nilai dari luar ke query, jangan menempelkannya ke string dengan format. Pakai tanda tanya sebagai tempat nilai dan berikan nilainya sebagai tuple terpisah: `execute('SELECT * FROM produk WHERE id = ?', (4,))`. Mesin basis data memperlakukan nilai itu murni sebagai data, bukan kode.\n\nKebiasaan ini mencegah serangan injeksi SQL, salah satu celah keamanan paling umum di dunia. Nama tabel dan kolom tidak bisa diparameterkan, jadi pada kasus itu validasi nama terhadap daftar yang diizinkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## SQLite dan basis data lain\n\nSQLite menyimpan seluruh basis data dalam satu berkas, sehingga ideal untuk belajar, prototipe, dan aplikasi lokal. PostgreSQL, MySQL, dan SQL Server berjalan sebagai server yang melayani banyak pengguna bersamaan dengan fitur keamanan dan skala lebih besar.\n\nBahasa SQL inti sama di semua, tetapi dialeknya berbeda pada fungsi tanggal, tipe data, dan beberapa sintaks. Kita akan menandai perbedaan penting saat muncul, dan menulis SQL standar sejauh mungkin supaya mudah dipindahkan."
+            }
+          ],
+          "quick_check": {
+            "question": "COUNT bintang menghitung?",
+            "options": [
+              "Semua baris",
+              "Hanya non-NULL"
+            ],
+            "answer_index": 0,
+            "explanation": "Termasuk NULL.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-01-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_baris(c, tabel)` yang menerima koneksi sqlite3 dan nama tabel, lalu mengembalikan banyak baris tabel sebagai bilangan bulat.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef jumlah_baris(c, tabel):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_baris(c, 'produk')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nassert jumlah_baris(c, 'produk') == 5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_baris(c, 'kosong')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('CREATE TABLE kosong (x INTEGER)')\nassert jumlah_baris(c, 'kosong') == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_baris(c, 'kosong')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('INSERT INTO kosong VALUES (1), (2)')\nassert jumlah_baris(c, 'kosong') == 2"
+              }
+            ]
+          },
+          "hint": "Susun query COUNT bintang dengan nama tabel lalu ambil nilai pertama.",
+          "solution": "import sqlite3\n\ndef jumlah_baris(c, tabel):\n    return c.execute(f'SELECT COUNT(*) FROM {tabel}').fetchone()[0]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-01-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `nama_kolom(c, tabel)` yang mengembalikan list nama kolom tabel sesuai urutan, memakai `PRAGMA table_info`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef nama_kolom(c, tabel):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nama_kolom(c, 'produk')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nassert nama_kolom(c, 'produk') == ['id', 'nama', 'kategori', 'harga', 'stok']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nama_kolom(c, 't')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('CREATE TABLE t (x INTEGER, y TEXT)')\nassert nama_kolom(c, 't') == ['x', 'y']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nama_kolom(c, 'u')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('CREATE TABLE u (a REAL)')\nassert nama_kolom(c, 'u') == ['a']"
+              }
+            ]
+          },
+          "hint": "Ambil elemen kedua dari tiap baris hasil PRAGMA.",
+          "solution": "import sqlite3\n\ndef nama_kolom(c, tabel):\n    return [r[1] for r in c.execute(f'PRAGMA table_info({tabel})').fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-01-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `buat_dan_ringkas(baris)` yang membuat basis data memori dengan tabel `item(id INTEGER PRIMARY KEY, nama TEXT, harga REAL)`, memasukkan list tuple `baris` dengan `executemany`, lalu mengembalikan tuple `(jumlah_baris, total_harga)`.",
+          "note": "Total harga `None` bila tabel kosong.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef buat_dan_ringkas(baris):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "buat_dan_ringkas([(1, 'a', 2.5), (2, 'b', 3.5)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert buat_dan_ringkas([(1, 'a', 2.5), (2, 'b', 3.5)]) == (2, 6.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "buat_dan_ringkas([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert buat_dan_ringkas([]) == (0, None)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "buat_dan_ringkas([(1, 'x', 10)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert buat_dan_ringkas([(1, 'x', 10)]) == (1, 10.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "buat_dan_ringkas([(1, 'p', 1), (2, 'q', 2), (...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert buat_dan_ringkas([(1, 'p', 1), (2, 'q', 2), (3, 'r', 3)]) == (3, 6.0)"
+              }
+            ]
+          },
+          "hint": "Buat tabel, masukkan baris dengan executemany, lalu jalankan COUNT dan SUM.",
+          "solution": "import sqlite3\n\ndef buat_dan_ringkas(baris):\n    c = sqlite3.connect(':memory:')\n    c.execute('CREATE TABLE item (id INTEGER PRIMARY KEY, nama TEXT, harga REAL)')\n    c.executemany('INSERT INTO item VALUES (?, ?, ?)', baris)\n    return c.execute('SELECT COUNT(*), SUM(harga) FROM item').fetchone()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-01-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `tipe_nilai(c, tabel, kolom, id_baris)` yang mengembalikan hasil `typeof` kolom pada baris dengan `id` tertentu sebagai string.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef tipe_nilai(c, tabel, kolom, id_baris):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tipe_nilai(c, 'produk', 'harga', 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nassert tipe_nilai(c, 'produk', 'harga', 4) == 'real'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tipe_nilai(c, 'produk', 'stok', 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tipe_nilai(c, 'produk', 'stok', 4) == 'null'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tipe_nilai(c, 'produk', 'nama', 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tipe_nilai(c, 'produk', 'nama', 4) == 'text'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tipe_nilai(c, 'produk', 'stok', 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tipe_nilai(c, 'produk', 'stok', 1) == 'integer'"
+              }
+            ]
+          },
+          "hint": "Susun SELECT typeof dengan nama kolom dan filter id memakai parameter.",
+          "solution": "import sqlite3\n\ndef tipe_nilai(c, tabel, kolom, id_baris):\n    return c.execute(f'SELECT typeof({kolom}) FROM {tabel} WHERE id = ?', (id_baris,)).fetchone()[0]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Satu baris pada tabel mewakili?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu entitas",
+              "description": ""
+            },
+            {
+              "label": "Satu atribut",
+              "description": ""
+            },
+            {
+              "label": "Satu tipe",
+              "description": ""
+            },
+            {
+              "label": "Satu basis data",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Entitas.",
+          "explanation": "Baris adalah entitas."
+        },
+        {
+          "q": "Kunci primer?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kolom unik pengenal baris",
+              "description": ""
+            },
+            {
+              "label": "Kolom teks",
+              "description": ""
+            },
+            {
+              "label": "Nama tabel",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Unik.",
+          "explanation": "Mengidentifikasi."
+        },
+        {
+          "q": "COUNT bintang menghitung?",
+          "code": null,
+          "options": [
+            {
+              "label": "Semua baris",
+              "description": ""
+            },
+            {
+              "label": "Hanya non-NULL",
+              "description": ""
+            },
+            {
+              "label": "Kolom",
+              "description": ""
+            },
+            {
+              "label": "Tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Semua.",
+          "explanation": "Termasuk NULL."
+        },
+        {
+          "q": "typeof mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tipe nilai sebenarnya",
+              "description": ""
+            },
+            {
+              "label": "Nama kolom",
+              "description": ""
+            },
+            {
+              "label": "Panjang",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tipe.",
+          "explanation": "Tipe dinamis."
+        },
+        {
+          "q": "Nilai kosong di SQL ditulis?",
+          "code": null,
+          "options": [
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "kosong",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NULL.",
+          "explanation": "NULL."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengandalkan urutan baris tanpa ORDER BY. Lebih baik: Tambahkan ORDER BY bila urutan penting.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengandalkan urutan baris tanpa ORDER BY.",
+          "fix": "Tambahkan ORDER BY bila urutan penting."
+        },
+        {
+          "mistake": "Memakai SELECT bintang pada tabel besar.",
+          "fix": "Pilih hanya kolom yang dibutuhkan."
+        },
+        {
+          "mistake": "Menyusun SQL dengan menempelkan input pengguna ke string.",
+          "fix": "Gunakan parameter bertanda tanya."
+        }
+      ],
+      "summary": [
+        "Tabel berisi baris sebagai entitas dan kolom sebagai atribut.",
+        "Kunci primer mengidentifikasi tiap baris secara unik.",
+        "PRAGMA table_info dan typeof membantu mengenali struktur dan tipe.",
+        "COUNT bintang menghitung semua baris sebagai pemeriksaan kewarasan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Tabel, baris, kolom, dan tipe data"
+          },
+          {
+            "type": "text",
+            "source": "Tabel produk berisi lima baris, dan COUNT bintang mengembalikan satu baris hasil berisi angka lima."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT COUNT(*) FROM produk').fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Setiap baris menjadi tuple Python, dan NULL pada stok Botol muncul sebagai None."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nfor baris in c.execute('SELECT * FROM produk ORDER BY id'):\n    print(baris)"
+          },
+          {
+            "type": "text",
+            "source": "Struktur tabel memperlihatkan lima kolom beserta tipe deklarasinya."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\ninfo = c.execute('PRAGMA table_info(produk)').fetchall()\nprint([kolom[1] for kolom in info])\nprint([kolom[2] for kolom in info])"
+          },
+          {
+            "type": "text",
+            "source": "Stok Botol bertipe null, sedangkan stok Pensil bertipe integer."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT typeof(harga), typeof(stok), typeof(nama) FROM produk WHERE id = 4').fetchone())\nprint(c.execute('SELECT typeof(stok) FROM produk WHERE id = 1').fetchone())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-01-2",
+      "title": "SELECT: kolom, alias, ekspresi, dan DISTINCT",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memilih kolom tertentu dari tabel",
+        "Memberi nama alias pada kolom hasil",
+        "Menulis ekspresi aritmetika dan teks dalam SELECT",
+        "Mengambil nilai unik dengan DISTINCT"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Memilih kolom",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih kolom\n\nQuery `SELECT` memilih kolom yang ingin dilihat dengan menyebut namanya dipisah koma. Hanya kolom itu yang dibaca dan dikembalikan, sehingga lebih cepat dan hasilnya lebih ringkas daripada bintang. Urutan kolom pada hasil mengikuti urutan yang kamu tulis, bukan urutan dalam tabel.\n\nTulis kata kunci SQL dengan huruf besar dan nama dengan huruf kecil sebagai kebiasaan keterbacaan. SQL tidak peka huruf besar-kecil untuk kata kunci, tetapi konsistensi membuat query panjang jauh lebih mudah dibaca."
+            },
+            {
+              "type": "code_example",
+              "filename": "pilih_kolom.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT nama, harga FROM produk ORDER BY id').fetchall())",
+              "expected_output_note": "[('Pensil', 2500.0), ('Buku', 12000.0), ('Tas', 150000.0), ('Botol', 35000.0), ('Penggaris', 4000.0)]",
+              "explanation": "Hanya dua kolom yang dikembalikan, sebagai list pasangan nama dan harga."
+            },
+            {
+              "type": "text",
+              "markdown": "## Alias dengan AS\n\nHasil ekspresi biasanya tidak punya nama bagus. **Alias** memberinya nama dengan `AS`: `SELECT harga / 1000.0 AS ribu`. Alias berguna untuk keterbacaan hasil, dan nama kolom dalam hasil query mengikuti alias. Pada pustaka seperti pandas, alias menjadi nama kolom DataFrame hasil.\n\nAlias tidak dapat dipakai di klausa `WHERE` pada kebanyakan basis data karena `WHERE` dievaluasi sebelum `SELECT`. Urutan evaluasi logis query dibahas lebih lanjut pada pelajaran berikutnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ekspresi aritmetika\n\nDi dalam `SELECT` kita dapat menghitung dengan operator `+`, `-`, `*`, `/`, dan `%` serta fungsi seperti `round`, `abs`, dan `length`. Perhitungan dilakukan per baris, menghasilkan satu nilai per baris. Contoh mengubah harga ke satuan ribuan dengan satu desimal.\n\nHati-hati dengan pembagian bilangan bulat. Di SQLite dan banyak basis data lain, `7 / 2` menghasilkan 3, bukan 3,5, karena kedua operan bulat. Ubah salah satu operan ke pecahan, misalnya `7 / 2.0`, untuk mendapat hasil desimal."
+            },
+            {
+              "type": "code_example",
+              "filename": "ekspresi_alias.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT nama, round(harga / 1000.0, 1) AS ribu FROM produk ORDER BY id').fetchall())\nprint(c.execute('SELECT 7 / 2, 7 / 2.0, 7 % 2').fetchone())",
+              "expected_output_note": "[('Pensil', 2.5), ('Buku', 12.0), ('Tas', 150.0), ('Botol', 35.0), ('Penggaris', 4.0)]\n(3, 3.5, 1)",
+              "explanation": "Harga dikonversi ke ribuan, dan pembagian bulat menghasilkan tiga sedangkan pembagian dengan pecahan menghasilkan tiga koma lima."
+            }
+          ],
+          "quick_check": {
+            "question": "Alias dibuat dengan?",
+            "options": [
+              "AS",
+              "IS"
+            ],
+            "answer_index": 0,
+            "explanation": "Kata kunci AS.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Menggabung teks",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menggabung teks\n\nOperator `||` menyambung teks. Ia berguna untuk membuat label dari beberapa kolom, misalnya nama dengan kategori dalam kurung. Fungsi teks lain meliputi `upper`, `lower`, `length`, `substr`, dan `replace`. Daftar lengkapnya bergantung pada basis data, tetapi fungsi dasarnya hampir seragam.\n\nMenyambung teks dengan `NULL` menghasilkan `NULL`, jebakan yang akan dibahas bersama NULL pada pelajaran berikutnya. Gunakan `COALESCE` untuk mengganti `NULL` sebelum menyambung."
+            },
+            {
+              "type": "code_example",
+              "filename": "fungsi_teks.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute(\"SELECT nama || ' (' || kategori || ')' FROM produk WHERE id = 1\").fetchone())\nprint(c.execute('SELECT upper(nama), length(nama) FROM produk WHERE id = 2').fetchone())",
+              "expected_output_note": "('Pensil (alat tulis)',)\n('BUKU', 4)",
+              "explanation": "Operator penyambung membentuk label gabungan, dan fungsi teks mengubah huruf serta menghitung panjang."
+            },
+            {
+              "type": "text",
+              "markdown": "## DISTINCT\n\nKata kunci `DISTINCT` membuang baris hasil yang duplikat. `SELECT DISTINCT kategori FROM produk` mengembalikan tiap kategori sekali saja. Ia bekerja pada kombinasi semua kolom yang dipilih, sehingga dengan dua kolom yang dibuang hanya baris yang kedua kolomnya sama.\n\nUntuk menghitung jumlah nilai unik gunakan `COUNT(DISTINCT kolom)`. Menggunakan `DISTINCT` untuk menutupi duplikat akibat JOIN yang keliru adalah anti-pola: perbaiki sumber duplikatnya, jangan hanya menyembunyikannya."
+            },
+            {
+              "type": "code_example",
+              "filename": "distinct.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT DISTINCT kategori FROM produk ORDER BY kategori').fetchall())\nprint(c.execute('SELECT COUNT(DISTINCT kategori) FROM produk').fetchone())",
+              "expected_output_note": "[('alat tulis',), ('perlengkapan',)]\n(2,)",
+              "explanation": "Dua kategori unik, dan COUNT DISTINCT menghitungnya sebagai dua."
+            },
+            {
+              "type": "text",
+              "markdown": "## Urutan penulisan dan evaluasi\n\nKita menulis query dengan urutan `SELECT`, `FROM`, `WHERE`, `GROUP BY`, `HAVING`, `ORDER BY`, `LIMIT`. Tetapi mesin mengevaluasinya dengan urutan logis berbeda: `FROM` lebih dulu untuk menentukan sumber, lalu `WHERE`, `GROUP BY`, `HAVING`, `SELECT`, `DISTINCT`, `ORDER BY`, dan terakhir `LIMIT`.\n\nMemahami urutan ini menjelaskan banyak perilaku, misalnya mengapa alias dari `SELECT` tidak dikenali di `WHERE` tetapi dikenali di `ORDER BY`. Pemahaman urutan evaluasi adalah kunci menulis SQL yang benar tanpa trial and error."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Bangun query bertahap",
+              "markdown": "Tulis query bertahap: mulai dari FROM, tambahkan WHERE, lalu kolom dan agregasi. Jalankan setiap tahap dan periksa hasilnya."
+            }
+          ],
+          "quick_check": {
+            "question": "7 / 2 pada SQLite menghasilkan?",
+            "options": [
+              "3.5",
+              "3"
+            ],
+            "answer_index": 1,
+            "explanation": "Pembagian bulat.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Fungsi skalar umum",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi skalar umum\n\nSelain `round` dan `length`, ada banyak fungsi skalar yang dipakai sehari-hari: `abs` untuk nilai mutlak, `lower` dan `upper` untuk huruf, `trim` untuk membuang spasi tepi, `substr` untuk mengambil potongan teks, dan `replace` untuk mengganti teks. Semuanya bekerja per baris dan menghasilkan satu nilai.\n\nFungsi-fungsi ini penting untuk membersihkan data langsung di query, misalnya menyeragamkan huruf sebelum membandingkan atau memangkas spasi yang tidak terlihat dan menyebabkan pencocokan gagal tanpa pesan kesalahan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kolom dengan nama sama\n\nBila dua kolom hasil memiliki nama sama, misalnya setelah menggabungkan tabel, sebagian alat hanya menyimpan salah satunya sehingga datanya hilang diam-diam. Beri alias berbeda agar semua kolom punya nama unik, terutama ketika hasil query akan dibaca ke pandas atau kode lain.\n\nMemberi alias pada kolom hasil ekspresi juga membuat kode pemakai lebih aman. Mengakses hasil lewat nama yang bermakna lebih tahan terhadap perubahan urutan kolom daripada mengaksesnya lewat indeks angka."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca hasil query di Python\n\nMetode `fetchone` mengambil satu baris, `fetchall` semua baris sebagai list tuple, dan iterasi langsung pada hasil `execute` mengambil baris satu per satu sehingga hemat memori pada hasil besar. Atribut `description` kursor memuat nama kolom hasil.\n\nUntuk analisis, hasil sering dibaca langsung ke DataFrame dengan `pandas.read_sql_query`. Cara itu memanfaatkan alias sebagai nama kolom, jadi menulis alias yang jelas di SQL langsung memperbaiki keterbacaan seluruh analisis di bawahnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Operator penyambung teks?",
+            "options": [
+              "||",
+              "+"
+            ],
+            "answer_index": 0,
+            "explanation": "Standar SQL.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-01-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `nama_dan_harga(c)` yang mengembalikan list tuple `(nama, harga)` semua produk terurut menurut `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef nama_dan_harga(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nh = nama_dan_harga(c)\nassert h[0] == ('Pensil', 2500.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert h[-1] == ('Penggaris', 4000.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(h)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(h) == 5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert h[2] == ('Tas', 150000.0)"
+              }
+            ]
+          },
+          "hint": "Pilih dua kolom dan urutkan menurut id.",
+          "solution": "import sqlite3\n\ndef nama_dan_harga(c):\n    return c.execute('SELECT nama, harga FROM produk ORDER BY id').fetchall()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-01-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `harga_ribuan(c)` yang mengembalikan list tuple `(nama, ribu)` dengan `ribu` adalah harga dibagi 1000.0 dibulatkan satu desimal, terurut menurut `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef harga_ribuan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "harga_ribuan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nassert harga_ribuan(c) == [('Pensil', 2.5), ('Buku', 12.0), ('Tas', 150.0), ('Botol', 35.0), ('Penggaris', 4.0)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "harga_ribuan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (6, 'Kertas', 'alat tulis', 1260, 5)\")\nassert harga_ribuan(c)[-1] == ('Kertas', 1.3)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(harga_ribuan(c))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(harga_ribuan(c)) == 6"
+              }
+            ]
+          },
+          "hint": "Bagi harga dengan 1000.0, bulatkan, dan beri alias.",
+          "solution": "import sqlite3\n\ndef harga_ribuan(c):\n    return c.execute('SELECT nama, round(harga / 1000.0, 1) AS ribu FROM produk ORDER BY id').fetchall()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-01-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kategori_unik(c)` yang mengembalikan list nama kategori unik terurut abjad sebagai string.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef kategori_unik(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kategori_unik(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nassert kategori_unik(c) == ['alat tulis', 'perlengkapan']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kategori_unik(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (6, 'Apel', 'buah', 5000, 10)\")\nassert kategori_unik(c) == ['alat tulis', 'buah', 'perlengkapan']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kategori_unik(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (7, 'Jeruk', 'buah', 6000, 12)\")\nassert kategori_unik(c) == ['alat tulis', 'buah', 'perlengkapan']"
+              }
+            ]
+          },
+          "hint": "Pakai DISTINCT dengan ORDER BY lalu ratakan tuple menjadi string.",
+          "solution": "import sqlite3\n\ndef kategori_unik(c):\n    return [r[0] for r in c.execute('SELECT DISTINCT kategori FROM produk ORDER BY kategori').fetchall()]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-01-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `label_produk(c)` yang mengembalikan list string berformat `nama (kategori)` untuk semua produk terurut menurut `id`, memakai operator `||` di SQL.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef label_produk(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "label_produk(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nassert label_produk(c) == ['Pensil (alat tulis)', 'Buku (alat tulis)', 'Tas (perlengkapan)', 'Botol (perlengkapan)', 'Penggaris (alat tulis)']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "label_produk(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (6, 'Apel', 'buah', 5000, 10)\")\nassert label_produk(c)[-1] == 'Apel (buah)'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(label_produk(c))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(label_produk(c)) == 6"
+              }
+            ]
+          },
+          "hint": "Sambung nama, spasi, kurung buka, kategori, dan kurung tutup dengan operator penyambung.",
+          "solution": "import sqlite3\n\ndef label_produk(c):\n    q = \"SELECT nama || ' (' || kategori || ')' FROM produk ORDER BY id\"\n    return [r[0] for r in c.execute(q).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Alias dibuat dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "AS",
+              "description": ""
+            },
+            {
+              "label": "IS",
+              "description": ""
+            },
+            {
+              "label": "IN",
+              "description": ""
+            },
+            {
+              "label": "ON",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Nama lain.",
+          "explanation": "Kata kunci AS."
+        },
+        {
+          "q": "7 / 2 pada SQLite menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "3",
+              "description": ""
+            },
+            {
+              "label": "3.5",
+              "description": ""
+            },
+            {
+              "label": "4",
+              "description": ""
+            },
+            {
+              "label": "2",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bulat.",
+          "explanation": "Pembagian bulat."
+        },
+        {
+          "q": "Operator penyambung teks?",
+          "code": null,
+          "options": [
+            {
+              "label": "||",
+              "description": ""
+            },
+            {
+              "label": "+",
+              "description": ""
+            },
+            {
+              "label": "&",
+              "description": ""
+            },
+            {
+              "label": ".",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dua garis.",
+          "explanation": "Standar SQL."
+        },
+        {
+          "q": "DISTINCT melakukan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membuang baris duplikat",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menghitung",
+              "description": ""
+            },
+            {
+              "label": "Menghapus tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Unik.",
+          "explanation": "Nilai unik."
+        },
+        {
+          "q": "Urutan evaluasi pertama?",
+          "code": null,
+          "options": [
+            {
+              "label": "FROM",
+              "description": ""
+            },
+            {
+              "label": "SELECT",
+              "description": ""
+            },
+            {
+              "label": "ORDER BY",
+              "description": ""
+            },
+            {
+              "label": "LIMIT",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sumber.",
+          "explanation": "Sumber dulu."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira 7 / 2 di SQL menghasilkan 3,5. Lebih baik: Pembagian bulat menghasilkan 3, pakai 2.0.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira 7 / 2 di SQL menghasilkan 3,5.",
+          "fix": "Pembagian bulat menghasilkan 3, pakai 2.0."
+        },
+        {
+          "mistake": "Memakai DISTINCT untuk menutupi duplikat akibat JOIN keliru.",
+          "fix": "Perbaiki sumber duplikatnya."
+        },
+        {
+          "mistake": "Memakai alias SELECT di klausa WHERE.",
+          "fix": "Ulangi ekspresinya atau pakai subquery."
+        }
+      ],
+      "summary": [
+        "SELECT memilih kolom dan menghitung ekspresi per baris.",
+        "Alias memberi nama pada hasil ekspresi.",
+        "Pembagian bulat memotong pecahan, pakai operan desimal.",
+        "DISTINCT mengembalikan nilai unik dan COUNT DISTINCT menghitungnya."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# SELECT: kolom, alias, ekspresi, dan DISTINCT"
+          },
+          {
+            "type": "text",
+            "source": "Hanya dua kolom yang dikembalikan, sebagai list pasangan nama dan harga."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT nama, harga FROM produk ORDER BY id').fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Harga dikonversi ke ribuan, dan pembagian bulat menghasilkan tiga sedangkan pembagian dengan pecahan menghasilkan tiga koma lima."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT nama, round(harga / 1000.0, 1) AS ribu FROM produk ORDER BY id').fetchall())\nprint(c.execute('SELECT 7 / 2, 7 / 2.0, 7 % 2').fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Operator penyambung membentuk label gabungan, dan fungsi teks mengubah huruf serta menghitung panjang."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute(\"SELECT nama || ' (' || kategori || ')' FROM produk WHERE id = 1\").fetchone())\nprint(c.execute('SELECT upper(nama), length(nama) FROM produk WHERE id = 2').fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Dua kategori unik, dan COUNT DISTINCT menghitungnya sebagai dua."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT DISTINCT kategori FROM produk ORDER BY kategori').fetchall())\nprint(c.execute('SELECT COUNT(DISTINCT kategori) FROM produk').fetchone())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-01-3",
+      "title": "NULL, COALESCE, dan CASE",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menjelaskan logika tiga nilai yang melibatkan NULL",
+        "Menguji NULL dengan IS NULL",
+        "Mengganti NULL dengan COALESCE",
+        "Membuat kolom kategori dengan CASE"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "NULL berarti tidak diketahui",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## NULL berarti tidak diketahui\n\n`NULL` bukan nol dan bukan string kosong. Ia berarti **tidak diketahui** atau tidak ada nilai. Karena itu operasi apa pun dengan `NULL` menghasilkan `NULL`: `NULL + 1` adalah `NULL`, dan bahkan `NULL = NULL` bukan benar melainkan `NULL`, sebab dua nilai yang tidak diketahui belum tentu sama.\n\nIni sumber bug terbanyak bagi pemula SQL. Kondisi `WHERE stok = NULL` tidak pernah mengembalikan baris apa pun. Cara yang benar adalah `IS NULL`, operator khusus yang menguji kekosongan."
+            },
+            {
+              "type": "code_example",
+              "filename": "null_dasar.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT nama FROM produk WHERE stok = NULL').fetchall())\nprint(c.execute('SELECT nama FROM produk WHERE stok IS NULL').fetchall())\nprint(c.execute('SELECT NULL IS NULL, 1 IS NULL, NULL = NULL, NULL + 1').fetchone())",
+              "expected_output_note": "[]\n[('Botol',)]\n(1, 0, None, None)",
+              "explanation": "Perbandingan dengan sama dengan NULL tidak mengembalikan baris, sedangkan IS NULL menemukan Botol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Logika tiga nilai\n\nSQL memakai logika tiga nilai: benar, salah, dan tidak diketahui. Klausa `WHERE` hanya meloloskan baris yang kondisinya benar, jadi baris dengan kondisi tidak diketahui terbuang diam-diam. `stok > 10` pada baris dengan stok `NULL` bernilai tidak diketahui sehingga barisnya tidak ikut.\n\nKonsekuensinya, `WHERE stok > 10` dan `WHERE NOT stok > 10` tidak saling melengkapi: baris `NULL` tidak muncul di keduanya. Ingat hal ini setiap kali memfilter kolom yang mungkin berisi `NULL`."
+            },
+            {
+              "type": "text",
+              "markdown": "## NULL dalam agregasi\n\nFungsi agregat mengabaikan `NULL`, kecuali `COUNT(*)` yang menghitung semua baris. `COUNT(stok)` menghitung hanya baris dengan stok terisi, sehingga pada tabel kita bernilai empat sedangkan `COUNT(*)` bernilai lima. `AVG`, `SUM`, `MIN`, dan `MAX` juga melewati `NULL`.\n\nAkibatnya rata-rata kolom dengan banyak `NULL` dihitung dari yang ada saja, mirip perilaku pandas. Selalu bandingkan `COUNT(*)` dengan `COUNT(kolom)` untuk mengetahui berapa banyak data hilang sebelum memercayai agregat."
+            },
+            {
+              "type": "code_example",
+              "filename": "null_agregasi.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT COUNT(*), COUNT(stok), AVG(stok) FROM produk').fetchone())",
+              "expected_output_note": "(5, 4, 52.0)",
+              "explanation": "Lima baris tetapi hanya empat stok terisi, dan rata-rata dihitung dari empat nilai saja yaitu lima puluh dua."
+            }
+          ],
+          "quick_check": {
+            "question": "NULL = NULL bernilai?",
+            "options": [
+              "NULL",
+              "Benar"
+            ],
+            "answer_index": 0,
+            "explanation": "Tidak diketahui.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "COALESCE",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## COALESCE\n\n`COALESCE(a, b, c)` mengembalikan argumen pertama yang bukan `NULL`. Ini cara standar mengganti `NULL` dengan nilai bawaan, misalnya `COALESCE(stok, 0)` untuk menganggap stok kosong sebagai nol. Ia juga berguna untuk memilih dari beberapa kolom alternatif berurutan.\n\nBerhati-hatilah: mengisi `NULL` dengan nol mengubah makna dari tidak diketahui menjadi nol. Untuk stok mungkin wajar, tetapi untuk nilai seperti suhu atau gaji, nol bisa menyesatkan agregat. Pilih nilai pengganti sesuai makna data."
+            },
+            {
+              "type": "code_example",
+              "filename": "coalesce.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT nama, COALESCE(stok, 0) FROM produk ORDER BY id').fetchall())",
+              "expected_output_note": "[('Pensil', 100), ('Buku', 40), ('Tas', 8), ('Botol', 0), ('Penggaris', 60)]",
+              "explanation": "Stok kosong Botol diganti nol, sedangkan stok lain tidak berubah."
+            },
+            {
+              "type": "text",
+              "markdown": "## CASE untuk logika kondisional\n\nEkspresi `CASE WHEN kondisi THEN nilai ... ELSE nilai END` adalah if-else dalam SQL. Ia mengevaluasi kondisi berurutan dan mengembalikan nilai kondisi pertama yang benar. Tanpa `ELSE`, baris yang tidak cocok menghasilkan `NULL`. `CASE` dipakai untuk membuat kategori, label, dan penanda dari kolom numerik.\n\nContoh golongan harga: di bawah 5.000 murah, di bawah 50.000 sedang, selebihnya mahal. Urutan `WHEN` penting karena hanya kondisi pertama yang benar yang dipakai."
+            },
+            {
+              "type": "code_example",
+              "filename": "case_when.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nq = '''\nSELECT nama,\n       CASE WHEN harga < 5000 THEN 'murah'\n            WHEN harga < 50000 THEN 'sedang'\n            ELSE 'mahal' END AS golongan\nFROM produk ORDER BY id\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Pensil', 'murah'), ('Buku', 'sedang'), ('Tas', 'mahal'), ('Botol', 'sedang'), ('Penggaris', 'murah')]",
+              "explanation": "Tiap produk mendapat golongan harga sesuai kondisi pertama yang terpenuhi."
+            },
+            {
+              "type": "text",
+              "markdown": "## NULL dalam perhitungan baris\n\nPerhitungan per baris yang melibatkan `NULL` menghasilkan `NULL`. Nilai stok dikali harga untuk Botol adalah `NULL` karena stoknya tidak diketahui. Ini perilaku yang benar: kita tidak tahu nilai stoknya. Mengubahnya menjadi nol dengan `COALESCE` akan berarti mengklaim stoknya kosong.\n\nRancang query dengan sadar: tentukan apakah baris `NULL` harus tetap `NULL`, diganti, atau dibuang, lalu tulis keputusan itu secara eksplisit dalam query agar pembaca memahaminya."
+            },
+            {
+              "type": "code_example",
+              "filename": "null_hitung.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT nama, stok * harga FROM produk ORDER BY id').fetchall())",
+              "expected_output_note": "[('Pensil', 250000.0), ('Buku', 480000.0), ('Tas', 1200000.0), ('Botol', None), ('Penggaris', 240000.0)]",
+              "explanation": "Nilai stok Botol tidak diketahui sehingga hasil perkaliannya juga tidak diketahui."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Jebakan NULL",
+              "markdown": "Jangan menulis kolom sama dengan NULL. Pakai IS NULL atau IS NOT NULL. Perbandingan dengan NULL selalu tidak diketahui dan membuang baris."
+            }
+          ],
+          "quick_check": {
+            "question": "Menguji kosong memakai?",
+            "options": [
+              "= NULL",
+              "IS NULL"
+            ],
+            "answer_index": 1,
+            "explanation": "Operator khusus.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mengisi atau membiarkan NULL",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengisi atau membiarkan NULL\n\nAda tiga strategi untuk NULL. Pertama membiarkannya dan menerima bahwa agregat mengabaikannya. Kedua menggantinya dengan nilai bawaan lewat `COALESCE`. Ketiga membuang barisnya dengan `WHERE kolom IS NOT NULL`. Tidak ada yang selalu benar, dan pilihan harus mencerminkan makna data serta pertanyaan analisis.\n\nDokumentasikan pilihan itu di komentar atau catatan analisis. Dua analis yang memilih berbeda akan mendapat angka berbeda dari data sama, dan perbedaan itu harus bisa dijelaskan."
+            },
+            {
+              "type": "text",
+              "markdown": "## NULLIF dan pembagian aman\n\nFungsi `NULLIF(a, b)` mengembalikan `NULL` bila `a` sama dengan `b`, selain itu `a`. Kegunaan paling umum adalah menghindari pembagian dengan nol: `harga / NULLIF(stok, 0)` menghasilkan `NULL` alih-alih galat saat stok nol. Dipasangkan dengan `COALESCE`, ia memberi cara ringkas menangani kasus tepi.\n\nPada SQLite pembagian dengan nol sebenarnya menghasilkan `NULL`, tetapi PostgreSQL dan lainnya melempar galat. Menulis `NULLIF` membuat query aman di semua basis data."
+            },
+            {
+              "type": "text",
+              "markdown": "## CASE dalam agregasi\n\n`CASE` sangat kuat bila digabung dengan agregat, misalnya menghitung banyak produk murah dan mahal dalam satu query dengan `SUM(CASE WHEN harga < 5000 THEN 1 ELSE 0 END)`. Pola ini disebut agregasi bersyarat dan menggantikan banyak query terpisah dengan satu lintasan data.\n\nKita akan memakainya lagi pada pelajaran agregasi dan GROUP BY. Menguasai CASE sekarang membuka cara menulis laporan silang yang ringkas tanpa harus mengolahnya di luar basis data."
+            }
+          ],
+          "quick_check": {
+            "question": "COUNT(kolom) menghitung?",
+            "options": [
+              "Baris non-NULL",
+              "Semua baris"
+            ],
+            "answer_index": 0,
+            "explanation": "Mengabaikan NULL.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-01-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `produk_tanpa_stok(c)` yang mengembalikan list nama produk dengan stok `NULL`, terurut menurut `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef produk_tanpa_stok(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "produk_tanpa_stok(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nassert produk_tanpa_stok(c) == ['Botol']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "produk_tanpa_stok(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (6, 'Kertas', 'alat tulis', 1000, NULL)\")\nassert produk_tanpa_stok(c) == ['Botol', 'Kertas']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "produk_tanpa_stok(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE produk SET stok = 1 WHERE id = 4')\nassert produk_tanpa_stok(c) == ['Kertas']"
+              }
+            ]
+          },
+          "hint": "Saring dengan IS NULL dan urutkan menurut id.",
+          "solution": "import sqlite3\n\ndef produk_tanpa_stok(c):\n    return [r[0] for r in c.execute('SELECT nama FROM produk WHERE stok IS NULL ORDER BY id').fetchall()]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-01-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `stok_aman(c)` yang mengembalikan list tuple `(nama, stok)` dengan stok `NULL` diganti 0, terurut menurut `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef stok_aman(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "stok_aman(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nassert stok_aman(c) == [('Pensil', 100), ('Buku', 40), ('Tas', 8), ('Botol', 0), ('Penggaris', 60)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "stok_aman(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (6, 'Kertas', 'alat tulis', 1000, NULL)\")\nassert stok_aman(c)[-1] == ('Kertas', 0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(stok_aman(c))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(stok_aman(c)) == 6"
+              }
+            ]
+          },
+          "hint": "Pakai COALESCE pada kolom stok.",
+          "solution": "import sqlite3\n\ndef stok_aman(c):\n    return c.execute('SELECT nama, COALESCE(stok, 0) FROM produk ORDER BY id').fetchall()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-01-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `golongan_harga(c)` yang mengembalikan list tuple `(nama, golongan)` dengan golongan `'murah'` bila harga di bawah 5000, `'sedang'` bila di bawah 50000, dan `'mahal'` selebihnya, terurut menurut `id`, memakai `CASE`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef golongan_harga(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "golongan_harga(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nassert golongan_harga(c) == [('Pensil', 'murah'), ('Buku', 'sedang'), ('Tas', 'mahal'), ('Botol', 'sedang'), ('Penggaris', 'murah')]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "golongan_harga(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (6, 'Laptop', 'elektronik', 5000000, 2)\")\nassert golongan_harga(c)[-1] == ('Laptop', 'mahal')"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "golongan_harga(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO produk VALUES (7, 'Klip', 'alat tulis', 4999, 2)\")\nassert golongan_harga(c)[-1] == ('Klip', 'murah')"
+              }
+            ]
+          },
+          "hint": "Susun CASE WHEN dengan dua kondisi berurutan dan ELSE untuk sisanya.",
+          "solution": "import sqlite3\n\ndef golongan_harga(c):\n    q = '''\n    SELECT nama,\n           CASE WHEN harga < 5000 THEN 'murah'\n                WHEN harga < 50000 THEN 'sedang'\n                ELSE 'mahal' END\n    FROM produk ORDER BY id\n    '''\n    return c.execute(q).fetchall()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-01-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `nilai_stok(c)` yang mengembalikan list tuple `(nama, nilai)` dengan `nilai = stok * harga` apa adanya, sehingga `None` bila stok `NULL`, terurut menurut `id`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef nilai_stok(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nilai_stok(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\n    INSERT INTO produk VALUES\n    (1, 'Pensil', 'alat tulis', 2500, 100),\n    (2, 'Buku', 'alat tulis', 12000, 40),\n    (3, 'Tas', 'perlengkapan', 150000, 8),\n    (4, 'Botol', 'perlengkapan', 35000, NULL),\n    (5, 'Penggaris', 'alat tulis', 4000, 60);\n    ''')\n    return c\nc = _db()\nassert nilai_stok(c) == [('Pensil', 250000.0), ('Buku', 480000.0), ('Tas', 1200000.0), ('Botol', None), ('Penggaris', 240000.0)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nilai_stok(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE produk SET stok = 2 WHERE id = 4')\nassert nilai_stok(c)[3] == ('Botol', 70000.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nilai_stok(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE produk SET stok = NULL WHERE id = 1')\nassert nilai_stok(c)[0] == ('Pensil', None)"
+              }
+            ]
+          },
+          "hint": "Kalikan kolom stok dan harga tanpa mengganti NULL.",
+          "solution": "import sqlite3\n\ndef nilai_stok(c):\n    return c.execute('SELECT nama, stok * harga FROM produk ORDER BY id').fetchall()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "NULL = NULL bernilai?",
+          "code": null,
+          "options": [
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "Benar",
+              "description": ""
+            },
+            {
+              "label": "Salah",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tidak diketahui.",
+          "explanation": "Tidak diketahui."
+        },
+        {
+          "q": "Menguji kosong memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "IS NULL",
+              "description": ""
+            },
+            {
+              "label": "= NULL",
+              "description": ""
+            },
+            {
+              "label": "== NULL",
+              "description": ""
+            },
+            {
+              "label": "EMPTY",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "IS.",
+          "explanation": "Operator khusus."
+        },
+        {
+          "q": "COUNT(kolom) menghitung?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris non-NULL",
+              "description": ""
+            },
+            {
+              "label": "Semua baris",
+              "description": ""
+            },
+            {
+              "label": "Kolom",
+              "description": ""
+            },
+            {
+              "label": "NULL",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Non-NULL.",
+          "explanation": "Mengabaikan NULL."
+        },
+        {
+          "q": "COALESCE mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Argumen pertama non-NULL",
+              "description": ""
+            },
+            {
+              "label": "Argumen terakhir",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "NULL",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pertama.",
+          "explanation": "Pengganti."
+        },
+        {
+          "q": "CASE tanpa ELSE untuk baris tak cocok?",
+          "code": null,
+          "options": [
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "Kosong",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "NULL.",
+          "explanation": "Default NULL."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis WHERE kolom = NULL. Lebih baik: Tulis WHERE kolom IS NULL.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis WHERE kolom = NULL.",
+          "fix": "Tulis WHERE kolom IS NULL."
+        },
+        {
+          "mistake": "Mengganti semua NULL dengan nol tanpa berpikir.",
+          "fix": "Pilih pengganti sesuai makna data."
+        },
+        {
+          "mistake": "Mengira COUNT(kolom) sama dengan COUNT bintang.",
+          "fix": "COUNT kolom mengabaikan NULL."
+        }
+      ],
+      "summary": [
+        "NULL berarti tidak diketahui dan membuat perhitungan menjadi NULL.",
+        "Gunakan IS NULL, bukan sama dengan NULL.",
+        "Agregat mengabaikan NULL kecuali COUNT bintang.",
+        "COALESCE dan CASE mengganti dan mengategorikan nilai secara eksplisit."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# NULL, COALESCE, dan CASE"
+          },
+          {
+            "type": "text",
+            "source": "Perbandingan dengan sama dengan NULL tidak mengembalikan baris, sedangkan IS NULL menemukan Botol."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT nama FROM produk WHERE stok = NULL').fetchall())\nprint(c.execute('SELECT nama FROM produk WHERE stok IS NULL').fetchall())\nprint(c.execute('SELECT NULL IS NULL, 1 IS NULL, NULL = NULL, NULL + 1').fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Lima baris tetapi hanya empat stok terisi, dan rata-rata dihitung dari empat nilai saja yaitu lima puluh dua."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT COUNT(*), COUNT(stok), AVG(stok) FROM produk').fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Stok kosong Botol diganti nol, sedangkan stok lain tidak berubah."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT nama, COALESCE(stok, 0) FROM produk ORDER BY id').fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Tiap produk mendapat golongan harga sesuai kondisi pertama yang terpenuhi."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nq = '''\nSELECT nama,\n       CASE WHEN harga < 5000 THEN 'murah'\n            WHEN harga < 50000 THEN 'sedang'\n            ELSE 'mahal' END AS golongan\nFROM produk ORDER BY id\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Nilai stok Botol tidak diketahui sehingga hasil perkaliannya juga tidak diketahui."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE produk (id INTEGER PRIMARY KEY, nama TEXT, kategori TEXT, harga REAL, stok INTEGER);\nINSERT INTO produk VALUES\n(1, 'Pensil', 'alat tulis', 2500, 100),\n(2, 'Buku', 'alat tulis', 12000, 40),\n(3, 'Tas', 'perlengkapan', 150000, 8),\n(4, 'Botol', 'perlengkapan', 35000, NULL),\n(5, 'Penggaris', 'alat tulis', 4000, 60);\n''')\n\nprint(c.execute('SELECT nama, stok * harga FROM produk ORDER BY id').fetchall())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

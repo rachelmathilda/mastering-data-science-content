@@ -1,0 +1,1708 @@
+{
+  "schema_version": 2,
+  "course_id": "A5",
+  "module_no": 2,
+  "title": "Ukuran pemusatan",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menghitung dan memilih rata-rata, median, dan modus",
+    "Memakai rata-rata geometrik dan harmonik dengan tepat",
+    "Memakai rata-rata bergerak dan CAGR"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A5-02-1",
+    "exercise_id": "A5-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def rata_berjalan_inkremental(stream):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A5-02-1",
+      "title": "Rata-rata aritmetika dan variannya",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung rata-rata aritmetika dan menjelaskan sifat-sifatnya",
+        "Menghitung rata-rata berbobot dan menggabungkan rata-rata kelompok",
+        "Menjelaskan sensitivitas rata-rata terhadap pencilan",
+        "Menghitung rata-rata secara inkremental pada aliran data"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Satu angka untuk mewakili semua",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Satu angka untuk mewakili semua\n\nKetika kita memiliki ribuan nilai, kita sering membutuhkan satu angka yang mewakili pusat data. **Ukuran pemusatan** menjawab kebutuhan ini: di mana kira-kira nilai-nilai itu berkumpul. Tiga yang paling umum adalah rata-rata, median, dan modus, masing-masing menjawab arti pusat dengan cara berbeda.\n\nPelajaran ini membahas rata-rata aritmetika, yang paling dikenal. Dua pelajaran berikutnya membahas median, modus, dan rata-rata lain. Memilih ukuran yang tepat bergantung pada skala data, bentuk distribusi, dan pertanyaan yang ingin dijawab."
+            },
+            {
+              "type": "text",
+              "markdown": "## Definisi dan tafsir\n\n**Rata-rata aritmetika** adalah jumlah semua nilai dibagi banyaknya nilai: `rata-rata = jumlah / n`. Secara fisik ia adalah titik keseimbangan: bila tiap nilai digambarkan sebagai bobot yang sama pada batang, rata-rata adalah titik tumpu tempat batang seimbang. Itu sebabnya nilai yang sangat jauh menarik rata-rata ke arahnya.\n\nRata-rata hanya bermakna untuk data interval dan rasio. Untuk data nominal ia tidak punya arti, dan untuk ordinal ia mengasumsikan jarak sama antar tingkat. Pastikan skala data cocok sebelum menghitungnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "rata_rata.py",
+              "runnable": true,
+              "code": "d = [2, 4, 4, 4, 5, 5, 7, 9]\nm = sum(d) / len(d)\nprint(m)",
+              "expected_output_note": "5.0",
+              "explanation": "Jumlah empat puluh dibagi delapan nilai memberi rata-rata lima."
+            },
+            {
+              "type": "text",
+              "markdown": "## Sifat-sifat penting\n\nDua sifat membuat rata-rata sangat berguna. Pertama, jumlah selisih semua nilai dari rata-rata selalu nol, yang menjelaskan interpretasi titik keseimbangan. Kedua, rata-rata bersifat linear: bila kita mengubah tiap nilai menjadi `a * x + b`, rata-ratanya menjadi `a * rata-rata + b`. Mengubah satuan dari meter ke sentimeter cukup mengalikan rata-rata dengan seratus.\n\nRata-rata juga meminimalkan jumlah kuadrat selisih: nilai `c` yang membuat `jumlah (x - c)^2` terkecil adalah rata-rata. Sifat ini menghubungkannya dengan regresi kuadrat terkecil dan varians."
+            },
+            {
+              "type": "code_example",
+              "filename": "sifat_rata_rata.py",
+              "runnable": true,
+              "code": "d = [2, 4, 4, 4, 5, 5, 7, 9]\nm = sum(d) / len(d)\nprint(round(sum(x - m for x in d), 10))\nprint(sum(2 * x + 3 for x in d) / len(d))",
+              "expected_output_note": "0.0\n13.0",
+              "explanation": "Jumlah selisih dari rata-rata adalah nol dan rata-rata dari dua kali nilai ditambah tiga sama dengan dua kali rata-rata ditambah tiga."
+            }
+          ],
+          "quick_check": {
+            "question": "Rata-rata aritmetika adalah?",
+            "options": [
+              "Jumlah / n",
+              "Nilai tengah"
+            ],
+            "answer_index": 0,
+            "explanation": "Jumlah dibagi banyak data.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Rata-rata berbobot",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Rata-rata berbobot\n\nKetika nilai tidak sama pentingnya, kita memakai **rata-rata berbobot**: `jumlah (bobot * nilai) / jumlah bobot`. Contoh nilai mata kuliah dengan bobot SKS: nilai 80, 90, 70 dengan SKS 2, 3, 1 menghasilkan `(160 + 270 + 70) / 6`, sekitar 83,33. Mata kuliah dengan SKS lebih besar berpengaruh lebih besar.\n\nRata-rata berbobot muncul di mana-mana: indeks harga konsumen, rata-rata kelas dengan jumlah siswa berbeda, dan rata-rata hasil gabungan beberapa survei. Rata-rata biasa adalah kasus khusus dengan semua bobot sama."
+            },
+            {
+              "type": "code_example",
+              "filename": "rata_berbobot.py",
+              "runnable": true,
+              "code": "nilai = [80, 90, 70]\nbobot = [2, 3, 1]\nprint(round(sum(n * b for n, b in zip(nilai, bobot)) / sum(bobot), 4))",
+              "expected_output_note": "83.3333",
+              "explanation": "Bobot SKS membuat nilai tiga SKS lebih berpengaruh daripada nilai satu SKS."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menggabungkan kelompok\n\nKesalahan klasik adalah merata-ratakan rata-rata kelompok tanpa memperhatikan ukuran kelompok. Bila kelas A berisi sepuluh siswa berrata-rata 50 dan kelas B berisi sembilan puluh siswa berrata-rata 70, rata-rata gabungan bukan 60, melainkan `(10 * 50 + 90 * 70) / 100 = 68`. Rata-rata gabungan adalah rata-rata berbobot dengan bobot ukuran kelompok.\n\nKesalahan serupa memunculkan paradoks Simpson dan banyak laporan menyesatkan. Selalu simpan ukuran kelompok bersama rata-ratanya agar penggabungan dapat dilakukan dengan benar."
+            },
+            {
+              "type": "code_example",
+              "filename": "gabung_rata.py",
+              "runnable": true,
+              "code": "kelompok = [(10, 50), (90, 70)]\ngabungan = sum(n * m for n, m in kelompok) / sum(n for n, m in kelompok)\nnaif = sum(m for n, m in kelompok) / len(kelompok)\nprint(gabungan, naif)",
+              "expected_output_note": "68.0 60.0",
+              "explanation": "Rata-rata gabungan berbobot ukuran adalah enam puluh delapan, jauh dari rata-rata naif enam puluh."
+            }
+          ],
+          "quick_check": {
+            "question": "Jumlah selisih dari rata-rata?",
+            "options": [
+              "Satu",
+              "Nol"
+            ],
+            "answer_index": 1,
+            "explanation": "Titik keseimbangan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Sensitivitas terhadap pencilan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Sensitivitas terhadap pencilan\n\nKarena setiap nilai berkontribusi penuh, satu nilai ekstrem dapat menarik rata-rata jauh. Gaji lima orang sekitar 5 sampai 7 juta dan satu orang berpenghasilan 100 juta menghasilkan rata-rata 21,5 juta, angka yang tidak mewakili siapa pun. Tanpa nilai ekstrem itu rata-ratanya 5,8 juta.\n\nKepekaan ini bukan cacat, melainkan sifat. Rata-rata memang menyampaikan total dibagi rata, yang relevan untuk anggaran. Tetapi untuk menggambarkan kondisi tipikal, ukuran yang tahan pencilan seperti median lebih jujur. Pelajaran berikutnya membahasnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "sensitif_pencilan.py",
+              "runnable": true,
+              "code": "g = [5, 6, 5, 7, 6, 100]\nprint(sum(g) / len(g), sum(g[:-1]) / 5)",
+              "expected_output_note": "21.5 5.8",
+              "explanation": "Satu nilai seratus mengangkat rata-rata dari lima koma delapan menjadi dua puluh satu koma lima."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rata-rata inkremental\n\nUntuk aliran data besar yang tidak muat di memori, kita bisa memperbarui rata-rata tanpa menyimpan semua nilai: `rata-rata_baru = rata-rata_lama + (x - rata-rata_lama) / n`, dengan `n` banyaknya data sejauh ini. Rumus ini juga lebih stabil secara numerik daripada menjumlahkan semuanya lalu membagi pada data berskala sangat besar.\n\nTeknik ini dipakai dalam pemantauan sistem dan pelatihan model daring, tempat data datang terus-menerus. Perhatikan bahwa ia memberi bobot sama pada semua data; untuk menekankan data terbaru dipakai rata-rata bergerak eksponensial."
+            },
+            {
+              "type": "code_example",
+              "filename": "inkremental.py",
+              "runnable": true,
+              "code": "m = 0.0\nhasil = []\nfor n, x in enumerate([10, 20, 30, 40], start=1):\n    m += (x - m) / n\n    hasil.append(m)\nprint(hasil)",
+              "expected_output_note": "[10.0, 15.0, 20.0, 25.0]",
+              "explanation": "Pembaruan inkremental menghasilkan rata-rata berjalan yang sama dengan menjumlahkan lalu membagi."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Rata-rata dari rata-rata",
+              "markdown": "Jangan merata-ratakan rata-rata kelompok tanpa bobot ukuran kelompok. Simpan ukuran kelompok bersama rata-ratanya."
+            }
+          ],
+          "quick_check": {
+            "question": "Rata-rata gabungan kelompok memakai?",
+            "options": [
+              "Bobot ukuran kelompok",
+              "Rata-rata biasa"
+            ],
+            "answer_index": 0,
+            "explanation": "Berbobot.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `rata_rata(data)` yang mengembalikan rata-rata aritmetika dibulatkan 4 desimal, dan `None` untuk list kosong.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def rata_rata(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_rata([2, 4, 4, 4, 5, 5, 7, 9])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata([2, 4, 4, 4, 5, 5, 7, 9]) == 5.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_rata([1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata([1, 2]) == 1.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_rata([7])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata([7]) == 7.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_rata([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata([]) is None"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "rata_rata([1, 2, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata([1, 2, 2]) == 1.6667"
+              }
+            ]
+          },
+          "hint": "Bagi jumlah dengan banyak data dan tangani list kosong.",
+          "solution": "def rata_rata(data):\n    if not data:\n        return None\n    return round(sum(data) / len(data), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-02-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_rata_berbobot(nilai, bobot)` yang mengembalikan rata-rata berbobot dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def rata_rata_berbobot(nilai, bobot):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_rata_berbobot([80, 90, 70], [2, 3, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_berbobot([80, 90, 70], [2, 3, 1]) == 83.3333"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_rata_berbobot([1, 2, 3], [1, 1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_berbobot([1, 2, 3], [1, 1, 1]) == 2.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_rata_berbobot([10], [5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_berbobot([10], [5]) == 10.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_rata_berbobot([1, 3], [0, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_berbobot([1, 3], [0, 1]) == 3.0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan bobot kali nilai lalu bagi dengan jumlah bobot.",
+          "solution": "def rata_rata_berbobot(nilai, bobot):\n    return round(sum(n * b for n, b in zip(nilai, bobot)) / sum(bobot), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `gabung_rata(kelompok)` yang menerima list tuple `(n, rata_rata)` dan mengembalikan rata-rata gabungan semua pengamatan dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def gabung_rata(kelompok):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "gabung_rata([(10, 50), (90, 70)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gabung_rata([(10, 50), (90, 70)]) == 68.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "gabung_rata([(1, 5)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gabung_rata([(1, 5)]) == 5.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "gabung_rata([(2, 10), (2, 20)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gabung_rata([(2, 10), (2, 20)]) == 15.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "gabung_rata([(3, 1), (1, 5)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gabung_rata([(3, 1), (1, 5)]) == 2.0"
+              }
+            ]
+          },
+          "hint": "Bobotkan tiap rata-rata dengan ukuran kelompoknya.",
+          "solution": "def gabung_rata(kelompok):\n    total = sum(n for n, m in kelompok)\n    return round(sum(n * m for n, m in kelompok) / total, 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `rata_berjalan_inkremental(stream)` yang mengembalikan list rata-rata berjalan memakai pembaruan `m = m + (x - m) / n` tanpa menyimpan jumlah total, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def rata_berjalan_inkremental(stream):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_berjalan_inkremental([10, 20, 30, 40])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_berjalan_inkremental([10, 20, 30, 40]) == [10.0, 15.0, 20.0, 25.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_berjalan_inkremental([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_berjalan_inkremental([5]) == [5.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_berjalan_inkremental([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_berjalan_inkremental([]) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_berjalan_inkremental([1, 0, 1, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_berjalan_inkremental([1, 0, 1, 0]) == [1.0, 0.5, 0.6667, 0.5]"
+              }
+            ]
+          },
+          "hint": "Perbarui rata-rata dengan selisih nilai baru dibagi banyak data sejauh ini.",
+          "solution": "def rata_berjalan_inkremental(stream):\n    m = 0.0\n    hasil = []\n    for n, x in enumerate(stream, start=1):\n        m += (x - m) / n\n        hasil.append(round(m, 4))\n    return hasil",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Rata-rata aritmetika adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Jumlah / n",
+              "description": ""
+            },
+            {
+              "label": "Nilai tengah",
+              "description": ""
+            },
+            {
+              "label": "Nilai terbanyak",
+              "description": ""
+            },
+            {
+              "label": "Maks - min",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Rata.",
+          "explanation": "Jumlah dibagi banyak data."
+        },
+        {
+          "q": "Jumlah selisih dari rata-rata?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Satu",
+              "description": ""
+            },
+            {
+              "label": "n",
+              "description": ""
+            },
+            {
+              "label": "Tak tentu",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Seimbang.",
+          "explanation": "Titik keseimbangan."
+        },
+        {
+          "q": "Rata-rata gabungan kelompok memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata biasa",
+              "description": ""
+            },
+            {
+              "label": "Bobot ukuran kelompok",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            },
+            {
+              "label": "Modus",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ukuran.",
+          "explanation": "Berbobot."
+        },
+        {
+          "q": "Rata-rata sensitif terhadap?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pencilan",
+              "description": ""
+            },
+            {
+              "label": "Urutan",
+              "description": ""
+            },
+            {
+              "label": "Satuan",
+              "description": ""
+            },
+            {
+              "label": "Jumlah kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ekstrem.",
+          "explanation": "Tiap nilai berkontribusi penuh."
+        },
+        {
+          "q": "Rata-rata linear berarti mean(aX+b)?",
+          "code": null,
+          "options": [
+            {
+              "label": "a mean + b",
+              "description": ""
+            },
+            {
+              "label": "mean + b",
+              "description": ""
+            },
+            {
+              "label": "a mean",
+              "description": ""
+            },
+            {
+              "label": "mean^a",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Skala dan geser.",
+          "explanation": "Transformasi linear."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Merata-ratakan rata-rata kelompok tanpa bobot ukuran. Lebih baik: Gunakan rata-rata berbobot ukuran kelompok.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Merata-ratakan rata-rata kelompok tanpa bobot ukuran.",
+          "fix": "Gunakan rata-rata berbobot ukuran kelompok."
+        },
+        {
+          "mistake": "Menghitung rata-rata data nominal.",
+          "fix": "Pakai modus dan frekuensi."
+        },
+        {
+          "mistake": "Memakai rata-rata untuk data dengan pencilan besar tanpa memeriksa.",
+          "fix": "Bandingkan dengan median."
+        }
+      ],
+      "summary": [
+        "Rata-rata adalah titik keseimbangan data interval dan rasio.",
+        "Rata-rata gabungan harus berbobot ukuran kelompok.",
+        "Satu pencilan dapat menggeser rata-rata jauh.",
+        "Pembaruan inkremental menghitung rata-rata tanpa menyimpan semua data."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Rata-rata aritmetika dan variannya"
+          },
+          {
+            "type": "text",
+            "source": "Jumlah empat puluh dibagi delapan nilai memberi rata-rata lima."
+          },
+          {
+            "type": "code",
+            "source": "d = [2, 4, 4, 4, 5, 5, 7, 9]\nm = sum(d) / len(d)\nprint(m)"
+          },
+          {
+            "type": "text",
+            "source": "Jumlah selisih dari rata-rata adalah nol dan rata-rata dari dua kali nilai ditambah tiga sama dengan dua kali rata-rata ditambah tiga."
+          },
+          {
+            "type": "code",
+            "source": "d = [2, 4, 4, 4, 5, 5, 7, 9]\nm = sum(d) / len(d)\nprint(round(sum(x - m for x in d), 10))\nprint(sum(2 * x + 3 for x in d) / len(d))"
+          },
+          {
+            "type": "text",
+            "source": "Bobot SKS membuat nilai tiga SKS lebih berpengaruh daripada nilai satu SKS."
+          },
+          {
+            "type": "code",
+            "source": "nilai = [80, 90, 70]\nbobot = [2, 3, 1]\nprint(round(sum(n * b for n, b in zip(nilai, bobot)) / sum(bobot), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata gabungan berbobot ukuran adalah enam puluh delapan, jauh dari rata-rata naif enam puluh."
+          },
+          {
+            "type": "code",
+            "source": "kelompok = [(10, 50), (90, 70)]\ngabungan = sum(n * m for n, m in kelompok) / sum(n for n, m in kelompok)\nnaif = sum(m for n, m in kelompok) / len(kelompok)\nprint(gabungan, naif)"
+          },
+          {
+            "type": "text",
+            "source": "Satu nilai seratus mengangkat rata-rata dari lima koma delapan menjadi dua puluh satu koma lima."
+          },
+          {
+            "type": "code",
+            "source": "g = [5, 6, 5, 7, 6, 100]\nprint(sum(g) / len(g), sum(g[:-1]) / 5)"
+          },
+          {
+            "type": "text",
+            "source": "Pembaruan inkremental menghasilkan rata-rata berjalan yang sama dengan menjumlahkan lalu membagi."
+          },
+          {
+            "type": "code",
+            "source": "m = 0.0\nhasil = []\nfor n, x in enumerate([10, 20, 30, 40], start=1):\n    m += (x - m) / n\n    hasil.append(m)\nprint(hasil)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A5-02-2",
+      "title": "Median, modus, dan rata-rata terpangkas",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menghitung median dan menjelaskan ketahanannya terhadap pencilan",
+        "Menghitung modus dan multimodus",
+        "Membandingkan rata-rata, median, dan modus pada distribusi miring",
+        "Menghitung rata-rata terpangkas dan kuantil"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Median: nilai tengah",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Median: nilai tengah\n\n**Median** adalah nilai yang membagi data terurut menjadi dua bagian sama banyak. Untuk banyak data ganjil, median adalah elemen tengah. Untuk genap, median adalah rata-rata dua elemen tengah. Karena hanya bergantung pada urutan, median tidak terpengaruh seberapa jauh nilai ekstrem berada.\n\nKarena itu median disebut **kokoh** atau robust. Data dengan satu nilai raksasa tetap memiliki median yang hampir sama, sedangkan rata-ratanya bergeser jauh. Median bermakna untuk data ordinal ke atas, sehingga lebih luas penggunaannya daripada rata-rata."
+            },
+            {
+              "type": "code_example",
+              "filename": "median.py",
+              "runnable": true,
+              "code": "def median(d):\n    s = sorted(d)\n    n = len(s)\n    if n % 2:\n        return s[n // 2]\n    return (s[n // 2 - 1] + s[n // 2]) / 2\n\nprint(median([3, 1, 2, 5, 4]), median([4, 1, 3, 2]))",
+              "expected_output_note": "3 2.5",
+              "explanation": "Data ganjil memberi elemen tengah tiga, sedangkan data genap memberi rata-rata dua elemen tengah yaitu dua koma lima."
+            },
+            {
+              "type": "text",
+              "markdown": "## Median pada data bergaji\n\nKembali ke contoh gaji lima orang sekitar 5 sampai 7 juta dan satu orang 100 juta. Data terurut adalah 5, 5, 6, 6, 7, 100, sehingga median adalah rata-rata dua elemen tengah, yaitu enam. Median menggambarkan gaji tipikal dengan jujur, sementara rata-rata 21,5 menyesatkan.\n\nInilah mengapa laporan pendapatan, harga rumah, dan waktu respons hampir selalu memakai median. Distribusi ini miring ke kanan, dengan ekor panjang nilai besar yang menarik rata-rata ke atas."
+            },
+            {
+              "type": "code_example",
+              "filename": "median_gaji.py",
+              "runnable": true,
+              "code": "import statistics\n\ng = [5, 6, 5, 7, 6, 100]\nprint(statistics.median(g), statistics.mean(g))",
+              "expected_output_note": "6.0 21.5",
+              "explanation": "Median enam mewakili gaji tipikal, sedangkan rata-rata dua puluh satu koma lima ditarik oleh satu nilai besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Modus\n\n**Modus** adalah nilai yang paling sering muncul. Ia satu-satunya ukuran pemusatan yang bermakna untuk data nominal, misalnya golongan darah terbanyak. Satu dataset bisa memiliki beberapa modus bila beberapa nilai sama-sama paling sering, disebut multimodus, dan bisa juga tidak berguna bila semua nilai unik.\n\nUntuk data kontinu, modus sendiri jarang bermakna karena nilai persisnya hampir tidak pernah berulang. Kita mengelompokkan data ke dalam kotak dan mencari kotak tersibuk, atau memakai puncak estimasi kepadatan kernel. Distribusi dengan dua puncak jelas menandakan dua subpopulasi yang bercampur."
+            }
+          ],
+          "quick_check": {
+            "question": "Median kokoh terhadap?",
+            "options": [
+              "Pencilan",
+              "Urutan"
+            ],
+            "answer_index": 0,
+            "explanation": "Hanya bergantung pada urutan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tiga ukuran pada distribusi miring",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tiga ukuran pada distribusi miring\n\nPada distribusi simetris ketiga ukuran berimpit. Pada distribusi miring ke kanan, urutannya biasanya modus lebih kecil dari median lebih kecil dari rata-rata. Ekor kanan menarik rata-rata ke atas, median setengah, dan modus tetap di puncak. Pada miring ke kiri urutannya terbalik.\n\nPerbedaan ketiganya adalah informasi: selisih besar antara rata-rata dan median menandakan kemiringan. Melaporkan ketiganya sekaligus memberi gambaran bentuk distribusi tanpa grafik."
+            },
+            {
+              "type": "code_example",
+              "filename": "tiga_ukuran.py",
+              "runnable": true,
+              "code": "import statistics\n\nd = [1, 1, 2, 2, 3, 4, 6, 9, 15, 30]\nprint(statistics.mean(d), statistics.median(d), statistics.multimode(d))",
+              "expected_output_note": "7.3 3.5 [1, 2]",
+              "explanation": "Rata-rata tujuh koma tiga jauh di atas median tiga koma lima, menandakan kemiringan ke kanan, dan ada dua modus yaitu satu dan dua."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kokohnya median\n\nSeberapa kokoh median? Ganti nilai terbesar tiga puluh menjadi tiga ribu. Rata-rata melonjak dari 7,3 menjadi 304,3, tetapi median tetap 3,5. Median baru berubah bila lebih dari separuh data terkontaminasi, disebut titik patah lima puluh persen, sedangkan rata-rata bisa dirusak oleh satu nilai saja.\n\nKekokohan ini penting pada data nyata yang jarang bersih. Tetapi median kurang efisien pada data normal bersih: ia memiliki varians sampling lebih besar daripada rata-rata, sehingga untuk data yang benar-benar simetris dan bersih rata-rata lebih presisi."
+            },
+            {
+              "type": "code_example",
+              "filename": "median_kokoh.py",
+              "runnable": true,
+              "code": "import statistics\n\nd = [1, 1, 2, 2, 3, 4, 6, 9, 15, 3000]\nprint(statistics.median(d), statistics.mean(d))",
+              "expected_output_note": "3.5 304.3",
+              "explanation": "Mengganti nilai terbesar dengan tiga ribu tidak mengubah median sama sekali, tetapi melonjakkan rata-rata."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rata-rata terpangkas\n\n**Rata-rata terpangkas** adalah kompromi: buang sebagian kecil nilai terkecil dan terbesar, misalnya sepuluh persen di tiap ujung, lalu hitung rata-rata sisanya. Ia lebih kokoh daripada rata-rata biasa tetapi memanfaatkan lebih banyak data daripada median. Penilaian olahraga seperti senam sering memakainya dengan membuang nilai tertinggi dan terendah juri.\n\nPemangkasan dua puluh persen sering dipakai sebagai default praktis. Dengan pangkas lima puluh persen di tiap ujung, rata-rata terpangkas menjadi median."
+            },
+            {
+              "type": "code_example",
+              "filename": "terpangkas.py",
+              "runnable": true,
+              "code": "def terpangkas(data, p):\n    k = int(p * len(data))\n    s = sorted(data)[k:len(data) - k]\n    return sum(s) / len(s)\n\nd = [1, 1, 2, 2, 3, 4, 6, 9, 15, 30]\nprint(terpangkas(d, 0.1))",
+              "expected_output_note": "5.25",
+              "explanation": "Membuang satu nilai terkecil dan satu terbesar menghasilkan rata-rata lima koma dua lima, di antara median dan rata-rata biasa."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Dua angka lebih jujur",
+              "markdown": "Laporkan rata-rata dan median bersama. Bila keduanya jauh berbeda, distribusi miring atau ada pencilan, dan median biasanya lebih mewakili kondisi tipikal."
+            }
+          ],
+          "quick_check": {
+            "question": "Pada distribusi miring kanan?",
+            "options": [
+              "Rata-rata di bawah median",
+              "Rata-rata di atas median"
+            ],
+            "answer_index": 1,
+            "explanation": "Ekor menarik rata-rata.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih ukuran dalam praktik",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih ukuran dalam praktik\n\nTidak ada ukuran yang selalu terbaik. Untuk anggaran dan total, rata-rata tepat karena ia mempertahankan jumlah. Untuk kondisi tipikal pada data miring seperti gaji, harga rumah, dan waktu muat halaman, median lebih jujur. Untuk kategori seperti merek favorit, hanya modus yang masuk akal. Bila ragu, hitung ketiganya lalu bandingkan.\n\nKebiasaan baik lain adalah menyebut ukuran yang dipakai secara eksplisit di laporan. Kalimat rata-rata gaji dua puluh satu juta dan median enam juta menceritakan dua kisah berbeda, dan pembaca berhak tahu kisah mana yang sedang diceritakan kepadanya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kuantil sebagai perluasan median\n\nMedian adalah kuantil ke-0,5. Kuantil lain seperti kuartil dan persentil membagi data pada proporsi berbeda: kuartil pertama memisahkan seperempat data terkecil, dan persentil sembilan puluh lima memisahkan lima persen terbesar. Karena kuantil juga bergantung pada urutan, ia sama kokohnya dengan median.\n\nBila posisi kuantil jatuh di antara dua elemen, kita menginterpolasi linear di antara keduanya. Beberapa pustaka memakai aturan interpolasi berbeda, sehingga hasil kecil bisa tidak sama antar alat. Pelajaran berikutnya membahas kuantil lebih dalam sebagai ukuran sebaran."
+            }
+          ],
+          "quick_check": {
+            "question": "Modus bermakna untuk?",
+            "options": [
+              "Semua skala termasuk nominal",
+              "Hanya rasio"
+            ],
+            "answer_index": 0,
+            "explanation": "Nilai terbanyak.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `median(data)` yang mengembalikan median.",
+          "note": "Untuk list kosong kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "def median(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "median([3, 1, 2, 5, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert median([3, 1, 2, 5, 4]) == 3"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "median([4, 1, 3, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert median([4, 1, 3, 2]) == 2.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "median([7])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert median([7]) == 7"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "median([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert median([]) is None"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "median([5, 5, 6, 6, 7, 100])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert median([5, 5, 6, 6, 7, 100]) == 6.0"
+              }
+            ]
+          },
+          "hint": "Urutkan lalu ambil elemen tengah atau rata-rata dua elemen tengah.",
+          "solution": "def median(data):\n    if not data:\n        return None\n    s = sorted(data)\n    n = len(s)\n    if n % 2:\n        return s[n // 2]\n    return (s[n // 2 - 1] + s[n // 2]) / 2",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-02-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_rata_terpangkas(data, p)` yang membuang `int(p * n)` nilai di tiap ujung data terurut lalu mengembalikan rata-rata sisanya dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def rata_rata_terpangkas(data, p):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_rata_terpangkas(d, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "d = [1, 1, 2, 2, 3, 4, 6, 9, 15, 30]\nassert rata_rata_terpangkas(d, 0.1) == 5.25"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_rata_terpangkas(d, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_terpangkas(d, 0) == 7.3"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_rata_terpangkas([1, 2, 3], 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_terpangkas([1, 2, 3], 0.5) == 2.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_rata_terpangkas([5], 0.2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_terpangkas([5], 0.2) == 5.0"
+              }
+            ]
+          },
+          "hint": "Hitung k dari p dan n, potong k elemen di tiap ujung data terurut, lalu rata-ratakan.",
+          "solution": "def rata_rata_terpangkas(data, p):\n    k = int(p * len(data))\n    s = sorted(data)[k:len(data) - k]\n    return round(sum(s) / len(s), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kuantil(data, q)` yang mengembalikan kuantil `q` (0 sampai 1) dengan interpolasi linear: posisi `(n - 1) * q` pada data terurut, interpolasikan antara dua elemen terdekat.",
+          "note": "Bulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def kuantil(data, q):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kuantil([1, 2, 3, 4, 5], 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil([1, 2, 3, 4, 5], 0.5) == 3.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kuantil([1, 2, 3, 4, 5], 0.25)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil([1, 2, 3, 4, 5], 0.25) == 2.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kuantil([1, 2, 3, 4, 5], 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil([1, 2, 3, 4, 5], 0.1) == 1.4"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kuantil([10, 20], 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil([10, 20], 0.5) == 15.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "kuantil([7], 0.3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil([7], 0.3) == 7.0"
+              }
+            ]
+          },
+          "hint": "Hitung posisi pecahan lalu interpolasikan antara elemen bawah dan atas.",
+          "solution": "def kuantil(data, q):\n    s = sorted(data)\n    p = (len(s) - 1) * q\n    lo = int(p)\n    hi = min(lo + 1, len(s) - 1)\n    return round(s[lo] + (s[hi] - s[lo]) * (p - lo), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ukuran_disarankan(data)` yang mengembalikan `'median'` bila `abs(rata-rata - median) > 0.1 * abs(median)` dan `'rata-rata'` bila tidak.",
+          "note": "Hitung median sendiri dari data terurut.",
+          "filename": "solution.py",
+          "starter_code": "def ukuran_disarankan(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ukuran_disarankan([1, 1, 2, 2, 3, 4, 6, 9, 15...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_disarankan([1, 1, 2, 2, 3, 4, 6, 9, 15, 30]) == 'median'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ukuran_disarankan([10, 11, 12, 13, 14])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_disarankan([10, 11, 12, 13, 14]) == 'rata-rata'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ukuran_disarankan([5, 5, 6, 6, 7, 100])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_disarankan([5, 5, 6, 6, 7, 100]) == 'median'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ukuran_disarankan([1, 2, 3, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_disarankan([1, 2, 3, 4, 5]) == 'rata-rata'"
+              }
+            ]
+          },
+          "hint": "Bandingkan selisih rata-rata dan median dengan sepuluh persen median.",
+          "solution": "def ukuran_disarankan(data):\n    s = sorted(data)\n    n = len(s)\n    med = s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2\n    rata = sum(s) / n\n    return 'median' if abs(rata - med) > 0.1 * abs(med) else 'rata-rata'",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Median kokoh terhadap?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pencilan",
+              "description": ""
+            },
+            {
+              "label": "Urutan",
+              "description": ""
+            },
+            {
+              "label": "Skala",
+              "description": ""
+            },
+            {
+              "label": "Ukuran",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ekstrem.",
+          "explanation": "Hanya bergantung pada urutan."
+        },
+        {
+          "q": "Pada distribusi miring kanan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata di bawah median",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata di atas median",
+              "description": ""
+            },
+            {
+              "label": "Sama",
+              "description": ""
+            },
+            {
+              "label": "Modus terbesar",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ekor.",
+          "explanation": "Ekor menarik rata-rata."
+        },
+        {
+          "q": "Modus bermakna untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Semua skala termasuk nominal",
+              "description": ""
+            },
+            {
+              "label": "Hanya rasio",
+              "description": ""
+            },
+            {
+              "label": "Hanya interval",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kategori.",
+          "explanation": "Nilai terbanyak."
+        },
+        {
+          "q": "Rata-rata terpangkas?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membuang nilai ekstrem lalu merata-ratakan",
+              "description": ""
+            },
+            {
+              "label": "Membuang median",
+              "description": ""
+            },
+            {
+              "label": "Mengalikan",
+              "description": ""
+            },
+            {
+              "label": "Menjumlah",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pangkas.",
+          "explanation": "Kompromi."
+        },
+        {
+          "q": "Median data genap?",
+          "code": null,
+          "options": [
+            {
+              "label": "Elemen tengah",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata dua elemen tengah",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata semua",
+              "description": ""
+            },
+            {
+              "label": "Maks",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Genap.",
+          "explanation": "Dua tengah."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai rata-rata untuk data berekor panjang tanpa melihat median. Lebih baik: Laporkan median bersama rata-rata.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai rata-rata untuk data berekor panjang tanpa melihat median.",
+          "fix": "Laporkan median bersama rata-rata."
+        },
+        {
+          "mistake": "Mengira satu dataset hanya punya satu modus.",
+          "fix": "Bisa multimodus atau tak ada."
+        },
+        {
+          "mistake": "Memakai median pada data nominal.",
+          "fix": "Median butuh urutan, pakai modus."
+        }
+      ],
+      "summary": [
+        "Median kokoh terhadap pencilan dan bermakna untuk data ordinal.",
+        "Modus satu-satunya pusat untuk nominal.",
+        "Selisih rata-rata dan median menandakan kemiringan.",
+        "Rata-rata terpangkas adalah kompromi kokoh dan efisien."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Median, modus, dan rata-rata terpangkas"
+          },
+          {
+            "type": "text",
+            "source": "Data ganjil memberi elemen tengah tiga, sedangkan data genap memberi rata-rata dua elemen tengah yaitu dua koma lima."
+          },
+          {
+            "type": "code",
+            "source": "def median(d):\n    s = sorted(d)\n    n = len(s)\n    if n % 2:\n        return s[n // 2]\n    return (s[n // 2 - 1] + s[n // 2]) / 2\n\nprint(median([3, 1, 2, 5, 4]), median([4, 1, 3, 2]))"
+          },
+          {
+            "type": "text",
+            "source": "Median enam mewakili gaji tipikal, sedangkan rata-rata dua puluh satu koma lima ditarik oleh satu nilai besar."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\ng = [5, 6, 5, 7, 6, 100]\nprint(statistics.median(g), statistics.mean(g))"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata tujuh koma tiga jauh di atas median tiga koma lima, menandakan kemiringan ke kanan, dan ada dua modus yaitu satu dan dua."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\nd = [1, 1, 2, 2, 3, 4, 6, 9, 15, 30]\nprint(statistics.mean(d), statistics.median(d), statistics.multimode(d))"
+          },
+          {
+            "type": "text",
+            "source": "Mengganti nilai terbesar dengan tiga ribu tidak mengubah median sama sekali, tetapi melonjakkan rata-rata."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\nd = [1, 1, 2, 2, 3, 4, 6, 9, 15, 3000]\nprint(statistics.median(d), statistics.mean(d))"
+          },
+          {
+            "type": "text",
+            "source": "Membuang satu nilai terkecil dan satu terbesar menghasilkan rata-rata lima koma dua lima, di antara median dan rata-rata biasa."
+          },
+          {
+            "type": "code",
+            "source": "def terpangkas(data, p):\n    k = int(p * len(data))\n    s = sorted(data)[k:len(data) - k]\n    return sum(s) / len(s)\n\nd = [1, 1, 2, 2, 3, 4, 6, 9, 15, 30]\nprint(terpangkas(d, 0.1))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A5-02-3",
+      "title": "Rata-rata geometrik, harmonik, dan bergerak",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menghitung rata-rata geometrik untuk faktor pertumbuhan",
+        "Menghitung rata-rata harmonik untuk rasio dan laju",
+        "Menghitung rata-rata bergerak sederhana dan eksponensial",
+        "Menghitung laju pertumbuhan tahunan majemuk"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Tidak semua rata-rata aritmetika",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tidak semua rata-rata aritmetika\n\nRata-rata aritmetika cocok untuk besaran yang dijumlahkan. Tetapi untuk besaran yang dikalikan, seperti pertumbuhan, atau besaran berupa laju dan rasio, rata-rata aritmetika memberi jawaban yang salah. Ada dua rata-rata lain yang cocok untuk kasus itu: geometrik dan harmonik.\n\nKetiganya sebenarnya satu keluarga, rata-rata pangkat, yang berbeda dalam transformasi sebelum dirata-ratakan. Memilih yang tepat adalah soal menentukan besaran mana yang seharusnya bersifat aditif dalam masalahmu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rata-rata geometrik\n\n**Rata-rata geometrik** dari `n` bilangan positif adalah akar pangkat `n` dari hasil kalinya. Ekuivalen, ia adalah eksponen dari rata-rata logaritma. Ia tepat untuk faktor pertumbuhan: bila investasi tumbuh 10 persen, 20 persen, lalu turun 10 persen, faktornya 1,1, 1,2, dan 0,9. Faktor tahunan tunggal yang menghasilkan total pertumbuhan sama adalah rata-rata geometrik, sekitar 1,0591, bukan rata-rata aritmetika 1,0667.\n\nRata-rata aritmetika selalu melebihi geometrik, sehingga memakainya untuk pertumbuhan majemuk membesar-besarkan hasil jangka panjang."
+            },
+            {
+              "type": "code_example",
+              "filename": "rata_geometrik.py",
+              "runnable": true,
+              "code": "import math\n\ng = [1.1, 1.2, 0.9]\ngm = math.exp(sum(math.log(x) for x in g) / len(g))\nprint(round(gm, 4), round(sum(g) / len(g), 4))",
+              "expected_output_note": "1.0591 1.0667",
+              "explanation": "Faktor pertumbuhan majemuk rata-rata adalah satu koma nol lima sembilan satu, lebih kecil dari rata-rata aritmetika."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rata-rata harmonik\n\n**Rata-rata harmonik** adalah kebalikan dari rata-rata kebalikan: `n / jumlah(1/x)`. Ia tepat untuk laju ketika jarak atau pekerjaan yang ditempuh sama. Bila kamu menempuh jarak sama dengan kecepatan 60 lalu 40 kilometer per jam, kecepatan rata-rata keseluruhan bukan 50, melainkan 48, harmonik dari keduanya. Alasannya, kamu menghabiskan lebih lama waktu pada kecepatan lebih rendah.\n\nRata-rata harmonik juga muncul pada F1 score, yang merupakan harmonik presisi dan recall. Karena ia condong ke nilai kecil, skor tinggi hanya diperoleh bila kedua komponen sama-sama tinggi."
+            },
+            {
+              "type": "code_example",
+              "filename": "rata_harmonik.py",
+              "runnable": true,
+              "code": "print(round(2 / (1 / 60 + 1 / 40), 4))",
+              "expected_output_note": "48.0",
+              "explanation": "Kecepatan rata-rata untuk jarak sama pada enam puluh dan empat puluh adalah empat puluh delapan."
+            }
+          ],
+          "quick_check": {
+            "question": "Rata-rata geometrik cocok untuk?",
+            "options": [
+              "Faktor pertumbuhan",
+              "Nominal"
+            ],
+            "answer_index": 0,
+            "explanation": "Besaran yang dikalikan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Urutan tiga rata-rata",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Urutan tiga rata-rata\n\nUntuk bilangan positif, selalu berlaku `harmonik <= geometrik <= aritmetika`, dengan kesamaan hanya bila semua bilangan sama. Untuk data satu, empat, dan enam belas, aritmetika tujuh, geometrik empat, dan harmonik sekitar 2,29. Semakin besar sebaran, semakin jauh jarak antar ketiganya.\n\nSelisih ini sendiri berguna sebagai ukuran sebaran relatif. Memahami urutan ini membantu menyadari mengapa memakai rata-rata yang salah secara sistematis membesar-besarkan atau mengecilkan hasil."
+            },
+            {
+              "type": "code_example",
+              "filename": "urutan_rata.py",
+              "runnable": true,
+              "code": "import math\n\nd = [1, 4, 16]\nam = sum(d) / 3\ngm = math.exp(sum(math.log(x) for x in d) / 3)\nhm = 3 / sum(1 / x for x in d)\nprint(am, round(gm, 4), round(hm, 4))",
+              "expected_output_note": "7.0 4.0 2.2857",
+              "explanation": "Rata-rata aritmetika tujuh, geometrik empat, dan harmonik sekitar dua koma dua sembilan menunjukkan urutan yang selalu berlaku."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rata-rata bergerak\n\nUntuk data deret waktu yang berfluktuasi, kita meratakan derau dengan **rata-rata bergerak**: rata-rata `w` nilai terakhir pada tiap titik. Jendela lebih lebar memberi kurva lebih mulus tetapi tertinggal lebih lama menanggapi perubahan nyata. Pada awal deret, belum ada cukup data sehingga hasilnya biasanya dimulai pada titik ke-`w`.\n\nRata-rata bergerak eksponensial memberi bobot lebih pada data baru dengan rumus `ema = alpha * x + (1 - alpha) * ema_sebelumnya`. Ia tidak memerlukan jendela tetap dan memperbarui hanya dengan satu angka, sehingga sering dipakai pada pemantauan dan optimizer momentum."
+            },
+            {
+              "type": "code_example",
+              "filename": "rata_bergerak.py",
+              "runnable": true,
+              "code": "x = [1, 2, 3, 4, 5, 6]\nw = 3\nprint([sum(x[i:i + w]) / w for i in range(len(x) - w + 1)])\nema = [10.0]\nfor v in [20, 30]:\n    ema.append(0.5 * v + 0.5 * ema[-1])\nprint(ema)",
+              "expected_output_note": "[2.0, 3.0, 4.0, 5.0]\n[10.0, 15.0, 22.5]",
+              "explanation": "Jendela tiga menghasilkan empat titik mulus, dan rata-rata eksponensial bergerak menuju nilai baru secara bertahap."
+            },
+            {
+              "type": "text",
+              "markdown": "## Laju pertumbuhan majemuk\n\nLaju pertumbuhan tahunan majemuk atau CAGR menyatakan pertumbuhan rata-rata per periode: `(akhir / awal)^(1/tahun) - 1`. Ia adalah rata-rata geometrik faktor pertumbuhan dikurangi satu. Bila nilai tumbuh dari 100 menjadi 150 dalam tiga tahun, CAGR sekitar 14,47 persen, bukan 16,67 persen yang didapat dari membagi total pertumbuhan 50 persen dengan tiga.\n\nCAGR menyembunyikan fluktuasi di tengah periode, jadi dua jalur yang sangat berbeda bisa memiliki CAGR sama. Laporkan jalur lengkap bila volatilitas penting."
+            },
+            {
+              "type": "code_example",
+              "filename": "cagr.py",
+              "runnable": true,
+              "code": "print(round(1.5 ** (1 / 3) - 1, 4))",
+              "expected_output_note": "0.1447",
+              "explanation": "Pertumbuhan lima puluh persen dalam tiga tahun setara dengan sekitar empat belas koma empat tujuh persen per tahun."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Pertumbuhan berlipat",
+              "markdown": "Jangan merata-ratakan persentase pertumbuhan secara aritmetika. Pakai rata-rata geometrik faktor pertumbuhan, yaitu satu ditambah laju."
+            }
+          ],
+          "quick_check": {
+            "question": "Rata-rata harmonik cocok untuk?",
+            "options": [
+              "Pertumbuhan",
+              "Laju dengan jarak sama"
+            ],
+            "answer_index": 1,
+            "explanation": "Kebalikan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih rata-rata yang tepat",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih rata-rata yang tepat\n\nPertanyaan kuncinya adalah besaran mana yang seharusnya aditif. Bila total yang bermakna, pakai aritmetika. Bila hasil kali yang bermakna, seperti pertumbuhan berlipat, pakai geometrik. Bila yang dijumlahkan adalah waktu atau biaya per satuan, seperti kecepatan dengan jarak sama, pakai harmonik. Salah memilih menghasilkan angka yang tampak wajar tetapi keliru secara sistematis.\n\nSatu cara memeriksa adalah menghitung ulang total dari rata-rata itu. Bila memakai faktor geometrik tahunan menghasilkan nilai akhir yang sama dengan jalur nyata, pilihanmu tepat. Bila tidak, ada yang salah dalam asumsi tentang apa yang dijumlahkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rata-rata bergerak dalam praktik\n\nRata-rata bergerak dipakai di keuangan, epidemiologi, dan pemantauan sistem untuk melihat tren di balik derau harian. Kasus yang sering dijumpai adalah rata-rata tujuh hari untuk kasus harian, yang meredam pola akhir pekan. Pilih lebar jendela sesuai siklus alami data agar pola berulang hilang dari kurva.\n\nIngat bahwa rata-rata bergerak mewarisi kelemahan rata-rata biasa: satu pencilan menodai semua jendela yang memuatnya. Untuk data berpencilan, median bergerak lebih kokoh meski sedikit lebih mahal dihitung."
+            }
+          ],
+          "quick_check": {
+            "question": "Urutan benar?",
+            "options": [
+              "H <= G <= A",
+              "A <= G <= H"
+            ],
+            "answer_index": 0,
+            "explanation": "Selalu untuk positif.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `rata_geometrik(data)` yang mengembalikan rata-rata geometrik dibulatkan 4 desimal.",
+          "note": "Bila ada nilai tidak positif kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef rata_geometrik(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_geometrik([1, 4, 16])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_geometrik([1, 4, 16]) == 4.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_geometrik([2, 8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_geometrik([2, 8]) == 4.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_geometrik([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_geometrik([5]) == 5.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_geometrik([1.1, 1.2, 0.9])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_geometrik([1.1, 1.2, 0.9]) == 1.0591"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "rata_geometrik([0, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_geometrik([0, 1]) is None"
+              }
+            ]
+          },
+          "hint": "Ambil eksponen dari rata-rata logaritma setelah memeriksa semua nilai positif.",
+          "solution": "import math\n\ndef rata_geometrik(data):\n    if any(x <= 0 for x in data):\n        return None\n    return round(math.exp(sum(math.log(x) for x in data) / len(data)), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-02-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_harmonik(data)` yang mengembalikan `n / jumlah(1/x)` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def rata_harmonik(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_harmonik([60, 40])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_harmonik([60, 40]) == 48.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_harmonik([1, 4, 16])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_harmonik([1, 4, 16]) == 2.2857"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_harmonik([2, 2, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_harmonik([2, 2, 2]) == 2.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_harmonik([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_harmonik([5]) == 5.0"
+              }
+            ]
+          },
+          "hint": "Bagi banyak data dengan jumlah kebalikan tiap nilai.",
+          "solution": "def rata_harmonik(data):\n    return round(len(data) / sum(1 / x for x in data), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_bergerak(data, w)` yang mengembalikan list rata-rata dari tiap jendela `w` elemen berurutan, dibulatkan 4 desimal.",
+          "note": "Bila `w` melebihi panjang data kembalikan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "def rata_bergerak(data, w):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_bergerak([1, 2, 3, 4, 5, 6], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_bergerak([1, 2, 3, 4, 5, 6], 3) == [2.0, 3.0, 4.0, 5.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_bergerak([1, 2, 3], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_bergerak([1, 2, 3], 1) == [1.0, 2.0, 3.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_bergerak([1, 2], 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_bergerak([1, 2], 5) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_bergerak([10, 20], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_bergerak([10, 20], 2) == [15.0]"
+              }
+            ]
+          },
+          "hint": "Geser jendela sepanjang data dan rata-ratakan tiap jendela.",
+          "solution": "def rata_bergerak(data, w):\n    return [round(sum(data[i:i + w]) / w, 4) for i in range(len(data) - w + 1)]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `cagr(awal, akhir, tahun)` yang mengembalikan `(akhir / awal) ** (1 / tahun) - 1` dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def cagr(awal, akhir, tahun):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "cagr(100, 150, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cagr(100, 150, 3) == 0.1447"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "cagr(100, 100, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cagr(100, 100, 5) == 0.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "cagr(100, 200, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cagr(100, 200, 1) == 1.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "cagr(200, 100, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cagr(200, 100, 2) == -0.2929"
+              }
+            ]
+          },
+          "hint": "Hitung rasio akhir terhadap awal, pangkatkan satu per tahun, lalu kurangi satu.",
+          "solution": "def cagr(awal, akhir, tahun):\n    return round((akhir / awal) ** (1 / tahun) - 1, 4) + 0.0",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Rata-rata geometrik cocok untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Faktor pertumbuhan",
+              "description": ""
+            },
+            {
+              "label": "Nominal",
+              "description": ""
+            },
+            {
+              "label": "Jumlah",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Majemuk.",
+          "explanation": "Besaran yang dikalikan."
+        },
+        {
+          "q": "Rata-rata harmonik cocok untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Laju dengan jarak sama",
+              "description": ""
+            },
+            {
+              "label": "Pertumbuhan",
+              "description": ""
+            },
+            {
+              "label": "Nominal",
+              "description": ""
+            },
+            {
+              "label": "Jumlah",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kecepatan.",
+          "explanation": "Kebalikan."
+        },
+        {
+          "q": "Urutan benar?",
+          "code": null,
+          "options": [
+            {
+              "label": "H <= G <= A",
+              "description": ""
+            },
+            {
+              "label": "A <= G <= H",
+              "description": ""
+            },
+            {
+              "label": "G <= A <= H",
+              "description": ""
+            },
+            {
+              "label": "H >= A",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Harmonik terkecil.",
+          "explanation": "Selalu untuk positif."
+        },
+        {
+          "q": "Jendela lebar pada rata-rata bergerak?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lebih mulus dan lebih tertinggal",
+              "description": ""
+            },
+            {
+              "label": "Lebih kasar",
+              "description": ""
+            },
+            {
+              "label": "Tanpa efek",
+              "description": ""
+            },
+            {
+              "label": "Lebih cepat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Mulus.",
+          "explanation": "Trade-off."
+        },
+        {
+          "q": "CAGR memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata geometrik",
+              "description": ""
+            },
+            {
+              "label": "Aritmetika",
+              "description": ""
+            },
+            {
+              "label": "Harmonik",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Per tahun.",
+          "explanation": "Pertumbuhan majemuk."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Merata-ratakan persentase pertumbuhan secara aritmetika. Lebih baik: Pakai rata-rata geometrik faktor pertumbuhan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Merata-ratakan persentase pertumbuhan secara aritmetika.",
+          "fix": "Pakai rata-rata geometrik faktor pertumbuhan."
+        },
+        {
+          "mistake": "Merata-ratakan kecepatan dengan aritmetika untuk jarak sama.",
+          "fix": "Pakai rata-rata harmonik."
+        },
+        {
+          "mistake": "Memakai jendela bergerak lebar tanpa menyadari ketertinggalan.",
+          "fix": "Pilih lebar sesuai kecepatan perubahan."
+        }
+      ],
+      "summary": [
+        "Geometrik untuk faktor pertumbuhan, harmonik untuk laju.",
+        "Harmonik <= geometrik <= aritmetika untuk bilangan positif.",
+        "Rata-rata bergerak meratakan derau dengan trade-off ketertinggalan.",
+        "CAGR adalah rata-rata geometrik pertumbuhan dikurangi satu."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Rata-rata geometrik, harmonik, dan bergerak"
+          },
+          {
+            "type": "text",
+            "source": "Faktor pertumbuhan majemuk rata-rata adalah satu koma nol lima sembilan satu, lebih kecil dari rata-rata aritmetika."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ng = [1.1, 1.2, 0.9]\ngm = math.exp(sum(math.log(x) for x in g) / len(g))\nprint(round(gm, 4), round(sum(g) / len(g), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Kecepatan rata-rata untuk jarak sama pada enam puluh dan empat puluh adalah empat puluh delapan."
+          },
+          {
+            "type": "code",
+            "source": "print(round(2 / (1 / 60 + 1 / 40), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata aritmetika tujuh, geometrik empat, dan harmonik sekitar dua koma dua sembilan menunjukkan urutan yang selalu berlaku."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nd = [1, 4, 16]\nam = sum(d) / 3\ngm = math.exp(sum(math.log(x) for x in d) / 3)\nhm = 3 / sum(1 / x for x in d)\nprint(am, round(gm, 4), round(hm, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Jendela tiga menghasilkan empat titik mulus, dan rata-rata eksponensial bergerak menuju nilai baru secara bertahap."
+          },
+          {
+            "type": "code",
+            "source": "x = [1, 2, 3, 4, 5, 6]\nw = 3\nprint([sum(x[i:i + w]) / w for i in range(len(x) - w + 1)])\nema = [10.0]\nfor v in [20, 30]:\n    ema.append(0.5 * v + 0.5 * ema[-1])\nprint(ema)"
+          },
+          {
+            "type": "text",
+            "source": "Pertumbuhan lima puluh persen dalam tiga tahun setara dengan sekitar empat belas koma empat tujuh persen per tahun."
+          },
+          {
+            "type": "code",
+            "source": "print(round(1.5 ** (1 / 3) - 1, 4))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

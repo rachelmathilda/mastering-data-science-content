@@ -1,0 +1,1524 @@
+{
+  "schema_version": 2,
+  "course_id": "A2",
+  "module_no": 2,
+  "title": "Matriks dan operasi dasar",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Mengoperasikan matriks dengan penjumlahan, transpos, dan perkalian",
+    "Menafsirkan matriks sebagai transformasi dan data",
+    "Mengenali matriks khusus dan memakainya dalam kovariansi dan jarak"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A2-02-1",
+    "exercise_id": "A2-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def pusatkan(A):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A2-02-1",
+      "title": "Matriks, bentuk, dan operasi per elemen",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Memahami matriks sebagai tabel angka dengan baris dan kolom",
+        "Mengakses elemen, baris, kolom, dan irisan matriks",
+        "Melakukan penjumlahan, pengurangan, dan perkalian skalar matriks",
+        "Menghitung transpos dan memahami bentuk matriks data"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Matriks sebagai tabel angka",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Matriks sebagai tabel angka\n\n**Matriks** adalah susunan angka dalam baris dan kolom. Matriks dengan `m` baris dan `n` kolom disebut matriks berukuran `m x n`. Dalam data science, matriks adalah bentuk paling alami untuk dataset: tiap baris adalah satu pengamatan (misalnya satu pelanggan) dan tiap kolom adalah satu fitur. Dataset dengan seribu pelanggan dan lima fitur adalah matriks `1000 x 5`.\n\nElemen matriks ditulis `A[i, j]` untuk baris `i` dan kolom `j`. Di Python indeks dimulai dari nol, sedangkan di buku matematika biasanya dari satu. Hati-hati dengan perbedaan ini saat memindahkan rumus ke kode.\n\nMatriks juga bisa dipandang sebagai kumpulan vektor: tiap baris adalah vektor, atau tiap kolom adalah vektor. Kedua sudut pandang berguna. Pandangan baris menekankan pengamatan, pandangan kolom menekankan fitur."
+            },
+            {
+              "type": "code_example",
+              "filename": "matriks_dasar.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[1, 2, 3],\n              [4, 5, 6]])\nprint(A.shape, A.ndim, A.size)\nprint(A[0, 1], A[1, 2], A[-1, -1])\nprint(A[0].tolist(), A[:, 1].tolist())\nprint(A[:, 1:].tolist())\nprint(A[1, :2].tolist())\ndata = np.zeros((1000, 5))\nprint(data.shape)",
+              "expected_output_note": "(2, 3) 2 6\n2 6 6\n[1, 2, 3] [2, 5]\n[[2, 3], [5, 6]]\n[4, 5]\n(1000, 5)",
+              "explanation": "`shape` memberi baris dan kolom. Indeks `A[i, j]` mengakses satu elemen, `A[i]` satu baris, dan `A[:, j]` satu kolom."
+            },
+            {
+              "type": "text",
+              "markdown": "## Operasi per elemen\n\nDua matriks berukuran sama dapat dijumlahkan dan dikurangkan elemen demi elemen. Perkalian skalar mengalikan setiap elemen. Operasi ini persis seperti pada vektor, hanya saja kini ada dua indeks. Matriks yang ukurannya berbeda tidak bisa dijumlahkan, dan percobaan melakukannya menimbulkan galat.\n\nPada NumPy, operator `*` mengalikan per elemen, dikenal sebagai **hasil kali Hadamard**. Ini bukan perkalian matriks, yang memakai operator `@` dan dibahas di pelajaran berikutnya. Mencampur keduanya adalah kesalahan pemula yang sangat umum dan menghasilkan angka salah tanpa pesan galat bila ukurannya kebetulan cocok.\n\nNumPy juga mendukung *broadcasting*, yaitu perluasan otomatis ukuran yang lebih kecil agar cocok dengan yang lebih besar. Misalnya menambahkan vektor ke setiap baris matriks. Fitur ini sangat praktis tetapi perlu dipahami agar tidak menghasilkan hasil tak terduga."
+            },
+            {
+              "type": "code_example",
+              "filename": "operasi_elemen.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[1, 2], [3, 4]])\nB = np.array([[10, 20], [30, 40]])\nprint((A + B).tolist(), (B - A).tolist())\nprint((2 * A).tolist(), (A * B).tolist())\nprint((A ** 2).tolist())\nv = np.array([100, 200])\nprint((A + v).tolist())\ntry:\n    A + np.ones((3, 2))\nexcept ValueError:\n    print(\"ukuran tidak cocok\")",
+              "expected_output_note": "[[11, 22], [33, 44]] [[9, 18], [27, 36]]\n[[2, 4], [6, 8]] [[10, 40], [90, 160]]\n[[1, 4], [9, 16]]\n[[101, 202], [103, 204]]\nukuran tidak cocok",
+              "explanation": "Operasi per elemen berlaku pada matriks seukuran. Broadcasting menambahkan vektor ke setiap baris, sedangkan ukuran yang tidak cocok menimbulkan `ValueError`."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Bintang bukan perkalian matriks",
+              "markdown": "Pada NumPy, `A * B` adalah perkalian per elemen, bukan perkalian matriks. Untuk perkalian matriks sungguhan gunakan `A @ B` atau `np.matmul(A, B)`."
+            }
+          ],
+          "quick_check": {
+            "question": "Ukuran matriks dengan 3 baris dan 5 kolom?",
+            "options": [
+              "3 x 5",
+              "5 x 3"
+            ],
+            "answer_index": 0,
+            "explanation": "Ditulis baris x kolom.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Transpos",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Transpos\n\n**Transpos** matriks `A`, ditulis `A^T`, menukar baris dengan kolom: elemen `A[i, j]` menjadi `A^T[j, i]`. Matriks `2 x 3` menjadi `3 x 2`. Transpos dari transpos mengembalikan matriks asal, dan transpos dari jumlah sama dengan jumlah transpos.\n\nTranspos sangat sering dipakai dalam rumus statistik dan pembelajaran mesin. Misalnya matriks kovariansi data `X` yang sudah dipusatkan adalah `X^T X` dibagi jumlah pengamatan dikurangi satu. Persamaan normal regresi, `X^T X b = X^T y`, juga memakainya. Karena itu kamu perlu nyaman dengan ukuran: bila `X` berukuran `n x p`, maka `X^T` berukuran `p x n` dan `X^T X` berukuran `p x p`.\n\nPada NumPy, transpos ditulis `A.T`. Operasi ini sangat murah karena tidak menyalin data, hanya mengubah cara membaca memori."
+            },
+            {
+              "type": "code_example",
+              "filename": "transpos.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[1, 2, 3], [4, 5, 6]])\nprint(A.T.tolist(), A.T.shape)\nprint(np.array_equal(A.T.T, A))\nB = np.array([[1, 0], [2, 1], [0, 3]])\nprint(np.array_equal((A + A).T, A.T + A.T))\nX = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])\nprint((X.T @ X).tolist(), (X.T @ X).shape)",
+              "expected_output_note": "[[1, 4], [2, 5], [3, 6]] (3, 2)\nTrue\nTrue\n[[35.0, 44.0], [44.0, 56.0]] (2, 2)",
+              "explanation": "Transpos menukar baris dan kolom, dan transpos ganda mengembalikan matriks asal. `X.T @ X` selalu persegi dengan ukuran sama dengan jumlah fitur."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil transpos matriks 2 x 3?",
+            "options": [
+              "2 x 3",
+              "3 x 2"
+            ],
+            "answer_index": 1,
+            "explanation": "Baris dan kolom bertukar.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Matriks data dan statistik per kolom",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Matriks data dan statistik per kolom\n\nSetelah dataset menjadi matriks, banyak ringkasan menjadi operasi sepanjang satu sumbu. Rata-rata tiap kolom (fitur) dihitung dengan `A.mean(axis=0)`, sedangkan rata-rata tiap baris (pengamatan) dengan `A.mean(axis=1)`. Argumen `axis` menyatakan sumbu yang dikurangi: `axis=0` menyusut menurut baris menghasilkan satu nilai per kolom.\n\nPemusatan data, yaitu mengurangkan rata-rata kolom dari tiap kolom, dilakukan dengan `A - A.mean(axis=0)` berkat broadcasting. Langkah ini hampir selalu menjadi tahap awal sebelum PCA dan menghitung kovariansi.\n\nIngat arti sumbu dengan benar karena kebalikannya menghasilkan angka yang masuk akal tetapi salah. Cara mengingatnya: sumbu yang kamu sebut adalah sumbu yang hilang dari hasil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa bentuk sebagai kebiasaan\n\nKesalahan paling umum saat bekerja dengan matriks bukan salah rumus, melainkan salah bentuk. Biasakan mencetak `shape` setelah setiap langkah penting, terutama setelah transpos, irisan, dan perkalian. Irisan satu baris seperti `A[0]` menghasilkan array satu dimensi berbentuk `(n,)`, sedangkan `A[0:1]` menghasilkan matriks berbentuk `(1, n)`. Keduanya berperilaku berbeda pada perkalian dan broadcasting.\n\nBila kamu butuh mengubah vektor menjadi kolom, gunakan `v.reshape(-1, 1)` atau `v[:, None]`. Tanda minus satu berarti biarkan NumPy menghitung ukurannya. Kebiasaan memeriksa bentuk akan menghemat banyak jam pencarian galat, dan akan terus berguna saat kamu bekerja dengan tensor di pembelajaran mendalam."
+            }
+          ],
+          "quick_check": {
+            "question": "Operator * pada array NumPy melakukan?",
+            "options": [
+              "Perkalian per elemen",
+              "Perkalian matriks"
+            ],
+            "answer_index": 0,
+            "explanation": "Itu hasil kali Hadamard.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_matriks(A, B)` yang menjumlahkan dua matriks (list of list) berukuran sama dan mengembalikan matriks baru.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def jumlah_matriks(A, B):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_matriks([[1, 2], [3, 4]], [[10, 20], [...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_matriks([[1, 2], [3, 4]], [[10, 20], [30, 40]]) == [[11, 22], [33, 44]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_matriks([[0]], [[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_matriks([[0]], [[5]]) == [[5]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_matriks([], [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_matriks([], []) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_matriks([[1, 2, 3]], [[1, 1, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_matriks([[1, 2, 3]], [[1, 1, 1]]) == [[2, 3, 4]]"
+              }
+            ]
+          },
+          "hint": "Gunakan comprehension bersarang dengan zip pada baris dan pada elemen.",
+          "solution": "def jumlah_matriks(A, B):\n    return [[x + y for x, y in zip(a, b)] for a, b in zip(A, B)]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-02-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `transpos(A)` yang mengembalikan transpos matriks (list of list).",
+          "note": "Matriks kosong menghasilkan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "def transpos(A):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "transpos([[1, 2, 3], [4, 5, 6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transpos([[1, 2, 3], [4, 5, 6]]) == [[1, 4], [2, 5], [3, 6]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "transpos([[1], [2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transpos([[1], [2]]) == [[1, 2]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "transpos([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transpos([]) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "transpos(transpos([[1, 2], [3, 4]]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert transpos(transpos([[1, 2], [3, 4]])) == [[1, 2], [3, 4]]"
+              }
+            ]
+          },
+          "hint": "zip(*A) mengelompokkan kolom, ubah tiap tuple menjadi list.",
+          "solution": "def transpos(A):\n    return [list(k) for k in zip(*A)]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_kolom(A)` yang mengembalikan list rata-rata tiap kolom matriks (list of list, tidak kosong).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def rata_kolom(A):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_kolom([[1, 2], [3, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_kolom([[1, 2], [3, 4]]) == [2.0, 3.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_kolom([[5, 10, 15]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_kolom([[5, 10, 15]]) == [5.0, 10.0, 15.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_kolom([[1], [2], [6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_kolom([[1], [2], [6]]) == [3.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_kolom([[0, 0], [0, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_kolom([[0, 0], [0, 0]]) == [0.0, 0.0]"
+              }
+            ]
+          },
+          "hint": "Telusuri kolom lewat zip(*A) dan rata-ratakan.",
+          "solution": "def rata_kolom(A):\n    return [sum(k) / len(k) for k in zip(*A)]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pusatkan(A)` yang mengurangkan rata-rata tiap kolom dari kolom itu dan mengembalikan matriks baru (list of list) dengan nilai dibulatkan 4 desimal.",
+          "note": "Matriks tidak kosong.",
+          "filename": "solution.py",
+          "starter_code": "def pusatkan(A):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pusatkan([[1, 2], [3, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pusatkan([[1, 2], [3, 4]]) == [[-1.0, -1.0], [1.0, 1.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pusatkan([[5, 5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pusatkan([[5, 5]]) == [[0.0, 0.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pusatkan([[1], [2], [6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pusatkan([[1], [2], [6]]) == [[-2.0], [-1.0], [3.0]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pusatkan([[1, 10], [2, 20], [3, 30]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pusatkan([[1, 10], [2, 20], [3, 30]]) == [[-1.0, -10.0], [0.0, 0.0], [1.0, 10.0]]"
+              }
+            ]
+          },
+          "hint": "Hitung rata-rata kolom lebih dulu lalu kurangkan dari tiap elemen.",
+          "solution": "def pusatkan(A):\n    n = len(A)\n    rata = [sum(k) / n for k in zip(*A)]\n    return [[round(x - m, 4) for x, m in zip(baris, rata)] for baris in A]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Ukuran matriks dengan 3 baris dan 5 kolom?",
+          "code": null,
+          "options": [
+            {
+              "label": "5 x 3",
+              "description": ""
+            },
+            {
+              "label": "3 x 5",
+              "description": ""
+            },
+            {
+              "label": "15",
+              "description": ""
+            },
+            {
+              "label": "8",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Baris dulu.",
+          "explanation": "Ditulis baris x kolom."
+        },
+        {
+          "q": "Hasil transpos matriks 2 x 3?",
+          "code": null,
+          "options": [
+            {
+              "label": "2 x 3",
+              "description": ""
+            },
+            {
+              "label": "3 x 2",
+              "description": ""
+            },
+            {
+              "label": "6 x 1",
+              "description": ""
+            },
+            {
+              "label": "1 x 6",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tukar ukuran.",
+          "explanation": "Baris dan kolom bertukar."
+        },
+        {
+          "q": "Operator * pada array NumPy melakukan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Perkalian matriks",
+              "description": ""
+            },
+            {
+              "label": "Perkalian per elemen",
+              "description": ""
+            },
+            {
+              "label": "Dot product",
+              "description": ""
+            },
+            {
+              "label": "Pangkat",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Per elemen.",
+          "explanation": "Itu hasil kali Hadamard."
+        },
+        {
+          "q": "Argumen untuk rata-rata tiap kolom?",
+          "code": null,
+          "options": [
+            {
+              "label": "axis=0",
+              "description": ""
+            },
+            {
+              "label": "axis=1",
+              "description": ""
+            },
+            {
+              "label": "axis=2",
+              "description": ""
+            },
+            {
+              "label": "axis=-0",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sumbu yang hilang.",
+          "explanation": "axis=0 menyusutkan baris sehingga tersisa satu nilai per kolom."
+        },
+        {
+          "q": "Ukuran X.T @ X bila X berukuran n x p?",
+          "code": null,
+          "options": [
+            {
+              "label": "n x n",
+              "description": ""
+            },
+            {
+              "label": "p x p",
+              "description": ""
+            },
+            {
+              "label": "n x p",
+              "description": ""
+            },
+            {
+              "label": "p x n",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dalam harus cocok.",
+          "explanation": "(p x n) kali (n x p) menghasilkan p x p."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai * untuk perkalian matriks pada NumPy. Lebih baik: Pakai @ untuk perkalian matriks.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai * untuk perkalian matriks pada NumPy.",
+          "fix": "Pakai @ untuk perkalian matriks."
+        },
+        {
+          "mistake": "Menjumlahkan matriks berukuran berbeda.",
+          "fix": "Periksa shape sebelum operasi."
+        },
+        {
+          "mistake": "Terbalik memakai axis untuk rata-rata.",
+          "fix": "axis=0 menghasilkan satu nilai per kolom."
+        }
+      ],
+      "summary": [
+        "Matriks adalah tabel angka dan dataset umumnya berbentuk baris pengamatan kali kolom fitur.",
+        "Penjumlahan dan skalar dilakukan per elemen pada matriks seukuran.",
+        "Transpos menukar baris dan kolom dan sering muncul dalam rumus statistik.",
+        "Rata-rata per kolom dan pemusatan memakai argumen axis."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Matriks, bentuk, dan operasi per elemen"
+          },
+          {
+            "type": "text",
+            "source": "`shape` memberi baris dan kolom. Indeks `A[i, j]` mengakses satu elemen, `A[i]` satu baris, dan `A[:, j]` satu kolom."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[1, 2, 3],\n              [4, 5, 6]])\nprint(A.shape, A.ndim, A.size)\nprint(A[0, 1], A[1, 2], A[-1, -1])\nprint(A[0].tolist(), A[:, 1].tolist())\nprint(A[:, 1:].tolist())\nprint(A[1, :2].tolist())\ndata = np.zeros((1000, 5))\nprint(data.shape)"
+          },
+          {
+            "type": "text",
+            "source": "Operasi per elemen berlaku pada matriks seukuran. Broadcasting menambahkan vektor ke setiap baris, sedangkan ukuran yang tidak cocok menimbulkan `ValueError`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[1, 2], [3, 4]])\nB = np.array([[10, 20], [30, 40]])\nprint((A + B).tolist(), (B - A).tolist())\nprint((2 * A).tolist(), (A * B).tolist())\nprint((A ** 2).tolist())\nv = np.array([100, 200])\nprint((A + v).tolist())\ntry:\n    A + np.ones((3, 2))\nexcept ValueError:\n    print(\"ukuran tidak cocok\")"
+          },
+          {
+            "type": "text",
+            "source": "Transpos menukar baris dan kolom, dan transpos ganda mengembalikan matriks asal. `X.T @ X` selalu persegi dengan ukuran sama dengan jumlah fitur."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[1, 2, 3], [4, 5, 6]])\nprint(A.T.tolist(), A.T.shape)\nprint(np.array_equal(A.T.T, A))\nB = np.array([[1, 0], [2, 1], [0, 3]])\nprint(np.array_equal((A + A).T, A.T + A.T))\nX = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])\nprint((X.T @ X).tolist(), (X.T @ X).shape)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-02-2",
+      "title": "Perkalian matriks",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung perkalian matriks dengan vektor dan dengan matriks lain",
+        "Memeriksa kecocokan ukuran dan menentukan ukuran hasil",
+        "Memahami bahwa perkalian matriks tidak komutatif tetapi asosiatif",
+        "Menafsirkan perkalian matriks sebagai transformasi dan komposisi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Perkalian matriks dengan vektor",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Perkalian matriks dengan vektor\n\nPerkalian matriks `A` (ukuran `m x n`) dengan vektor `x` (panjang `n`) menghasilkan vektor `y` (panjang `m`). Setiap komponen `y[i]` adalah dot product antara baris ke-`i` dari `A` dengan `x`. Cara kedua memandangnya: `y` adalah kombinasi linear dari kolom-kolom `A` dengan bobot komponen `x`.\n\nKedua tafsir sama benarnya dan saling melengkapi. Tafsir baris membantu menghitung. Tafsir kolom membantu memahami: `A x` adalah semua titik yang bisa dicapai dari kolom `A`, dan ini dasar konsep ruang kolom dan peringkat.\n\nDalam pembelajaran mesin, perkalian matriks dengan vektor muncul terus: prediksi untuk semua pengamatan sekaligus adalah `y = X w`, dengan `X` matriks fitur dan `w` vektor bobot. Satu operasi menggantikan perulangan atas seluruh baris data."
+            },
+            {
+              "type": "code_example",
+              "filename": "matriks_vektor.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[1, 2, 3],\n              [4, 5, 6]])\nx = np.array([1, 0, -1])\nprint((A @ x).tolist())\nprint([sum(a * b for a, b in zip(baris, x.tolist())) for baris in A.tolist()])\nkombinasi = 1 * A[:, 0] + 0 * A[:, 1] + (-1) * A[:, 2]\nprint(kombinasi.tolist())\nX = np.array([[1, 2], [1, 3], [1, 4]])\nw = np.array([10, 5])\nprint((X @ w).tolist())",
+              "expected_output_note": "[-2, -2]\n[-2, -2]\n[-2, -2]\n[20, 25, 30]",
+              "explanation": "Tiga cara menghitung memberi hasil sama: operator `@`, dot product tiap baris, dan kombinasi linear kolom. Prediksi untuk semua baris dihitung dengan satu perkalian `X @ w`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Perkalian dua matriks\n\nPerkalian `A B` dengan `A` berukuran `m x n` dan `B` berukuran `n x p` menghasilkan matriks `C` berukuran `m x p`. Elemen `C[i, j]` adalah dot product baris ke-`i` dari `A` dengan kolom ke-`j` dari `B`. Syarat mutlaknya: **jumlah kolom A sama dengan jumlah baris B**. Bila tidak, perkalian tidak terdefinisi.\n\nCara mengingat ukuran: tulis `(m x n)(n x p)`. Dua angka dalam harus sama dan mereka lenyap, tersisa `m x p` di luar. Pemeriksaan ukuran ini adalah langkah pertama yang baik saat men-debug galat bentuk, yang sangat sering terjadi dalam pembelajaran mesin.\n\nPerkalian matriks bisa dipandang sebagai banyak perkalian matriks-vektor sekaligus: tiap kolom hasil adalah `A` dikalikan kolom yang bersesuaian dari `B`. Pandangan ini menjelaskan mengapa lapisan jaringan saraf memproses seluruh batch data dengan satu perkalian."
+            },
+            {
+              "type": "code_example",
+              "filename": "matriks_matriks.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[1, 2], [3, 4], [5, 6]])\nB = np.array([[1, 0, 2], [0, 1, 3]])\nC = A @ B\nprint(C.shape, C.tolist())\nprint(C[1, 2], A[1] @ B[:, 2])\ntry:\n    B @ A.T\nexcept ValueError:\n    print(\"ukuran tidak cocok\")\nprint((B @ A).shape)",
+              "expected_output_note": "(3, 3) [[1, 2, 8], [3, 4, 18], [5, 6, 28]]\n18 18\nukuran tidak cocok\n(2, 2)",
+              "explanation": "Hasil `3 x 2` kali `2 x 3` berukuran `3 x 3`. Elemen `C[1, 2]` adalah dot product baris 1 dari `A` dan kolom 2 dari `B`."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Periksa ukuran dalam",
+              "markdown": "Saat mendapat galat bentuk, tulis ukuran tiap matriks di kertas dalam bentuk `(m x n)(n x p)`. Dua angka dalam harus sama. Cara ini menyelesaikan sebagian besar galat dimensi."
+            }
+          ],
+          "quick_check": {
+            "question": "Ukuran hasil (3 x 2)(2 x 4)?",
+            "options": [
+              "3 x 4",
+              "2 x 2"
+            ],
+            "answer_index": 0,
+            "explanation": "Dua angka dalam hilang, tersisa 3 x 4.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Sifat perkalian matriks",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Sifat perkalian matriks\n\nPerkalian matriks **tidak komutatif**: secara umum `A B` tidak sama dengan `B A`, bahkan ukurannya bisa berbeda atau salah satunya tidak terdefinisi. Urutan penting, dan membalikkannya mengubah hasil. Ini berbeda dari perkalian bilangan biasa.\n\nNamun perkalian matriks **asosiatif**: `(A B) C = A (B C)`, dan **distributif**: `A (B + C) = A B + A C`. Sifat asosiatif sangat berguna karena memungkinkan kita memilih urutan perhitungan yang paling murah. Untuk matriks berukuran sangat berbeda, urutan kurung dapat mengubah biaya komputasi dari jam menjadi detik.\n\nTranspos hasil kali membalik urutan: `(A B)^T = B^T A^T`. Sifat ini sering dipakai untuk menyederhanakan turunan dan rumus statistik, jadi baik untuk diingat. Berikut kita periksa semua sifat ini secara numerik."
+            },
+            {
+              "type": "code_example",
+              "filename": "sifat_perkalian.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nA = np.array([[1, 2], [3, 4]])\nB = np.array([[0, 1], [1, 0]])\nC = np.array([[2, 0], [0, 3]])\nprint((A @ B).tolist(), (B @ A).tolist())\nprint(np.array_equal(A @ B, B @ A))\nprint(np.array_equal((A @ B) @ C, A @ (B @ C)))\nprint(np.array_equal(A @ (B + C), A @ B + A @ C))\nprint(np.array_equal((A @ B).T, B.T @ A.T))",
+              "expected_output_note": "[[2, 1], [4, 3]] [[3, 4], [1, 2]]\nFalse\nTrue\nTrue\nTrue",
+              "explanation": "`A @ B` berbeda dari `B @ A`, tetapi asosiatif, distributif, dan transpos hasil kali membalik urutan."
+            }
+          ],
+          "quick_check": {
+            "question": "Apakah AB selalu sama dengan BA?",
+            "options": [
+              "Ya",
+              "Tidak"
+            ],
+            "answer_index": 1,
+            "explanation": "Perkalian matriks tidak komutatif.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Transformasi dan komposisi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Transformasi dan komposisi\n\nMatriks bisa dipandang sebagai fungsi yang mengubah vektor. Matriks `A` mengubah `x` menjadi `A x`. Matriks tertentu memutar bidang, matriks lain menskalakan, menggeser miring, atau memantulkan. Misalnya `[[2, 0], [0, 2]]` memperbesar semua vektor dua kali.\n\nMelakukan dua transformasi berturutan sama dengan mengalikan matriksnya: menerapkan `B` lalu `A` setara dengan `(A B) x`. Perhatikan urutannya dibaca dari kanan ke kiri, karena transformasi pertama yang diterapkan paling dekat dengan vektor. Itulah mengapa perkalian matriks tidak komutatif: memutar lalu menskalakan berbeda dengan menskalakan lalu memutar bila skalanya tidak seragam.\n\nJaringan saraf adalah tumpukan transformasi linear yang diselingi fungsi nonlinear. Setiap lapisan adalah satu perkalian matriks, sehingga memahaminya sebagai transformasi membantumu menalar apa yang dilakukan lapisan itu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Biaya perkalian matriks\n\nPerkalian dua matriks `n x n` dengan cara dasar membutuhkan sekitar `n` pangkat tiga operasi. Untuk matriks berukuran seribu, itu miliaran operasi, namun pustaka seperti NumPy memanfaatkan perangkat keras dan pustaka teroptimasi sehingga selesai dalam sepersekian detik. Karena itu jangan pernah menulis perkalian matriks dengan tiga perulangan Python untuk data besar.\n\nPada matriks panjang dan sempit, urutan kurung ikut menentukan biaya. Menghitung `(A B) x` bisa jauh lebih mahal daripada `A (B x)` karena yang kedua hanya melibatkan perkalian matriks-vektor. Mengatur urutan perkalian adalah optimasi sederhana yang sering menghemat waktu secara dramatis."
+            }
+          ],
+          "quick_check": {
+            "question": "Komponen y[i] dari A x adalah?",
+            "options": [
+              "Dot product baris i dengan x",
+              "Jumlah kolom"
+            ],
+            "answer_index": 0,
+            "explanation": "Baris ke-i dot x.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `matriks_kali_vektor(A, x)` yang mengembalikan hasil kali matriks (list of list) dengan vektor (list) sebagai list.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def matriks_kali_vektor(A, x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "matriks_kali_vektor([[1, 2, 3], [4, 5, 6]], [...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_kali_vektor([[1, 2, 3], [4, 5, 6]], [1, 0, -1]) == [-2, -2]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "matriks_kali_vektor([[1, 0], [0, 1]], [7, 8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_kali_vektor([[1, 0], [0, 1]], [7, 8]) == [7, 8]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "matriks_kali_vektor([[2, 2]], [1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_kali_vektor([[2, 2]], [1, 1]) == [4]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "matriks_kali_vektor([], [1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_kali_vektor([], [1]) == []"
+              }
+            ]
+          },
+          "hint": "Tiap komponen hasil adalah dot product satu baris dengan x.",
+          "solution": "def matriks_kali_vektor(A, x):\n    return [sum(a * b for a, b in zip(baris, x)) for baris in A]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-02-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ukuran_hasil(a, b)` yang menerima ukuran dua matriks sebagai tuple `(baris, kolom)` dan mengembalikan ukuran hasil kali `A B` sebagai tuple, atau `None` bila perkalian tidak terdefinisi.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def ukuran_hasil(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ukuran_hasil((3, 2), (2, 5))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_hasil((3, 2), (2, 5)) == (3, 5)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ukuran_hasil((3, 2), (3, 2))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_hasil((3, 2), (3, 2)) is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ukuran_hasil((1, 4), (4, 1))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_hasil((1, 4), (4, 1)) == (1, 1)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ukuran_hasil((4, 1), (1, 4))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_hasil((4, 1), (1, 4)) == (4, 4)"
+              }
+            ]
+          },
+          "hint": "Kolom pertama harus sama dengan baris kedua.",
+          "solution": "def ukuran_hasil(a, b):\n    if a[1] != b[0]:\n        return None\n    return (a[0], b[1])",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kali_matriks(A, B)` yang mengalikan dua matriks (list of list) tanpa NumPy dan mengembalikan matriks hasil.",
+          "note": "Bila ukuran tidak cocok timbulkan `ValueError`.",
+          "filename": "solution.py",
+          "starter_code": "def kali_matriks(A, B):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kali_matriks([[1, 2], [3, 4]], [[0, 1], [1, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kali_matriks([[1, 2], [3, 4]], [[0, 1], [1, 0]]) == [[2, 1], [4, 3]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kali_matriks([[1, 2, 3]], [[1], [1], [1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kali_matriks([[1, 2, 3]], [[1], [1], [1]]) == [[6]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kali_matriks([[1, 0], [0, 1]], [[5, 6], [7, 8]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kali_matriks([[1, 0], [0, 1]], [[5, 6], [7, 8]]) == [[5, 6], [7, 8]]\ntry:\n    kali_matriks([[1, 2]], [[1, 2]])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError(\"harus error\")"
+              }
+            ]
+          },
+          "hint": "Periksa kolom A dan baris B, lalu hitung dot product baris A dengan kolom B (zip(*B)).",
+          "solution": "def kali_matriks(A, B):\n    if len(A[0]) != len(B):\n        raise ValueError(\"ukuran tidak cocok\")\n    kolom = list(zip(*B))\n    return [[sum(a * b for a, b in zip(baris, k)) for k in kolom] for baris in A]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pangkat_matriks(A, n)` yang menghitung `A` dipangkatkan `n` (bilangan bulat tidak negatif) untuk matriks persegi (list of list) dengan perkalian berulang.",
+          "note": "Pangkat nol menghasilkan matriks identitas. Gunakan fungsi `kali` yang sudah disediakan.",
+          "filename": "solution.py",
+          "starter_code": "def kali(A, B):\n    kolom = list(zip(*B))\n    return [[sum(a * b for a, b in zip(baris, k)) for k in kolom] for baris in A]\n\ndef pangkat_matriks(A, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pangkat_matriks([[1, 1], [1, 0]], 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat_matriks([[1, 1], [1, 0]], 5) == [[8, 5], [5, 3]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pangkat_matriks([[2, 0], [0, 3]], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat_matriks([[2, 0], [0, 3]], 3) == [[8, 0], [0, 27]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pangkat_matriks([[1, 2], [3, 4]], 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat_matriks([[1, 2], [3, 4]], 0) == [[1, 0], [0, 1]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pangkat_matriks([[1, 2], [3, 4]], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pangkat_matriks([[1, 2], [3, 4]], 1) == [[1, 2], [3, 4]]"
+              }
+            ]
+          },
+          "hint": "Mulai dari identitas lalu kalikan A sebanyak n kali.",
+          "solution": "def kali(A, B):\n    kolom = list(zip(*B))\n    return [[sum(a * b for a, b in zip(baris, k)) for k in kolom] for baris in A]\n\ndef pangkat_matriks(A, n):\n    m = len(A)\n    hasil = [[1 if i == j else 0 for j in range(m)] for i in range(m)]\n    for _ in range(n):\n        hasil = kali(hasil, A)\n    return hasil",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Ukuran hasil (3 x 2)(2 x 4)?",
+          "code": null,
+          "options": [
+            {
+              "label": "3 x 4",
+              "description": ""
+            },
+            {
+              "label": "2 x 2",
+              "description": ""
+            },
+            {
+              "label": "4 x 3",
+              "description": ""
+            },
+            {
+              "label": "tidak terdefinisi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Luar tersisa.",
+          "explanation": "Dua angka dalam hilang, tersisa 3 x 4."
+        },
+        {
+          "q": "Apakah AB selalu sama dengan BA?",
+          "code": null,
+          "options": [
+            {
+              "label": "Ya",
+              "description": ""
+            },
+            {
+              "label": "Tidak",
+              "description": ""
+            },
+            {
+              "label": "Hanya matriks persegi",
+              "description": ""
+            },
+            {
+              "label": "Hanya identitas",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Urutan penting.",
+          "explanation": "Perkalian matriks tidak komutatif."
+        },
+        {
+          "q": "Komponen y[i] dari A x adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dot product baris i dengan x",
+              "description": ""
+            },
+            {
+              "label": "Jumlah kolom",
+              "description": ""
+            },
+            {
+              "label": "Norma x",
+              "description": ""
+            },
+            {
+              "label": "Transpos",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Baris dikali vektor.",
+          "explanation": "Baris ke-i dot x."
+        },
+        {
+          "q": "Sifat yang benar untuk transpos hasil kali?",
+          "code": null,
+          "options": [
+            {
+              "label": "(AB)^T = A^T B^T",
+              "description": ""
+            },
+            {
+              "label": "(AB)^T = B^T A^T",
+              "description": ""
+            },
+            {
+              "label": "(AB)^T = AB",
+              "description": ""
+            },
+            {
+              "label": "(AB)^T = BA",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dibalik.",
+          "explanation": "Urutan terbalik."
+        },
+        {
+          "q": "Matriks A x dapat dipandang sebagai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kombinasi linear kolom A",
+              "description": ""
+            },
+            {
+              "label": "Baris acak",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Jumlah semua elemen",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kolom berbobot.",
+          "explanation": "Bobot adalah komponen x."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira AB sama dengan BA. Lebih baik: Perkalian matriks tidak komutatif.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira AB sama dengan BA.",
+          "fix": "Perkalian matriks tidak komutatif."
+        },
+        {
+          "mistake": "Mengalikan matriks dengan ukuran dalam berbeda.",
+          "fix": "Kolom A harus sama dengan baris B."
+        },
+        {
+          "mistake": "Mencampur * dengan @ pada NumPy.",
+          "fix": "* per elemen, @ perkalian matriks."
+        }
+      ],
+      "summary": [
+        "A x adalah dot product tiap baris dengan x atau kombinasi linear kolom.",
+        "Perkalian matriks butuh kolom A sama dengan baris B dan menghasilkan m x p.",
+        "Perkalian tidak komutatif tetapi asosiatif dan distributif.",
+        "Matriks adalah transformasi dan perkaliannya adalah komposisi."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Perkalian matriks"
+          },
+          {
+            "type": "text",
+            "source": "Tiga cara menghitung memberi hasil sama: operator `@`, dot product tiap baris, dan kombinasi linear kolom. Prediksi untuk semua baris dihitung dengan satu perkalian `X @ w`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[1, 2, 3],\n              [4, 5, 6]])\nx = np.array([1, 0, -1])\nprint((A @ x).tolist())\nprint([sum(a * b for a, b in zip(baris, x.tolist())) for baris in A.tolist()])\nkombinasi = 1 * A[:, 0] + 0 * A[:, 1] + (-1) * A[:, 2]\nprint(kombinasi.tolist())\nX = np.array([[1, 2], [1, 3], [1, 4]])\nw = np.array([10, 5])\nprint((X @ w).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "Hasil `3 x 2` kali `2 x 3` berukuran `3 x 3`. Elemen `C[1, 2]` adalah dot product baris 1 dari `A` dan kolom 2 dari `B`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[1, 2], [3, 4], [5, 6]])\nB = np.array([[1, 0, 2], [0, 1, 3]])\nC = A @ B\nprint(C.shape, C.tolist())\nprint(C[1, 2], A[1] @ B[:, 2])\ntry:\n    B @ A.T\nexcept ValueError:\n    print(\"ukuran tidak cocok\")\nprint((B @ A).shape)"
+          },
+          {
+            "type": "text",
+            "source": "`A @ B` berbeda dari `B @ A`, tetapi asosiatif, distributif, dan transpos hasil kali membalik urutan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nA = np.array([[1, 2], [3, 4]])\nB = np.array([[0, 1], [1, 0]])\nC = np.array([[2, 0], [0, 3]])\nprint((A @ B).tolist(), (B @ A).tolist())\nprint(np.array_equal(A @ B, B @ A))\nprint(np.array_equal((A @ B) @ C, A @ (B @ C)))\nprint(np.array_equal(A @ (B + C), A @ B + A @ C))\nprint(np.array_equal((A @ B).T, B.T @ A.T))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-02-3",
+      "title": "Matriks khusus dan kegunaannya",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengenali matriks identitas, nol, diagonal, dan segitiga",
+        "Memahami matriks simetris dan contohnya dalam statistik",
+        "Memahami matriks ortogonal dan sifat menjaga panjang",
+        "Menghitung matriks kovariansi dan matriks jarak sebagai penerapan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Matriks identitas dan diagonal",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Matriks identitas dan diagonal\n\n**Matriks identitas** `I` adalah matriks persegi dengan angka satu di diagonal utama dan nol di tempat lain. Ia berperan seperti angka satu dalam perkalian: `I A = A I = A` untuk matriks `A` yang ukurannya cocok, dan `I x = x` untuk vektor mana pun. Di NumPy, `np.eye(n)` membuatnya.\n\n**Matriks diagonal** hanya memiliki elemen tak nol di diagonal utama. Perkalian dengan matriks diagonal sangat sederhana: mengalikan dari kiri menskalakan baris, mengalikan dari kanan menskalakan kolom. Menyimpan matriks diagonal cukup dengan vektor diagonalnya, sangat hemat memori. Banyak dekomposisi matriks, termasuk eigen dan SVD, menghasilkan matriks diagonal.\n\n**Matriks nol** semua elemennya nol dan berperan seperti angka nol dalam penjumlahan. Matriks **segitiga atas** dan **segitiga bawah** memiliki elemen nol di bawah atau di atas diagonal, dan sistem persamaan dengan matriks seperti ini sangat mudah diselesaikan."
+            },
+            {
+              "type": "code_example",
+              "filename": "matriks_khusus.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nI = np.eye(3)\nA = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 10]])\nprint(np.array_equal(I @ A, A), np.array_equal(A @ I, A))\nx = np.array([5, 6, 7])\nprint((I @ x).tolist())\n\nD = np.diag([2, 3, 4])\nprint(D.tolist())\nprint((D @ A).tolist())\nprint((A @ D).tolist())\nprint(np.triu(A).tolist())\nprint(np.diag(A).tolist())",
+              "expected_output_note": "True True\n[5.0, 6.0, 7.0]\n[[2, 0, 0], [0, 3, 0], [0, 0, 4]]\n[[2, 4, 6], [12, 15, 18], [28, 32, 40]]\n[[2, 6, 12], [8, 15, 24], [14, 24, 40]]\n[[1, 2, 3], [0, 5, 6], [0, 0, 10]]\n[1, 5, 10]",
+              "explanation": "Identitas tidak mengubah apa pun. Perkalian diagonal dari kiri menskalakan baris, dari kanan menskalakan kolom. `np.triu` mengambil segitiga atas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Matriks simetris\n\nMatriks persegi `A` disebut **simetris** bila `A = A^T`, artinya elemen `A[i, j]` sama dengan `A[j, i]`. Simetris berarti cermin terhadap diagonal utama. Matriks seperti ini sangat penting karena muncul alami dalam statistik: matriks kovariansi, matriks korelasi, dan matriks jarak semuanya simetris.\n\nMatriks simetris memiliki sifat bagus yang akan kamu manfaatkan pada pelajaran eigenvalue: semua eigenvalue-nya real, dan eigenvector untuk eigenvalue berbeda saling ortogonal. Karena itu algoritma khusus untuk matriks simetris lebih cepat dan lebih stabil.\n\nSalah satu cara menghasilkan matriks simetris adalah `X^T X` untuk matriks `X` apa pun. Alasannya: `(X^T X)^T = X^T (X^T)^T = X^T X`. Pola ini muncul terus dalam regresi dan PCA. Dengan memeriksa `np.allclose(A, A.T)` kamu dapat menguji kesimetrisan numerik."
+            },
+            {
+              "type": "code_example",
+              "filename": "matriks_simetris.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nS = np.array([[2, 1, 0], [1, 3, 4], [0, 4, 5]])\nprint(np.array_equal(S, S.T))\nX = np.array([[1.0, 2.0], [3.0, 5.0], [4.0, 1.0]])\nG = X.T @ X\nprint(G.tolist(), np.allclose(G, G.T))\nnilai = np.linalg.eigvalsh(G)\nprint(nilai.round(4).tolist())\ntidak = np.array([[1, 2], [3, 4]])\nprint(np.allclose(tidak, tidak.T))",
+              "expected_output_note": "True\n[[26.0, 21.0], [21.0, 30.0]]\nTrue\n[6.905, 49.095]\nFalse",
+              "explanation": "`X.T @ X` selalu simetris. Matriks simetris memiliki eigenvalue real sehingga `eigvalsh` bekerja."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Uji simetris yang aman",
+              "markdown": "Karena galat pembulatan, uji kesimetrisan dengan `np.allclose(A, A.T)` dan bukan `np.array_equal`, kecuali untuk matriks bilangan bulat."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa sifat I A?",
+            "options": [
+              "Sama dengan A",
+              "Nol"
+            ],
+            "answer_index": 0,
+            "explanation": "Identitas tidak mengubah matriks.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Matriks ortogonal",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Matriks ortogonal\n\nMatriks persegi `Q` disebut **ortogonal** bila kolom-kolomnya saling tegak lurus dan masing-masing berpanjang satu. Ciri utamanya: `Q^T Q = I`, sehingga transposnya sekaligus inversnya. Ini luar biasa praktis, sebab membalik transformasi cukup dengan mentranspos, tanpa komputasi mahal.\n\nMatriks ortogonal **menjaga panjang dan sudut**: `||Q x|| = ||x||` dan dot product tidak berubah. Secara geometris ia hanya merepresentasikan rotasi atau pemantulan, tanpa meregangkan atau memampatkan ruang. Karena itu transformasi ortogonal stabil secara numerik dan sering dipakai untuk menghindari galat yang membesar.\n\nContoh paling dikenal adalah matriks rotasi dua dimensi. Hasil dekomposisi seperti QR, eigen untuk matriks simetris, dan SVD semuanya menghasilkan matriks ortogonal, yang menjadi alasan utama kamu perlu mengenalnya baik-baik."
+            },
+            {
+              "type": "code_example",
+              "filename": "matriks_ortogonal.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nt = np.pi / 6\nQ = np.array([[np.cos(t), -np.sin(t)],\n              [np.sin(t),  np.cos(t)]])\nprint(np.allclose(Q.T @ Q, np.eye(2)))\nx = np.array([3.0, 4.0])\nprint(round(float(np.linalg.norm(Q @ x)), 6), np.linalg.norm(x))\ny = np.array([1.0, 2.0])\nprint(round(float((Q @ x) @ (Q @ y)), 6), x @ y)\nprint(np.allclose(np.linalg.inv(Q), Q.T))\nR = np.array([[0, 1], [1, 0]])\nprint((R @ np.array([2, 7])).tolist())",
+              "expected_output_note": "True\n5.0 5.0\n11.0 11.0\nTrue\n[7, 2]",
+              "explanation": "Matriks rotasi ortogonal menjaga panjang dan dot product, dan inversnya sama dengan transposnya. Matriks permutasi memantulkan, yaitu menukar komponen."
+            }
+          ],
+          "quick_check": {
+            "question": "Matriks simetris memenuhi?",
+            "options": [
+              "A = -A",
+              "A = A^T"
+            ],
+            "answer_index": 1,
+            "explanation": "Sama dengan transposnya.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Penerapan: kovariansi dan jarak",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Penerapan: kovariansi dan jarak\n\nDua penerapan klasik memperlihatkan semua yang kamu pelajari. Pertama, **matriks kovariansi** data `X` (ukuran `n x p`) setelah dipusatkan adalah `X^T X / (n - 1)`. Hasilnya `p x p`, simetris, dengan varians fitur di diagonal dan kovarians antar fitur di luar diagonal. Matriks ini adalah bahan utama PCA.\n\nKedua, **matriks jarak**: untuk `n` titik, matriks `n x n` di mana elemen `(i, j)` adalah jarak titik `i` ke titik `j`. Matriks ini simetris dengan nol di diagonal. Ia dipakai pada pengelompokan hierarkis dan banyak algoritma kemiripan.\n\nKedua contoh menunjukkan polanya: ubah data menjadi matriks, lakukan perkalian dan transpos, dan hasilnya adalah matriks khusus dengan sifat bagus yang bisa dimanfaatkan. Latihan berikut membangun keduanya dari nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih struktur yang tepat untuk efisiensi\n\nMengetahui bahwa sebuah matriks diagonal, simetris, atau jarang membuka penghematan besar. Matriks diagonal cukup disimpan sebagai vektor dan perkaliannya menjadi perkalian per elemen. Matriks jarang, yang hampir seluruh elemennya nol seperti matriks hitungan kata, disimpan hanya pada elemen tak nol dengan pustaka `scipy.sparse`, sehingga hemat memori ribuan kali lipat.\n\nBila kamu mengenali struktur matriks, kamu dapat memakai algoritma khusus yang lebih cepat dan lebih stabil. Karena itu, sebelum menjalankan operasi mahal pada matriks besar, tanyakan dulu apakah ia punya struktur yang bisa dimanfaatkan."
+            }
+          ],
+          "quick_check": {
+            "question": "Sifat utama matriks ortogonal?",
+            "options": [
+              "Menjaga panjang vektor",
+              "Memperbesar vektor"
+            ],
+            "answer_index": 0,
+            "explanation": "Rotasi atau pemantulan murni.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `identitas(n)` yang mengembalikan matriks identitas `n x n` sebagai list of list.",
+          "note": "Untuk `n = 0` kembalikan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "def identitas(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "identitas(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert identitas(2) == [[1, 0], [0, 1]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "identitas(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert identitas(1) == [[1]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "identitas(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert identitas(0) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "identitas(3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert identitas(3)[1] == [0, 1, 0]"
+              }
+            ]
+          },
+          "hint": "Elemen bernilai 1 bila indeks baris sama dengan indeks kolom.",
+          "solution": "def identitas(n):\n    return [[1 if i == j else 0 for j in range(n)] for i in range(n)]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-02-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `simetris(A)` yang mengembalikan `True` bila matriks persegi (list of list) simetris.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def simetris(A):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "simetris([[1, 2], [2, 3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simetris([[1, 2], [2, 3]]) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "simetris([[1, 2], [3, 4]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simetris([[1, 2], [3, 4]]) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "simetris([[5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simetris([[5]]) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "simetris([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simetris([]) is True"
+              }
+            ]
+          },
+          "hint": "Bandingkan A dengan transposnya.",
+          "solution": "def simetris(A):\n    return [list(k) for k in zip(*A)] == [list(b) for b in A]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kovariansi(X)` yang menerima matriks data `X` (list of list dengan `n >= 2` baris pengamatan dan `p` kolom fitur) dan mengembalikan matriks kovariansi sampel `p x p` dengan nilai dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def kovariansi(X):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kovariansi([[1, 2], [3, 4], [5, 6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi([[1, 2], [3, 4], [5, 6]]) == [[4.0, 4.0], [4.0, 4.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kovariansi([[1, 0], [2, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi([[1, 0], [2, 0]]) == [[0.5, 0.0], [0.0, 0.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = kovariansi([[1, 2], [2, 1], [3, 3], [4, 6]])\nassert r == [[1.6667, 2.3333], [2.3333, 4.6667]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert r[0][1] == r[1][0]"
+              }
+            ]
+          },
+          "hint": "Pusatkan tiap kolom lalu hitung dot product antar kolom dibagi n - 1.",
+          "solution": "def kovariansi(X):\n    n = len(X)\n    kolom = list(zip(*X))\n    pusat = [[x - sum(k) / n for x in k] for k in kolom]\n    p = len(pusat)\n    return [[round(sum(a * b for a, b in zip(pusat[i], pusat[j])) / (n - 1), 4) for j in range(p)] for i in range(p)]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `matriks_jarak(titik)` yang menerima list titik (vektor) dan mengembalikan matriks jarak Euclid `n x n` dengan nilai dibulatkan 4 desimal.",
+          "note": "Diagonalnya nol dan matriks simetris.",
+          "filename": "solution.py",
+          "starter_code": "def matriks_jarak(titik):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = matriks_jarak([[0, 0], [3, 4], [6, 8]])\nassert r == [[0.0, 5.0, 10.0], [5.0, 0.0, 5.0], [10.0, 5.0, 0.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "matriks_jarak([[1, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_jarak([[1, 1]]) == [[0.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "matriks_jarak([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_jarak([]) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r2 = matriks_jarak([[0, 0], [1, 1]])\nassert r2[0][1] == r2[1][0] == 1.4142"
+              }
+            ]
+          },
+          "hint": "Dua perulangan bersarang, jarak dari akar jumlah kuadrat selisih.",
+          "solution": "def matriks_jarak(titik):\n    def jarak(a, b):\n        return round(sum((x - y) ** 2 for x, y in zip(a, b)) ** 0.5, 4)\n    return [[jarak(a, b) for b in titik] for a in titik]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa sifat I A?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Sama dengan A",
+              "description": ""
+            },
+            {
+              "label": "Transpos A",
+              "description": ""
+            },
+            {
+              "label": "Invers A",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Seperti angka 1.",
+          "explanation": "Identitas tidak mengubah matriks."
+        },
+        {
+          "q": "Matriks simetris memenuhi?",
+          "code": null,
+          "options": [
+            {
+              "label": "A = -A",
+              "description": ""
+            },
+            {
+              "label": "A = A^T",
+              "description": ""
+            },
+            {
+              "label": "A = A^-1",
+              "description": ""
+            },
+            {
+              "label": "A = I",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Cermin diagonal.",
+          "explanation": "Sama dengan transposnya."
+        },
+        {
+          "q": "Sifat utama matriks ortogonal?",
+          "code": null,
+          "options": [
+            {
+              "label": "Memperbesar vektor",
+              "description": ""
+            },
+            {
+              "label": "Menjaga panjang vektor",
+              "description": ""
+            },
+            {
+              "label": "Selalu diagonal",
+              "description": ""
+            },
+            {
+              "label": "Selalu nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Panjang tetap.",
+          "explanation": "Rotasi atau pemantulan murni."
+        },
+        {
+          "q": "Invers matriks ortogonal adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dirinya",
+              "description": ""
+            },
+            {
+              "label": "Transposnya",
+              "description": ""
+            },
+            {
+              "label": "Negatifnya",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Mudah dihitung.",
+          "explanation": "Q^T Q = I."
+        },
+        {
+          "q": "Ukuran matriks kovariansi untuk p fitur?",
+          "code": null,
+          "options": [
+            {
+              "label": "n x n",
+              "description": ""
+            },
+            {
+              "label": "p x p",
+              "description": ""
+            },
+            {
+              "label": "n x p",
+              "description": ""
+            },
+            {
+              "label": "1 x p",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Fitur lawan fitur.",
+          "explanation": "Persegi sebesar jumlah fitur."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membalik matriks ortogonal dengan inversi mahal. Lebih baik: Cukup transpos.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membalik matriks ortogonal dengan inversi mahal.",
+          "fix": "Cukup transpos."
+        },
+        {
+          "mistake": "Menguji kesimetrisan float dengan kesamaan persis.",
+          "fix": "Pakai np.allclose."
+        },
+        {
+          "mistake": "Lupa memusatkan data sebelum menghitung kovariansi.",
+          "fix": "Kurangkan rata-rata kolom lebih dulu."
+        }
+      ],
+      "summary": [
+        "Identitas, diagonal, dan segitiga adalah matriks khusus yang menyederhanakan perhitungan.",
+        "Matriks simetris muncul dalam kovariansi dan jarak, dan X^T X selalu simetris.",
+        "Matriks ortogonal menjaga panjang dan inversnya adalah transposnya.",
+        "Kovariansi dan matriks jarak dibangun dari perkalian dan transpos."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Matriks khusus dan kegunaannya"
+          },
+          {
+            "type": "text",
+            "source": "Identitas tidak mengubah apa pun. Perkalian diagonal dari kiri menskalakan baris, dari kanan menskalakan kolom. `np.triu` mengambil segitiga atas."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nI = np.eye(3)\nA = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 10]])\nprint(np.array_equal(I @ A, A), np.array_equal(A @ I, A))\nx = np.array([5, 6, 7])\nprint((I @ x).tolist())\n\nD = np.diag([2, 3, 4])\nprint(D.tolist())\nprint((D @ A).tolist())\nprint((A @ D).tolist())\nprint(np.triu(A).tolist())\nprint(np.diag(A).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "`X.T @ X` selalu simetris. Matriks simetris memiliki eigenvalue real sehingga `eigvalsh` bekerja."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nS = np.array([[2, 1, 0], [1, 3, 4], [0, 4, 5]])\nprint(np.array_equal(S, S.T))\nX = np.array([[1.0, 2.0], [3.0, 5.0], [4.0, 1.0]])\nG = X.T @ X\nprint(G.tolist(), np.allclose(G, G.T))\nnilai = np.linalg.eigvalsh(G)\nprint(nilai.round(4).tolist())\ntidak = np.array([[1, 2], [3, 4]])\nprint(np.allclose(tidak, tidak.T))"
+          },
+          {
+            "type": "text",
+            "source": "Matriks rotasi ortogonal menjaga panjang dan dot product, dan inversnya sama dengan transposnya. Matriks permutasi memantulkan, yaitu menukar komponen."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nt = np.pi / 6\nQ = np.array([[np.cos(t), -np.sin(t)],\n              [np.sin(t),  np.cos(t)]])\nprint(np.allclose(Q.T @ Q, np.eye(2)))\nx = np.array([3.0, 4.0])\nprint(round(float(np.linalg.norm(Q @ x)), 6), np.linalg.norm(x))\ny = np.array([1.0, 2.0])\nprint(round(float((Q @ x) @ (Q @ y)), 6), x @ y)\nprint(np.allclose(np.linalg.inv(Q), Q.T))\nR = np.array([[0, 1], [1, 0]])\nprint((R @ np.array([2, 7])).tolist())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa perhitungan dan contoh kode yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

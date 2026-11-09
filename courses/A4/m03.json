@@ -1,0 +1,1672 @@
+{
+  "schema_version": 2,
+  "course_id": "A4",
+  "module_no": 3,
+  "title": "Variabel acak diskrit",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menyusun dan memakai PMF",
+    "Memakai CDF dan kuantil",
+    "Menghitung marginal dan bersyarat dari tabel gabungan"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A4-03-1",
+    "exercise_id": "A4-03-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def pmf_transformasi(pmf, f):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A4-03-1",
+      "title": "Variabel acak diskrit dan PMF",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mendefinisikan variabel acak sebagai fungsi dari hasil ke bilangan",
+        "Menyusun fungsi massa peluang dari enumerasi dan hitungan",
+        "Menghitung peluang rentang dari PMF",
+        "Menurunkan distribusi variabel acak hasil transformasi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari hasil ke bilangan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari hasil ke bilangan\n\nHasil percobaan acak sering berupa objek yang sulit dihitung, misalnya urutan kepala dan ekor atau pasangan dadu. Yang biasanya kita pedulikan adalah ringkasan numerik: berapa kepala, berapa jumlah dadu, berapa pelanggan yang datang dalam satu jam. **Variabel acak** adalah fungsi yang memetakan setiap hasil ruang sampel ke sebuah bilangan.\n\nDengan variabel acak, kita berpindah dari bahasa himpunan ke bahasa bilangan. Pertanyaan seperti berapa peluang jumlah dadu minimal sepuluh menjadi pertanyaan tentang nilai `X`. Semua alat aljabar dan statistika kemudian bisa dipakai, karena kita berurusan dengan bilangan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Diskrit dan kontinu\n\nVariabel acak **diskrit** hanya mengambil nilai yang dapat dihitung, biasanya bilangan bulat: jumlah kepala, jumlah klik, jumlah cacat. Variabel acak **kontinu** mengambil nilai dalam rentang bilangan real, seperti tinggi badan atau waktu tunggu. Modul ini membahas yang diskrit, dan modul berikutnya yang kontinu.\n\nPerbedaan ini penting karena cara menyatakan peluangnya berbeda. Pada yang diskrit, kita bisa memberi peluang pada tiap nilai. Pada yang kontinu, peluang tiap titik tunggal adalah nol dan kita memakai kepadatan. Memahami yang diskrit lebih dulu membuat konsep kontinu terasa wajar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fungsi massa peluang\n\n**Fungsi massa peluang** atau PMF memberi peluang untuk setiap nilai: `p(x) = P(X = x)`. Ia harus memenuhi dua syarat. Setiap nilai peluang tidak negatif, dan semua peluang berjumlah tepat satu karena pasti terjadi salah satu nilai.\n\nCara termudah membangun PMF adalah menghitung berapa hasil yang memetakan ke tiap nilai lalu membaginya dengan ukuran ruang sampel. Di Python, `collections.Counter` melakukan hitungan itu dengan satu baris, sehingga PMF dari enumerasi menjadi pekerjaan yang singkat."
+            },
+            {
+              "type": "code_example",
+              "filename": "pmf_dadu.py",
+              "runnable": true,
+              "code": "from collections import Counter\nfrom itertools import product\n\nhitung = Counter(a + b for a, b in product(range(1, 7), repeat=2))\npmf = {k: v / 36 for k, v in hitung.items()}\nprint(round(pmf[7], 4), round(pmf[2], 4), round(sum(pmf.values()), 4))",
+              "expected_output_note": "0.1667 0.0278 1.0",
+              "explanation": "Jumlah tujuh punya enam cara dari tiga puluh enam, jumlah dua hanya satu cara, dan seluruh peluang berjumlah satu."
+            }
+          ],
+          "quick_check": {
+            "question": "Variabel acak adalah?",
+            "options": [
+              "Fungsi dari hasil ke bilangan",
+              "Peluang"
+            ],
+            "answer_index": 0,
+            "explanation": "Memetakan hasil ke angka.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "PMF banyaknya kepala",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## PMF banyaknya kepala\n\nMisalkan `X` adalah banyaknya kepala dalam tiga lemparan koin adil. Dari delapan hasil sama mungkin, nol kepala muncul satu kali, satu kepala tiga kali, dua kepala tiga kali, dan tiga kepala satu kali. Maka PMF-nya adalah `1/8, 3/8, 3/8, 1/8`.\n\nPola bentuk lonceng kecil ini bukan kebetulan. Ia adalah distribusi binomial yang akan kita bahas rinci nanti. Untuk sekarang, perhatikan bahwa nilai tengah lebih mungkin daripada ekstrem karena ada lebih banyak urutan yang menghasilkan satu atau dua kepala daripada nol atau tiga."
+            },
+            {
+              "type": "code_example",
+              "filename": "pmf_koin.py",
+              "runnable": true,
+              "code": "from collections import Counter\nfrom itertools import product\n\nhitung = Counter(h.count(\"H\") for h in map(\"\".join, product(\"HT\", repeat=3)))\npmf = {k: hitung[k] / 8 for k in range(4)}\nprint([pmf[k] for k in range(4)])\nprint(sum(p for k, p in pmf.items() if k >= 2))",
+              "expected_output_note": "[0.125, 0.375, 0.375, 0.125]\n0.5",
+              "explanation": "PMF tiga lemparan simetris, dan peluang minimal dua kepala adalah setengah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peluang rentang\n\nPeluang `X` berada dalam himpunan nilai tertentu didapat dengan menjumlahkan PMF atas nilai-nilai itu. Peluang `2 <= X <= 3` adalah `p(2) + p(3)`. Peluang minimal dua kepala adalah `p(2) + p(3) = 0,5`. Tidak ada rumus ajaib: semuanya penjumlahan massa.\n\nKarena total massa adalah satu, kita juga bisa memakai komplemen: `P(X >= 1) = 1 - p(0)`. Seperti pada modul sebelumnya, memilih antara menjumlahkan langsung dan memakai komplemen bergantung pada mana yang lebih sedikit sukunya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Fungsi dari variabel acak\n\nBila `X` variabel acak dan `f` fungsi, maka `Y = f(X)` juga variabel acak. PMF `Y` didapat dengan mengelompokkan nilai `X` yang menghasilkan `Y` sama lalu menjumlahkan peluangnya. Misalnya `Y = X^2` untuk banyak kepala: nilai 0, 1, 2, 3 menjadi 0, 1, 4, 9 dengan peluang yang sama.\n\nBila fungsinya tidak satu-satu, misalnya nilai mutlak, beberapa nilai `X` runtuh ke nilai `Y` yang sama dan peluangnya dijumlahkan. Ini muncul saat kita mentransformasi data, misalnya membuat kategori dari hitungan."
+            },
+            {
+              "type": "code_example",
+              "filename": "transformasi_pmf.py",
+              "runnable": true,
+              "code": "pmf = {0: 0.125, 1: 0.375, 2: 0.375, 3: 0.125}\ny = {}\nfor x, p in pmf.items():\n    y[x * x] = y.get(x * x, 0) + p\nprint(sorted(y.items()))",
+              "expected_output_note": "[(0, 0.125), (1, 0.375), (4, 0.375), (9, 0.125)]",
+              "explanation": "Karena kuadrat satu-satu pada nilai nol sampai tiga, peluang tiap nilai baru sama dengan peluang nilai lama."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Cek jumlah satu",
+              "markdown": "Setelah membangun PMF, selalu cek bahwa semua peluang tidak negatif dan jumlahnya satu. Pemeriksaan ini menangkap banyak bug enumerasi."
+            }
+          ],
+          "quick_check": {
+            "question": "Jumlah seluruh PMF sama dengan?",
+            "options": [
+              "0",
+              "1"
+            ],
+            "answer_index": 1,
+            "explanation": "Pasti terjadi salah satu.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "PMF empiris dari data",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## PMF empiris dari data\n\nDalam data nyata kita tidak tahu PMF sebenarnya, tetapi bisa menaksirnya dari frekuensi relatif. Hitung berapa kali tiap nilai muncul lalu bagi dengan jumlah data. Hasilnya PMF empiris yang makin mendekati PMF sebenarnya bila datanya banyak.\n\nKebiasaan ini fundamental dalam data science: bandingkan distribusi empiris dengan model teoritis untuk menilai apakah model masuk akal. Simulasi kecil dengan `random` memperlihatkan bagaimana frekuensi relatif mendekati peluang teoritis bila jumlah percobaan membesar."
+            },
+            {
+              "type": "code_example",
+              "filename": "pmf_empiris.py",
+              "runnable": true,
+              "code": "import random\nfrom collections import Counter\n\nrandom.seed(1)\ndata = [sum(random.choice(\"HT\") == \"H\" for _ in range(3)) for _ in range(20000)]\nfrek = Counter(data)[1] / 20000\nprint(abs(frek - 0.375) < 0.02)",
+              "expected_output_note": "True",
+              "explanation": "Frekuensi relatif satu kepala dari dua puluh ribu percobaan sangat dekat dengan peluang teoritis tiga per delapan."
+            }
+          ],
+          "quick_check": {
+            "question": "PMF dipakai untuk variabel?",
+            "options": [
+              "Diskrit",
+              "Kontinu"
+            ],
+            "answer_index": 0,
+            "explanation": "Peluang per nilai.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-03-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pmf_dari_hitung(hitung)` yang menerima dict hitungan nilai dan mengembalikan dict PMF dengan peluang dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pmf_dari_hitung(hitung):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pmf_dari_hitung({1: 2, 2: 2})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_dari_hitung({1: 2, 2: 2}) == {1: 0.5, 2: 0.5}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pmf_dari_hitung({0: 1, 1: 3})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_dari_hitung({0: 1, 1: 3}) == {0: 0.25, 1: 0.75}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pmf_dari_hitung({5: 7})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_dari_hitung({5: 7}) == {5: 1.0}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pmf_dari_hitung({1: 1, 2: 1, 3: 1})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_dari_hitung({1: 1, 2: 1, 3: 1}) == {1: 0.3333, 2: 0.3333, 3: 0.3333}"
+              }
+            ]
+          },
+          "hint": "Bagi tiap hitungan dengan jumlah semua hitungan.",
+          "solution": "def pmf_dari_hitung(hitung):\n    total = sum(hitung.values())\n    return {k: round(v / total, 4) for k, v in hitung.items()}",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-03-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pmf_kepala(n)` yang mengembalikan dict PMF banyaknya kepala pada `n` lemparan koin adil dengan kunci `0..n` dan peluang dibulatkan 4 desimal.",
+          "note": "Gunakan enumerasi dengan itertools.",
+          "filename": "solution.py",
+          "starter_code": "from itertools import product\n\ndef pmf_kepala(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pmf_kepala(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_kepala(2) == {0: 0.25, 1: 0.5, 2: 0.25}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pmf_kepala(3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_kepala(3) == {0: 0.125, 1: 0.375, 2: 0.375, 3: 0.125}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pmf_kepala(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_kepala(0) == {0: 1.0}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pmf_kepala(4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_kepala(4)[2] == 0.375"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "len(pmf_kepala(5))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(pmf_kepala(5)) == 6"
+              }
+            ]
+          },
+          "hint": "Hitung banyak hasil dengan k kepala lalu bagi dengan 2 pangkat n.",
+          "solution": "from itertools import product\n\ndef pmf_kepala(n):\n    hitung = {k: 0 for k in range(n + 1)}\n    for h in product('HT', repeat=n):\n        hitung[h.count('H')] += 1\n    return {k: round(v / 2 ** n, 4) for k, v in hitung.items()}",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-03-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `peluang_rentang(pmf, a, b)` yang mengembalikan `P(a <= X <= b)` dari dict PMF, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def peluang_rentang(pmf, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_rentang(pmf, 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pmf = {0: 0.125, 1: 0.375, 2: 0.375, 3: 0.125}\nassert peluang_rentang(pmf, 1, 2) == 0.75"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_rentang(pmf, 2, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rentang(pmf, 2, 3) == 0.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_rentang(pmf, 4, 9)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rentang(pmf, 4, 9) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_rentang(pmf, 0, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rentang(pmf, 0, 3) == 1.0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan peluang nilai yang berada dalam rentang.",
+          "solution": "def peluang_rentang(pmf, a, b):\n    return round(sum(p for x, p in pmf.items() if a <= x <= b), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-03-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pmf_transformasi(pmf, f)` yang mengembalikan dict PMF dari `Y = f(X)`, menjumlahkan peluang nilai `X` yang menghasilkan `Y` sama.",
+          "note": "Bulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def pmf_transformasi(pmf, f):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pmf_transformasi(pmf, abs)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pmf = {-1: 0.25, 0: 0.5, 1: 0.25}\nassert pmf_transformasi(pmf, abs) == {0: 0.5, 1: 0.5}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pmf_transformasi(pmf, lambda x: x * x)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_transformasi(pmf, lambda x: x * x) == {0: 0.5, 1: 0.5}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pmf_transformasi(pmf, lambda x: x + 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_transformasi(pmf, lambda x: x + 1) == {0: 0.25, 1: 0.5, 2: 0.25}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pmf_transformasi(pmf, lambda x: 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_transformasi(pmf, lambda x: 0) == {0: 1.0}"
+              }
+            ]
+          },
+          "hint": "Kumpulkan peluang pada kunci f(x) dengan menjumlahkan bila kunci sama.",
+          "solution": "def pmf_transformasi(pmf, f):\n    y = {}\n    for x, p in pmf.items():\n        y[f(x)] = y.get(f(x), 0) + p\n    return {k: round(v, 4) for k, v in y.items()}",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Variabel acak adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Fungsi dari hasil ke bilangan",
+              "description": ""
+            },
+            {
+              "label": "Peluang",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Himpunan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Fungsi.",
+          "explanation": "Memetakan hasil ke angka."
+        },
+        {
+          "q": "Jumlah seluruh PMF sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "0,5",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "Banyak nilai",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Total.",
+          "explanation": "Pasti terjadi salah satu."
+        },
+        {
+          "q": "PMF dipakai untuk variabel?",
+          "code": null,
+          "options": [
+            {
+              "label": "Diskrit",
+              "description": ""
+            },
+            {
+              "label": "Kontinu",
+              "description": ""
+            },
+            {
+              "label": "Keduanya sama",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hitungan.",
+          "explanation": "Peluang per nilai."
+        },
+        {
+          "q": "PMF jumlah kepala tiga koin untuk 1 kepala?",
+          "code": null,
+          "options": [
+            {
+              "label": "1/8",
+              "description": ""
+            },
+            {
+              "label": "3/8",
+              "description": ""
+            },
+            {
+              "label": "1/2",
+              "description": ""
+            },
+            {
+              "label": "1/4",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tiga cara.",
+          "explanation": "Tiga urutan dari delapan."
+        },
+        {
+          "q": "Y = |X| bila X simetris, peluang nilai Y?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dijumlahkan",
+              "description": ""
+            },
+            {
+              "label": "Dibuang",
+              "description": ""
+            },
+            {
+              "label": "Dikali",
+              "description": ""
+            },
+            {
+              "label": "Tetap",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kelompokkan.",
+          "explanation": "Nilai X berbeda runtuh ke Y sama."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Tidak memeriksa bahwa PMF berjumlah satu. Lebih baik: Selalu cek total dan nilai non-negatif.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Tidak memeriksa bahwa PMF berjumlah satu.",
+          "fix": "Selalu cek total dan nilai non-negatif."
+        },
+        {
+          "mistake": "Memakai ukuran ruang sampel yang salah sebagai penyebut.",
+          "fix": "Enumerasi pada hasil sama mungkin."
+        },
+        {
+          "mistake": "Lupa menjumlahkan peluang saat transformasi tidak satu-satu.",
+          "fix": "Kelompokkan nilai Y yang sama."
+        }
+      ],
+      "summary": [
+        "Variabel acak memetakan hasil ke bilangan.",
+        "PMF memberi peluang tiap nilai dan berjumlah satu.",
+        "Peluang rentang adalah penjumlahan PMF.",
+        "Transformasi mengelompokkan nilai dan menjumlahkan peluangnya."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Variabel acak diskrit dan PMF"
+          },
+          {
+            "type": "text",
+            "source": "Jumlah tujuh punya enam cara dari tiga puluh enam, jumlah dua hanya satu cara, dan seluruh peluang berjumlah satu."
+          },
+          {
+            "type": "code",
+            "source": "from collections import Counter\nfrom itertools import product\n\nhitung = Counter(a + b for a, b in product(range(1, 7), repeat=2))\npmf = {k: v / 36 for k, v in hitung.items()}\nprint(round(pmf[7], 4), round(pmf[2], 4), round(sum(pmf.values()), 4))"
+          },
+          {
+            "type": "text",
+            "source": "PMF tiga lemparan simetris, dan peluang minimal dua kepala adalah setengah."
+          },
+          {
+            "type": "code",
+            "source": "from collections import Counter\nfrom itertools import product\n\nhitung = Counter(h.count(\"H\") for h in map(\"\".join, product(\"HT\", repeat=3)))\npmf = {k: hitung[k] / 8 for k in range(4)}\nprint([pmf[k] for k in range(4)])\nprint(sum(p for k, p in pmf.items() if k >= 2))"
+          },
+          {
+            "type": "text",
+            "source": "Karena kuadrat satu-satu pada nilai nol sampai tiga, peluang tiap nilai baru sama dengan peluang nilai lama."
+          },
+          {
+            "type": "code",
+            "source": "pmf = {0: 0.125, 1: 0.375, 2: 0.375, 3: 0.125}\ny = {}\nfor x, p in pmf.items():\n    y[x * x] = y.get(x * x, 0) + p\nprint(sorted(y.items()))"
+          },
+          {
+            "type": "text",
+            "source": "Frekuensi relatif satu kepala dari dua puluh ribu percobaan sangat dekat dengan peluang teoritis tiga per delapan."
+          },
+          {
+            "type": "code",
+            "source": "import random\nfrom collections import Counter\n\nrandom.seed(1)\ndata = [sum(random.choice(\"HT\") == \"H\" for _ in range(3)) for _ in range(20000)]\nfrek = Counter(data)[1] / 20000\nprint(abs(frek - 0.375) < 0.02)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-03-2",
+      "title": "Fungsi distribusi kumulatif dan kuantil",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung CDF dari PMF diskrit",
+        "Memakai CDF untuk peluang interval",
+        "Menentukan kuantil dan median variabel diskrit",
+        "Menghitung CDF empiris dan peluang waktu tunggu"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa kumulatif",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa kumulatif\n\nPMF menjawab berapa peluang nilai tepat `x`. Seringkali pertanyaan nyata berbunyi berapa peluang nilai paling banyak `x`, misalnya peluang paling banyak dua cacat atau peluang menunggu tidak lebih dari tiga percobaan. Untuk itu kita memakai **fungsi distribusi kumulatif** atau CDF.\n\nCDF didefinisikan `F(x) = P(X <= x)`. Ia menjumlahkan massa dari nilai terkecil sampai `x`. CDF berlaku untuk variabel diskrit maupun kontinu, sehingga menjadi bahasa umum yang menyatukan keduanya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Sifat-sifat CDF\n\nCDF selalu tidak menurun, karena menambah nilai hanya menambah massa. Nilainya mendekati nol di sisi paling kiri dan mendekati satu di sisi paling kanan. Untuk variabel diskrit, CDF berupa fungsi tangga: datar di antara nilai yang mungkin dan melompat naik tepat di tiap nilai yang mungkin, dengan tinggi lompatan sama dengan PMF di titik itu.\n\nKarena itu PMF dapat dipulihkan dari CDF dengan mengambil selisih: `p(x) = F(x) - F(x-1)` untuk bilangan bulat berurutan. CDF dan PMF membawa informasi yang sama dalam bentuk berbeda."
+            },
+            {
+              "type": "code_example",
+              "filename": "cdf.py",
+              "runnable": true,
+              "code": "from itertools import accumulate\n\npmf = [0.125, 0.375, 0.375, 0.125]\ncdf = list(accumulate(pmf))\nprint(cdf)",
+              "expected_output_note": "[0.125, 0.5, 0.875, 1.0]",
+              "explanation": "Penjumlahan kumulatif PMF banyak kepala menghasilkan CDF yang naik bertahap dan berakhir di satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peluang interval\n\nPeluang `X` di antara dua nilai didapat dari selisih CDF: `P(a < X <= b) = F(b) - F(a)`. Perhatikan batas kiri yang eksklusif dan batas kanan yang inklusif. Untuk bilangan bulat, `P(X >= a)` sama dengan `1 - F(a - 1)`.\n\nDetail inklusif dan eksklusif adalah sumber kesalahan satu-satuan yang umum. Biasakan menulis ulang pertanyaan dalam bentuk `P(X <= b) - P(X <= a - 1)` untuk bilangan bulat dan mengecek dengan kasus kecil."
+            },
+            {
+              "type": "code_example",
+              "filename": "peluang_interval.py",
+              "runnable": true,
+              "code": "cdf = [0.125, 0.5, 0.875, 1.0]\nprint(round(cdf[2] - cdf[0], 4))\nprint(round(1 - cdf[1], 4))",
+              "expected_output_note": "0.75\n0.5",
+              "explanation": "Peluang satu sampai dua kepala adalah selisih CDF di dua dan nol. Peluang minimal dua kepala adalah satu dikurangi CDF di satu."
+            }
+          ],
+          "quick_check": {
+            "question": "CDF F(x) adalah?",
+            "options": [
+              "P(X <= x)",
+              "P(X = x)"
+            ],
+            "answer_index": 0,
+            "explanation": "Peluang kumulatif.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Kuantil dan median",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kuantil dan median\n\n**Kuantil** `q` adalah nilai terkecil `x` sehingga `F(x) >= q`. Median adalah kuantil 0,5, nilai tengah yang separuh massa ada di sisi bawahnya. Kuantil 0,9 adalah nilai yang tidak dilampaui dengan peluang sembilan puluh persen, dan dipakai dalam perencanaan kapasitas serta manajemen risiko.\n\nUntuk variabel diskrit kita mencari nilai pertama tempat CDF menyentuh atau melampaui `q`. Karena CDF berbentuk tangga, kuantil selalu salah satu nilai yang mungkin, bukan nilai di antara."
+            },
+            {
+              "type": "code_example",
+              "filename": "kuantil.py",
+              "runnable": true,
+              "code": "nilai = [0, 1, 2, 3]\ncdf = [0.125, 0.5, 0.875, 1.0]\n\ndef kuantil(q):\n    for x, f in zip(nilai, cdf):\n        if f >= q:\n            return x\n\nprint(kuantil(0.5), kuantil(0.9), kuantil(0.1))",
+              "expected_output_note": "1 3 0",
+              "explanation": "Median banyak kepala adalah satu, kuantil sembilan puluh persen adalah tiga, dan kuantil sepuluh persen adalah nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## CDF empiris\n\nDari data, kita bisa membentuk **CDF empiris**: `F(x)` adalah proporsi data yang kurang dari atau sama dengan `x`. Ia berbentuk tangga yang melompat satu per jumlah data di tiap pengamatan. Tanpa asumsi apa pun tentang bentuk distribusi, CDF empiris adalah penaksir yang baik bagi CDF sebenarnya.\n\nCDF empiris dipakai luas: membandingkan dua sampel, menguji kecocokan distribusi, dan menghitung persentil data. Persentil ke-90 suatu dataset tidak lain adalah kuantil 0,9 dari CDF empirisnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "ecdf.py",
+              "runnable": true,
+              "code": "data = [2, 3, 3, 5, 7]\n\ndef ecdf(x):\n    return sum(1 for d in data if d <= x) / len(data)\n\nprint(ecdf(3), ecdf(1), ecdf(7), ecdf(4))",
+              "expected_output_note": "0.6 0.0 1.0 0.6",
+              "explanation": "Tiga dari lima data kurang dari atau sama dengan tiga, tidak ada yang kurang dari satu, semua kurang dari atau sama dengan tujuh, dan empat memberi nilai sama dengan tiga."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Batas inklusif",
+              "markdown": "Untuk bilangan bulat, ingat bahwa P(a < X <= b) = F(b) - F(a) dan P(X >= a) = 1 - F(a - 1). Uji dengan contoh kecil agar tidak salah satu-satuan."
+            }
+          ],
+          "quick_check": {
+            "question": "CDF diskrit berbentuk?",
+            "options": [
+              "Garis lurus",
+              "Tangga"
+            ],
+            "answer_index": 1,
+            "explanation": "Melompat di tiap nilai.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Waktu tunggu dan ekor",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Waktu tunggu dan ekor\n\nContoh klasik CDF adalah waktu tunggu sampai sukses pertama. Bila tiap percobaan berhasil dengan peluang `p` secara independen, peluang belum ada sukses setelah `k` percobaan adalah `(1 - p)^k`. Maka CDF-nya `1 - (1 - p)^k`. Untuk dadu, peluang mendapat angka enam dalam tiga lemparan pertama adalah sekitar 0,4213.\n\nPeluang bahwa kita harus menunggu lebih dari sepuluh lemparan, yaitu ekor distribusinya, adalah `(5/6)^10`, sekitar 0,1615. Mengukur ekor penting untuk perencanaan: seberapa sering kita harus menunggu sangat lama."
+            },
+            {
+              "type": "code_example",
+              "filename": "waktu_tunggu.py",
+              "runnable": true,
+              "code": "print(round(1 - (5 / 6) ** 3, 4), round((5 / 6) ** 10, 4))",
+              "expected_output_note": "0.4213 0.1615",
+              "explanation": "Sekitar empat puluh dua persen peluang mendapat enam dalam tiga lemparan, dan sekitar enam belas persen peluang menunggu lebih dari sepuluh lemparan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memakai CDF dalam praktik\n\nDalam perencanaan layanan, CDF langsung menjawab pertanyaan kapasitas. Bila CDF jumlah pelanggan per jam di nilai dua puluh adalah 0,95, maka menyiapkan layanan untuk dua puluh pelanggan cukup untuk sembilan puluh lima persen jam. Menaikkan kapasitas ke nilai berikutnya memberi tambahan peluang yang makin kecil, sehingga ada titik impas antara biaya dan risiko.\n\nCara berpikir ini sama dengan memilih persentil sebagai target mutu, misalnya latensi persentil ke-99 pada layanan daring. Kuantil membuat target itu terukur dan bisa dibandingkan antar sistem."
+            }
+          ],
+          "quick_check": {
+            "question": "Median adalah kuantil?",
+            "options": [
+              "0,5",
+              "0,1"
+            ],
+            "answer_index": 0,
+            "explanation": "Separuh massa di bawah.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-03-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `cdf_dari_pmf(pmf)` yang menerima dict PMF dan mengembalikan dict CDF dengan nilai kumulatif menurut urutan kunci menaik, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def cdf_dari_pmf(pmf):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "cdf_dari_pmf({0: 0.125, 1: 0.375, 2: 0.375, 3...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_dari_pmf({0: 0.125, 1: 0.375, 2: 0.375, 3: 0.125}) == {0: 0.125, 1: 0.5, 2: 0.875, 3: 1.0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "cdf_dari_pmf({1: 1.0})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_dari_pmf({1: 1.0}) == {1: 1.0}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "cdf_dari_pmf({3: 0.5, 1: 0.5})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_dari_pmf({3: 0.5, 1: 0.5}) == {1: 0.5, 3: 1.0}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "cdf_dari_pmf({0: 0.2, 1: 0.3, 2: 0.5})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_dari_pmf({0: 0.2, 1: 0.3, 2: 0.5}) == {0: 0.2, 1: 0.5, 2: 1.0}"
+              }
+            ]
+          },
+          "hint": "Urutkan kunci lalu jumlahkan peluang secara kumulatif.",
+          "solution": "def cdf_dari_pmf(pmf):\n    total = 0.0\n    hasil = {}\n    for k in sorted(pmf):\n        total += pmf[k]\n        hasil[k] = round(total, 4)\n    return hasil",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-03-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kuantil_diskrit(pmf, q)` yang mengembalikan nilai terkecil `x` dengan `F(x) >= q`, memakai toleransi `1e-12` pada perbandingan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def kuantil_diskrit(pmf, q):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kuantil_diskrit(pmf, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "pmf = {0: 0.125, 1: 0.375, 2: 0.375, 3: 0.125}\nassert kuantil_diskrit(pmf, 0.5) == 1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kuantil_diskrit(pmf, 0.9)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_diskrit(pmf, 0.9) == 3"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kuantil_diskrit(pmf, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_diskrit(pmf, 0.1) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kuantil_diskrit(pmf, 1.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_diskrit(pmf, 1.0) == 3"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "kuantil_diskrit(pmf, 0.125)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_diskrit(pmf, 0.125) == 0"
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "kuantil_diskrit(pmf, 0.126)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_diskrit(pmf, 0.126) == 1"
+              }
+            ]
+          },
+          "hint": "Jumlahkan kumulatif menurut urutan nilai dan berhenti saat mencapai q.",
+          "solution": "def kuantil_diskrit(pmf, q):\n    total = 0.0\n    for k in sorted(pmf):\n        total += pmf[k]\n        if total >= q - 1e-12:\n            return k",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-03-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `ecdf(data, x)` yang mengembalikan proporsi data yang kurang dari atau sama dengan `x`, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def ecdf(data, x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ecdf(d, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "d = [2, 3, 3, 5, 7]\nassert ecdf(d, 3) == 0.6"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ecdf(d, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ecdf(d, 1) == 0.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ecdf(d, 7)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ecdf(d, 7) == 1.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ecdf(d, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ecdf(d, 4) == 0.6"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "ecdf(d, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ecdf(d, 10) == 1.0"
+              }
+            ]
+          },
+          "hint": "Hitung data yang kurang dari atau sama dengan x lalu bagi dengan jumlah data.",
+          "solution": "def ecdf(data, x):\n    return round(sum(1 for d in data if d <= x) / len(data), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-03-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `peluang_hingga(p, k)` yang mengembalikan peluang sukses pertama terjadi dalam `k` percobaan independen pertama dengan peluang sukses `p`, dibulatkan 4 desimal.",
+          "note": "Untuk `k <= 0` kembalikan 0.0.",
+          "filename": "solution.py",
+          "starter_code": "def peluang_hingga(p, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_hingga(1 / 6, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_hingga(1 / 6, 3) == 0.4213"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_hingga(0.5, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_hingga(0.5, 0) == 0.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_hingga(0.5, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_hingga(0.5, 2) == 0.75"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_hingga(0.1, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_hingga(0.1, 10) == 0.6513"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "peluang_hingga(0.3, -2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_hingga(0.3, -2) == 0.0"
+              }
+            ]
+          },
+          "hint": "Pakai komplemen dari belum ada sukses setelah k percobaan.",
+          "solution": "def peluang_hingga(p, k):\n    if k <= 0:\n        return 0.0\n    return round(1 - (1 - p) ** k, 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "CDF F(x) adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "P(X = x)",
+              "description": ""
+            },
+            {
+              "label": "P(X <= x)",
+              "description": ""
+            },
+            {
+              "label": "P(X > x)",
+              "description": ""
+            },
+            {
+              "label": "x / n",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Paling banyak.",
+          "explanation": "Peluang kumulatif."
+        },
+        {
+          "q": "CDF diskrit berbentuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Garis lurus",
+              "description": ""
+            },
+            {
+              "label": "Tangga",
+              "description": ""
+            },
+            {
+              "label": "Parabola",
+              "description": ""
+            },
+            {
+              "label": "Konstan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Lompat.",
+          "explanation": "Melompat di tiap nilai."
+        },
+        {
+          "q": "Median adalah kuantil?",
+          "code": null,
+          "options": [
+            {
+              "label": "0,1",
+              "description": ""
+            },
+            {
+              "label": "0,25",
+              "description": ""
+            },
+            {
+              "label": "0,5",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Tengah.",
+          "explanation": "Separuh massa di bawah."
+        },
+        {
+          "q": "P(a < X <= b) sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "F(b) + F(a)",
+              "description": ""
+            },
+            {
+              "label": "F(b) - F(a)",
+              "description": ""
+            },
+            {
+              "label": "F(a) - F(b)",
+              "description": ""
+            },
+            {
+              "label": "F(b)F(a)",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Selisih.",
+          "explanation": "Selisih CDF."
+        },
+        {
+          "q": "Ekor distribusi menyatakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "P(X > x)",
+              "description": ""
+            },
+            {
+              "label": "P(X = x)",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Simpangan",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lebih dari.",
+          "explanation": "Peluang melampaui."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Salah satu-satuan pada batas inklusif. Lebih baik: P(a < X <= b) = F(b) - F(a).",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Salah satu-satuan pada batas inklusif.",
+          "fix": "P(a < X <= b) = F(b) - F(a)."
+        },
+        {
+          "mistake": "Menganggap kuantil bisa di antara dua nilai diskrit.",
+          "fix": "Kuantil diskrit adalah nilai yang mungkin."
+        },
+        {
+          "mistake": "Mengira CDF bisa menurun.",
+          "fix": "CDF tidak pernah menurun."
+        }
+      ],
+      "summary": [
+        "CDF menjumlahkan massa sampai x dan tidak pernah menurun.",
+        "Peluang interval adalah selisih CDF.",
+        "Kuantil diskrit adalah nilai pertama dengan CDF mencapai q.",
+        "CDF empiris menaksir CDF dari data."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Fungsi distribusi kumulatif dan kuantil"
+          },
+          {
+            "type": "text",
+            "source": "Penjumlahan kumulatif PMF banyak kepala menghasilkan CDF yang naik bertahap dan berakhir di satu."
+          },
+          {
+            "type": "code",
+            "source": "from itertools import accumulate\n\npmf = [0.125, 0.375, 0.375, 0.125]\ncdf = list(accumulate(pmf))\nprint(cdf)"
+          },
+          {
+            "type": "text",
+            "source": "Peluang satu sampai dua kepala adalah selisih CDF di dua dan nol. Peluang minimal dua kepala adalah satu dikurangi CDF di satu."
+          },
+          {
+            "type": "code",
+            "source": "cdf = [0.125, 0.5, 0.875, 1.0]\nprint(round(cdf[2] - cdf[0], 4))\nprint(round(1 - cdf[1], 4))"
+          },
+          {
+            "type": "text",
+            "source": "Median banyak kepala adalah satu, kuantil sembilan puluh persen adalah tiga, dan kuantil sepuluh persen adalah nol."
+          },
+          {
+            "type": "code",
+            "source": "nilai = [0, 1, 2, 3]\ncdf = [0.125, 0.5, 0.875, 1.0]\n\ndef kuantil(q):\n    for x, f in zip(nilai, cdf):\n        if f >= q:\n            return x\n\nprint(kuantil(0.5), kuantil(0.9), kuantil(0.1))"
+          },
+          {
+            "type": "text",
+            "source": "Tiga dari lima data kurang dari atau sama dengan tiga, tidak ada yang kurang dari satu, semua kurang dari atau sama dengan tujuh, dan empat memberi nilai sama dengan tiga."
+          },
+          {
+            "type": "code",
+            "source": "data = [2, 3, 3, 5, 7]\n\ndef ecdf(x):\n    return sum(1 for d in data if d <= x) / len(data)\n\nprint(ecdf(3), ecdf(1), ecdf(7), ecdf(4))"
+          },
+          {
+            "type": "text",
+            "source": "Sekitar empat puluh dua persen peluang mendapat enam dalam tiga lemparan, dan sekitar enam belas persen peluang menunggu lebih dari sepuluh lemparan."
+          },
+          {
+            "type": "code",
+            "source": "print(round(1 - (5 / 6) ** 3, 4), round((5 / 6) ** 10, 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-03-3",
+      "title": "Distribusi gabungan dan marginal",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membaca dan membangun PMF gabungan dua variabel",
+        "Menghitung distribusi marginal dari tabel gabungan",
+        "Menghitung PMF bersyarat",
+        "Menguji independensi dua variabel acak diskrit"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dua variabel sekaligus",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dua variabel sekaligus\n\nDunia nyata jarang menyangkut satu variabel. Kita ingin tahu hubungan antara jumlah kunjungan dan jumlah pembelian, atau antara kelas pelanggan dan status berhenti. **PMF gabungan** memberi peluang untuk pasangan nilai: `p(x, y) = P(X = x dan Y = y)`. Seluruh peluang dalam tabel berjumlah satu.\n\nPMF gabungan menyimpan semua informasi tentang dua variabel dan hubungannya. Dari tabel itu kita bisa mengekstrak distribusi masing-masing variabel, distribusi bersyarat, dan ukuran hubungan seperti kovarians yang dibahas nanti."
+            },
+            {
+              "type": "code_example",
+              "filename": "marginal.py",
+              "runnable": true,
+              "code": "joint = {(0, 0): 0.1, (0, 1): 0.2, (1, 0): 0.3, (1, 1): 0.4}\npx = {}\npy = {}\nfor (x, y), p in joint.items():\n    px[x] = px.get(x, 0) + p\n    py[y] = py.get(y, 0) + p\nprint({k: round(v, 4) for k, v in sorted(px.items())})\nprint({k: round(v, 4) for k, v in sorted(py.items())})",
+              "expected_output_note": "{0: 0.3, 1: 0.7}\n{0: 0.4, 1: 0.6}",
+              "explanation": "Menjumlahkan baris menghasilkan distribusi X dan menjumlahkan kolom menghasilkan distribusi Y."
+            },
+            {
+              "type": "text",
+              "markdown": "## Distribusi marginal\n\nDari tabel gabungan, distribusi satu variabel saja diperoleh dengan menjumlahkan semua nilai variabel lainnya: `p_X(x) = jumlah atas y dari p(x, y)`. Hasilnya disebut distribusi **marginal** karena secara tradisi dijumlahkan di tepi tabel. Ini hukum peluang total yang sama dengan sebelumnya, diterapkan pada tabel.\n\nMarginal menjawab pertanyaan tentang satu variabel dengan mengabaikan yang lain. Tetapi marginal tidak cukup untuk merekonstruksi gabungan: banyak tabel gabungan berbeda dapat memiliki marginal yang sama, dan perbedaannya terletak pada hubungan antar variabel."
+            },
+            {
+              "type": "text",
+              "markdown": "## PMF bersyarat\n\nPMF bersyarat memberi distribusi `Y` bila kita tahu nilai `X`: `p(y | x) = p(x, y) / p_X(x)`. Ini peluang bersyarat dari modul sebelumnya, kini untuk seluruh nilai `Y` sekaligus. Hasilnya distribusi peluang yang valid, berjumlah satu untuk tiap `x`.\n\nDalam pembelajaran mesin, memprediksi `Y` dari `X` pada dasarnya mengestimasi `p(y | x)`. Tabel gabungan dibagi menjadi baris-baris, tiap baris dinormalisasi, dan itulah model sederhana yang disebut tabel peluang bersyarat."
+            },
+            {
+              "type": "code_example",
+              "filename": "bersyarat_tabel.py",
+              "runnable": true,
+              "code": "joint = {(0, 0): 0.1, (0, 1): 0.2, (1, 0): 0.3, (1, 1): 0.4}\npx1 = joint[(1, 0)] + joint[(1, 1)]\nprint(round(joint[(1, 1)] / px1, 4), round(joint[(1, 0)] / px1, 4))",
+              "expected_output_note": "0.5714 0.4286",
+              "explanation": "Bila X bernilai satu, peluang Y bernilai satu sekitar lima puluh tujuh persen dan Y bernilai nol sekitar empat puluh tiga persen."
+            }
+          ],
+          "quick_check": {
+            "question": "PMF gabungan p(x,y) adalah?",
+            "options": [
+              "P(X=x dan Y=y)",
+              "P(X=x atau Y=y)"
+            ],
+            "answer_index": 0,
+            "explanation": "Pasangan nilai.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Independensi dua variabel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Independensi dua variabel\n\nDua variabel acak diskrit independen bila `p(x, y) = p_X(x) * p_Y(y)` untuk **semua** pasangan. Cukup satu pasangan yang melanggar untuk membuktikan ketergantungan. Pada tabel di atas, `p(0, 0) = 0,1` sedangkan `p_X(0) * p_Y(0) = 0,3 * 0,4 = 0,12`, sehingga tidak independen.\n\nSetara dengan itu, `p(y | x)` tidak bergantung pada `x`: semua baris tabel bersyarat identik. Memeriksa kesamaan baris sering lebih mudah dilihat daripada mengalikan marginal."
+            },
+            {
+              "type": "code_example",
+              "filename": "uji_independen.py",
+              "runnable": true,
+              "code": "joint = {(0, 0): 0.1, (0, 1): 0.2, (1, 0): 0.3, (1, 1): 0.4}\npx = {0: 0.3, 1: 0.7}\npy = {0: 0.4, 1: 0.6}\nprint(all(abs(joint[(x, y)] - px[x] * py[y]) < 1e-9 for x in px for y in py))\n\nind = {(x, y): px[x] * py[y] for x in px for y in py}\nprint(all(abs(ind[(x, y)] - px[x] * py[y]) < 1e-9 for x in px for y in py))",
+              "expected_output_note": "False\nTrue",
+              "explanation": "Tabel pertama tidak independen. Tabel yang dibangun dari hasil kali marginal tentu independen."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Marginal tidak cukup",
+              "markdown": "Marginal yang sama tidak menjamin gabungan yang sama. Dua tabel dapat memiliki marginal identik tetapi hubungan antar variabel yang sangat berbeda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh dua dadu\n\nMisalkan `X` adalah dadu pertama dan `Y` adalah nilai maksimum kedua dadu. Keduanya jelas tidak independen: bila `X = 6` maka `Y` pasti 6. Dari enumerasi 36 hasil kita dapat menghitung bahwa `P(Y = 6) = 11/36`, sekitar 0,3056, tetapi `P(Y = 6 | X = 3) = 1/6`, sekitar 0,1667.\n\nPerbedaan antara peluang marginal dan bersyarat adalah bukti langsung ketergantungan. Pengetahuan tentang `X` mengubah keyakinan kita tentang `Y`, dan itulah yang dipelajari model prediktif dari data."
+            },
+            {
+              "type": "code_example",
+              "filename": "dadu_maks.py",
+              "runnable": true,
+              "code": "from itertools import product\n\nS = list(product(range(1, 7), repeat=2))\ny6 = sum(1 for a, b in S if max(a, b) == 6) / 36\nx3 = [h for h in S if h[0] == 3]\ny6_x3 = sum(1 for a, b in x3 if max(a, b) == 6) / len(x3)\nprint(round(y6, 4), round(y6_x3, 4))",
+              "expected_output_note": "0.3056 0.1667",
+              "explanation": "Peluang maksimum enam secara umum lebih besar daripada peluangnya bila dadu pertama diketahui tiga, sehingga kedua variabel bergantung."
+            }
+          ],
+          "quick_check": {
+            "question": "Marginal X diperoleh dengan?",
+            "options": [
+              "Mengalikan",
+              "Menjumlahkan atas y"
+            ],
+            "answer_index": 1,
+            "explanation": "Peluang total.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Dari tabel ke model",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari tabel ke model\n\nSeluruh bahasan ini adalah fondasi model prediktif. Memodelkan hubungan antara fitur dan label berarti menaksir distribusi gabungan atau bersyarat dari data. Naive Bayes menaksir `p(fitur | kelas)` dengan asumsi independen bersyarat, regresi logistik menaksir `p(kelas | fitur)` langsung.\n\nMenguasai tabel gabungan, marginal, dan bersyarat membuat berbagai model terasa seperti variasi dari ide yang sama. Latihan berikut membuatmu menghitung ketiganya dari tabel dan menguji independensi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membangun tabel gabungan dari data\n\nDalam praktik kamu jarang diberi tabel gabungan jadi. Biasanya kamu punya daftar pengamatan berpasangan, misalnya jumlah kunjungan dan apakah pelanggan membeli. Hitung berapa kali tiap pasangan muncul, bagi dengan jumlah total, dan hasilnya adalah PMF gabungan empiris.\n\nDengan pandas, `pd.crosstab` melakukan hitungan itu dan opsi normalisasi menghasilkan peluang gabungan, baris, atau kolom. Memahami apa yang dihitung di balik fungsi itu membuat kamu tahu persis penyebut mana yang dipakai, sumber kebingungan yang sangat umum."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tiga tabel dari satu data\n\nSatu tabel hitungan dapat dinormalisasi tiga cara. Dibagi total keseluruhan menghasilkan peluang gabungan. Dibagi total tiap baris menghasilkan peluang kolom bersyarat pada baris. Dibagi total tiap kolom menghasilkan peluang baris bersyarat pada kolom. Ketiganya menjawab pertanyaan berbeda, dan memilih yang salah adalah kesalahan interpretasi paling sering pada laporan tabel silang.\n\nSelalu tulis kalimat pertanyaannya dulu, misalnya di antara pelanggan yang menerima promo berapa persen yang berhenti, lalu pilih normalisasi yang cocok."
+            }
+          ],
+          "quick_check": {
+            "question": "p(y|x) dihitung?",
+            "options": [
+              "p(x,y)/p_X(x)",
+              "p(x,y)/p_Y(y)"
+            ],
+            "answer_index": 0,
+            "explanation": "Normalisasi baris.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-03-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `marginal(joint, sumbu)` yang menerima dict PMF gabungan berkunci tuple `(x, y)` dan mengembalikan dict marginal.",
+          "note": "Bila `sumbu` bernilai 0 kembalikan marginal `X`, bila 1 marginal `Y`. Bulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def marginal(joint, sumbu):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "marginal(j, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "j = {(0, 0): 0.1, (0, 1): 0.2, (1, 0): 0.3, (1, 1): 0.4}\nassert marginal(j, 0) == {0: 0.3, 1: 0.7}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "marginal(j, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert marginal(j, 1) == {0: 0.4, 1: 0.6}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "marginal({(0, 0): 1.0}, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert marginal({(0, 0): 1.0}, 0) == {0: 1.0}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "marginal({(1, 'a'): 0.5, (2, 'a'): 0.5}, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert marginal({(1, 'a'): 0.5, (2, 'a'): 0.5}, 1) == {'a': 1.0}"
+              }
+            ]
+          },
+          "hint": "Jumlahkan peluang semua pasangan yang memiliki nilai sama pada sumbu yang dipilih.",
+          "solution": "def marginal(joint, sumbu):\n    hasil = {}\n    for kunci, p in joint.items():\n        hasil[kunci[sumbu]] = hasil.get(kunci[sumbu], 0) + p\n    return {k: round(v, 4) for k, v in hasil.items()}",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-03-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bersyarat(joint, x, y)` yang mengembalikan `P(Y = y | X = x)` dari PMF gabungan berkunci tuple, dibulatkan 4 desimal.",
+          "note": "Kembalikan 0.0 bila pasangan tidak ada.",
+          "filename": "solution.py",
+          "starter_code": "def bersyarat(joint, x, y):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bersyarat(j, 1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "j = {(0, 0): 0.1, (0, 1): 0.2, (1, 0): 0.3, (1, 1): 0.4}\nassert bersyarat(j, 1, 1) == 0.5714"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bersyarat(j, 0, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bersyarat(j, 0, 0) == 0.3333"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bersyarat(j, 1, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bersyarat(j, 1, 0) == 0.4286"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bersyarat(j, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bersyarat(j, 0, 1) == 0.6667"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "bersyarat({(0, 0): 1.0}, 0, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bersyarat({(0, 0): 1.0}, 0, 5) == 0.0"
+              }
+            ]
+          },
+          "hint": "Bagi peluang pasangan dengan marginal X pada nilai x.",
+          "solution": "def bersyarat(joint, x, y):\n    px = sum(p for (a, b), p in joint.items() if a == x)\n    return round(joint.get((x, y), 0) / px, 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-03-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `peluang_kejadian_gabungan(joint, syarat)` yang menjumlahkan peluang semua pasangan `(x, y)` yang memenuhi `syarat(x, y)` dan mengembalikannya dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def peluang_kejadian_gabungan(joint, syarat):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_kejadian_gabungan(j, lambda x, y: x =...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "j = {(0, 0): 0.1, (0, 1): 0.2, (1, 0): 0.3, (1, 1): 0.4}\nassert peluang_kejadian_gabungan(j, lambda x, y: x == y) == 0.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_kejadian_gabungan(j, lambda x, y: x +...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_kejadian_gabungan(j, lambda x, y: x + y >= 1) == 0.9"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_kejadian_gabungan(j, lambda x, y: x > y)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_kejadian_gabungan(j, lambda x, y: x > y) == 0.3"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_kejadian_gabungan(j, lambda x, y: False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_kejadian_gabungan(j, lambda x, y: False) == 0.0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan peluang pasangan yang lolos syarat.",
+          "solution": "def peluang_kejadian_gabungan(joint, syarat):\n    return round(sum(p for (x, y), p in joint.items() if syarat(x, y)), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-03-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `apakah_independen_joint(joint)` yang mengembalikan True bila `p(x, y) = p_X(x) * p_Y(y)` untuk semua pasangan nilai `x` dan `y` yang muncul (pasangan yang tidak ada dalam dict dianggap peluang 0), dengan toleransi `1e-9`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def apakah_independen_joint(joint):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "apakah_independen_joint(j)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "j = {(0, 0): 0.1, (0, 1): 0.2, (1, 0): 0.3, (1, 1): 0.4}\nassert apakah_independen_joint(j) is False"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "apakah_independen_joint({(0, 0): 0.12, (0, 1)...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert apakah_independen_joint({(0, 0): 0.12, (0, 1): 0.18, (1, 0): 0.28, (1, 1): 0.42}) is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "apakah_independen_joint({(0, 0): 0.25, (0, 1)...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert apakah_independen_joint({(0, 0): 0.25, (0, 1): 0.25, (1, 0): 0.25, (1, 1): 0.25}) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "apakah_independen_joint({(0, 0): 0.5, (1, 1):...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert apakah_independen_joint({(0, 0): 0.5, (1, 1): 0.5}) is False"
+              }
+            ]
+          },
+          "hint": "Hitung marginal lalu bandingkan setiap sel termasuk yang tidak tercatat.",
+          "solution": "def apakah_independen_joint(joint):\n    px = {}\n    py = {}\n    for (x, y), p in joint.items():\n        px[x] = px.get(x, 0) + p\n        py[y] = py.get(y, 0) + p\n    return all(abs(joint.get((x, y), 0) - px[x] * py[y]) < 1e-9 for x in px for y in py)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "PMF gabungan p(x,y) adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "P(X=x atau Y=y)",
+              "description": ""
+            },
+            {
+              "label": "P(X=x dan Y=y)",
+              "description": ""
+            },
+            {
+              "label": "P(X=x)+P(Y=y)",
+              "description": ""
+            },
+            {
+              "label": "P(Y=y | X=x)",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dan.",
+          "explanation": "Pasangan nilai."
+        },
+        {
+          "q": "Marginal X diperoleh dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menjumlahkan atas y",
+              "description": ""
+            },
+            {
+              "label": "Mengalikan",
+              "description": ""
+            },
+            {
+              "label": "Membagi",
+              "description": ""
+            },
+            {
+              "label": "Mengurangi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Jumlahkan.",
+          "explanation": "Peluang total."
+        },
+        {
+          "q": "p(y|x) dihitung?",
+          "code": null,
+          "options": [
+            {
+              "label": "p(x,y)/p_X(x)",
+              "description": ""
+            },
+            {
+              "label": "p(x,y)/p_Y(y)",
+              "description": ""
+            },
+            {
+              "label": "p_X p_Y",
+              "description": ""
+            },
+            {
+              "label": "p(x,y)+p_X",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bagi marginal X.",
+          "explanation": "Normalisasi baris."
+        },
+        {
+          "q": "Independen bila p(x,y) sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "p_X(x) p_Y(y)",
+              "description": ""
+            },
+            {
+              "label": "p_X(x)+p_Y(y)",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hasil kali.",
+          "explanation": "Untuk semua pasangan."
+        },
+        {
+          "q": "Marginal sama berarti gabungan sama?",
+          "code": null,
+          "options": [
+            {
+              "label": "Ya",
+              "description": ""
+            },
+            {
+              "label": "Tidak selalu",
+              "description": ""
+            },
+            {
+              "label": "Selalu",
+              "description": ""
+            },
+            {
+              "label": "Hanya diskrit",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tidak cukup.",
+          "explanation": "Hubungan bisa berbeda."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira marginal cukup untuk merekonstruksi gabungan. Lebih baik: Marginal tidak memuat hubungan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira marginal cukup untuk merekonstruksi gabungan.",
+          "fix": "Marginal tidak memuat hubungan."
+        },
+        {
+          "mistake": "Menguji independensi hanya pada satu pasangan.",
+          "fix": "Harus semua pasangan, satu pelanggaran cukup untuk menolak."
+        },
+        {
+          "mistake": "Lupa pasangan yang tidak tercatat bernilai nol.",
+          "fix": "Anggap peluangnya nol."
+        }
+      ],
+      "summary": [
+        "PMF gabungan memberi peluang pasangan nilai.",
+        "Marginal didapat dengan menjumlahkan variabel lain.",
+        "PMF bersyarat menormalisasi baris tabel.",
+        "Independen berarti gabungan sama dengan hasil kali marginal di semua sel."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Distribusi gabungan dan marginal"
+          },
+          {
+            "type": "text",
+            "source": "Menjumlahkan baris menghasilkan distribusi X dan menjumlahkan kolom menghasilkan distribusi Y."
+          },
+          {
+            "type": "code",
+            "source": "joint = {(0, 0): 0.1, (0, 1): 0.2, (1, 0): 0.3, (1, 1): 0.4}\npx = {}\npy = {}\nfor (x, y), p in joint.items():\n    px[x] = px.get(x, 0) + p\n    py[y] = py.get(y, 0) + p\nprint({k: round(v, 4) for k, v in sorted(px.items())})\nprint({k: round(v, 4) for k, v in sorted(py.items())})"
+          },
+          {
+            "type": "text",
+            "source": "Bila X bernilai satu, peluang Y bernilai satu sekitar lima puluh tujuh persen dan Y bernilai nol sekitar empat puluh tiga persen."
+          },
+          {
+            "type": "code",
+            "source": "joint = {(0, 0): 0.1, (0, 1): 0.2, (1, 0): 0.3, (1, 1): 0.4}\npx1 = joint[(1, 0)] + joint[(1, 1)]\nprint(round(joint[(1, 1)] / px1, 4), round(joint[(1, 0)] / px1, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Tabel pertama tidak independen. Tabel yang dibangun dari hasil kali marginal tentu independen."
+          },
+          {
+            "type": "code",
+            "source": "joint = {(0, 0): 0.1, (0, 1): 0.2, (1, 0): 0.3, (1, 1): 0.4}\npx = {0: 0.3, 1: 0.7}\npy = {0: 0.4, 1: 0.6}\nprint(all(abs(joint[(x, y)] - px[x] * py[y]) < 1e-9 for x in px for y in py))\n\nind = {(x, y): px[x] * py[y] for x in px for y in py}\nprint(all(abs(ind[(x, y)] - px[x] * py[y]) < 1e-9 for x in px for y in py))"
+          },
+          {
+            "type": "text",
+            "source": "Peluang maksimum enam secara umum lebih besar daripada peluangnya bila dadu pertama diketahui tiga, sehingga kedua variabel bergantung."
+          },
+          {
+            "type": "code",
+            "source": "from itertools import product\n\nS = list(product(range(1, 7), repeat=2))\ny6 = sum(1 for a, b in S if max(a, b) == 6) / 36\nx3 = [h for h in S if h[0] == 3]\ny6_x3 = sum(1 for a, b in x3 if max(a, b) == 6) / len(x3)\nprint(round(y6, 4), round(y6_x3, 4))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

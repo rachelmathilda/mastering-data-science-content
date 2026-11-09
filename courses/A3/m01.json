@@ -1,0 +1,1560 @@
+{
+  "schema_version": 2,
+  "course_id": "A3",
+  "module_no": 1,
+  "title": "Fungsi, limit, dan kontinuitas",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memahami fungsi dan fungsi yang umum dalam ML",
+    "Memahami limit dan kontinuitas",
+    "Mencari akar dengan bisection"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A3-01-1",
+    "exercise_id": "A3-01-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def softplus(x):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A3-01-1",
+      "title": "Fungsi dan grafiknya",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Memahami fungsi sebagai pemetaan dengan domain dan range",
+        "Menyusun komposisi fungsi",
+        "Mengenali fungsi yang sering muncul dalam ML",
+        "Memakai eksponen dan logaritma dengan benar"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Fungsi sebagai mesin",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi sebagai mesin\n\n**Fungsi** adalah aturan yang memetakan setiap masukan ke tepat satu keluaran. Tulis `y = f(x)`: `x` adalah masukan, `f` aturan, dan `y` keluaran. Himpunan masukan yang diizinkan disebut **domain**, dan himpunan keluaran yang benar-benar muncul disebut **range**. Fungsi `f(x) = sqrt(x)` hanya terdefinisi untuk `x` tak negatif, dan `f(x) = 1/x` tidak terdefinisi di nol.\n\nDalam machine learning hampir semua hal adalah fungsi. Model adalah fungsi dari fitur ke prediksi. Fungsi loss memetakan parameter ke bilangan yang mengukur seberapa buruk model. Melatih model berarti mencari masukan fungsi loss yang memberi keluaran terkecil. Karena itu memahami perilaku fungsi adalah fondasi seluruh modul kalkulus ini."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca grafik\n\nGrafik fungsi adalah kumpulan titik `(x, f(x))`. Dari grafik kita membaca banyak sifat sekaligus: di mana fungsi naik atau turun, di mana ia mencapai puncak atau lembah, dan apakah ia putus. Fungsi **naik** bila `f` makin besar saat `x` bertambah, dan **turun** bila sebaliknya. Titik tempat arah berubah adalah kandidat nilai maksimum atau minimum, yang menjadi pusat perhatian dalam optimasi.\n\nSebuah kurva adalah grafik fungsi hanya bila setiap garis vertikal memotongnya paling banyak sekali. Lingkaran bukan fungsi dari `x` karena satu `x` memberi dua `y`. Uji garis vertikal ini sederhana tetapi berguna untuk memeriksa apakah suatu hubungan benar-benar fungsi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Komposisi fungsi\n\nDua fungsi dapat digabung dengan memasukkan keluaran satu ke yang lain: `(f o g)(x) = f(g(x))`. Urutan penting. Mengalikan dua lalu menambah satu berbeda dari menambah satu lalu mengalikan dua. Secara umum `f(g(x))` tidak sama dengan `g(f(x))`.\n\nKomposisi adalah cara kerja jaringan saraf: tiap lapisan adalah fungsi, dan jaringan penuh adalah komposisi banyak lapisan. Lapisan pertama mengubah masukan, lapisan kedua mengubah hasilnya, dan seterusnya sampai prediksi. Pada modul turunan nanti kamu akan melihat aturan rantai, alat untuk menurunkan komposisi, yang menjadi dasar algoritma backpropagation."
+            },
+            {
+              "type": "code_example",
+              "filename": "fungsi_dasar.py",
+              "runnable": true,
+              "code": "def f(x):\n    return x ** 2 + 1\n\ndef g(x):\n    return 2 * x + 1\n\ndef komposisi(f, g):\n    return lambda x: f(g(x))\n\nprint(f(3), g(3))\nfg = komposisi(f, g)\ngf = komposisi(g, f)\nprint(fg(1), gf(1))\nprint(fg(2) == gf(2))",
+              "expected_output_note": "10 7\n10 5\nFalse",
+              "explanation": "`fg(1)` menghitung `f(g(1)) = f(3) = 10` sedangkan `gf(1)` menghitung `g(f(1)) = g(2) = 5`. Urutan komposisi memengaruhi hasil."
+            }
+          ],
+          "quick_check": {
+            "question": "Fungsi memetakan setiap masukan ke?",
+            "options": [
+              "Tepat satu keluaran",
+              "Banyak keluaran"
+            ],
+            "answer_index": 0,
+            "explanation": "Satu masukan memberi satu keluaran.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Fungsi yang sering muncul",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi yang sering muncul\n\nBeberapa keluarga fungsi muncul berulang kali. **Fungsi linear** `a x + b` membentuk garis lurus dan menjadi bahan dasar regresi. **Polinom** seperti `x^2` dan `x^3` membentuk kurva halus dan dipakai untuk memodelkan hubungan melengkung. **Eksponen** `e^x` tumbuh sangat cepat dan selalu positif, sedangkan **logaritma** `ln x` adalah kebalikannya dan tumbuh sangat lambat.\n\nDalam ML ada fungsi aktivasi yang harus kamu kenal. **Sigmoid** `1 / (1 + e^-x)` memampatkan bilangan apa pun ke antara nol dan satu sehingga cocok sebagai peluang. **Tanh** serupa tetapi berkisar antara minus satu dan satu. **ReLU** `max(0, x)` mengembalikan nol untuk masukan negatif dan masukan itu sendiri untuk yang positif, sederhana dan cepat sehingga menjadi pilihan umum pada jaringan dalam."
+            },
+            {
+              "type": "code_example",
+              "filename": "fungsi_ml.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef sigmoid(x):\n    return 1 / (1 + np.exp(-x))\n\ndef relu(x):\n    return np.maximum(0, x)\n\nx = np.array([-2.0, 0.0, 2.0])\nprint(sigmoid(x).round(4).tolist())\nprint(relu(np.array([-3.0, 2.5])).tolist())\nprint(np.tanh(x).round(4).tolist())\nprint(np.allclose(sigmoid(x) + sigmoid(-x), 1))",
+              "expected_output_note": "[0.1192, 0.5, 0.8808]\n[0.0, 2.5]\n[-0.964, 0.0, 0.964]\nTrue",
+              "explanation": "Sigmoid simetris di sekitar 0,5 sehingga `sigmoid(x) + sigmoid(-x)` selalu satu. ReLU memotong nilai negatif menjadi nol."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Hati-hati overflow",
+              "markdown": "Untuk masukan yang sangat negatif `np.exp(-x)` pada sigmoid bisa meluap. Pada kode produksi gunakan versi stabil yang memakai `e^x / (1 + e^x)` untuk `x` negatif."
+            }
+          ],
+          "quick_check": {
+            "question": "Domain adalah?",
+            "options": [
+              "Himpunan keluaran",
+              "Himpunan masukan yang diizinkan"
+            ],
+            "answer_index": 1,
+            "explanation": "Masukan yang membuat fungsi terdefinisi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Eksponen dan logaritma",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Eksponen dan logaritma\n\nEksponen dan logaritma adalah pasangan invers: `ln(e^x) = x` dan `e^(ln x) = x`. Logaritma mengubah perkalian menjadi penjumlahan: `ln(a b) = ln a + ln b`, dan pangkat menjadi perkalian: `ln(a^n) = n ln a`. Sifat ini sangat berguna dalam statistik karena peluang gabungan adalah hasil kali yang bisa menjadi sangat kecil, sehingga kita menjumlahkan log-peluangnya demi kestabilan numerik.\n\nDomain logaritma hanya bilangan positif. `ln 0` tak terhingga negatif dan `ln` bilangan negatif tidak terdefinisi pada bilangan real. Kesalahan umum dalam kode adalah menghitung log dari nol, misalnya saat peluang prediksi tepat nol pada cross-entropy. Biasanya kita menambahkan bilangan sangat kecil agar aman."
+            },
+            {
+              "type": "code_example",
+              "filename": "eksponen_log.py",
+              "runnable": true,
+              "code": "import math\n\nprint(round(math.exp(1), 4), round(math.log(math.e ** 3), 4))\nprint(round(math.log(6), 4), round(math.log(2) + math.log(3), 4))\nprint(round(math.log2(8), 4), round(math.log10(1000), 4))",
+              "expected_output_note": "2.7183 3.0\n1.7918 1.7918\n3.0 3.0",
+              "explanation": "Logaritma menjadikan hasil kali sebagai penjumlahan. Basis dua dan sepuluh memberi hasil bulat pada pangkat yang cocok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Bentuk fungsi dan intuisinya\n\nMengenali bentuk fungsi membantu menebak perilaku sebelum menghitung. Garis lurus memiliki laju perubahan tetap. Parabola `x^2` punya satu lembah di nol dan memiliki dua cabang simetris. Eksponen tumbuh makin cepat, logaritma makin lambat, dan sigmoid melandai di kedua ujungnya sehingga perubahan masukan besar hampir tidak mengubah keluaran.\n\nIntuisi ini kelak menjelaskan mengapa pelatihan jaringan bisa macet. Bila keluaran sigmoid sudah mendekati nol atau satu, kemiringan kurvanya hampir nol, dan sinyal untuk memperbaiki parameter menghilang. ReLU menghindari masalah itu untuk masukan positif. Memahami grafik adalah langkah pertama memahami perilaku optimasi."
+            }
+          ],
+          "quick_check": {
+            "question": "Komposisi f(g(x)) berarti?",
+            "options": [
+              "g dulu lalu f",
+              "f dulu lalu g"
+            ],
+            "answer_index": 0,
+            "explanation": "Masukkan keluaran g ke f.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-01-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `f_polinom(koef, x)` yang menghitung nilai polinom dengan koefisien dari pangkat tertinggi ke terendah (skema Horner).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def f_polinom(koef, x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "f_polinom([1, 0, 1], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert f_polinom([1, 0, 1], 3) == 10"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "f_polinom([2, 1], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert f_polinom([2, 1], 3) == 7"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "f_polinom([5], 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert f_polinom([5], 10) == 5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "f_polinom([1, -3, 2], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert f_polinom([1, -3, 2], 1) == 0"
+              }
+            ]
+          },
+          "hint": "Mulai dari nol lalu ulangi hasil kali x ditambah koefisien berikutnya.",
+          "solution": "def f_polinom(koef, x):\n    hasil = 0\n    for c in koef:\n        hasil = hasil * x + c\n    return hasil",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-01-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `komposisi(f, g)` yang mengembalikan fungsi baru yang menghitung `f(g(x))`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def komposisi(f, g):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "komposisi(lambda x: x + 1, lambda x: x * 2)(3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komposisi(lambda x: x + 1, lambda x: x * 2)(3) == 7"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "komposisi(lambda x: x * 2, lambda x: x + 1)(3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komposisi(lambda x: x * 2, lambda x: x + 1)(3) == 8"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "komposisi(abs, lambda x: x - 5)(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komposisi(abs, lambda x: x - 5)(2) == 3"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "komposisi(lambda x: x ** 2, lambda x: x ** 2)(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komposisi(lambda x: x ** 2, lambda x: x ** 2)(2) == 16"
+              }
+            ]
+          },
+          "hint": "Kembalikan fungsi lambda yang memanggil g lalu f.",
+          "solution": "def komposisi(f, g):\n    return lambda x: f(g(x))",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-01-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `sigmoid(x)` dengan `math.exp` yang stabil untuk `x` sangat negatif atau sangat positif dan mengembalikan hasil dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef sigmoid(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "sigmoid(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sigmoid(0) == 0.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sigmoid(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sigmoid(2) == 0.8808"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sigmoid(-2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sigmoid(-2) == 0.1192"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sigmoid(10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sigmoid(10) == 1.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "sigmoid(-1000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sigmoid(-1000) == 0.0"
+              }
+            ]
+          },
+          "hint": "Untuk x nonnegatif pakai 1/(1+e^-x) dan untuk x negatif pakai e^x/(1+e^x).",
+          "solution": "import math\n\ndef sigmoid(x):\n    if x >= 0:\n        return round(1 / (1 + math.exp(-x)), 4)\n    z = math.exp(x)\n    return round(z / (1 + z), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-01-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `softplus(x)` yaitu `ln(1 + e^x)` yang stabil untuk `x` besar (jangan menghitung `e^x` langsung untuk `x` besar).",
+          "note": "Gunakan identitas `max(x, 0) + ln(1 + e^-|x|)` dan bulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef softplus(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "softplus(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert softplus(0) == 0.6931"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "softplus(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert softplus(2) == 2.1269"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "softplus(-2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert softplus(-2) == 0.1269"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "softplus(100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert softplus(100) == 100.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "softplus(-100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert softplus(-100) == 0.0"
+              }
+            ]
+          },
+          "hint": "Gunakan math.log1p dan exp dari minus nilai mutlak x.",
+          "solution": "import math\n\ndef softplus(x):\n    return round(max(x, 0) + math.log1p(math.exp(-abs(x))), 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Fungsi memetakan setiap masukan ke?",
+          "code": null,
+          "options": [
+            {
+              "label": "Banyak keluaran",
+              "description": ""
+            },
+            {
+              "label": "Tepat satu keluaran",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada keluaran",
+              "description": ""
+            },
+            {
+              "label": "Dua keluaran",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Uji garis vertikal.",
+          "explanation": "Satu masukan memberi satu keluaran."
+        },
+        {
+          "q": "Domain adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Himpunan keluaran",
+              "description": ""
+            },
+            {
+              "label": "Himpunan masukan yang diizinkan",
+              "description": ""
+            },
+            {
+              "label": "Kemiringan",
+              "description": ""
+            },
+            {
+              "label": "Titik puncak",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Masukan.",
+          "explanation": "Masukan yang membuat fungsi terdefinisi."
+        },
+        {
+          "q": "Komposisi f(g(x)) berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "g dulu lalu f",
+              "description": ""
+            },
+            {
+              "label": "f dulu lalu g",
+              "description": ""
+            },
+            {
+              "label": "f dikali g",
+              "description": ""
+            },
+            {
+              "label": "f ditambah g",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dalam ke luar.",
+          "explanation": "Masukkan keluaran g ke f."
+        },
+        {
+          "q": "Sigmoid berkisar antara?",
+          "code": null,
+          "options": [
+            {
+              "label": "-1 dan 1",
+              "description": ""
+            },
+            {
+              "label": "0 dan 1",
+              "description": ""
+            },
+            {
+              "label": "0 dan tak hingga",
+              "description": ""
+            },
+            {
+              "label": "Semua bilangan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Peluang.",
+          "explanation": "Memampatkan ke antara nol dan satu."
+        },
+        {
+          "q": "ln(a b) sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "ln a ln b",
+              "description": ""
+            },
+            {
+              "label": "ln a + ln b",
+              "description": ""
+            },
+            {
+              "label": "ln a - ln b",
+              "description": ""
+            },
+            {
+              "label": "a ln b",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Sifat log.",
+          "explanation": "Log mengubah kali menjadi tambah."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira komposisi bersifat komutatif. Lebih baik: Urutan f(g(x)) dan g(f(x)) umumnya berbeda.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira komposisi bersifat komutatif.",
+          "fix": "Urutan f(g(x)) dan g(f(x)) umumnya berbeda."
+        },
+        {
+          "mistake": "Menghitung log dari nol atau bilangan negatif.",
+          "fix": "Domain log hanya bilangan positif."
+        },
+        {
+          "mistake": "Memakai sigmoid naif untuk masukan sangat negatif.",
+          "fix": "Gunakan versi stabil untuk menghindari overflow."
+        }
+      ],
+      "summary": [
+        "Fungsi memetakan masukan ke satu keluaran dan memiliki domain dan range.",
+        "Komposisi fungsi adalah dasar jaringan saraf.",
+        "Sigmoid, tanh, dan ReLU adalah fungsi aktivasi penting.",
+        "Logaritma mengubah perkalian menjadi penjumlahan dan hanya terdefinisi untuk bilangan positif."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Fungsi dan grafiknya"
+          },
+          {
+            "type": "text",
+            "source": "`fg(1)` menghitung `f(g(1)) = f(3) = 10` sedangkan `gf(1)` menghitung `g(f(1)) = g(2) = 5`. Urutan komposisi memengaruhi hasil."
+          },
+          {
+            "type": "code",
+            "source": "def f(x):\n    return x ** 2 + 1\n\ndef g(x):\n    return 2 * x + 1\n\ndef komposisi(f, g):\n    return lambda x: f(g(x))\n\nprint(f(3), g(3))\nfg = komposisi(f, g)\ngf = komposisi(g, f)\nprint(fg(1), gf(1))\nprint(fg(2) == gf(2))"
+          },
+          {
+            "type": "text",
+            "source": "Sigmoid simetris di sekitar 0,5 sehingga `sigmoid(x) + sigmoid(-x)` selalu satu. ReLU memotong nilai negatif menjadi nol."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef sigmoid(x):\n    return 1 / (1 + np.exp(-x))\n\ndef relu(x):\n    return np.maximum(0, x)\n\nx = np.array([-2.0, 0.0, 2.0])\nprint(sigmoid(x).round(4).tolist())\nprint(relu(np.array([-3.0, 2.5])).tolist())\nprint(np.tanh(x).round(4).tolist())\nprint(np.allclose(sigmoid(x) + sigmoid(-x), 1))"
+          },
+          {
+            "type": "text",
+            "source": "Logaritma menjadikan hasil kali sebagai penjumlahan. Basis dua dan sepuluh memberi hasil bulat pada pangkat yang cocok."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nprint(round(math.exp(1), 4), round(math.log(math.e ** 3), 4))\nprint(round(math.log(6), 4), round(math.log(2) + math.log(3), 4))\nprint(round(math.log2(8), 4), round(math.log10(1000), 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A3-01-2",
+      "title": "Limit",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami limit sebagai nilai yang didekati fungsi",
+        "Memeriksa limit secara numerik dari kiri dan kanan",
+        "Memakai limit di tak hingga",
+        "Mengenali limit penting yang mendasari turunan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mendekati tanpa menyentuh",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mendekati tanpa menyentuh\n\n**Limit** menjawab pertanyaan: ke nilai berapa `f(x)` mendekat saat `x` mendekati suatu titik `a`, tanpa harus mencapainya? Ditulis `lim x->a f(x) = L`. Yang penting adalah perilaku di sekitar `a`, bukan nilai di `a` itu sendiri. Fungsi bahkan boleh tidak terdefinisi di `a` namun tetap punya limit di sana.\n\nContoh klasik `f(x) = (x^2 - 1) / (x - 1)`. Di `x = 1` penyebutnya nol, jadi `f(1)` tidak ada. Namun untuk `x` dekat satu, pembilangnya bisa difaktorkan menjadi `(x - 1)(x + 1)` sehingga `f(x) = x + 1`, dan nilainya mendekati dua. Limitnya dua walau fungsinya berlubang di satu."
+            },
+            {
+              "type": "code_example",
+              "filename": "limit_numerik.py",
+              "runnable": true,
+              "code": "def f(x):\n    return (x ** 2 - 1) / (x - 1)\n\nfor h in (0.1, 0.01, 0.001):\n    print(round(f(1 - h), 4), round(f(1 + h), 4))",
+              "expected_output_note": "1.9 2.1\n1.99 2.01\n1.999 2.001",
+              "explanation": "Dari kiri dan kanan nilainya mendekati 2 walau `f(1)` sendiri tidak terdefinisi. Bila kedua sisi mendekati bilangan sama, limitnya ada."
+            },
+            {
+              "type": "text",
+              "markdown": "## Limit satu sisi\n\nKadang pendekatan dari kiri dan dari kanan menuju nilai berbeda. **Limit kiri** adalah nilai yang didekati saat `x` datang dari bawah dan **limit kanan** saat datang dari atas. Limit biasa hanya ada bila keduanya ada dan sama. Bila berbeda, kita katakan limit tidak ada, walau limit satu sisinya masing-masing ada.\n\nContohnya fungsi tanda `|x| / x`. Untuk `x` positif nilainya satu dan untuk `x` negatif minus satu. Saat `x` mendekati nol dari kanan limitnya satu dan dari kiri minus satu. Grafiknya melompat di nol, dan tidak ada nilai tunggal yang didekati. Fungsi tangga yang dipakai dalam klasifikasi biner juga memiliki lompatan seperti ini."
+            },
+            {
+              "type": "code_example",
+              "filename": "limit_sisi.py",
+              "runnable": true,
+              "code": "def tanda(x):\n    return abs(x) / x\n\nprint(tanda(-1e-6), tanda(1e-6))\nprint([1 / 10 ** k for k in range(1, 5)])\nprint([tanda(-1 / 10 ** k) for k in range(1, 4)])",
+              "expected_output_note": "-1.0 1.0\n[0.1, 0.01, 0.001, 0.0001]\n[-1.0, -1.0, -1.0]",
+              "explanation": "Limit kiri sama dengan minus satu dan limit kanan satu sehingga limit di nol tidak ada. Baris kedua menunjukkan `1/x` yang mengecil menuju nol saat `x` membesar."
+            }
+          ],
+          "quick_check": {
+            "question": "Limit menggambarkan?",
+            "options": [
+              "Nilai yang didekati",
+              "Nilai tepat di titik"
+            ],
+            "answer_index": 0,
+            "explanation": "Nilai yang didekati fungsi.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Limit di tak hingga",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Limit di tak hingga\n\nKita juga bisa bertanya apa yang terjadi saat `x` membesar tanpa batas. `lim x->tak hingga 1/x = 0` karena pembagian dengan bilangan raksasa menghasilkan bilangan mendekati nol. Fungsi `(3x + 1) / (x + 2)` mendekati tiga karena untuk `x` besar suku konstan menjadi tidak berarti dan rasio mendekati `3x / x`.\n\nLimit di tak hingga menjelaskan perilaku jangka panjang. Dalam ML, sigmoid mendekati satu saat masukan besar dan nol saat sangat negatif, sehingga kedua ujung grafiknya memiliki **asimtot datar**. Learning rate yang menurun menuju nol, atau galat yang menurun seiring bertambahnya data, juga dijelaskan lewat konsep limit."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Jalan pintas",
+              "markdown": "Untuk pecahan polinom saat `x` menuju tak hingga, lihat suku berpangkat tertinggi di pembilang dan penyebut. Bila pangkatnya sama, limitnya adalah rasio koefisien. Bila penyebut berpangkat lebih tinggi, limitnya nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Aturan limit\n\nLimit berperilaku rapi terhadap operasi aritmetika. Limit jumlah adalah jumlah limit, limit hasil kali adalah hasil kali limit, dan limit hasil bagi adalah hasil bagi limit selama limit penyebut tidak nol. Konstanta bisa dikeluarkan dari limit. Untuk fungsi polinom, limit di suatu titik cukup dengan mensubstitusikan titik itu.\n\nBila substitusi menghasilkan bentuk tak tentu seperti `0/0`, kita perlu menyederhanakan dulu, misalnya dengan memfaktorkan seperti pada contoh sebelumnya, atau mengalikan dengan sekawan untuk bentuk akar. Teknik ini muncul lagi saat menurunkan fungsi dari definisi, karena definisi turunan selalu berbentuk `0/0`."
+            }
+          ],
+          "quick_check": {
+            "question": "Limit ada bila?",
+            "options": [
+              "Fungsi terdefinisi",
+              "Limit kiri dan kanan sama"
+            ],
+            "answer_index": 1,
+            "explanation": "Kedua sisi harus sepakat.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Limit-limit penting",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Limit-limit penting\n\nBeberapa limit khusus layak dihafal. `sin(x) / x` mendekati satu saat `x` menuju nol, dengan `x` dalam radian. `(1 + 1/n)^n` mendekati `e`, bilangan dasar logaritma natural, saat `n` membesar. `(e^h - 1) / h` mendekati satu saat `h` menuju nol, dan inilah alasan turunan `e^x` adalah `e^x` sendiri.\n\nLimit ini bukan hanya trik. Limit kedua menunjukkan asal bunga majemuk kontinu, dan limit ketiga menjadi dasar turunan fungsi eksponen. Kamu bisa memeriksa ketiganya secara numerik dengan nilai yang cukup dekat, seperti pada contoh berikut."
+            },
+            {
+              "type": "code_example",
+              "filename": "limit_penting.py",
+              "runnable": true,
+              "code": "import math\n\nprint(round(math.sin(0.1) / 0.1, 4), round(math.sin(0.01) / 0.01, 4))\nn = 10 ** 6\nprint(round((1 + 1 / n) ** n, 4))\nh = 0.001\nprint(round((math.exp(h) - 1) / h, 4))",
+              "expected_output_note": "0.9983 1.0\n2.7183\n1.0005",
+              "explanation": "Setiap pendekatan numerik mendekati limit teoretisnya: satu, bilangan Euler, dan satu. Makin kecil `h` makin dekat hasilnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengapa limit penting untuk ML\n\nLimit adalah landasan kalkulus, dan kalkulus adalah bahasa optimasi. Turunan yang menunjukkan arah perbaikan parameter didefinisikan sebagai limit rasio perubahan. Tanpa limit, gagasan kemiringan sesaat tidak punya arti yang tepat. Kamu juga akan memakai limit untuk memahami konvergensi algoritma: apakah galat pelatihan mendekati nilai tetap atau terus berubah.\n\nSecara praktis kita jarang menghitung limit dengan tangan. Kita memeriksa perilaku di sekitar titik secara numerik, seperti pada contoh tadi, lalu mengonfirmasinya dengan aljabar bila perlu. Kebiasaan menguji dengan nilai dekat ini sangat berguna saat men-debug fungsi loss atau gradien yang meledak."
+            }
+          ],
+          "quick_check": {
+            "question": "lim x->tak hingga 1/x?",
+            "options": [
+              "0",
+              "1"
+            ],
+            "answer_index": 0,
+            "explanation": "Pembagi raksasa membuat hasil mendekati nol.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-01-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `nilai_pendekatan(f, a, h)` yang mengembalikan tuple `(f(a - h), f(a + h))` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def nilai_pendekatan(f, a, h):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "nilai_pendekatan(lambda x: (x ** 2 - 1) / (x ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_pendekatan(lambda x: (x ** 2 - 1) / (x - 1), 1, 0.1) == (1.9, 2.1)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "nilai_pendekatan(lambda x: x ** 2, 2, 0.01)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_pendekatan(lambda x: x ** 2, 2, 0.01) == (3.9601, 4.0401)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "nilai_pendekatan(lambda x: 2 * x + 1, 0, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_pendekatan(lambda x: 2 * x + 1, 0, 0.5) == (0.0, 2.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "nilai_pendekatan(lambda x: 5, 3, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert nilai_pendekatan(lambda x: 5, 3, 0.1) == (5, 5)"
+              }
+            ]
+          },
+          "hint": "Hitung f di kedua sisi lalu bulatkan masing-masing.",
+          "solution": "def nilai_pendekatan(f, a, h):\n    return (round(f(a - h), 4), round(f(a + h), 4))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-01-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `limit_ada(f, a, h=1e-6, tol=1e-3)` yang mengembalikan `True` bila selisih mutlak `f(a - h)` dan `f(a + h)` kurang dari `tol`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef limit_ada(f, a, h=1e-6, tol=1e-3):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "limit_ada(lambda x: x ** 2, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_ada(lambda x: x ** 2, 3) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "limit_ada(lambda x: abs(x) / x, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_ada(lambda x: abs(x) / x, 0) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "limit_ada(lambda x: math.sin(x) / x, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_ada(lambda x: math.sin(x) / x, 0) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "limit_ada(lambda x: 1 / x, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_ada(lambda x: 1 / x, 0) is False"
+              }
+            ]
+          },
+          "hint": "Bandingkan nilai di kiri dan kanan titik dengan toleransi.",
+          "solution": "import math\n\ndef limit_ada(f, a, h=1e-6, tol=1e-3):\n    return abs(f(a - h) - f(a + h)) < tol",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-01-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `limit_tak_hingga(f, n=10**6)` yang mengembalikan `f(n)` dibulatkan 4 desimal sebagai pendekatan limit saat `x` menuju tak hingga.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def limit_tak_hingga(f, n=10 ** 6):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "limit_tak_hingga(lambda x: 1 / x)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_tak_hingga(lambda x: 1 / x) == 0.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "limit_tak_hingga(lambda x: (3 * x + 1) / (x +...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_tak_hingga(lambda x: (3 * x + 1) / (x + 2)) == 3.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "limit_tak_hingga(lambda x: (1 + 1 / x) ** x)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_tak_hingga(lambda x: (1 + 1 / x) ** x) == 2.7183"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "limit_tak_hingga(lambda x: x ** 2 / (x ** 2 +...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_tak_hingga(lambda x: x ** 2 / (x ** 2 + 1)) == 1.0"
+              }
+            ]
+          },
+          "hint": "Evaluasi fungsi pada n yang sangat besar lalu bulatkan.",
+          "solution": "def limit_tak_hingga(f, n=10 ** 6):\n    return round(f(n), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-01-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `limit_kiri_kanan(f, a, h=1e-7)` yang mengembalikan tuple `(kiri, kanan, ada)`.",
+          "note": "`kiri` dan `kanan` adalah `f(a - h)` dan `f(a + h)` dibulatkan 3 desimal, dan `ada` bernilai `True` bila selisih mutlaknya kurang dari 1e-3.",
+          "filename": "solution.py",
+          "starter_code": "def limit_kiri_kanan(f, a, h=1e-7):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "limit_kiri_kanan(lambda x: abs(x) / x, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_kiri_kanan(lambda x: abs(x) / x, 0) == (-1.0, 1.0, False)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "limit_kiri_kanan(lambda x: x ** 2, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_kiri_kanan(lambda x: x ** 2, 2) == (4.0, 4.0, True)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "limit_kiri_kanan(lambda x: 0.0 if x < 1 else ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_kiri_kanan(lambda x: 0.0 if x < 1 else 1.0, 1) == (0.0, 1.0, False)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "limit_kiri_kanan(lambda x: (x ** 2 - 1) / (x ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert limit_kiri_kanan(lambda x: (x ** 2 - 1) / (x - 1), 1) == (2.0, 2.0, True)"
+              }
+            ]
+          },
+          "hint": "Hitung kedua nilai, bulatkan, dan bandingkan selisih sebelum pembulatan.",
+          "solution": "def limit_kiri_kanan(f, a, h=1e-7):\n    kiri = f(a - h)\n    kanan = f(a + h)\n    return (round(kiri, 3), round(kanan, 3), abs(kiri - kanan) < 1e-3)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Limit menggambarkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nilai tepat di titik",
+              "description": ""
+            },
+            {
+              "label": "Nilai yang didekati",
+              "description": ""
+            },
+            {
+              "label": "Titik maksimum",
+              "description": ""
+            },
+            {
+              "label": "Kemiringan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Mendekat.",
+          "explanation": "Nilai yang didekati fungsi."
+        },
+        {
+          "q": "Limit ada bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "Limit kiri dan kanan sama",
+              "description": ""
+            },
+            {
+              "label": "Fungsi terdefinisi",
+              "description": ""
+            },
+            {
+              "label": "Fungsi naik",
+              "description": ""
+            },
+            {
+              "label": "Fungsi genap",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Dua sisi.",
+          "explanation": "Kedua sisi harus sepakat."
+        },
+        {
+          "q": "lim x->tak hingga 1/x?",
+          "code": null,
+          "options": [
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "Tak hingga",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Mengecil.",
+          "explanation": "Pembagi raksasa membuat hasil mendekati nol."
+        },
+        {
+          "q": "lim sin(x)/x saat x menuju 0?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "Tak hingga",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Radian.",
+          "explanation": "Limit klasik bernilai satu."
+        },
+        {
+          "q": "Bentuk 0/0 menandakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Limit nol",
+              "description": ""
+            },
+            {
+              "label": "Perlu disederhanakan",
+              "description": ""
+            },
+            {
+              "label": "Limit tak ada",
+              "description": ""
+            },
+            {
+              "label": "Selalu satu",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Faktorkan.",
+          "explanation": "Bentuk tak tentu."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menganggap limit harus sama dengan nilai fungsi di titik itu. Lebih baik: Limit hanya bergantung pada perilaku di sekitar titik.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menganggap limit harus sama dengan nilai fungsi di titik itu.",
+          "fix": "Limit hanya bergantung pada perilaku di sekitar titik."
+        },
+        {
+          "mistake": "Hanya memeriksa satu sisi.",
+          "fix": "Periksa limit kiri dan kanan."
+        },
+        {
+          "mistake": "Mensubstitusikan langsung pada bentuk 0/0.",
+          "fix": "Sederhanakan dulu dengan pemfaktoran."
+        }
+      ],
+      "summary": [
+        "Limit menggambarkan nilai yang didekati fungsi, bukan nilai di titik.",
+        "Limit ada bila limit kiri dan kanan sama.",
+        "Limit di tak hingga menjelaskan perilaku jangka panjang dan asimtot.",
+        "Limit khusus mendasari bilangan e dan turunan eksponen."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Limit"
+          },
+          {
+            "type": "text",
+            "source": "Dari kiri dan kanan nilainya mendekati 2 walau `f(1)` sendiri tidak terdefinisi. Bila kedua sisi mendekati bilangan sama, limitnya ada."
+          },
+          {
+            "type": "code",
+            "source": "def f(x):\n    return (x ** 2 - 1) / (x - 1)\n\nfor h in (0.1, 0.01, 0.001):\n    print(round(f(1 - h), 4), round(f(1 + h), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Limit kiri sama dengan minus satu dan limit kanan satu sehingga limit di nol tidak ada. Baris kedua menunjukkan `1/x` yang mengecil menuju nol saat `x` membesar."
+          },
+          {
+            "type": "code",
+            "source": "def tanda(x):\n    return abs(x) / x\n\nprint(tanda(-1e-6), tanda(1e-6))\nprint([1 / 10 ** k for k in range(1, 5)])\nprint([tanda(-1 / 10 ** k) for k in range(1, 4)])"
+          },
+          {
+            "type": "text",
+            "source": "Setiap pendekatan numerik mendekati limit teoretisnya: satu, bilangan Euler, dan satu. Makin kecil `h` makin dekat hasilnya."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nprint(round(math.sin(0.1) / 0.1, 4), round(math.sin(0.01) / 0.01, 4))\nn = 10 ** 6\nprint(round((1 + 1 / n) ** n, 4))\nh = 0.001\nprint(round((math.exp(h) - 1) / h, 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A3-01-3",
+      "title": "Kontinuitas dan pencarian akar",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Mendefinisikan kontinuitas dengan limit",
+        "Mengenali jenis titik diskontinu",
+        "Memakai teorema nilai antara untuk menjamin akar",
+        "Mencari akar dengan metode bisection"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Fungsi tanpa putus",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi tanpa putus\n\nSecara intuitif fungsi **kontinu** adalah fungsi yang grafiknya bisa digambar tanpa mengangkat pensil. Definisi tepatnya memakai limit: `f` kontinu di `a` bila tiga hal terpenuhi. Pertama `f(a)` terdefinisi. Kedua limit `f(x)` saat `x` menuju `a` ada. Ketiga keduanya sama: `lim f(x) = f(a)`. Bila salah satu gagal, fungsi diskontinu di titik itu.\n\nFungsi polinom, eksponen, sinus, dan kosinus kontinu di mana-mana. Logaritma kontinu di domainnya, bilangan positif. Hasil jumlah, hasil kali, dan komposisi fungsi kontinu juga kontinu. Karena itu sebagian besar fungsi yang kamu pakai dalam ML, seperti sigmoid dan ReLU, kontinu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Jenis diskontinuitas\n\nAda beberapa cara sebuah fungsi putus. **Lubang** terjadi saat limit ada tetapi nilai fungsi tidak terdefinisi atau berbeda, seperti `(x^2 - 1)/(x - 1)` di satu. Lubang bisa ditambal dengan mendefinisikan ulang nilai di titik itu. **Lompatan** terjadi saat limit kiri dan kanan berbeda, seperti fungsi tangga. **Asimtot vertikal** terjadi saat fungsi membesar tanpa batas, seperti `1/x` di nol.\n\nPembedaan ini penting dalam praktik. Fungsi tangga, yang kadang dipakai sebagai aktivasi pada model klasik, memiliki lompatan sehingga kemiringannya nol di mana-mana dan tak terdefinisi di lompatan. Itulah alasan modern kita memakai pengganti yang mulus seperti sigmoid, yang berperilaku mirip tetapi bisa dioptimasi dengan kalkulus."
+            },
+            {
+              "type": "code_example",
+              "filename": "kontinu_cek.py",
+              "runnable": true,
+              "code": "import math\n\ndef lompatan(f, a, h=1e-9):\n    return round(abs(f(a + h) - f(a - h)), 4)\n\nprint(lompatan(lambda x: x ** 2, 2))\nprint(lompatan(lambda x: float(math.floor(x)), 1))\nprint(lompatan(lambda x: abs(x) / x, 0))",
+              "expected_output_note": "0.0\n1.0\n2.0",
+              "explanation": "Fungsi kuadrat tidak melompat. Fungsi lantai melompat satu di bilangan bulat dan fungsi tanda melompat dua di nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Teorema nilai antara\n\nKontinuitas memberi jaminan kuat. **Teorema nilai antara** menyatakan bahwa bila `f` kontinu pada selang tertutup `[a, b]` dan `N` adalah nilai di antara `f(a)` dan `f(b)`, maka ada `c` dalam `[a, b]` dengan `f(c) = N`. Secara visual, kurva tanpa putus yang mulai di bawah garis dan berakhir di atasnya pasti memotong garis itu.\n\nKasus khusus yang paling berguna: bila `f(a)` dan `f(b)` berlawanan tanda, ada akar, yaitu titik `c` dengan `f(c) = 0`, di antara `a` dan `b`. Teorema hanya menjamin keberadaan, bukan lokasinya. Untuk menemukannya kita butuh algoritma, dan yang paling sederhana adalah metode bisection."
+            }
+          ],
+          "quick_check": {
+            "question": "Fungsi kontinu di a bila?",
+            "options": [
+              "Limit sama dengan f(a)",
+              "f naik"
+            ],
+            "answer_index": 0,
+            "explanation": "Limit harus sama dengan nilai fungsi.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Metode bisection",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Metode bisection\n\nMetode **bisection** membagi dua selang berulang kali. Mulai dengan `[a, b]` yang `f(a)` dan `f(b)` berlawanan tanda. Hitung titik tengah `m`. Bila `f(m)` bertanda sama dengan `f(a)`, akar ada di `[m, b]`, bila tidak di `[a, m]`. Ganti selang dengan setengah yang berisi akar dan ulangi sampai selangnya cukup sempit.\n\nMetode ini lambat tetapi sangat andal: ia selalu konvergen bila `f` kontinu dan tanda berlawanan, dan lebar selang mengecil setengahnya tiap langkah. Setelah `n` langkah lebarnya `(b - a) / 2^n`, sehingga jumlah langkah yang dibutuhkan dapat dihitung di muka. Akar fungsi adalah masalah dasar optimasi, karena titik minimum sering dicari sebagai akar dari turunan."
+            },
+            {
+              "type": "code_example",
+              "filename": "bisection.py",
+              "runnable": true,
+              "code": "def bisect(f, a, b, tol=1e-6):\n    langkah = 0\n    while b - a > tol:\n        m = (a + b) / 2\n        if f(a) * f(m) <= 0:\n            b = m\n        else:\n            a = m\n        langkah += 1\n    return (a + b) / 2, langkah\n\nakar, n = bisect(lambda x: x ** 2 - 2, 1, 2)\nprint(round(akar, 4), n)\nakar2, _ = bisect(lambda x: x ** 3 - x - 2, 1, 2)\nprint(round(akar2, 4))",
+              "expected_output_note": "1.4142 20\n1.5214",
+              "explanation": "Akar kuadrat dua ditemukan dalam 20 langkah karena lebar awal satu dibagi dua sebanyak 20 kali sudah di bawah 1e-6. Persamaan pangkat tiga juga berakar di selang yang diberikan."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Periksa syaratnya",
+              "markdown": "Bisection hanya menjamin hasil bila `f(a)` dan `f(b)` berlawanan tanda dan `f` kontinu. Selalu periksa kedua syarat itu sebelum memanggil algoritmanya."
+            }
+          ],
+          "quick_check": {
+            "question": "Fungsi tangga memiliki?",
+            "options": [
+              "Lubang",
+              "Lompatan"
+            ],
+            "answer_index": 1,
+            "explanation": "Limit kiri dan kanan berbeda.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kontinu belum tentu mulus",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kontinu belum tentu mulus\n\nKontinuitas tidak sama dengan kemulusan. ReLU kontinu di nol, tetapi grafiknya bersiku di sana sehingga kemiringannya berbeda di kiri dan kanan. Sigmoid kontinu dan juga mulus, kemiringannya sama di kedua sisi nol. Perbedaan ini akan menjadi pusat pembahasan pada modul turunan: fungsi kontinu belum tentu bisa diturunkan di setiap titik.\n\nContoh berikut menghitung kemiringan di kiri dan kanan nol untuk dua fungsi aktivasi. Kamu akan melihat ReLU memiliki kemiringan nol di kiri dan satu di kanan, sedangkan sigmoid memiliki kemiringan sama."
+            },
+            {
+              "type": "code_example",
+              "filename": "aktivasi_kontinu.py",
+              "runnable": true,
+              "code": "import math\n\ndef relu(x):\n    return max(0.0, x)\n\ndef sigmoid(x):\n    return 1 / (1 + math.exp(-x))\n\nh = 1e-6\nkanan = (relu(h) - relu(0)) / h\nkiri = (relu(0) - relu(-h)) / h\nprint(round(kanan, 4), round(kiri, 4))\nkanan = (sigmoid(h) - sigmoid(0)) / h\nkiri = (sigmoid(0) - sigmoid(-h)) / h\nprint(round(kanan, 4), round(kiri, 4))",
+              "expected_output_note": "1.0 0.0\n0.25 0.25",
+              "explanation": "ReLU kontinu tetapi bersiku di nol karena kemiringan kiri dan kanan berbeda. Sigmoid mulus sehingga kedua kemiringan sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peran kontinuitas dalam optimasi\n\nAlasan utama kontinuitas penting dalam ML adalah jaminan keberadaan nilai ekstrem. Fungsi kontinu pada selang tertutup selalu mencapai nilai maksimum dan minimum. Jadi bila fungsi loss kontinu dan parameter dibatasi pada daerah tertutup, pasti ada parameter terbaik yang bisa dicari.\n\nBisection sendiri jarang dipakai pada model besar, tetapi idenya muncul di mana-mana: pencarian ambang klasifikasi, pencarian learning rate, dan penyetelan hiperparameter sering memakai strategi membagi dua selang. Pemahaman dasar ini membuat algoritma yang lebih canggih terasa wajar."
+            }
+          ],
+          "quick_check": {
+            "question": "Teorema nilai antara menjamin?",
+            "options": [
+              "Akar ada bila tanda berlawanan",
+              "Akar unik"
+            ],
+            "answer_index": 0,
+            "explanation": "Ada c dengan f(c) = 0.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-01-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Fungsi `f(x) = x + c` untuk `x < 1` dan `f(x) = 3` untuk `x >= 1`.",
+          "note": "Tulis fungsi `kontinu_di_1(c)` yang mengembalikan `True` bila `f` kontinu di `x = 1`, yaitu bila `1 + c` sama dengan 3 dalam toleransi 1e-9.",
+          "filename": "solution.py",
+          "starter_code": "def kontinu_di_1(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kontinu_di_1(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kontinu_di_1(2) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kontinu_di_1(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kontinu_di_1(0) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kontinu_di_1(2.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kontinu_di_1(2.0) is True"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kontinu_di_1(2.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kontinu_di_1(2.5) is False"
+              }
+            ]
+          },
+          "hint": "Limit kiri adalah 1 + c dan nilai fungsi adalah 3.",
+          "solution": "def kontinu_di_1(c):\n    return abs((1 + c) - 3) < 1e-9",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-01-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `bisection(f, a, b, tol=1e-6)` yang mengembalikan akar hasil metode bisection dibulatkan 4 desimal, dengan `f(a)` dan `f(b)` berlawanan tanda.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef bisection(f, a, b, tol=1e-6):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bisection(lambda x: x ** 2 - 2, 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisection(lambda x: x ** 2 - 2, 1, 2) == 1.4142"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bisection(lambda x: x ** 3 - x - 2, 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisection(lambda x: x ** 3 - x - 2, 1, 2) == 1.5214"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bisection(lambda x: x - 3, 0, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisection(lambda x: x - 3, 0, 10) == 3.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bisection(math.cos, 0, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bisection(math.cos, 0, 3) == 1.5708"
+              }
+            ]
+          },
+          "hint": "Bagi dua selang dan simpan setengah yang tandanya berubah.",
+          "solution": "import math\n\ndef bisection(f, a, b, tol=1e-6):\n    while b - a > tol:\n        m = (a + b) / 2\n        if f(a) * f(m) <= 0:\n            b = m\n        else:\n            a = m\n    return round((a + b) / 2, 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-01-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `jumlah_langkah(a, b, tol)` yang mengembalikan banyaknya langkah bisection terkecil `n` sehingga `(b - a) / 2**n <= tol`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def jumlah_langkah(a, b, tol):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_langkah(0, 1, 0.001)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_langkah(0, 1, 0.001) == 10"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_langkah(1, 2, 1e-6)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_langkah(1, 2, 1e-6) == 20"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_langkah(0, 8, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_langkah(0, 8, 1) == 3"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_langkah(0, 1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_langkah(0, 1, 1) == 0"
+              }
+            ]
+          },
+          "hint": "Setengahkan lebar selang berulang sampai tidak melebihi toleransi.",
+          "solution": "def jumlah_langkah(a, b, tol):\n    lebar = b - a\n    n = 0\n    while lebar > tol:\n        lebar /= 2\n        n += 1\n    return n",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-01-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `akar_semua(f, a, b, n=1000)` yang mencari semua akar `f` pada `[a, b]`.",
+          "note": "Bagi selang menjadi `n` bagian dengan `np.linspace(a, b, n + 1)`. Bila `f` bernilai nol pada titik grid catat titik itu, dan bila tanda berubah antar dua titik berturutan, cari akar di dalamnya dengan bisection (toleransi 1e-9). Kembalikan list terurut tanpa duplikat, dibulatkan 3 desimal, dan hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import math\nimport numpy as np\n\ndef akar_semua(f, a, b, n=1000):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "akar_semua(lambda x: x ** 2 - 1, -3, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert akar_semua(lambda x: x ** 2 - 1, -3, 3) == [-1.0, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "akar_semua(lambda x: x * (x - 1) * (x + 2), -...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert akar_semua(lambda x: x * (x - 1) * (x + 2), -3, 3) == [-2.0, 0.0, 1.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "akar_semua(lambda x: x ** 2 + 1, -3, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert akar_semua(lambda x: x ** 2 + 1, -3, 3) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "akar_semua(math.sin, 1, 7)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert akar_semua(math.sin, 1, 7) == [3.142, 6.283]"
+              }
+            ]
+          },
+          "hint": "Telusuri pasangan titik grid dan kumpulkan akar di dalam set agar duplikat hilang.",
+          "solution": "import math\nimport numpy as np\n\ndef akar_semua(f, a, b, n=1000):\n    xs = np.linspace(a, b, n + 1)\n    hasil = set()\n    for i in range(n + 1):\n        x0 = float(xs[i])\n        f0 = f(x0)\n        if f0 == 0:\n            hasil.add(round(x0, 3) + 0.0)\n            continue\n        if i == n:\n            break\n        x1 = float(xs[i + 1])\n        f1 = f(x1)\n        if f0 * f1 < 0:\n            lo, hi = x0, x1\n            while hi - lo > 1e-9:\n                m = (lo + hi) / 2\n                if f(lo) * f(m) <= 0:\n                    hi = m\n                else:\n                    lo = m\n            hasil.add(round((lo + hi) / 2, 3) + 0.0)\n    return sorted(hasil)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Fungsi kontinu di a bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "Limit sama dengan f(a)",
+              "description": ""
+            },
+            {
+              "label": "f naik",
+              "description": ""
+            },
+            {
+              "label": "f(a) = 0",
+              "description": ""
+            },
+            {
+              "label": "Limit tak hingga",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tiga syarat.",
+          "explanation": "Limit harus sama dengan nilai fungsi."
+        },
+        {
+          "q": "Fungsi tangga memiliki?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lubang",
+              "description": ""
+            },
+            {
+              "label": "Lompatan",
+              "description": ""
+            },
+            {
+              "label": "Asimtot",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada putus",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Melompat.",
+          "explanation": "Limit kiri dan kanan berbeda."
+        },
+        {
+          "q": "Teorema nilai antara menjamin?",
+          "code": null,
+          "options": [
+            {
+              "label": "Akar unik",
+              "description": ""
+            },
+            {
+              "label": "Akar ada bila tanda berlawanan",
+              "description": ""
+            },
+            {
+              "label": "Fungsi mulus",
+              "description": ""
+            },
+            {
+              "label": "Nilai maksimum",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kontinu.",
+          "explanation": "Ada c dengan f(c) = 0."
+        },
+        {
+          "q": "Lebar selang setelah n langkah bisection?",
+          "code": null,
+          "options": [
+            {
+              "label": "(b-a)/2^n",
+              "description": ""
+            },
+            {
+              "label": "(b-a)n",
+              "description": ""
+            },
+            {
+              "label": "(b-a)^n",
+              "description": ""
+            },
+            {
+              "label": "b-a",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Setengah.",
+          "explanation": "Dibagi dua tiap langkah."
+        },
+        {
+          "q": "ReLU di nol?",
+          "code": null,
+          "options": [
+            {
+              "label": "Diskontinu",
+              "description": ""
+            },
+            {
+              "label": "Kontinu tetapi bersiku",
+              "description": ""
+            },
+            {
+              "label": "Mulus",
+              "description": ""
+            },
+            {
+              "label": "Tak terdefinisi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Siku.",
+          "explanation": "Kemiringan kiri dan kanan berbeda."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira fungsi kontinu pasti mulus. Lebih baik: ReLU kontinu tetapi bersiku di nol.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira fungsi kontinu pasti mulus.",
+          "fix": "ReLU kontinu tetapi bersiku di nol."
+        },
+        {
+          "mistake": "Memakai bisection tanpa memeriksa tanda ujung selang.",
+          "fix": "Pastikan f(a) dan f(b) berlawanan tanda."
+        },
+        {
+          "mistake": "Mengira teorema nilai antara memberi lokasi akar.",
+          "fix": "Teorema hanya menjamin keberadaan."
+        }
+      ],
+      "summary": [
+        "Fungsi kontinu bila limit sama dengan nilai fungsi.",
+        "Diskontinuitas dapat berupa lubang, lompatan, atau asimtot.",
+        "Teorema nilai antara menjamin akar bila tanda berlawanan.",
+        "Bisection menemukan akar dengan membagi dua selang berulang."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Kontinuitas dan pencarian akar"
+          },
+          {
+            "type": "text",
+            "source": "Fungsi kuadrat tidak melompat. Fungsi lantai melompat satu di bilangan bulat dan fungsi tanda melompat dua di nol."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef lompatan(f, a, h=1e-9):\n    return round(abs(f(a + h) - f(a - h)), 4)\n\nprint(lompatan(lambda x: x ** 2, 2))\nprint(lompatan(lambda x: float(math.floor(x)), 1))\nprint(lompatan(lambda x: abs(x) / x, 0))"
+          },
+          {
+            "type": "text",
+            "source": "Akar kuadrat dua ditemukan dalam 20 langkah karena lebar awal satu dibagi dua sebanyak 20 kali sudah di bawah 1e-6. Persamaan pangkat tiga juga berakar di selang yang diberikan."
+          },
+          {
+            "type": "code",
+            "source": "def bisect(f, a, b, tol=1e-6):\n    langkah = 0\n    while b - a > tol:\n        m = (a + b) / 2\n        if f(a) * f(m) <= 0:\n            b = m\n        else:\n            a = m\n        langkah += 1\n    return (a + b) / 2, langkah\n\nakar, n = bisect(lambda x: x ** 2 - 2, 1, 2)\nprint(round(akar, 4), n)\nakar2, _ = bisect(lambda x: x ** 3 - x - 2, 1, 2)\nprint(round(akar2, 4))"
+          },
+          {
+            "type": "text",
+            "source": "ReLU kontinu tetapi bersiku di nol karena kemiringan kiri dan kanan berbeda. Sigmoid mulus sehingga kedua kemiringan sama."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef relu(x):\n    return max(0.0, x)\n\ndef sigmoid(x):\n    return 1 / (1 + math.exp(-x))\n\nh = 1e-6\nkanan = (relu(h) - relu(0)) / h\nkiri = (relu(0) - relu(-h)) / h\nprint(round(kanan, 4), round(kiri, 4))\nkanan = (sigmoid(h) - sigmoid(0)) / h\nkiri = (sigmoid(0) - sigmoid(-h)) / h\nprint(round(kanan, 4), round(kiri, 4))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

@@ -1,0 +1,1552 @@
+{
+  "schema_version": 2,
+  "course_id": "A1",
+  "module_no": 6,
+  "title": "String, format, dan regex dasar",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Membersihkan dan mengolah teks dengan metode string",
+    "Memformat keluaran rapi dengan f-string",
+    "Mencari dan mengekstrak pola teks dengan regex dasar"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A1-06-1",
+    "exercise_id": "A1-06-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def frekuensi_kata(teks):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A1-06-1",
+      "title": "Dasar string dan metode teks",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengakses, mengiris, dan memahami sifat string yang tidak bisa diubah",
+        "Memakai metode string untuk membersihkan, memecah, dan menggabung teks",
+        "Mencari dan mengganti bagian teks dengan aman",
+        "Membangun fungsi pembersih teks sederhana untuk data mentah"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "String sebagai urutan karakter",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## String sebagai urutan karakter\n\n**String** adalah urutan karakter yang tidak bisa diubah (*immutable*). Ia mendukung indeks dan pemotongan persis seperti list: `\"python\"[0]` adalah `\"p\"`, `\"python\"[-1]` adalah `\"n\"`, dan `\"python\"[1:4]` adalah `\"yth\"`. Karena immutable, `s[0] = \"x\"` menimbulkan `TypeError`. Untuk mengubah teks, kamu selalu membuat string baru.\n\nBanyak operasi pada list juga berlaku pada string: `len`, `in`, penelusuran dengan `for`, dan penggabungan dengan `+`. Mengalikan string dengan bilangan mengulanginya, misalnya `\"ab\" * 3` menjadi `\"ababab\"`. Perbandingan string dilakukan karakter demi karakter menurut urutan kode, sehingga huruf besar mendahului huruf kecil.\n\nDalam data science, teks muncul di mana-mana: nama kolom, label kategori, ulasan pelanggan, dan alamat. Keterampilan membersihkan dan mengolah string adalah bagian besar dari pekerjaan data sehari-hari."
+            },
+            {
+              "type": "code_example",
+              "filename": "string_dasar.py",
+              "runnable": true,
+              "code": "s = \"python\"\nprint(s[0], s[-1], s[1:4], s[::-1], len(s))\nprint(\"th\" in s, \"xy\" in s, \"ab\" * 3)\ntry:\n    s[0] = \"P\"\nexcept TypeError:\n    print(\"tidak bisa diubah\")\nbaru = \"P\" + s[1:]\nprint(baru, s)\nprint(\"Apel\" < \"apel\", \"a\" < \"b\")\nfor huruf in \"abc\":\n    print(huruf, end=\" \")\nprint()",
+              "expected_output_note": "p n yth nohtyp 6\nTrue False ababab\ntidak bisa diubah\nPython python\nTrue True\na b c",
+              "explanation": "String mendukung indeks dan potongan seperti list tetapi tidak bisa diubah. Huruf besar lebih kecil dari huruf kecil dalam perbandingan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Metode pembersih dan pengubah huruf\n\nMetode string tidak mengubah string asal, melainkan mengembalikan string baru. `upper`, `lower`, dan `title` mengubah huruf besar kecil. `strip` membuang spasi di kedua ujung, sedangkan `lstrip` dan `rstrip` hanya satu sisi. Argumen `strip` boleh berisi karakter yang ingin dibuang, misalnya `\"##hai##\".strip(\"#\")`.\n\nMetode `replace(lama, baru)` mengganti semua kemunculan. `startswith` dan `endswith` memeriksa awalan dan akhiran, `count` menghitung kemunculan, dan `find` mengembalikan indeks pertama atau -1 bila tidak ada. Berbeda dengan `find`, `index` menimbulkan `ValueError` bila tidak ditemukan.\n\nMetode pemeriksa seperti `isdigit`, `isalpha`, dan `isspace` mengembalikan benar atau salah. Gunakan untuk memvalidasi isi teks sebelum mengubahnya menjadi angka. Kesalahan klasik adalah lupa menugaskan hasil: `s.strip()` saja tidak mengubah `s`."
+            },
+            {
+              "type": "code_example",
+              "filename": "metode_string.py",
+              "runnable": true,
+              "code": "s = \"  Belajar Data Science  \"\nprint(repr(s.strip()), s.strip().upper(), s.strip().lower())\nprint(\"hello world\".title(), \"##hai##\".strip(\"#\"))\nt = \"kopi, teh, kopi, susu\"\nprint(t.replace(\"kopi\", \"kakao\"), t.count(\"kopi\"))\nprint(t.find(\"teh\"), t.find(\"jus\"), t.startswith(\"kopi\"), t.endswith(\"susu\"))\nprint(\"123\".isdigit(), \"12a\".isdigit(), \"abc\".isalpha(), \"  \".isspace())\ns.strip()\nprint(repr(s))",
+              "expected_output_note": "'Belajar Data Science' BELAJAR DATA SCIENCE belajar data science\nHello World hai\nkakao, teh, kakao, susu 2\n6 -1 True True\nTrue False True True\n'  Belajar Data Science  '",
+              "explanation": "Metode string mengembalikan string baru dan tidak mengubah asal. Memanggil `s.strip()` tanpa menugaskan hasilnya tidak mengubah `s`."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Hasil harus ditugaskan",
+              "markdown": "Metode string tidak mengubah string asal. Tulis `s = s.strip()` bila kamu ingin menyimpan hasilnya, bukan hanya `s.strip()`."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil 'python'[1:4]?",
+            "options": [
+              "yth",
+              "pyt"
+            ],
+            "answer_index": 0,
+            "explanation": "Indeks 1 ikut dan indeks 4 tidak ikut.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Memecah dan menggabung",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memecah dan menggabung\n\n`split()` tanpa argumen memecah teks pada spasi apa pun dan membuang bagian kosong, sehingga cocok untuk menghitung kata. `split(\",\")` memecah pada pemisah tertentu dan mempertahankan bagian kosong. Argumen kedua membatasi jumlah pemecahan, dan `splitlines()` memecah menurut baris.\n\nKebalikannya, `pemisah.join(daftar)` menggabungkan list string dengan pemisah di antaranya. Perhatikan sintaksnya: pemisah adalah string yang memanggil metode, dan list adalah argumennya. `\", \".join([\"a\", \"b\"])` menghasilkan `\"a, b\"`. Elemen list harus berupa string, sehingga bilangan perlu diubah dulu dengan `str`.\n\nPenggabungan dengan `join` jauh lebih efisien daripada `+` di dalam perulangan, karena `+` membuat string baru pada setiap langkah. Kebiasaan memakai `join` penting saat menyusun teks panjang."
+            },
+            {
+              "type": "code_example",
+              "filename": "split_join.py",
+              "runnable": true,
+              "code": "kalimat = \"  saya   suka data science  \"\nprint(kalimat.split())\nprint(\"a,b,,c\".split(\",\"))\nprint(\"a b c d\".split(\" \", 2))\nprint(\"baris1\\nbaris2\".splitlines())\nkata = [\"data\", \"science\", \"itu\", \"seru\"]\nprint(\" \".join(kata), \"-\".join(kata))\nangka = [1, 2, 3]\nprint(\",\".join(str(a) for a in angka))\nprint(len(kalimat.split()))",
+              "expected_output_note": "['saya', 'suka', 'data', 'science']\n['a', 'b', '', 'c']\n['a', 'b', 'c d']\n['baris1', 'baris2']\ndata science itu seru data-science-itu-seru\n1,2,3\n4",
+              "explanation": "`split()` tanpa argumen membuang bagian kosong, sedangkan `split(\",\")` mempertahankannya. `join` menggabungkan string dari list dan butuh elemen bertipe string."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membersihkan data teks nyata\n\nData teks dari dunia nyata hampir selalu kotor: spasi berlebih, huruf besar kecil tidak konsisten, tanda baca, dan nilai kosong. Langkah pembersihan umum adalah `strip` untuk membuang spasi ujung, `lower` untuk menyeragamkan huruf, `replace` untuk membuang karakter tertentu, lalu `split` untuk memecah menjadi kata.\n\nKamu dapat merangkai metode karena tiap metode mengembalikan string: `teks.strip().lower().replace(\",\", \"\")`. Rangkaian ini terbaca dari kiri ke kanan sebagai urutan langkah. Bila rantai terlalu panjang, pecah menjadi beberapa baris dengan nama variabel antara.\n\nMenyeragamkan teks sebelum membandingkan sangat penting. `\"Jakarta\"` dan `\"jakarta \"` dianggap berbeda oleh Python, padahal bagi manusia sama. Bila kamu lupa membersihkan, hitungan dan pengelompokan akan terpecah menjadi kategori palsu."
+            },
+            {
+              "type": "code_example",
+              "filename": "bersihkan_teks.py",
+              "runnable": true,
+              "code": "mentah = [\"  Jakarta \", \"jakarta\", \"BANDUNG\", \"Bandung \", \"  surabaya\"]\nbersih = [k.strip().lower() for k in mentah]\nprint(bersih)\nprint(len(set(mentah)), len(set(bersih)))\nhitung = {}\nfor k in bersih:\n    hitung[k] = hitung.get(k, 0) + 1\nprint(hitung)\nnama = \"  budi SANTOSO  \"\nprint(nama.strip().title())",
+              "expected_output_note": "['jakarta', 'jakarta', 'bandung', 'bandung', 'surabaya']\n5 3\n{'jakarta': 2, 'bandung': 2, 'surabaya': 1}\nBudi Santoso",
+              "explanation": "Tanpa pembersihan data terhitung lima kategori, setelah dibersihkan hanya tiga. Merangkai metode string menyederhanakan langkah."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang terjadi pada s[0] = 'x'?",
+            "options": [
+              "Mengubah huruf",
+              "TypeError"
+            ],
+            "answer_index": 1,
+            "explanation": "String tidak bisa diubah.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Unicode dan karakter khusus",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Unicode dan karakter khusus\n\nString Python menyimpan teks Unicode, sehingga huruf beraksen dan emoji berfungsi tanpa konfigurasi tambahan. `len` menghitung titik kode, bukan byte. Fungsi `ord` memberi kode angka sebuah karakter dan `chr` melakukan kebalikannya. Pengetahuan ini berguna untuk memahami urutan pengurutan dan untuk tugas sederhana seperti sandi geser.\n\nKarakter khusus ditulis dengan garis miring terbalik: `\\n` baris baru, `\\t` tab, dan `\\\\` garis miring itu sendiri. String mentah dengan awalan `r` mematikan interpretasi ini, dan akan sangat berguna saat kita mempelajari regex."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pola kerja yang aman saat mengolah teks\n\nBiasakan menyimpan teks asli dan membuat salinan bersih di variabel terpisah. Dengan begitu kamu selalu dapat kembali ke data mentah bila langkah pembersihan ternyata salah. Uji pembersihanmu pada beberapa contoh yang sengaja dibuat kotor sebelum menjalankannya pada seluruh data.\n\nLatihan di bawah menguji metode string dasar. Jalankan solusi dengan masukan aneh seperti string kosong atau string berisi spasi saja, karena kasus batas itulah yang paling sering merusak program."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil 'a,b,,c'.split(',')?",
+            "options": [
+              "['a','b','','c']",
+              "['a','b','c']"
+            ],
+            "answer_index": 0,
+            "explanation": "Bagian kosong dipertahankan bila pemisah diberikan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-06-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bersihkan(teks)` yang mengembalikan teks tanpa spasi di kedua ujung dan dalam huruf kecil.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def bersihkan(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bersihkan(\" Halo \")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bersihkan(\"  Halo \") == \"halo\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bersihkan(\"ABC\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bersihkan(\"ABC\") == \"abc\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bersihkan(\" \")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bersihkan(\"   \") == \"\""
+              }
+            ]
+          },
+          "hint": "Rangkai strip dan lower.",
+          "solution": "def bersihkan(teks):\n    return teks.strip().lower()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-06-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_kata(teks)` yang mengembalikan banyak kata dalam teks, dengan spasi berlebih diabaikan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def jumlah_kata(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_kata(\"saya suka data\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_kata(\"saya suka data\") == 3"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_kata(\" a b \")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_kata(\"  a   b \") == 2"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_kata(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_kata(\"\") == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_kata(\"satu\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_kata(\"satu\") == 1"
+              }
+            ]
+          },
+          "hint": "split tanpa argumen sudah mengabaikan spasi berlebih.",
+          "solution": "def jumlah_kata(teks):\n    return len(teks.split())",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-06-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `palindrom(teks)` yang mengembalikan `True` bila teks palindrom dengan mengabaikan huruf besar kecil, spasi, dan tanda baca.",
+          "note": "Hanya huruf dan angka yang dihitung.",
+          "filename": "solution.py",
+          "starter_code": "def palindrom(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "palindrom(\"Katak\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert palindrom(\"Katak\") is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "palindrom(\"A man, a plan, a canal: Panama\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert palindrom(\"A man, a plan, a canal: Panama\") is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "palindrom(\"python\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert palindrom(\"python\") is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "palindrom(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert palindrom(\"\") is True"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "palindrom(\"12 21\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert palindrom(\"12 21\") is True"
+              }
+            ]
+          },
+          "hint": "Saring dengan isalnum, ubah ke huruf kecil, lalu bandingkan dengan kebalikannya.",
+          "solution": "def palindrom(teks):\n    b = \"\".join(c.lower() for c in teks if c.isalnum())\n    return b == b[::-1]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-06-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `frekuensi_kata(teks)` yang mengembalikan dictionary kata ke jumlah kemunculan.",
+          "note": "Huruf diseragamkan menjadi kecil dan tanda baca `.,!?;:` di ujung kata dibuang.",
+          "filename": "solution.py",
+          "starter_code": "def frekuensi_kata(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "frekuensi_kata(\"Halo halo, dunia!\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert frekuensi_kata(\"Halo halo, dunia!\") == {\"halo\": 2, \"dunia\": 1}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "frekuensi_kata(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert frekuensi_kata(\"\") == {}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "frekuensi_kata(\"A a. A?\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert frekuensi_kata(\"A a. A?\") == {\"a\": 3}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "list(frekuensi_kata(\"b a b\"))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert list(frekuensi_kata(\"b a b\")) == [\"b\", \"a\"]"
+              }
+            ]
+          },
+          "hint": "Pecah, bersihkan tiap kata dengan strip tanda baca dan lower, lalu hitung dengan get.",
+          "solution": "def frekuensi_kata(teks):\n    hasil = {}\n    for k in teks.split():\n        k = k.strip(\".,!?;:\").lower()\n        if k:\n            hasil[k] = hasil.get(k, 0) + 1\n    return hasil",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Hasil 'python'[1:4]?",
+          "code": null,
+          "options": [
+            {
+              "label": "pyt",
+              "description": ""
+            },
+            {
+              "label": "yth",
+              "description": ""
+            },
+            {
+              "label": "ytho",
+              "description": ""
+            },
+            {
+              "label": "tho",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Hitung dari nol.",
+          "explanation": "Indeks 1 ikut dan indeks 4 tidak ikut."
+        },
+        {
+          "q": "Apa yang terjadi pada s[0] = 'x'?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mengubah huruf",
+              "description": ""
+            },
+            {
+              "label": "TypeError",
+              "description": ""
+            },
+            {
+              "label": "Mengubah semua",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Immutable.",
+          "explanation": "String tidak bisa diubah."
+        },
+        {
+          "q": "Hasil 'a,b,,c'.split(',')?",
+          "code": null,
+          "options": [
+            {
+              "label": "['a','b','c']",
+              "description": ""
+            },
+            {
+              "label": "['a','b','','c']",
+              "description": ""
+            },
+            {
+              "label": "['a,b,,c']",
+              "description": ""
+            },
+            {
+              "label": "error",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bandingkan dengan split() tanpa argumen.",
+          "explanation": "Bagian kosong dipertahankan bila pemisah diberikan."
+        },
+        {
+          "q": "Cara menggabung list kata dengan spasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "kata.join(' ')",
+              "description": ""
+            },
+            {
+              "label": "' '.join(kata)",
+              "description": ""
+            },
+            {
+              "label": "join(kata)",
+              "description": ""
+            },
+            {
+              "label": "kata + ' '",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pemisah adalah objeknya.",
+          "explanation": "Pemisah yang memanggil join."
+        },
+        {
+          "q": "Apa yang dikembalikan find bila tidak ketemu?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            },
+            {
+              "label": "-1",
+              "description": ""
+            },
+            {
+              "label": "error",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Bukan None.",
+          "explanation": "find mengembalikan -1 sementara index menimbulkan error."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis s.strip() tanpa menugaskan hasilnya. Lebih baik: Tulis s = s.strip().",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis s.strip() tanpa menugaskan hasilnya.",
+          "fix": "Tulis s = s.strip()."
+        },
+        {
+          "mistake": "Menggabung angka dengan join tanpa mengubah ke string.",
+          "fix": "Ubah dulu dengan str(a)."
+        },
+        {
+          "mistake": "Membandingkan teks yang belum dibersihkan.",
+          "fix": "Seragamkan dengan strip dan lower sebelum membandingkan."
+        }
+      ],
+      "summary": [
+        "String tidak bisa diubah dan metodenya mengembalikan string baru.",
+        "strip, lower, replace, dan split adalah alat pembersih utama.",
+        "join menggabung list string dengan pemisah.",
+        "Seragamkan teks sebelum membandingkan atau menghitung."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Dasar string dan metode teks"
+          },
+          {
+            "type": "text",
+            "source": "String mendukung indeks dan potongan seperti list tetapi tidak bisa diubah. Huruf besar lebih kecil dari huruf kecil dalam perbandingan."
+          },
+          {
+            "type": "code",
+            "source": "s = \"python\"\nprint(s[0], s[-1], s[1:4], s[::-1], len(s))\nprint(\"th\" in s, \"xy\" in s, \"ab\" * 3)\ntry:\n    s[0] = \"P\"\nexcept TypeError:\n    print(\"tidak bisa diubah\")\nbaru = \"P\" + s[1:]\nprint(baru, s)\nprint(\"Apel\" < \"apel\", \"a\" < \"b\")\nfor huruf in \"abc\":\n    print(huruf, end=\" \")\nprint()"
+          },
+          {
+            "type": "text",
+            "source": "Metode string mengembalikan string baru dan tidak mengubah asal. Memanggil `s.strip()` tanpa menugaskan hasilnya tidak mengubah `s`."
+          },
+          {
+            "type": "code",
+            "source": "s = \"  Belajar Data Science  \"\nprint(repr(s.strip()), s.strip().upper(), s.strip().lower())\nprint(\"hello world\".title(), \"##hai##\".strip(\"#\"))\nt = \"kopi, teh, kopi, susu\"\nprint(t.replace(\"kopi\", \"kakao\"), t.count(\"kopi\"))\nprint(t.find(\"teh\"), t.find(\"jus\"), t.startswith(\"kopi\"), t.endswith(\"susu\"))\nprint(\"123\".isdigit(), \"12a\".isdigit(), \"abc\".isalpha(), \"  \".isspace())\ns.strip()\nprint(repr(s))"
+          },
+          {
+            "type": "text",
+            "source": "`split()` tanpa argumen membuang bagian kosong, sedangkan `split(\",\")` mempertahankannya. `join` menggabungkan string dari list dan butuh elemen bertipe string."
+          },
+          {
+            "type": "code",
+            "source": "kalimat = \"  saya   suka data science  \"\nprint(kalimat.split())\nprint(\"a,b,,c\".split(\",\"))\nprint(\"a b c d\".split(\" \", 2))\nprint(\"baris1\\nbaris2\".splitlines())\nkata = [\"data\", \"science\", \"itu\", \"seru\"]\nprint(\" \".join(kata), \"-\".join(kata))\nangka = [1, 2, 3]\nprint(\",\".join(str(a) for a in angka))\nprint(len(kalimat.split()))"
+          },
+          {
+            "type": "text",
+            "source": "Tanpa pembersihan data terhitung lima kategori, setelah dibersihkan hanya tiga. Merangkai metode string menyederhanakan langkah."
+          },
+          {
+            "type": "code",
+            "source": "mentah = [\"  Jakarta \", \"jakarta\", \"BANDUNG\", \"Bandung \", \"  surabaya\"]\nbersih = [k.strip().lower() for k in mentah]\nprint(bersih)\nprint(len(set(mentah)), len(set(bersih)))\nhitung = {}\nfor k in bersih:\n    hitung[k] = hitung.get(k, 0) + 1\nprint(hitung)\nnama = \"  budi SANTOSO  \"\nprint(nama.strip().title())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-06-2",
+      "title": "Format string dan f-string",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menyisipkan nilai ke dalam teks dengan f-string",
+        "Mengatur lebar, rata, jumlah desimal, dan pemisah ribuan",
+        "Memformat persen, notasi ilmiah, dan tanggal",
+        "Menyusun tabel teks yang rapi dan membaca format lama"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "f-string",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## f-string\n\n**f-string** adalah cara modern menyisipkan nilai ke teks. Awali string dengan huruf `f` dan taruh ekspresi di dalam kurung kurawal: `f\"Halo {nama}, umurmu {umur}\"`. Ekspresi apa pun boleh ada di dalam kurung, termasuk perhitungan dan pemanggilan fungsi: `f\"{a} + {b} = {a + b}\"`.\n\nSejak Python 3.8 kamu dapat menambahkan tanda sama dengan untuk debugging cepat: `f\"{x=}\"` mencetak `x=5`, berguna untuk memeriksa nilai tanpa mengetik nama dua kali. Untuk mencetak kurung kurawal literal, gandakan: `{{` dan `}}`.\n\nDibandingkan menggabung string dengan `+` dan `str()`, f-string jauh lebih ringkas dan terbaca. Ia sekarang menjadi gaya baku untuk membuat pesan, label grafik, dan laporan dalam proyek data science."
+            },
+            {
+              "type": "code_example",
+              "filename": "fstring_dasar.py",
+              "runnable": true,
+              "code": "nama, umur = \"Sari\", 21\na, b = 3, 4\nprint(f\"Halo {nama}, umurmu {umur}\")\nprint(f\"{a} + {b} = {a + b}\")\nprint(f\"{nama.upper()} punya {len(nama)} huruf\")\nx = 5\nprint(f\"{x=}\")\nprint(f\"kurung {{literal}} dan {x}\")",
+              "expected_output_note": "Halo Sari, umurmu 21\n3 + 4 = 7\nSARI punya 4 huruf\nx=5\nkurung {literal} dan 5",
+              "explanation": "f-string menerima ekspresi apa pun di dalam kurung kurawal. Tanda sama dengan mencetak nama beserta nilainya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Spesifikasi format\n\nSetelah ekspresi, tambahkan titik dua dan spesifikasi format: `{nilai:spesifikasi}`. Untuk bilangan desimal, `.2f` berarti dua angka di belakang koma, `,` menambahkan pemisah ribuan, dan keduanya bisa digabung sebagai `,.2f`. Untuk bilangan bulat, `d` berarti bulat, `05d` mengisi nol di depan sampai lebar lima, dan `b` menampilkan biner.\n\nLebar dan rata ditulis dengan angka dan simbol: `<10` rata kiri dalam lebar sepuluh, `>10` rata kanan, dan `^10` di tengah. Karakter pengisi ditaruh sebelum simbol rata, misalnya `*^10` mengisi dengan bintang. Teks secara bawaan rata kiri dan angka rata kanan.\n\nPersentase memakai `.1%` yang mengalikan dengan 100 dan menambahkan tanda persen. Notasi ilmiah memakai `e`, misalnya `.2e`. Memahami spesifikasi ini membuat laporan angkamu rapi tanpa pembulatan manual yang berisiko."
+            },
+            {
+              "type": "code_example",
+              "filename": "spesifikasi_format.py",
+              "runnable": true,
+              "code": "pi = 3.14159265\nbesar = 1234567.891\nprint(f\"{pi:.2f} {pi:.4f} {besar:,.2f}\")\nprint(f\"{42:05d} {255:b} {255:x}\")\nprint(f\"[{'kiri':<8}] [{'kanan':>8}] [{'tengah':^8}]\")\nprint(f\"[{'x':*^7}]\")\nprint(f\"{0.4567:.1%} {1500000:.2e}\")\nprint(f\"{7:>3} {70:>3} {700:>3}\")",
+              "expected_output_note": "3.14 3.1416 1,234,567.89\n00042 11111111 ff\n[kiri    ] [   kanan] [ tengah ]\n[***x***]\n45.7% 1.50e+06\n  7  70 700",
+              "explanation": "Spesifikasi format mengatur desimal, pemisah ribuan, lebar, rata, persen, dan notasi ilmiah. Karakter pengisi ditaruh sebelum simbol rata."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Lebar dinamis",
+              "markdown": "Lebar bisa dinamis dengan kurung bersarang: `f\"{nilai:>{lebar}}\"` memakai variabel `lebar`. Berguna saat lebar kolom dihitung dari data."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil f'{3.14159:.2f}'?",
+            "options": [
+              "3.14",
+              "3.1"
+            ],
+            "answer_index": 0,
+            "explanation": ".2f berarti dua desimal.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tabel teks dan lebar dinamis",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tabel teks dan lebar dinamis\n\nSalah satu kegunaan paling praktis f-string adalah mencetak tabel yang rapi. Tentukan lebar tiap kolom, lalu pakai rata kiri untuk teks dan rata kanan untuk angka. Garis pemisah bisa dibuat dengan mengalikan karakter: `\"-\" * 30`.\n\nBila lebar bergantung pada data, hitung dulu lebar terpanjang dengan `max(len(k) for k in nama)` lalu sisipkan ke spesifikasi lewat kurung bersarang. Hasilnya tabel yang selalu pas apa pun isinya.\n\nTabel seperti ini berguna saat kamu mencetak ringkasan di kompiler atau log tanpa pustaka tambahan. Untuk tampilan yang lebih canggih, pandas dan pustaka lain menyediakan cara format sendiri, tetapi prinsipnya sama."
+            },
+            {
+              "type": "code_example",
+              "filename": "tabel_teks.py",
+              "runnable": true,
+              "code": "barang = [(\"Pensil\", 3, 2500.0), (\"Buku tulis\", 12, 8750.5), (\"Penghapus\", 7, 1200.0)]\nlebar = max(len(b[0]) for b in barang)\nprint(f\"{'Nama':<{lebar}} {'Qty':>4} {'Harga':>10}\")\nprint(\"-\" * (lebar + 16))\nfor nama, qty, harga in barang:\n    print(f\"{nama:<{lebar}} {qty:>4} {harga:>10,.2f}\")\ntotal = sum(q * h for _, q, h in barang)\nprint(f\"{'Total':<{lebar}} {'':>4} {total:>10,.2f}\")",
+              "expected_output_note": "Nama        Qty      Harga\n--------------------------\nPensil        3   2,500.00\nBuku tulis   12   8,750.50\nPenghapus     7   1,200.00\nTotal           120,906.00",
+              "explanation": "Lebar kolom dihitung dari data lalu disisipkan lewat kurung bersarang. Angka rata kanan dengan pemisah ribuan membuat tabel rapi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tanggal, format lama, dan rangkuman gaya\n\nObjek tanggal juga mendukung spesifikasi format. Dengan modul `datetime`, `f\"{tanggal:%d-%m-%Y}\"` menampilkan hari, bulan, dan tahun, sedangkan `%B` adalah nama bulan dan `%H:%M` jam dan menit. Kamu akan memakai ini saat melaporkan hasil analisis deret waktu.\n\nKamu mungkin menemukan gaya lama di kode warisan: operator persen seperti `\"%s punya %d\" % (nama, n)` dan metode `format` seperti `\"{} punya {}\".format(nama, n)`. Keduanya masih berfungsi dan perlu bisa dibaca, tetapi untuk kode baru gunakan f-string karena lebih jelas.\n\nSatu catatan keamanan: jangan membangun kueri basis data atau perintah sistem dengan f-string dari masukan pengguna, karena berisiko injeksi. Untuk kasus itu pakai parameter kueri yang disediakan pustakanya."
+            }
+          ],
+          "quick_check": {
+            "question": "Spesifikasi untuk pemisah ribuan?",
+            "options": [
+              ":d",
+              ":,"
+            ],
+            "answer_index": 1,
+            "explanation": "Koma menambahkan pemisah ribuan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mengapa format yang baik penting",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa format yang baik penting\n\nAngka tanpa format sulit dibaca. Membandingkan `1234567.891` dengan `1,234,567.89` menunjukkan bedanya: yang kedua langsung terbaca sebagai jutaan. Dalam laporan, pembulatan yang konsisten dan satuan yang jelas membuat pembaca percaya pada hasilmu dan menghindarkan salah tafsir.\n\nPerhatikan pula bahwa format hanya mengubah tampilan, bukan nilai. `f\"{3.14159:.2f}\"` menghasilkan string `\"3.14\"`, dan nilai aslinya tetap tersimpan di variabel. Jangan menghitung ulang dari string yang sudah dibulatkan, karena kesalahan pembulatan akan menumpuk. Simpan angka presisi penuh, dan format hanya saat menampilkan.\n\nKebiasaan ini sangat penting dalam analisis keuangan dan ilmiah, di mana selisih kecil bisa berarti banyak. Latihan berikut melatih format uang, persen, dan tabel.\n\nSatu tips terakhir: bila format yang sama dipakai di banyak tempat, simpan dalam fungsi kecil seperti `rupiah(n)` atau `persen(a, b)`. Dengan begitu satu perubahan gaya cukup dilakukan di satu tempat, dan seluruh laporanmu tetap konsisten."
+            }
+          ],
+          "quick_check": {
+            "question": "Arti f'{x:>8}'?",
+            "options": [
+              "Rata kanan lebar 8",
+              "Rata kiri lebar 8"
+            ],
+            "answer_index": 0,
+            "explanation": "Simbol > berarti rata kanan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-06-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `sapa(nama, umur)` yang mengembalikan `\"Halo <nama>, umurmu <umur> tahun\"` memakai f-string.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def sapa(nama, umur):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "sapa(\"Sari\", 21)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sapa(\"Sari\", 21) == \"Halo Sari, umurmu 21 tahun\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sapa(\"Budi\", 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sapa(\"Budi\", 5) == \"Halo Budi, umurmu 5 tahun\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sapa(\"\", 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sapa(\"\", 0) == \"Halo , umurmu 0 tahun\""
+              }
+            ]
+          },
+          "hint": "Awali string dengan f dan sisipkan variabel di kurung kurawal.",
+          "solution": "def sapa(nama, umur):\n    return f\"Halo {nama}, umurmu {umur} tahun\"",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-06-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `rupiah(n)` yang mengembalikan string seperti `\"Rp1.234.567\"` untuk bilangan bulat `n`.",
+          "note": "Pemisah ribuan adalah titik.",
+          "filename": "solution.py",
+          "starter_code": "def rupiah(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rupiah(1234567)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rupiah(1234567) == \"Rp1.234.567\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rupiah(500)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rupiah(500) == \"Rp500\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rupiah(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rupiah(0) == \"Rp0\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rupiah(1000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rupiah(1000) == \"Rp1.000\""
+              }
+            ]
+          },
+          "hint": "Format dengan koma ribuan lalu ganti koma menjadi titik.",
+          "solution": "def rupiah(n):\n    return \"Rp\" + f\"{n:,}\".replace(\",\", \".\")",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-06-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `persen(bagian, total)` yang mengembalikan string persentase dengan satu desimal, misalnya `\"25.0%\"`.",
+          "note": "Bila `total` nol kembalikan `\"n/a\"`.",
+          "filename": "solution.py",
+          "starter_code": "def persen(bagian, total):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "persen(1, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen(1, 4) == \"25.0%\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "persen(1, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen(1, 3) == \"33.3%\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "persen(5, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen(5, 0) == \"n/a\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "persen(0, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen(0, 10) == \"0.0%\""
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "persen(2, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persen(2, 2) == \"100.0%\""
+              }
+            ]
+          },
+          "hint": "Tangani nol lebih dulu lalu pakai spesifikasi .1%.",
+          "solution": "def persen(bagian, total):\n    if total == 0:\n        return \"n/a\"\n    return f\"{bagian / total:.1%}\"",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-06-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `tabel(baris)` yang menerima list tuple `(nama, nilai)` dan mengembalikan satu string multi-baris.",
+          "note": "Nama rata kiri dengan lebar sesuai nama terpanjang, lalu satu spasi, lalu nilai dengan dua desimal rata kanan lebar 8. Baris dipisah `\\n` tanpa baris kosong di akhir. List kosong menghasilkan string kosong.",
+          "filename": "solution.py",
+          "starter_code": "def tabel(baris):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tabel([(\"ani\", 9.5), (\"budi\", 10)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel([(\"ani\", 9.5), (\"budi\", 10)]) == \"ani      9.50\\nbudi    10.00\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tabel([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel([]) == \"\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tabel([(\"x\", 1)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tabel([(\"x\", 1)]) == \"x     1.00\""
+              }
+            ]
+          },
+          "hint": "Hitung lebar dari nama terpanjang dan susun tiap baris dengan f-string lalu join dengan newline.",
+          "solution": "def tabel(baris):\n    if not baris:\n        return \"\"\n    lebar = max(len(n) for n, _ in baris)\n    return \"\\n\".join(f\"{n:<{lebar}} {v:>8.2f}\" for n, v in baris)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Hasil f'{3.14159:.2f}'?",
+          "code": null,
+          "options": [
+            {
+              "label": "3.1",
+              "description": ""
+            },
+            {
+              "label": "3.14",
+              "description": ""
+            },
+            {
+              "label": "3.142",
+              "description": ""
+            },
+            {
+              "label": "3.14159",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dua angka di belakang koma.",
+          "explanation": ".2f berarti dua desimal."
+        },
+        {
+          "q": "Spesifikasi untuk pemisah ribuan?",
+          "code": null,
+          "options": [
+            {
+              "label": ":d",
+              "description": ""
+            },
+            {
+              "label": ":,",
+              "description": ""
+            },
+            {
+              "label": ":%",
+              "description": ""
+            },
+            {
+              "label": ":b",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tanda baca.",
+          "explanation": "Koma menambahkan pemisah ribuan."
+        },
+        {
+          "q": "Arti f'{x:>8}'?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata kiri lebar 8",
+              "description": ""
+            },
+            {
+              "label": "Rata kanan lebar 8",
+              "description": ""
+            },
+            {
+              "label": "Tengah",
+              "description": ""
+            },
+            {
+              "label": "Pangkat 8",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Panah menunjuk ke kanan.",
+          "explanation": "Simbol > berarti rata kanan."
+        },
+        {
+          "q": "Hasil f'{0.25:.0%}'?",
+          "code": null,
+          "options": [
+            {
+              "label": "25%",
+              "description": ""
+            },
+            {
+              "label": "0%",
+              "description": ""
+            },
+            {
+              "label": "0.25%",
+              "description": ""
+            },
+            {
+              "label": "25.0",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Format persen.",
+          "explanation": "Spesifikasi persen mengalikan dengan 100."
+        },
+        {
+          "q": "Cara mencetak kurung kurawal literal di f-string?",
+          "code": null,
+          "options": [
+            {
+              "label": "\\{",
+              "description": ""
+            },
+            {
+              "label": "{{ }}",
+              "description": ""
+            },
+            {
+              "label": "[[ ]]",
+              "description": ""
+            },
+            {
+              "label": "tidak bisa",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Gandakan.",
+          "explanation": "Gandakan kurung kurawal."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Lupa huruf f di depan string. Lebih baik: Tanpa f, kurung kurawal dicetak apa adanya.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Lupa huruf f di depan string.",
+          "fix": "Tanpa f, kurung kurawal dicetak apa adanya."
+        },
+        {
+          "mistake": "Menulis kurung kurawal literal tanpa menggandakan.",
+          "fix": "Tulis {{ dan }}."
+        },
+        {
+          "mistake": "Membangun kueri basis data dengan f-string dari masukan pengguna.",
+          "fix": "Pakai parameter kueri dari pustakanya."
+        }
+      ],
+      "summary": [
+        "f-string menyisipkan ekspresi di dalam kurung kurawal.",
+        "Spesifikasi format mengatur desimal, lebar, rata, ribuan, dan persen.",
+        "Lebar dinamis dengan kurung bersarang membuat tabel rapi.",
+        "Pakai f-string untuk kode baru dan hindari untuk kueri dari masukan pengguna."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Format string dan f-string"
+          },
+          {
+            "type": "text",
+            "source": "f-string menerima ekspresi apa pun di dalam kurung kurawal. Tanda sama dengan mencetak nama beserta nilainya."
+          },
+          {
+            "type": "code",
+            "source": "nama, umur = \"Sari\", 21\na, b = 3, 4\nprint(f\"Halo {nama}, umurmu {umur}\")\nprint(f\"{a} + {b} = {a + b}\")\nprint(f\"{nama.upper()} punya {len(nama)} huruf\")\nx = 5\nprint(f\"{x=}\")\nprint(f\"kurung {{literal}} dan {x}\")"
+          },
+          {
+            "type": "text",
+            "source": "Spesifikasi format mengatur desimal, pemisah ribuan, lebar, rata, persen, dan notasi ilmiah. Karakter pengisi ditaruh sebelum simbol rata."
+          },
+          {
+            "type": "code",
+            "source": "pi = 3.14159265\nbesar = 1234567.891\nprint(f\"{pi:.2f} {pi:.4f} {besar:,.2f}\")\nprint(f\"{42:05d} {255:b} {255:x}\")\nprint(f\"[{'kiri':<8}] [{'kanan':>8}] [{'tengah':^8}]\")\nprint(f\"[{'x':*^7}]\")\nprint(f\"{0.4567:.1%} {1500000:.2e}\")\nprint(f\"{7:>3} {70:>3} {700:>3}\")"
+          },
+          {
+            "type": "text",
+            "source": "Lebar kolom dihitung dari data lalu disisipkan lewat kurung bersarang. Angka rata kanan dengan pemisah ribuan membuat tabel rapi."
+          },
+          {
+            "type": "code",
+            "source": "barang = [(\"Pensil\", 3, 2500.0), (\"Buku tulis\", 12, 8750.5), (\"Penghapus\", 7, 1200.0)]\nlebar = max(len(b[0]) for b in barang)\nprint(f\"{'Nama':<{lebar}} {'Qty':>4} {'Harga':>10}\")\nprint(\"-\" * (lebar + 16))\nfor nama, qty, harga in barang:\n    print(f\"{nama:<{lebar}} {qty:>4} {harga:>10,.2f}\")\ntotal = sum(q * h for _, q, h in barang)\nprint(f\"{'Total':<{lebar}} {'':>4} {total:>10,.2f}\")"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-06-3",
+      "title": "Ekspresi reguler dasar",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Memahami pola dasar regex: karakter, kelas, kuantifier, dan jangkar",
+        "Memakai re.search, re.findall, re.sub, dan re.split",
+        "Menangkap bagian pola dengan grup dan mengekstrak data",
+        "Menulis regex yang terbaca dan mengetahui batasannya"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Apa itu ekspresi reguler",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Apa itu ekspresi reguler\n\n**Ekspresi reguler** (regex) adalah bahasa kecil untuk menggambarkan pola teks. Dengan regex kamu bisa mencari semua angka dalam kalimat, memeriksa apakah sebuah string berformat surel, atau mengganti semua spasi berlebih sekaligus. Python menyediakannya lewat modul `re` di pustaka standar.\n\nPola ditulis sebagai string mentah dengan awalan `r`, misalnya `r\"\\d+\"`. Awalan `r` penting karena regex memakai banyak garis miring terbalik, dan string mentah mencegah Python menafsirkannya lebih dulu. Kebiasaan menulis pola selalu sebagai string mentah menghindari banyak kebingungan.\n\nRegex sangat berguna untuk membersihkan dan mengekstrak data dari teks tidak terstruktur seperti log, ulasan, dan hasil scraping. Namun ia juga mudah menjadi tidak terbaca, jadi gunakan secukupnya dan sertakan contoh saat menulisnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Elemen dasar pola\n\nKarakter biasa mencocokkan dirinya sendiri. Titik `.` mencocokkan satu karakter apa pun kecuali baris baru. Kelas karakter ditulis dalam kurung siku: `[aeiou]` cocok dengan satu huruf vokal dan `[0-9]` dengan satu digit. Singkatan umum: `\\d` digit, `\\w` huruf, digit, atau garis bawah, `\\s` spasi putih, dan huruf besarnya adalah kebalikannya.\n\n**Kuantifier** menentukan berapa kali: `*` nol atau lebih, `+` satu atau lebih, `?` nol atau satu, dan `{n,m}` antara n dan m kali. Jangkar menandai posisi: `^` awal teks dan `$` akhir teks. Tanda `|` berarti atau, dan kurung membuat grup.\n\nKuantifier secara bawaan serakah, artinya mengambil sebanyak mungkin. Tambahkan `?` setelahnya untuk versi tidak serakah. Contoh `<.+>` pada `<a><b>` mencocokkan seluruhnya, sedangkan `<.+?>` hanya `<a>`."
+            },
+            {
+              "type": "code_example",
+              "filename": "regex_dasar.py",
+              "runnable": true,
+              "code": "import re\n\nteks = \"Pesanan 12 dan 345 total 6789 rupiah\"\nprint(re.findall(r\"\\d+\", teks))\nprint(re.search(r\"\\d+\", teks).group())\nprint(re.findall(r\"[aeiou]\", \"data science\"))\nprint(re.findall(r\"\\b\\w{5}\\b\", \"kopi teh susu mangga apel jeruk\"))\nprint(re.search(r\"xyz\", teks))\nprint(re.findall(r\"<.+>\", \"<a><b>\"), re.findall(r\"<.+?>\", \"<a><b>\"))\nprint(bool(re.match(r\"^\\d{3}-\\d{4}$\", \"123-4567\")), bool(re.match(r\"^\\d{3}-\\d{4}$\", \"12-4567\")))",
+              "expected_output_note": "['12', '345', '6789']\n12\n['a', 'a', 'i', 'e', 'e']\n['jeruk']\nNone\n['<a><b>'] ['<a>', '<b>']\nTrue False",
+              "explanation": "`findall` mengembalikan semua kecocokan dan `search` yang pertama saja atau `None`. Kuantifier serakah mengambil sebanyak mungkin, sedangkan tanda tanya membuatnya tidak serakah."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Periksa hasil search",
+              "markdown": "`re.search` mengembalikan `None` bila tidak ada kecocokan. Memanggil `.group()` pada `None` menimbulkan `AttributeError`, jadi periksa hasilnya dulu."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa arti \\d+ ?",
+            "options": [
+              "Satu atau lebih digit",
+              "Satu huruf"
+            ],
+            "answer_index": 0,
+            "explanation": "\\d adalah digit dan + berarti satu atau lebih.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Fungsi utama modul re",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Fungsi utama modul re\n\n`re.search(pola, teks)` mencari kecocokan pertama di mana saja, sedangkan `re.match` hanya mencocokkan di awal teks. `re.fullmatch` memeriksa seluruh teks. `re.findall` mengembalikan list semua kecocokan, dan `re.finditer` mengembalikan iterator objek kecocokan dengan posisi.\n\n`re.sub(pola, pengganti, teks)` mengganti semua kecocokan, berguna untuk membuang karakter tak diinginkan atau menormalkan spasi. `re.split(pola, teks)` memecah teks pada pola, lebih fleksibel daripada `split` biasa. Bila pola dipakai berulang, kompilasi dengan `re.compile` agar lebih efisien dan lebih terbaca.\n\nOpsi seperti `re.IGNORECASE` mengabaikan huruf besar kecil. Kamu dapat meneruskannya sebagai argumen `flags`. Membaca dokumentasi modul `re` sesekali akan memperluas perkakasmu jauh melebihi dasar ini."
+            },
+            {
+              "type": "code_example",
+              "filename": "fungsi_re.py",
+              "runnable": true,
+              "code": "import re\n\nkotor = \"halo    dunia,   ini\\tcontoh   \"\nprint(re.sub(r\"\\s+\", \" \", kotor).strip())\nprint(re.split(r\"[,;]\\s*\", \"a, b;c,d\"))\nprint(re.sub(r\"[^a-z ]\", \"\", \"H4lo, Dun1a!\".lower()))\nprint(re.findall(r\"python\", \"Python python PYTHON\", re.IGNORECASE))\npola = re.compile(r\"\\d{4}\")\nprint(pola.findall(\"tahun 2024 dan 1999\"))\nprint(bool(re.fullmatch(r\"\\d+\", \"123\")), bool(re.fullmatch(r\"\\d+\", \"12a\")))",
+              "expected_output_note": "halo dunia, ini contoh\n['a', 'b', 'c', 'd']\nhlo duna\n['Python', 'python', 'PYTHON']\n['2024', '1999']\nTrue False",
+              "explanation": "`sub` menormalkan spasi dan membuang karakter, `split` memecah pada pola, dan `compile` menyimpan pola untuk dipakai ulang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Grup dan ekstraksi data\n\nKurung pada pola membuat **grup tangkapan**. `re.search(r\"(\\d+)-(\\d+)\", \"tel 021-5550\")` menangkap dua bagian, yang bisa diambil dengan `.group(1)` dan `.group(2)`, atau semuanya dengan `.groups()`. Grup bernama ditulis `(?P<nama>...)` dan diambil lewat `.group(\"nama\")` atau `.groupdict()`, yang membuat kode lebih terbaca.\n\n`findall` dengan grup mengembalikan list tuple isi grup, sehingga langsung cocok untuk mengubah teks tidak terstruktur menjadi rekaman terstruktur. Misalnya mengurai baris log menjadi tanggal, level, dan pesan.\n\nIngat batas regex: ia bagus untuk pola reguler yang sederhana, tetapi buruk untuk struktur bersarang seperti HTML atau JSON. Untuk itu pakai pengurai khusus. Regex yang terlalu rumit juga susah dirawat, jadi pecah menjadi beberapa langkah bila perlu."
+            },
+            {
+              "type": "code_example",
+              "filename": "regex_grup.py",
+              "runnable": true,
+              "code": "import re\n\nm = re.search(r\"(\\d+)-(\\d+)\", \"tel 021-5550\")\nprint(m.groups(), m.group(1), m.group(2))\nlog = \"2024-05-01 ERROR gagal konek\"\np = re.match(r\"(?P<tgl>\\S+) (?P<level>[A-Z]+) (?P<pesan>.+)\", log)\nprint(p.groupdict())\nprint(re.findall(r\"(\\w+)=(\\d+)\", \"a=1, b=22, c=333\"))\nsurel = \"kontak: sari@contoh.id atau budi@kampus.ac.id\"\nprint(re.findall(r\"[\\w.]+@[\\w.]+\", surel))",
+              "expected_output_note": "('021', '5550') 021 5550\n{'tgl': '2024-05-01', 'level': 'ERROR', 'pesan': 'gagal konek'}\n[('a', '1'), ('b', '22'), ('c', '333')]\n['sari@contoh.id', 'budi@kampus.ac.id']",
+              "explanation": "Grup bernama mengubah baris log menjadi dictionary. `findall` dengan dua grup menghasilkan list tuple pasangan."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang dikembalikan re.search bila tak cocok?",
+            "options": [
+              "''",
+              "None"
+            ],
+            "answer_index": 1,
+            "explanation": "search mengembalikan None.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Menguji pola regex",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menguji pola regex\n\nRegex mudah salah di kasus pinggir, jadi uji selalu dengan contoh yang cocok dan yang tidak cocok. Tulis daftar kecil string yang harus lolos dan yang harus gagal, lalu periksa pola terhadap keduanya. Kebiasaan ini sama seperti menguji fungsi dengan assert.\n\nBangun pola sedikit demi sedikit. Mulai dari bagian paling sederhana, pastikan bekerja, baru tambah bagian berikutnya. Menulis pola panjang sekaligus hampir pasti menghasilkan kesalahan yang sulit dilacak. Gunakan jangkar dan `fullmatch` bila ingin memvalidasi seluruh string, karena `search` akan menerima string yang hanya sebagian cocok.\n\nTerakhir, ingat bahwa `\\d` dalam Python juga cocok dengan digit dari aksara lain. Bila kamu hanya ingin angka 0 sampai 9, tulis `[0-9]`. Detail seperti ini jarang penting, tetapi baik diketahui saat memvalidasi masukan."
+            }
+          ],
+          "quick_check": {
+            "question": "Beda re.match dan re.search?",
+            "options": [
+              "match hanya di awal teks",
+              "Tidak ada"
+            ],
+            "answer_index": 0,
+            "explanation": "match mencocokkan di awal teks saja.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-06-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ambil_angka(teks)` yang mengembalikan list bilangan bulat (bertipe int) yang muncul dalam teks, sesuai urutan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import re\n\ndef ambil_angka(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ambil_angka(\"a1 b22 c333\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_angka(\"a1 b22 c333\") == [1, 22, 333]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ambil_angka(\"tidak ada\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_angka(\"tidak ada\") == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ambil_angka(\"007\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_angka(\"007\") == [7]"
+              }
+            ]
+          },
+          "hint": "Pakai findall dengan \\d+ lalu ubah ke int.",
+          "solution": "import re\n\ndef ambil_angka(teks):\n    return [int(x) for x in re.findall(r\"\\d+\", teks)]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-06-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `rapikan_spasi(teks)` yang mengganti deretan spasi putih (spasi, tab, baris baru) dengan satu spasi dan membuang spasi di ujung.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import re\n\ndef rapikan_spasi(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rapikan_spasi(\"a b\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rapikan_spasi(\"a   b\") == \"a b\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rapikan_spasi(\" a\\tb\\nc \")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rapikan_spasi(\"  a\\tb\\nc  \") == \"a b c\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rapikan_spasi(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rapikan_spasi(\"\") == \"\""
+              }
+            ]
+          },
+          "hint": "re.sub dengan \\s+ lalu strip.",
+          "solution": "import re\n\ndef rapikan_spasi(teks):\n    return re.sub(r\"\\s+\", \" \", teks).strip()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-06-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `valid_plat(teks)` yang mengembalikan `True` bila teks berformat plat nomor sederhana: satu atau dua huruf besar, spasi, satu sampai empat digit, spasi, lalu satu sampai tiga huruf besar.",
+          "note": "Contoh `B 1234 XYZ`.",
+          "filename": "solution.py",
+          "starter_code": "import re\n\ndef valid_plat(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "valid_plat(\"B 1234 XYZ\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_plat(\"B 1234 XYZ\") is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "valid_plat(\"AB 1 C\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_plat(\"AB 1 C\") is True"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "valid_plat(\"b 1234 xyz\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_plat(\"b 1234 xyz\") is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "valid_plat(\"B1234XYZ\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_plat(\"B1234XYZ\") is False"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "valid_plat(\"ABC 12 D\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_plat(\"ABC 12 D\") is False"
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "valid_plat(\"B 12345 XYZ\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert valid_plat(\"B 12345 XYZ\") is False"
+              }
+            ]
+          },
+          "hint": "Pakai fullmatch dengan kelas [A-Z] dan kuantifier {m,n}.",
+          "solution": "import re\n\ndef valid_plat(teks):\n    return bool(re.fullmatch(r\"[A-Z]{1,2} \\d{1,4} [A-Z]{1,3}\", teks))",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-06-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `urai_log(baris)` yang menerima string seperti `2024-05-01 ERROR gagal konek` dan mengembalikan dictionary dengan kunci `tanggal`, `level`, dan `pesan`.",
+          "note": "Bila format tidak cocok kembalikan `None`. Tanggal berformat `YYYY-MM-DD` dan level huruf besar.",
+          "filename": "solution.py",
+          "starter_code": "import re\n\ndef urai_log(baris):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = urai_log(\"2024-05-01 ERROR gagal konek\")\nassert r == {\"tanggal\": \"2024-05-01\", \"level\": \"ERROR\", \"pesan\": \"gagal konek\"}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "urai_log(\"2024-5-1 ERROR x\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert urai_log(\"2024-5-1 ERROR x\") is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "urai_log(\"2024-05-01 error x\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert urai_log(\"2024-05-01 error x\") is None"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "urai_log(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert urai_log(\"\") is None"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "urai_log(\"2024-05-01 INFO a b c\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert urai_log(\"2024-05-01 INFO a b c\")[\"pesan\"] == \"a b c\""
+              }
+            ]
+          },
+          "hint": "Gunakan grup bernama dan fullmatch lalu groupdict.",
+          "solution": "import re\n\ndef urai_log(baris):\n    m = re.fullmatch(r\"(?P<tanggal>\\d{4}-\\d{2}-\\d{2}) (?P<level>[A-Z]+) (?P<pesan>.+)\", baris)\n    return m.groupdict() if m else None",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa arti \\d+ ?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu huruf",
+              "description": ""
+            },
+            {
+              "label": "Satu atau lebih digit",
+              "description": ""
+            },
+            {
+              "label": "Nol atau lebih digit",
+              "description": ""
+            },
+            {
+              "label": "Spasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kuantifier plus.",
+          "explanation": "\\d adalah digit dan + berarti satu atau lebih."
+        },
+        {
+          "q": "Apa yang dikembalikan re.search bila tak cocok?",
+          "code": null,
+          "options": [
+            {
+              "label": "''",
+              "description": ""
+            },
+            {
+              "label": "[]",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            },
+            {
+              "label": "False",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Bukan list kosong.",
+          "explanation": "search mengembalikan None."
+        },
+        {
+          "q": "Beda re.match dan re.search?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak ada",
+              "description": ""
+            },
+            {
+              "label": "match hanya di awal teks",
+              "description": ""
+            },
+            {
+              "label": "match lebih cepat selalu",
+              "description": ""
+            },
+            {
+              "label": "search hanya di akhir",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pikirkan posisi.",
+          "explanation": "match mencocokkan di awal teks saja."
+        },
+        {
+          "q": "Fungsi untuk mengganti kecocokan pola?",
+          "code": null,
+          "options": [
+            {
+              "label": "re.replace",
+              "description": ""
+            },
+            {
+              "label": "re.sub",
+              "description": ""
+            },
+            {
+              "label": "re.swap",
+              "description": ""
+            },
+            {
+              "label": "re.change",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Singkatan substitute.",
+          "explanation": "re.sub mengganti kecocokan."
+        },
+        {
+          "q": "Apa arti .+? dalam regex?",
+          "code": null,
+          "options": [
+            {
+              "label": "Serakah",
+              "description": ""
+            },
+            {
+              "label": "Tidak serakah",
+              "description": ""
+            },
+            {
+              "label": "Opsional",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ambil sesedikit mungkin.",
+          "explanation": "Tanda tanya setelah kuantifier membuatnya tidak serakah."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis pola tanpa awalan r. Lebih baik: Selalu pakai string mentah r\"...\" untuk regex.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis pola tanpa awalan r.",
+          "fix": "Selalu pakai string mentah r\"...\" untuk regex."
+        },
+        {
+          "mistake": "Memanggil .group() pada hasil None.",
+          "fix": "Periksa if m: sebelum mengambil grup."
+        },
+        {
+          "mistake": "Memakai regex untuk mengurai HTML atau JSON.",
+          "fix": "Pakai pengurai khusus seperti json."
+        }
+      ],
+      "summary": [
+        "Regex menggambarkan pola teks dan ditulis sebagai string mentah.",
+        "Kelas, kuantifier, dan jangkar adalah elemen dasar pola.",
+        "search, findall, sub, dan split adalah fungsi utama modul re.",
+        "Grup bernama mengubah teks menjadi data terstruktur."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Ekspresi reguler dasar"
+          },
+          {
+            "type": "text",
+            "source": "`findall` mengembalikan semua kecocokan dan `search` yang pertama saja atau `None`. Kuantifier serakah mengambil sebanyak mungkin, sedangkan tanda tanya membuatnya tidak serakah."
+          },
+          {
+            "type": "code",
+            "source": "import re\n\nteks = \"Pesanan 12 dan 345 total 6789 rupiah\"\nprint(re.findall(r\"\\d+\", teks))\nprint(re.search(r\"\\d+\", teks).group())\nprint(re.findall(r\"[aeiou]\", \"data science\"))\nprint(re.findall(r\"\\b\\w{5}\\b\", \"kopi teh susu mangga apel jeruk\"))\nprint(re.search(r\"xyz\", teks))\nprint(re.findall(r\"<.+>\", \"<a><b>\"), re.findall(r\"<.+?>\", \"<a><b>\"))\nprint(bool(re.match(r\"^\\d{3}-\\d{4}$\", \"123-4567\")), bool(re.match(r\"^\\d{3}-\\d{4}$\", \"12-4567\")))"
+          },
+          {
+            "type": "text",
+            "source": "`sub` menormalkan spasi dan membuang karakter, `split` memecah pada pola, dan `compile` menyimpan pola untuk dipakai ulang."
+          },
+          {
+            "type": "code",
+            "source": "import re\n\nkotor = \"halo    dunia,   ini\\tcontoh   \"\nprint(re.sub(r\"\\s+\", \" \", kotor).strip())\nprint(re.split(r\"[,;]\\s*\", \"a, b;c,d\"))\nprint(re.sub(r\"[^a-z ]\", \"\", \"H4lo, Dun1a!\".lower()))\nprint(re.findall(r\"python\", \"Python python PYTHON\", re.IGNORECASE))\npola = re.compile(r\"\\d{4}\")\nprint(pola.findall(\"tahun 2024 dan 1999\"))\nprint(bool(re.fullmatch(r\"\\d+\", \"123\")), bool(re.fullmatch(r\"\\d+\", \"12a\")))"
+          },
+          {
+            "type": "text",
+            "source": "Grup bernama mengubah baris log menjadi dictionary. `findall` dengan dua grup menghasilkan list tuple pasangan."
+          },
+          {
+            "type": "code",
+            "source": "import re\n\nm = re.search(r\"(\\d+)-(\\d+)\", \"tel 021-5550\")\nprint(m.groups(), m.group(1), m.group(2))\nlog = \"2024-05-01 ERROR gagal konek\"\np = re.match(r\"(?P<tgl>\\S+) (?P<level>[A-Z]+) (?P<pesan>.+)\", log)\nprint(p.groupdict())\nprint(re.findall(r\"(\\w+)=(\\d+)\", \"a=1, b=22, c=333\"))\nsurel = \"kontak: sari@contoh.id atau budi@kampus.ac.id\"\nprint(re.findall(r\"[\\w.]+@[\\w.]+\", surel))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa kode dan contoh singkat yang cukup jelas dalam teks dan latihan.",
+    "brief": []
+  },
+  "references": []
+}

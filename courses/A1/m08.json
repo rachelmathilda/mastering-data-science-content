@@ -1,0 +1,1524 @@
+{
+  "schema_version": 2,
+  "course_id": "A1",
+  "module_no": 8,
+  "title": "Error handling, modul, dan gaya kode",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menangani error dengan try, except, dan raise",
+    "Memakai modul dan pustaka standar dengan benar",
+    "Menulis kode yang rapi, teruji, dan mudah dirawat"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A1-08-1",
+    "exercise_id": "A1-08-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def muat_semua(daftar):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A1-08-1",
+      "title": "Penanganan error",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membaca traceback dan mengenali jenis exception umum",
+        "Memakai try, except, else, dan finally dengan benar",
+        "Menimbulkan exception dengan raise dan membuat exception sendiri",
+        "Menulis validasi masukan yang jelas tanpa menelan bug"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Error adalah informasi",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Error adalah informasi\n\nSetiap program akan menemui error. Pemula sering takut pada pesan merah, padahal traceback adalah peta yang sangat informatif. Baca dari bawah ke atas: baris terakhir menyebut jenis error dan pesannya, sedangkan baris di atasnya menunjukkan rangkaian pemanggilan yang menuju ke sana. Baris paling bawah dari kodemu biasanya tempat masalah muncul.\n\nJenis exception yang paling sering: `SyntaxError` untuk tulisan yang salah, `NameError` untuk nama yang belum didefinisikan, `TypeError` untuk operasi pada tipe yang tidak cocok, `ValueError` untuk nilai bertipe benar tetapi tidak valid, `KeyError` untuk kunci dictionary yang tidak ada, `IndexError` untuk indeks di luar rentang, dan `ZeroDivisionError` untuk pembagian nol.\n\nMengenali nama error memberimu petunjuk langsung tentang penyebabnya. Dalam data science, error paling sering muncul dari data tak terduga: nilai kosong, tipe salah, atau kolom yang hilang. Menanganinya dengan baik membedakan skrip rapuh dari pipeline andal."
+            },
+            {
+              "type": "code_example",
+              "filename": "jenis_error.py",
+              "runnable": true,
+              "code": "kasus = [\n    lambda: 1 / 0,\n    lambda: int(\"abc\"),\n    lambda: [1, 2][5],\n    lambda: {\"a\": 1}[\"b\"],\n    lambda: \"3\" + 4,\n    lambda: undefined_name,\n]\nfor k in kasus:\n    try:\n        k()\n    except Exception as e:\n        print(type(e).__name__)",
+              "expected_output_note": "ZeroDivisionError\nValueError\nIndexError\nKeyError\nTypeError\nNameError",
+              "explanation": "Setiap jenis kesalahan memiliki exception tersendiri. Nama exception memberi petunjuk cepat tentang penyebabnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## try, except, else, dan finally\n\nBlok `try` berisi kode yang mungkin gagal. Bila terjadi exception, eksekusi lompat ke blok `except` yang sesuai. Selalu tangkap exception **spesifik** seperti `except ValueError`, bukan `except:` kosong atau `except Exception` yang menelan semua, termasuk bug yang seharusnya kamu ketahui. Satu `try` boleh punya beberapa `except` untuk jenis berbeda.\n\nBlok `else` dijalankan bila `try` selesai tanpa exception, cocok untuk kode yang hanya relevan saat berhasil. Blok `finally` selalu dijalankan, ada error atau tidak, dan cocok untuk pembersihan seperti menutup file, meski `with` biasanya lebih baik untuk itu.\n\nSimpan blok `try` sekecil mungkin, hanya baris yang memang mungkin gagal. Blok `try` yang besar menyembunyikan bagian mana yang sebenarnya bermasalah dan bisa menangkap error dari tempat yang tidak kamu duga."
+            },
+            {
+              "type": "code_example",
+              "filename": "try_except.py",
+              "runnable": true,
+              "code": "def bagi(a, b):\n    try:\n        hasil = a / b\n    except ZeroDivisionError:\n        print(\"tidak bisa dibagi nol\")\n        return None\n    except TypeError:\n        print(\"tipe salah\")\n        return None\n    else:\n        print(\"berhasil\")\n        return hasil\n    finally:\n        print(\"selesai\")\n\nprint(bagi(10, 2))\nprint(bagi(1, 0))\nprint(bagi(\"a\", 2))",
+              "expected_output_note": "berhasil\nselesai\n5.0\ntidak bisa dibagi nol\nselesai\nNone\ntipe salah\nselesai\nNone",
+              "explanation": "`else` jalan saat sukses dan `finally` selalu jalan, bahkan saat ada `return` di dalam blok lain."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Jangan menelan semua error",
+              "markdown": "Jangan menulis `except:` kosong atau `except Exception: pass`. Itu menelan error termasuk bug nyata, dan program terlihat berjalan padahal hasilnya salah."
+            }
+          ],
+          "quick_check": {
+            "question": "Exception untuk pembagian dengan nol?",
+            "options": [
+              "ZeroDivisionError",
+              "ValueError"
+            ],
+            "answer_index": 0,
+            "explanation": "ZeroDivisionError khusus untuk pembagian nol.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "raise dan exception buatan sendiri",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## raise dan exception buatan sendiri\n\nKamu menimbulkan exception sendiri dengan `raise`, misalnya `raise ValueError(\"umur tidak boleh negatif\")`. Ini cara fungsi memberi tahu pemanggil bahwa masukan tidak valid, daripada diam-diam mengembalikan nilai ngawur. Pesan yang jelas menghemat banyak waktu debugging bagi siapa pun yang membaca error itu, termasuk dirimu sendiri nanti.\n\nUntuk kasus khusus aplikasi, buat kelas exception sendiri dengan mewarisi `Exception`: `class DataTidakValid(Exception): pass`. Exception khusus memudahkan pemanggil menangkap tepat kesalahan yang mereka antisipasi dan membedakannya dari bug lain.\n\nDi dalam blok `except`, `raise` tanpa argumen melempar ulang exception yang sedang ditangani. Pola ini berguna bila kamu ingin mencatat sesuatu lalu membiarkan error terus naik. Rantai exception dengan `raise Baru from asli` menyimpan penyebab aslinya untuk memudahkan penelusuran."
+            },
+            {
+              "type": "code_example",
+              "filename": "raise_kustom.py",
+              "runnable": true,
+              "code": "class DataTidakValid(Exception):\n    pass\n\ndef periksa_umur(umur):\n    if not isinstance(umur, int):\n        raise TypeError(\"umur harus bilangan bulat\")\n    if umur < 0 or umur > 150:\n        raise DataTidakValid(f\"umur di luar rentang: {umur}\")\n    return umur\n\nfor u in [30, -5, \"x\", 200]:\n    try:\n        print(\"ok\", periksa_umur(u))\n    except DataTidakValid as e:\n        print(\"data:\", e)\n    except TypeError as e:\n        print(\"tipe:\", e)\n\ntry:\n    try:\n        int(\"x\")\n    except ValueError as e:\n        raise DataTidakValid(\"gagal membaca\") from e\nexcept DataTidakValid as e:\n    print(e, type(e.__cause__).__name__)",
+              "expected_output_note": "ok 30\ndata: umur di luar rentang: -5\ntipe: umur harus bilangan bulat\ndata: umur di luar rentang: 200\ngagal membaca ValueError",
+              "explanation": "Exception buatan sendiri membedakan kesalahan data dari bug lain. `raise ... from` menyimpan penyebab asli di `__cause__`."
+            }
+          ],
+          "quick_check": {
+            "question": "Kapan blok else pada try dijalankan?",
+            "options": [
+              "Selalu",
+              "Saat tidak ada exception"
+            ],
+            "answer_index": 1,
+            "explanation": "else jalan bila try sukses.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "LBYL dan EAFP",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## LBYL dan EAFP\n\nAda dua gaya menangani kemungkinan gagal. **LBYL** (*look before you leap*) memeriksa kondisi dulu dengan `if`. **EAFP** (*easier to ask forgiveness than permission*) langsung mencoba lalu menangkap error. Python condong ke EAFP karena sering lebih ringkas dan menghindari kondisi balapan, misalnya saat file bisa dihapus di antara pengecekan dan pembukaan.\n\nContoh LBYL: `if \"k\" in d: nilai = d[\"k\"]`. Contoh EAFP: `try: nilai = d[\"k\"] except KeyError: ...`. Untuk kasus sederhana seperti ini, `d.get(\"k\")` sudah paling bersih. Pilih gaya yang membuat maksud kodemu paling jelas.\n\nValidasi masukan pengguna lebih cocok dengan LBYL karena kamu ingin memberi pesan yang ramah. Operasi yang bergantung pada keadaan luar seperti file dan jaringan lebih cocok dengan EAFP. Latihan berikut melatih keduanya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pesan error yang baik\n\nPesan error yang baik menjawab tiga pertanyaan: apa yang salah, di mana, dan apa yang diharapkan. `ValueError(\"umur harus antara 0 dan 150, diterima -5\")` jauh lebih berguna daripada `ValueError(\"salah\")`. Sertakan nilai yang bermasalah dalam pesan agar penelusuran cepat, tetapi hati-hati agar tidak membocorkan data sensitif seperti kata sandi.\n\nDalam pipeline data, pertimbangkan apakah error harus menghentikan seluruh proses atau cukup mencatat baris bermasalah lalu melanjutkan. Untuk data kecil dan kritis, hentikan. Untuk jutaan baris dengan sedikit data kotor, kumpulkan baris gagal dan laporkan di akhir. Keputusan ini bagian dari desain, bukan sekadar detail teknis."
+            }
+          ],
+          "quick_check": {
+            "question": "Kapan finally dijalankan?",
+            "options": [
+              "Selalu",
+              "Hanya saat sukses"
+            ],
+            "answer_index": 0,
+            "explanation": "finally selalu dijalankan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-08-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ke_int(teks, bawaan=0)` yang mengembalikan `int(teks)` atau `bawaan` bila gagal mengubah.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def ke_int(teks, bawaan=0):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ke_int(\"42\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_int(\"42\") == 42"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ke_int(\"abc\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_int(\"abc\") == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ke_int(\"\", bawaan=-1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_int(\"\", bawaan=-1) == -1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ke_int(\" 7 \")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_int(\" 7 \") == 7"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "ke_int(None, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_int(None, 5) == 5"
+              }
+            ]
+          },
+          "hint": "Tangkap ValueError dan TypeError.",
+          "solution": "def ke_int(teks, bawaan=0):\n    try:\n        return int(teks)\n    except (ValueError, TypeError):\n        return bawaan",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-08-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bagi_aman(a, b)` yang mengembalikan `a / b`, atau `None` bila `b` nol.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def bagi_aman(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bagi_aman(10, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_aman(10, 4) == 2.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bagi_aman(1, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_aman(1, 0) is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bagi_aman(0, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_aman(0, 5) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bagi_aman(-6, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_aman(-6, 3) == -2"
+              }
+            ]
+          },
+          "hint": "Tangkap ZeroDivisionError.",
+          "solution": "def bagi_aman(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return None",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-08-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `periksa_nilai(n)` yang mengembalikan `n` bila 0 sampai 100 termasuk.",
+          "note": "Bila bukan bilangan bulat timbulkan `TypeError`, bila di luar rentang timbulkan `ValueError`. Perlakukan `True` dan `False` sebagai bukan bilangan bulat.",
+          "filename": "solution.py",
+          "starter_code": "def periksa_nilai(n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "periksa_nilai(50)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert periksa_nilai(50) == 50"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "periksa_nilai(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert periksa_nilai(0) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "periksa_nilai(100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert periksa_nilai(100) == 100\nfor salah, jenis in [(101, ValueError), (-1, ValueError), (\"5\", TypeError), (2.5, TypeError), (True, TypeError)]:\n    try:\n        periksa_nilai(salah)\n    except jenis:\n        pass\n    else:\n        raise AssertionError(salah)"
+              }
+            ]
+          },
+          "hint": "Periksa tipe dulu dan pastikan bukan bool, lalu periksa rentang.",
+          "solution": "def periksa_nilai(n):\n    if not isinstance(n, int) or isinstance(n, bool):\n        raise TypeError(\"harus bilangan bulat\")\n    if n < 0 or n > 100:\n        raise ValueError(\"di luar rentang\")\n    return n",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-08-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `muat_semua(daftar)` yang menerima list string, mengubah tiap string menjadi `float`, dan mengembalikan tuple `(hasil, gagal)`.",
+          "note": "`hasil` adalah list float yang berhasil dan `gagal` adalah list string yang gagal diubah, keduanya dalam urutan asli.",
+          "filename": "solution.py",
+          "starter_code": "def muat_semua(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "muat_semua([\"1\", \"2.5\", \"x\", \"\", \"3e2\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert muat_semua([\"1\", \"2.5\", \"x\", \"\", \"3e2\"]) == ([1.0, 2.5, 300.0], [\"x\", \"\"])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "muat_semua([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert muat_semua([]) == ([], [])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "muat_semua([\"a\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert muat_semua([\"a\"]) == ([], [\"a\"])"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "muat_semua([\" 4 \"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert muat_semua([\" 4 \"]) == ([4.0], [])"
+              }
+            ]
+          },
+          "hint": "Telusuri tiap string dengan try dan simpan ke salah satu dari dua list.",
+          "solution": "def muat_semua(daftar):\n    hasil, gagal = [], []\n    for s in daftar:\n        try:\n            hasil.append(float(s))\n        except ValueError:\n            gagal.append(s)\n    return hasil, gagal",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Exception untuk pembagian dengan nol?",
+          "code": null,
+          "options": [
+            {
+              "label": "ValueError",
+              "description": ""
+            },
+            {
+              "label": "ZeroDivisionError",
+              "description": ""
+            },
+            {
+              "label": "ArithmeticFail",
+              "description": ""
+            },
+            {
+              "label": "TypeError",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Namanya jelas.",
+          "explanation": "ZeroDivisionError khusus untuk pembagian nol."
+        },
+        {
+          "q": "Kapan blok else pada try dijalankan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Selalu",
+              "description": ""
+            },
+            {
+              "label": "Saat tidak ada exception",
+              "description": ""
+            },
+            {
+              "label": "Saat ada exception",
+              "description": ""
+            },
+            {
+              "label": "Tidak pernah",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kebalikan except.",
+          "explanation": "else jalan bila try sukses."
+        },
+        {
+          "q": "Kapan finally dijalankan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hanya saat sukses",
+              "description": ""
+            },
+            {
+              "label": "Hanya saat error",
+              "description": ""
+            },
+            {
+              "label": "Selalu",
+              "description": ""
+            },
+            {
+              "label": "Tidak pernah",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Untuk pembersihan.",
+          "explanation": "finally selalu dijalankan."
+        },
+        {
+          "q": "Cara membuat exception sendiri?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mewarisi Exception",
+              "description": ""
+            },
+            {
+              "label": "Memakai def",
+              "description": ""
+            },
+            {
+              "label": "Memakai lambda",
+              "description": ""
+            },
+            {
+              "label": "Memakai global",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kelas.",
+          "explanation": "Buat kelas yang mewarisi Exception."
+        },
+        {
+          "q": "Mengapa except kosong berbahaya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Lambat",
+              "description": ""
+            },
+            {
+              "label": "Menelan semua error termasuk bug",
+              "description": ""
+            },
+            {
+              "label": "Tidak bisa dijalankan",
+              "description": ""
+            },
+            {
+              "label": "Tidak berbahaya",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Terlalu luas.",
+          "explanation": "Bug tersembunyi dan hasil bisa salah diam-diam."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai except kosong atau except Exception: pass. Lebih baik: Tangkap exception spesifik dan tangani dengan jelas.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai except kosong atau except Exception: pass.",
+          "fix": "Tangkap exception spesifik dan tangani dengan jelas."
+        },
+        {
+          "mistake": "Membuat blok try terlalu besar.",
+          "fix": "Taruh hanya baris yang mungkin gagal di dalam try."
+        },
+        {
+          "mistake": "Mengembalikan nilai ngawur untuk masukan tidak valid.",
+          "fix": "Timbulkan exception dengan pesan jelas."
+        }
+      ],
+      "summary": [
+        "Traceback dibaca dari bawah dan nama exception memberi petunjuk.",
+        "Tangkap exception spesifik dengan try, except, else, dan finally.",
+        "raise dan exception buatan sendiri memberi pesan yang jelas.",
+        "Pilih LBYL untuk validasi dan EAFP untuk operasi bergantung keadaan luar."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Penanganan error"
+          },
+          {
+            "type": "text",
+            "source": "Setiap jenis kesalahan memiliki exception tersendiri. Nama exception memberi petunjuk cepat tentang penyebabnya."
+          },
+          {
+            "type": "code",
+            "source": "kasus = [\n    lambda: 1 / 0,\n    lambda: int(\"abc\"),\n    lambda: [1, 2][5],\n    lambda: {\"a\": 1}[\"b\"],\n    lambda: \"3\" + 4,\n    lambda: undefined_name,\n]\nfor k in kasus:\n    try:\n        k()\n    except Exception as e:\n        print(type(e).__name__)"
+          },
+          {
+            "type": "text",
+            "source": "`else` jalan saat sukses dan `finally` selalu jalan, bahkan saat ada `return` di dalam blok lain."
+          },
+          {
+            "type": "code",
+            "source": "def bagi(a, b):\n    try:\n        hasil = a / b\n    except ZeroDivisionError:\n        print(\"tidak bisa dibagi nol\")\n        return None\n    except TypeError:\n        print(\"tipe salah\")\n        return None\n    else:\n        print(\"berhasil\")\n        return hasil\n    finally:\n        print(\"selesai\")\n\nprint(bagi(10, 2))\nprint(bagi(1, 0))\nprint(bagi(\"a\", 2))"
+          },
+          {
+            "type": "text",
+            "source": "Exception buatan sendiri membedakan kesalahan data dari bug lain. `raise ... from` menyimpan penyebab asli di `__cause__`."
+          },
+          {
+            "type": "code",
+            "source": "class DataTidakValid(Exception):\n    pass\n\ndef periksa_umur(umur):\n    if not isinstance(umur, int):\n        raise TypeError(\"umur harus bilangan bulat\")\n    if umur < 0 or umur > 150:\n        raise DataTidakValid(f\"umur di luar rentang: {umur}\")\n    return umur\n\nfor u in [30, -5, \"x\", 200]:\n    try:\n        print(\"ok\", periksa_umur(u))\n    except DataTidakValid as e:\n        print(\"data:\", e)\n    except TypeError as e:\n        print(\"tipe:\", e)\n\ntry:\n    try:\n        int(\"x\")\n    except ValueError as e:\n        raise DataTidakValid(\"gagal membaca\") from e\nexcept DataTidakValid as e:\n    print(e, type(e.__cause__).__name__)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-08-2",
+      "title": "Modul dan pustaka standar",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengimpor modul dengan import, from import, dan alias",
+        "Memahami __name__ dan pola if __name__ == '__main__'",
+        "Memakai modul standar seperti math, random, datetime, dan collections",
+        "Membaca dokumentasi modul dan memahami cara kerja pencarian modul"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Modul dan impor",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Modul dan impor\n\n**Modul** adalah file Python berisi definisi yang bisa dipakai ulang. Python hadir dengan pustaka standar yang sangat kaya, dan ekosistem pihak ketiga seperti NumPy dan pandas dipasang lewat `pip`. Kamu mengakses isi modul dengan `import`. Ada beberapa bentuk: `import math` lalu `math.sqrt(4)`, `from math import sqrt` lalu `sqrt(4)`, dan `import numpy as np` yang memberi alias pendek.\n\nGunakan `import modul` bila ingin jelas dari mana sebuah fungsi berasal, dan alias untuk nama panjang yang sudah menjadi konvensi, seperti `np` dan `pd`. Hindari `from modul import *` karena menumpahkan semua nama ke ruang namamu dan menyulitkan pelacakan asal sebuah nama.\n\nLetakkan semua `import` di bagian atas file, dikelompokkan: pustaka standar dulu, lalu pihak ketiga, lalu modul milikmu. Konvensi ini membuat ketergantungan program terlihat sekilas."
+            },
+            {
+              "type": "code_example",
+              "filename": "impor_dasar.py",
+              "runnable": true,
+              "code": "import math\nfrom math import sqrt, pi\nimport random as rnd\nfrom collections import Counter\n\nprint(math.sqrt(16), sqrt(25), round(pi, 4))\nprint(math.floor(2.7), math.ceil(2.1), math.gcd(12, 18))\nprint(math.isclose(0.1 + 0.2, 0.3), 0.1 + 0.2 == 0.3)\nrnd.seed(1)\na = [rnd.randint(1, 6) for _ in range(5)]\nrnd.seed(1)\nb = [rnd.randint(1, 6) for _ in range(5)]\nprint(a == b)\nprint(Counter(\"abracadabra\").most_common(2))",
+              "expected_output_note": "4.0 5.0 3.1416\n2 3 6\nTrue False\nTrue\n[('a', 5), ('b', 2)]",
+              "explanation": "Tiga bentuk impor memberi akses ke fungsi modul. `seed` membuat bilangan acak dapat diulang, dan `isclose` membandingkan desimal dengan toleransi."
+            },
+            {
+              "type": "text",
+              "markdown": "## __name__ dan skrip yang bisa diimpor\n\nSetiap modul punya variabel khusus `__name__`. Ketika file dijalankan langsung, nilainya `\"__main__\"`. Ketika file diimpor oleh file lain, nilainya adalah nama modul. Pola `if __name__ == \"__main__\":` memanfaatkannya: kode di dalam blok itu hanya jalan saat file dijalankan langsung, bukan saat diimpor.\n\nIni memungkinkan satu file berfungsi sebagai pustaka sekaligus skrip. Fungsi-fungsinya dapat diimpor dan dipakai ulang tanpa efek samping, sedangkan bagian demonstrasi atau antarmuka baris perintah hanya jalan bila dijalankan langsung. Tanpa pola ini, mengimpor file akan menjalankan semua kode di dalamnya, termasuk yang mencetak atau membaca file.\n\nDalam proyek data science, pola ini membantumu menyusun kode analisis menjadi modul yang bisa diuji dan dipakai di notebook tanpa mengeksekusi seluruh pipeline setiap kali diimpor."
+            },
+            {
+              "type": "code_example",
+              "filename": "name_main.py",
+              "runnable": true,
+              "code": "def kuadrat(x):\n    return x * x\n\ndef main():\n    print(\"menjalankan sebagai skrip\", kuadrat(6))\n\nprint(__name__)\nif __name__ == \"__main__\":\n    main()",
+              "expected_output_note": "__main__\nmenjalankan sebagai skrip 36",
+              "explanation": "Saat dijalankan langsung `__name__` bernilai `__main__` sehingga `main()` berjalan. Bila diimpor, blok itu dilewati."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Menjelajah modul",
+              "markdown": "Gunakan `dir(modul)` untuk melihat isi modul dan `help(modul.fungsi)` untuk membaca dokumentasinya langsung di kompiler."
+            }
+          ],
+          "quick_check": {
+            "question": "Nilai __name__ saat file dijalankan langsung?",
+            "options": [
+              "'__main__'",
+              "'main'"
+            ],
+            "answer_index": 0,
+            "explanation": "Ia bernilai __main__.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Pustaka standar yang paling berguna",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Pustaka standar yang paling berguna\n\nBeberapa modul standar akan sering kamu pakai. `math` untuk fungsi matematika, `random` untuk bilangan acak dan pengambilan sampel, `statistics` untuk rata-rata dan simpangan baku dasar, `datetime` untuk tanggal dan waktu, `collections` untuk struktur khusus seperti `Counter` dan `defaultdict`, `itertools` dan `functools` untuk alat fungsional, `json` dan `csv` untuk format data, serta `re` untuk regex.\n\nKebiasaan penting: sebelum menulis fungsi sendiri, periksa apakah pustaka standar sudah menyediakannya. Fungsi pustaka umumnya sudah teruji, dioptimalkan, dan menangani kasus pinggir yang mudah terlewat. Menulis ulang pengurutan atau penghitung sendiri jarang berguna.\n\nTentu bila membutuhkan operasi numerik berskala besar, NumPy dan pandas jauh lebih cepat daripada pustaka standar. Tetapi untuk skrip kecil dan pemrosesan teks, pustaka standar sering sudah cukup."
+            },
+            {
+              "type": "code_example",
+              "filename": "pustaka_standar.py",
+              "runnable": true,
+              "code": "from collections import Counter, defaultdict\nfrom datetime import date, timedelta\nimport statistics as st\n\ndata = [4, 8, 6, 5, 3, 8]\nprint(st.mean(data), st.median(data), st.mode(data))\nprint(round(st.stdev(data), 3))\n\nc = Counter([\"a\", \"b\", \"a\", \"c\", \"a\", \"b\"])\nprint(c[\"a\"], c.most_common(1), c[\"z\"])\n\nd = defaultdict(list)\nfor k, v in [(\"x\", 1), (\"y\", 2), (\"x\", 3)]:\n    d[k].append(v)\nprint(dict(d))\n\nhari = date(2024, 2, 28)\nprint(hari + timedelta(days=2), (date(2024, 3, 1) - hari).days)\nprint(hari.strftime(\"%d-%m-%Y\"), hari.weekday())",
+              "expected_output_note": "5.666666666666667 5.5 8\n2.066\n3 [('a', 3)] 0\n{'x': [1, 3], 'y': [2]}\n2024-03-01 2\n28-02-2024 2",
+              "explanation": "`Counter` dan `defaultdict` menyingkat pola penghitung dan pengelompokan. `datetime` menangani tanggal termasuk tahun kabisat, dan `statistics` memberi ringkasan dasar."
+            }
+          ],
+          "quick_check": {
+            "question": "Fungsi untuk membandingkan float dengan toleransi?",
+            "options": [
+              "math.same",
+              "math.isclose"
+            ],
+            "answer_index": 1,
+            "explanation": "isclose membandingkan dengan toleransi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memasang pustaka pihak ketiga",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memasang pustaka pihak ketiga\n\nDi luar pustaka standar, kamu memasang paket dengan `pip install nama_paket` di terminal. Sebaiknya pakai lingkungan virtual agar tiap proyek punya versi paketnya sendiri dan tidak saling bertabrakan. Daftar paket beserta versinya dicatat di file seperti `requirements.txt` supaya orang lain bisa mereproduksi lingkunganmu.\n\nPencatatan versi sangat penting dalam data science. Hasil analisis bisa berbeda antar versi pustaka, dan model yang dilatih dengan satu versi mungkin tidak dapat dimuat di versi lain. Reproduksibilitas dimulai dari lingkungan yang terdokumentasi.\n\nDi aplikasi ini kompiler sudah menyertakan pustaka populer seperti NumPy dan pandas bila tersedia, jadi kamu tidak perlu memasang apa pun untuk berlatih. Latihan berikut memakai pustaka standar saja."
+            },
+            {
+              "type": "text",
+              "markdown": "## Struktur proyek yang sehat\n\nSaat skripmu tumbuh, pecah menjadi beberapa file. Satu file untuk fungsi pembersihan data, satu untuk perhitungan fitur, satu untuk visualisasi, dan satu skrip utama yang merangkainya. Setiap file menjadi modul yang bisa diimpor dan diuji sendiri.\n\nKelompokkan modul terkait dalam folder dengan file `__init__.py` sehingga menjadi paket. Beri nama modul pendek dan jelas dengan huruf kecil. Hindari memberi nama file sama dengan modul standar, misalnya `random.py` atau `json.py`, karena Python akan mengimpor file milikmu alih-alih pustaka aslinya dan menimbulkan error membingungkan.\n\nKebiasaan menyusun proyek sejak awal sangat menghemat waktu saat proyek membesar. Latihan berikut memakai pustaka standar untuk menyelesaikan tugas kecil dengan cara yang bersih."
+            }
+          ],
+          "quick_check": {
+            "question": "Struktur untuk menghitung kemunculan?",
+            "options": [
+              "Counter",
+              "deque"
+            ],
+            "answer_index": 0,
+            "explanation": "Counter dari collections.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-08-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `hipotenusa(a, b)` yang mengembalikan panjang sisi miring segitiga siku-siku memakai modul `math`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef hipotenusa(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hipotenusa(3, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hipotenusa(3, 4) == 5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hipotenusa(0, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hipotenusa(0, 2) == 2"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "abs(hipotenusa(1, 1) - 2 ** 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(hipotenusa(1, 1) - 2 ** 0.5) < 1e-12"
+              }
+            ]
+          },
+          "hint": "Gunakan math.sqrt atau math.hypot.",
+          "solution": "import math\n\ndef hipotenusa(a, b):\n    return math.hypot(a, b)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-08-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `paling_sering(daftar)` yang mengembalikan elemen yang paling sering muncul memakai `Counter`.",
+          "note": "Bila seri, ambil yang pertama muncul. Bila kosong kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "from collections import Counter\n\ndef paling_sering(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "paling_sering([\"a\", \"b\", \"a\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert paling_sering([\"a\", \"b\", \"a\"]) == \"a\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "paling_sering([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert paling_sering([]) is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "paling_sering([1, 2, 2, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert paling_sering([1, 2, 2, 1]) == 1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "paling_sering([\"x\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert paling_sering([\"x\"]) == \"x\""
+              }
+            ]
+          },
+          "hint": "most_common(1) mengembalikan list pasangan dan menjaga urutan kemunculan saat seri.",
+          "solution": "from collections import Counter\n\ndef paling_sering(daftar):\n    if not daftar:\n        return None\n    return Counter(daftar).most_common(1)[0][0]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-08-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `selisih_hari(a, b)` yang menerima dua string tanggal berformat `YYYY-MM-DD` dan mengembalikan selisih hari (b dikurangi a) sebagai bilangan bulat, memakai `datetime.date`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "from datetime import date\n\ndef selisih_hari(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selisih_hari(\"2024-02-28\", \"2024-03-01\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari(\"2024-02-28\", \"2024-03-01\") == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selisih_hari(\"2023-02-28\", \"2023-03-01\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari(\"2023-02-28\", \"2023-03-01\") == 1"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selisih_hari(\"2024-05-01\", \"2024-05-01\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari(\"2024-05-01\", \"2024-05-01\") == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "selisih_hari(\"2024-05-10\", \"2024-05-01\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari(\"2024-05-10\", \"2024-05-01\") == -9"
+              }
+            ]
+          },
+          "hint": "Ubah string dengan date.fromisoformat lalu kurangkan dan ambil days.",
+          "solution": "from datetime import date\n\ndef selisih_hari(a, b):\n    return (date.fromisoformat(b) - date.fromisoformat(a)).days",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-08-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ringkas(angka)` yang mengembalikan dictionary dengan kunci `rata`, `median`, `simpangan` (simpangan baku sampel) dibulatkan 3 desimal dan `modus`.",
+          "note": "Gunakan modul `statistics`. Anggap minimal dua nilai.",
+          "filename": "solution.py",
+          "starter_code": "import statistics as st\n\ndef ringkas(angka):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = ringkas([4, 8, 6, 5, 3, 8])\nassert r == {\"rata\": 5.667, \"median\": 5.5, \"simpangan\": 2.066, \"modus\": 8}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r2 = ringkas([1, 2, 3])\nassert r2[\"rata\"] == 2 and r2[\"median\"] == 2 and r2[\"simpangan\"] == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ringkas([2, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ringkas([2, 2])[\"modus\"] == 2"
+              }
+            ]
+          },
+          "hint": "Panggil mean, median, stdev, dan mode lalu bulatkan.",
+          "solution": "import statistics as st\n\ndef ringkas(angka):\n    return {\n        \"rata\": round(st.mean(angka), 3),\n        \"median\": st.median(angka),\n        \"simpangan\": round(st.stdev(angka), 3),\n        \"modus\": st.mode(angka),\n    }",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Nilai __name__ saat file dijalankan langsung?",
+          "code": null,
+          "options": [
+            {
+              "label": "'main'",
+              "description": ""
+            },
+            {
+              "label": "'__main__'",
+              "description": ""
+            },
+            {
+              "label": "'file'",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dengan garis bawah ganda.",
+          "explanation": "Ia bernilai __main__."
+        },
+        {
+          "q": "Fungsi untuk membandingkan float dengan toleransi?",
+          "code": null,
+          "options": [
+            {
+              "label": "math.same",
+              "description": ""
+            },
+            {
+              "label": "math.isclose",
+              "description": ""
+            },
+            {
+              "label": "math.equal",
+              "description": ""
+            },
+            {
+              "label": "math.near",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dekat.",
+          "explanation": "isclose membandingkan dengan toleransi."
+        },
+        {
+          "q": "Struktur untuk menghitung kemunculan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Counter",
+              "description": ""
+            },
+            {
+              "label": "deque",
+              "description": ""
+            },
+            {
+              "label": "namedtuple",
+              "description": ""
+            },
+            {
+              "label": "OrderedSet",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hitung.",
+          "explanation": "Counter dari collections."
+        },
+        {
+          "q": "Mengapa from m import * tidak disarankan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "Menyulitkan pelacakan asal nama",
+              "description": ""
+            },
+            {
+              "label": "Lambat sekali",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Asal nama.",
+          "explanation": "Nama masuk ruang nama tanpa jelas asalnya."
+        },
+        {
+          "q": "Fungsi untuk melihat isi modul?",
+          "code": null,
+          "options": [
+            {
+              "label": "dir",
+              "description": ""
+            },
+            {
+              "label": "list",
+              "description": ""
+            },
+            {
+              "label": "show",
+              "description": ""
+            },
+            {
+              "label": "open",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Direktori.",
+          "explanation": "dir menampilkan nama dalam modul."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai from modul import * di mana-mana. Lebih baik: Impor nama spesifik atau modul dengan alias.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai from modul import * di mana-mana.",
+          "fix": "Impor nama spesifik atau modul dengan alias."
+        },
+        {
+          "mistake": "Menulis ulang fungsi yang sudah ada di pustaka standar.",
+          "fix": "Periksa pustaka standar lebih dulu."
+        },
+        {
+          "mistake": "Menaruh kode demonstrasi di tingkat atas modul.",
+          "fix": "Bungkus dengan if __name__ == '__main__'."
+        }
+      ],
+      "summary": [
+        "import, from import, dan alias adalah cara mengakses modul.",
+        "if __name__ == '__main__' memisahkan skrip dari pustaka.",
+        "Pustaka standar menyediakan math, random, statistics, datetime, dan collections.",
+        "Catat versi paket agar lingkungan dapat direproduksi."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Modul dan pustaka standar"
+          },
+          {
+            "type": "text",
+            "source": "Tiga bentuk impor memberi akses ke fungsi modul. `seed` membuat bilangan acak dapat diulang, dan `isclose` membandingkan desimal dengan toleransi."
+          },
+          {
+            "type": "code",
+            "source": "import math\nfrom math import sqrt, pi\nimport random as rnd\nfrom collections import Counter\n\nprint(math.sqrt(16), sqrt(25), round(pi, 4))\nprint(math.floor(2.7), math.ceil(2.1), math.gcd(12, 18))\nprint(math.isclose(0.1 + 0.2, 0.3), 0.1 + 0.2 == 0.3)\nrnd.seed(1)\na = [rnd.randint(1, 6) for _ in range(5)]\nrnd.seed(1)\nb = [rnd.randint(1, 6) for _ in range(5)]\nprint(a == b)\nprint(Counter(\"abracadabra\").most_common(2))"
+          },
+          {
+            "type": "text",
+            "source": "Saat dijalankan langsung `__name__` bernilai `__main__` sehingga `main()` berjalan. Bila diimpor, blok itu dilewati."
+          },
+          {
+            "type": "code",
+            "source": "def kuadrat(x):\n    return x * x\n\ndef main():\n    print(\"menjalankan sebagai skrip\", kuadrat(6))\n\nprint(__name__)\nif __name__ == \"__main__\":\n    main()"
+          },
+          {
+            "type": "text",
+            "source": "`Counter` dan `defaultdict` menyingkat pola penghitung dan pengelompokan. `datetime` menangani tanggal termasuk tahun kabisat, dan `statistics` memberi ringkasan dasar."
+          },
+          {
+            "type": "code",
+            "source": "from collections import Counter, defaultdict\nfrom datetime import date, timedelta\nimport statistics as st\n\ndata = [4, 8, 6, 5, 3, 8]\nprint(st.mean(data), st.median(data), st.mode(data))\nprint(round(st.stdev(data), 3))\n\nc = Counter([\"a\", \"b\", \"a\", \"c\", \"a\", \"b\"])\nprint(c[\"a\"], c.most_common(1), c[\"z\"])\n\nd = defaultdict(list)\nfor k, v in [(\"x\", 1), (\"y\", 2), (\"x\", 3)]:\n    d[k].append(v)\nprint(dict(d))\n\nhari = date(2024, 2, 28)\nprint(hari + timedelta(days=2), (date(2024, 3, 1) - hari).days)\nprint(hari.strftime(\"%d-%m-%Y\"), hari.weekday())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-08-3",
+      "title": "Gaya kode, pengujian, dan kebiasaan baik",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menerapkan PEP 8 untuk penamaan, spasi, dan struktur kode",
+        "Menulis docstring dan type hint yang berguna",
+        "Menguji fungsi dengan assert dan memikirkan kasus batas",
+        "Melakukan refactoring dan debugging secara sistematis"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Kode dibaca lebih sering daripada ditulis",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kode dibaca lebih sering daripada ditulis\n\nKode ditulis sekali tetapi dibaca puluhan kali, oleh rekan kerja dan oleh dirimu sendiri di masa depan. Karena itu keterbacaan adalah fitur, bukan kemewahan. **PEP 8** adalah panduan gaya resmi Python yang disepakati komunitas. Mengikutinya membuat kodemu terasa akrab bagi programmer Python mana pun.\n\nAturan inti: nama variabel dan fungsi memakai huruf kecil dengan garis bawah (`hitung_rata_rata`), nama kelas memakai `HurufBesarDiAwalKata`, dan konstanta memakai `HURUF_BESAR`. Lekukan empat spasi, maksimal sekitar 79 sampai 100 karakter per baris, dua baris kosong antar fungsi tingkat atas, dan spasi di sekitar operator. Nama harus menjelaskan diri: `jumlah_pelanggan` jauh lebih baik daripada `jp` atau `x`.\n\nAlat otomatis seperti `black` dan `ruff` memformat dan memeriksa kode untukmu, sehingga kamu tidak perlu berdebat soal gaya. Pasang di editor dan biarkan alat bekerja."
+            },
+            {
+              "type": "code_example",
+              "filename": "gaya_pep8.py",
+              "runnable": true,
+              "code": "MAKS_PERCOBAAN = 3\n\ndef hitung_rata_rata(nilai_ujian):\n    jumlah = sum(nilai_ujian)\n    return jumlah / len(nilai_ujian)\n\ndef buruk(l):\n    s=0\n    for i in l: s+=i\n    return s/len(l)\n\ndata = [80, 90, 70]\nprint(hitung_rata_rata(data), buruk(data), hitung_rata_rata(data) == buruk(data))\nprint(MAKS_PERCOBAAN)",
+              "expected_output_note": "80.0 80.0 True\n3",
+              "explanation": "Kedua fungsi menghasilkan hasil sama, tetapi nama deskriptif dan spasi rapi membuat versi pertama jauh lebih mudah dibaca."
+            },
+            {
+              "type": "text",
+              "markdown": "## Docstring dan type hint\n\n**Docstring** menjelaskan tujuan fungsi, parameter, dan nilai kembalian. Satu kalimat ringkas di baris pertama sudah sangat membantu, dan editor menampilkannya saat kamu mengarahkan kursor ke fungsi. Tulis apa yang dilakukan fungsi dan mengapa, bukan mengulang kode baris demi baris.\n\n**Type hint** menambahkan anotasi tipe pada parameter dan nilai kembalian: `def luas(p: float, l: float) -> float:`. Python tidak memaksakannya saat berjalan, tetapi editor dan alat seperti `mypy` memakainya untuk menangkap kesalahan lebih awal dan memberi pelengkapan kode yang lebih baik. Untuk koleksi, pakai `list[int]`, `dict[str, float]`, dan `str | None` untuk nilai opsional.\n\nKomentar berbeda dari docstring. Komentar menjelaskan *mengapa* ada keputusan yang tidak jelas, sedangkan kode yang baik sudah menjelaskan *apa* yang terjadi. Komentar yang berisi hal yang sudah jelas dari kode hanya menambah kebisingan dan cepat usang."
+            },
+            {
+              "type": "code_example",
+              "filename": "docstring_hint.py",
+              "runnable": true,
+              "code": "def luas_lingkaran(jari_jari: float) -> float:\n    \"\"\"Mengembalikan luas lingkaran dengan jari-jari tertentu.\"\"\"\n    return 3.14159 * jari_jari ** 2\n\ndef cari(daftar: list[int], target: int) -> int | None:\n    \"\"\"Mengembalikan indeks pertama target atau None bila tidak ada.\"\"\"\n    for i, x in enumerate(daftar):\n        if x == target:\n            return i\n    return None\n\nprint(round(luas_lingkaran(2), 2))\nprint(cari([5, 7, 9], 9), cari([5], 1))\nprint(luas_lingkaran.__doc__)\nprint(luas_lingkaran.__annotations__)",
+              "expected_output_note": "12.57\n2 None\nMengembalikan luas lingkaran dengan jari-jari tertentu.\n{'jari_jari': <class 'float'>, 'return': <class 'float'>}",
+              "explanation": "Type hint tersimpan di `__annotations__` dan dipakai alat bantu, tetapi tidak dipaksakan saat program berjalan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Nama sulit adalah petunjuk",
+              "markdown": "Saat menamai sesuatu terasa sulit, itu sering tanda fungsinya melakukan terlalu banyak hal. Pecah fungsinya, dan nama yang tepat akan lebih mudah muncul."
+            }
+          ],
+          "quick_check": {
+            "question": "Gaya nama fungsi menurut PEP 8?",
+            "options": [
+              "snake_case",
+              "CamelCase"
+            ],
+            "answer_index": 0,
+            "explanation": "Huruf kecil dengan garis bawah.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Menguji dan men-debug",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menguji dan men-debug\n\nCara paling sederhana menguji adalah `assert` dengan beberapa pemanggilan dan hasil yang diharapkan. Pikirkan kasus batas: nol, satu elemen, list kosong, nilai negatif, string kosong, dan masukan sangat besar. Bug paling sering bersembunyi di batas, bukan di kasus tengah. Pustaka `unittest` dan `pytest` menyediakan kerangka lebih lengkap untuk proyek yang lebih besar.\n\nSaat menemukan bug, bekerjalah sistematis. Reproduksi masalah dengan masukan sekecil mungkin, bentuk hipotesis tentang penyebabnya, lalu uji hipotesis itu dengan mencetak nilai antara atau memakai debugger. Hindari mengubah banyak hal sekaligus karena kamu tidak akan tahu perubahan mana yang memperbaiki atau malah merusak.\n\nTeknik klasik yang sangat efektif adalah *rubber duck debugging*: jelaskan kodemu baris demi baris kepada orang lain, atau bahkan bebek karet. Seringkali kamu menemukan kesalahannya sendiri di tengah menjelaskan. Biasakan juga menulis tes untuk setiap bug yang kamu temukan agar tidak muncul lagi."
+            },
+            {
+              "type": "code_example",
+              "filename": "uji_median.py",
+              "runnable": true,
+              "code": "def median(angka):\n    urut = sorted(angka)\n    n = len(urut)\n    if n == 0:\n        raise ValueError(\"daftar kosong\")\n    tengah = n // 2\n    if n % 2 == 1:\n        return urut[tengah]\n    return (urut[tengah - 1] + urut[tengah]) / 2\n\nassert median([3, 1, 2]) == 2\nassert median([4, 1, 3, 2]) == 2.5\nassert median([7]) == 7\ntry:\n    median([])\nexcept ValueError:\n    print(\"kosong ditolak\")\nprint(\"semua tes lulus\")",
+              "expected_output_note": "kosong ditolak\nsemua tes lulus",
+              "explanation": "Tes mencakup jumlah ganjil, genap, satu elemen, dan kosong. Kasus batas diuji secara eksplisit."
+            }
+          ],
+          "quick_check": {
+            "question": "Fungsi type hint di Python?",
+            "options": [
+              "Memaksa tipe saat berjalan",
+              "Anotasi untuk alat bantu dan pembaca"
+            ],
+            "answer_index": 1,
+            "explanation": "Tidak dipaksakan saat berjalan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Refactoring dan kebiasaan jangka panjang",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Refactoring dan kebiasaan jangka panjang\n\n**Refactoring** adalah memperbaiki struktur kode tanpa mengubah perilakunya. Tanda kode butuh dirapikan: fungsi terlalu panjang, nama membingungkan, kode yang sama disalin di beberapa tempat, atau percabangan bersarang dalam. Tes yang baik membuatmu berani merapikan karena kamu langsung tahu bila ada yang rusak.\n\nPrinsip DRY (*don't repeat yourself*) menyarankan menjadikan logika berulang sebagai fungsi. Namun jangan berlebihan: abstraksi terlalu dini sering lebih buruk daripada sedikit pengulangan. Tunggu sampai pola muncul tiga kali sebelum membuat abstraksi.\n\nTerakhir, biasakan kendali versi dengan Git sejak awal, tulis pesan commit yang jelas, dan simpan proyekmu dengan struktur rapi. Kebiasaan kecil ini menjadi pembeda antara skrip sekali pakai dan pekerjaan profesional yang bisa dipertahankan. Kerjakan latihan berikut sambil memperhatikan nama, tes, dan kejelasan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca kode orang lain\n\nKeterampilan yang sama pentingnya dengan menulis adalah membaca. Saat menemui kode asing, mulai dari gambaran besar: apa tujuan file ini, fungsi mana yang menjadi pintu masuk, dan data apa yang mengalir. Baru kemudian turun ke detail satu fungsi. Jalankan kode dengan masukan kecil dan cetak nilai antara untuk memastikan pemahamanmu benar.\n\nMembaca kode pustaka populer di GitHub adalah cara belajar gaya dan pola yang baik. Perhatikan bagaimana mereka menamai, menyusun modul, dan menulis tes."
+            }
+          ],
+          "quick_check": {
+            "question": "Di mana bug paling sering bersembunyi?",
+            "options": [
+              "Kasus batas",
+              "Kasus tengah"
+            ],
+            "answer_index": 0,
+            "explanation": "Batas seperti kosong dan nol.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-08-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `luas_segitiga(alas: float, tinggi: float) -> float` dengan type hint dan docstring yang mengembalikan luas segitiga.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def luas_segitiga(alas, tinggi):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "luas_segitiga(4, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_segitiga(4, 3) == 6"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "luas_segitiga(0, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_segitiga(0, 5) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "luas_segitiga(2.5, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_segitiga(2.5, 2) == 2.5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "luas_segitiga.__annotations__.get(\"return\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert luas_segitiga.__doc__ and luas_segitiga.__annotations__.get(\"return\") is float"
+              }
+            ]
+          },
+          "hint": "Tambahkan docstring tiga kutip dan anotasi -> float.",
+          "solution": "def luas_segitiga(alas: float, tinggi: float) -> float:\n    \"\"\"Mengembalikan luas segitiga dari alas dan tinggi.\"\"\"\n    return alas * tinggi / 2",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-08-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ke_snake_case(teks)` yang mengubah teks seperti `\"Hitung Rata Rata\"` menjadi `\"hitung_rata_rata\"`: huruf kecil dan spasi menjadi garis bawah.",
+          "note": "Spasi berlebih diabaikan.",
+          "filename": "solution.py",
+          "starter_code": "def ke_snake_case(teks):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ke_snake_case(\"Hitung Rata Rata\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_snake_case(\"Hitung Rata Rata\") == \"hitung_rata_rata\""
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ke_snake_case(\" satu dua \")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_snake_case(\"  satu   dua \") == \"satu_dua\""
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ke_snake_case(\"\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_snake_case(\"\") == \"\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ke_snake_case(\"Kata\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ke_snake_case(\"Kata\") == \"kata\""
+              }
+            ]
+          },
+          "hint": "Pecah dengan split, ubah kecil, dan gabung dengan garis bawah.",
+          "solution": "def ke_snake_case(teks):\n    return \"_\".join(teks.lower().split())",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-08-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `modus_semua(daftar)` yang mengembalikan list terurut semua nilai yang paling sering muncul.",
+          "note": "List kosong menghasilkan list kosong. Sertakan penanganan kasus seri.",
+          "filename": "solution.py",
+          "starter_code": "def modus_semua(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "modus_semua([1, 2, 2, 3, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus_semua([1, 2, 2, 3, 3]) == [2, 3]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "modus_semua([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus_semua([5]) == [5]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "modus_semua([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus_semua([]) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "modus_semua([\"b\", \"a\", \"a\", \"b\", \"c\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus_semua([\"b\", \"a\", \"a\", \"b\", \"c\"]) == [\"a\", \"b\"]"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "modus_semua([1, 1, 1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus_semua([1, 1, 1, 2]) == [1]"
+              }
+            ]
+          },
+          "hint": "Hitung kemunculan lalu ambil semua yang sama dengan hitungan maksimum.",
+          "solution": "def modus_semua(daftar):\n    if not daftar:\n        return []\n    hitung = {}\n    for x in daftar:\n        hitung[x] = hitung.get(x, 0) + 1\n    puncak = max(hitung.values())\n    return sorted(k for k, v in hitung.items() if v == puncak)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-08-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Fungsi `buruk(l)` di bawah menghitung rata-rata tetapi gagal pada list kosong dan namanya tidak jelas.",
+          "note": "Tulis ulang sebagai `rata_rata(nilai)` yang mengembalikan rata-rata, menimbulkan `ValueError(\"daftar kosong\")` untuk list kosong, dan memberi hasil sama untuk masukan lain.",
+          "filename": "solution.py",
+          "starter_code": "def buruk(l):\n    s=0\n    for i in l: s+=i\n    return s/len(l)\n\ndef rata_rata(nilai):\n    # TODO: tulis ulang dengan nama jelas dan penanganan kosong\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_rata([80, 90, 70])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata([80, 90, 70]) == 80"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_rata([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata([5]) == 5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_rata([1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata([1, 2]) == 1.5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_rata([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "try:\n    rata_rata([])\nexcept ValueError as e:\n    assert str(e) == \"daftar kosong\"\nelse:\n    raise AssertionError(\"harus error\")"
+              }
+            ]
+          },
+          "hint": "Periksa kosong lebih dulu dengan raise lalu kembalikan sum dibagi len.",
+          "solution": "def rata_rata(nilai):\n    if not nilai:\n        raise ValueError(\"daftar kosong\")\n    return sum(nilai) / len(nilai)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Gaya nama fungsi menurut PEP 8?",
+          "code": null,
+          "options": [
+            {
+              "label": "CamelCase",
+              "description": ""
+            },
+            {
+              "label": "snake_case",
+              "description": ""
+            },
+            {
+              "label": "KAPITAL",
+              "description": ""
+            },
+            {
+              "label": "kebab-case",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tidak ada huruf besar.",
+          "explanation": "Huruf kecil dengan garis bawah."
+        },
+        {
+          "q": "Fungsi type hint di Python?",
+          "code": null,
+          "options": [
+            {
+              "label": "Memaksa tipe saat berjalan",
+              "description": ""
+            },
+            {
+              "label": "Anotasi untuk alat bantu dan pembaca",
+              "description": ""
+            },
+            {
+              "label": "Mempercepat kode",
+              "description": ""
+            },
+            {
+              "label": "Mengganti docstring",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Untuk editor dan mypy.",
+          "explanation": "Tidak dipaksakan saat berjalan."
+        },
+        {
+          "q": "Di mana bug paling sering bersembunyi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kasus tengah",
+              "description": ""
+            },
+            {
+              "label": "Kasus batas",
+              "description": ""
+            },
+            {
+              "label": "Nama variabel",
+              "description": ""
+            },
+            {
+              "label": "Komentar",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tepi.",
+          "explanation": "Batas seperti kosong dan nol."
+        },
+        {
+          "q": "Apa itu refactoring?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menambah fitur",
+              "description": ""
+            },
+            {
+              "label": "Memperbaiki struktur tanpa mengubah perilaku",
+              "description": ""
+            },
+            {
+              "label": "Menghapus tes",
+              "description": ""
+            },
+            {
+              "label": "Menyalin kode",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Rapikan.",
+          "explanation": "Perilaku tetap, struktur lebih baik."
+        },
+        {
+          "q": "Apa yang sebaiknya dijelaskan komentar?",
+          "code": null,
+          "options": [
+            {
+              "label": "Apa yang jelas dari kode",
+              "description": ""
+            },
+            {
+              "label": "Mengapa keputusan tidak jelas diambil",
+              "description": ""
+            },
+            {
+              "label": "Nama variabel",
+              "description": ""
+            },
+            {
+              "label": "Semua baris",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Mengapa, bukan apa.",
+          "explanation": "Komentar menjelaskan alasan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai nama singkat tak bermakna seperti x dan l. Lebih baik: Beri nama yang menjelaskan isi dan tujuan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai nama singkat tak bermakna seperti x dan l.",
+          "fix": "Beri nama yang menjelaskan isi dan tujuan."
+        },
+        {
+          "mistake": "Hanya menguji kasus tengah.",
+          "fix": "Uji juga kosong, satu elemen, dan nilai batas."
+        },
+        {
+          "mistake": "Mengubah banyak hal sekaligus saat debugging.",
+          "fix": "Ubah satu hal lalu uji ulang."
+        }
+      ],
+      "summary": [
+        "PEP 8 menyeragamkan penamaan dan tata letak kode Python.",
+        "Docstring dan type hint menjelaskan maksud fungsi.",
+        "Uji kasus batas dan debug secara sistematis.",
+        "Refactoring dan kendali versi menjaga kode tetap sehat."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Gaya kode, pengujian, dan kebiasaan baik"
+          },
+          {
+            "type": "text",
+            "source": "Kedua fungsi menghasilkan hasil sama, tetapi nama deskriptif dan spasi rapi membuat versi pertama jauh lebih mudah dibaca."
+          },
+          {
+            "type": "code",
+            "source": "MAKS_PERCOBAAN = 3\n\ndef hitung_rata_rata(nilai_ujian):\n    jumlah = sum(nilai_ujian)\n    return jumlah / len(nilai_ujian)\n\ndef buruk(l):\n    s=0\n    for i in l: s+=i\n    return s/len(l)\n\ndata = [80, 90, 70]\nprint(hitung_rata_rata(data), buruk(data), hitung_rata_rata(data) == buruk(data))\nprint(MAKS_PERCOBAAN)"
+          },
+          {
+            "type": "text",
+            "source": "Type hint tersimpan di `__annotations__` dan dipakai alat bantu, tetapi tidak dipaksakan saat program berjalan."
+          },
+          {
+            "type": "code",
+            "source": "def luas_lingkaran(jari_jari: float) -> float:\n    \"\"\"Mengembalikan luas lingkaran dengan jari-jari tertentu.\"\"\"\n    return 3.14159 * jari_jari ** 2\n\ndef cari(daftar: list[int], target: int) -> int | None:\n    \"\"\"Mengembalikan indeks pertama target atau None bila tidak ada.\"\"\"\n    for i, x in enumerate(daftar):\n        if x == target:\n            return i\n    return None\n\nprint(round(luas_lingkaran(2), 2))\nprint(cari([5, 7, 9], 9), cari([5], 1))\nprint(luas_lingkaran.__doc__)\nprint(luas_lingkaran.__annotations__)"
+          },
+          {
+            "type": "text",
+            "source": "Tes mencakup jumlah ganjil, genap, satu elemen, dan kosong. Kasus batas diuji secara eksplisit."
+          },
+          {
+            "type": "code",
+            "source": "def median(angka):\n    urut = sorted(angka)\n    n = len(urut)\n    if n == 0:\n        raise ValueError(\"daftar kosong\")\n    tengah = n // 2\n    if n % 2 == 1:\n        return urut[tengah]\n    return (urut[tengah - 1] + urut[tengah]) / 2\n\nassert median([3, 1, 2]) == 2\nassert median([4, 1, 3, 2]) == 2.5\nassert median([7]) == 7\ntry:\n    median([])\nexcept ValueError:\n    print(\"kosong ditolak\")\nprint(\"semua tes lulus\")"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa kode dan contoh singkat yang cukup jelas dalam teks dan latihan.",
+    "brief": []
+  },
+  "references": []
+}

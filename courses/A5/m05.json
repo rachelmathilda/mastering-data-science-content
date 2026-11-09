@@ -1,0 +1,1576 @@
+{
+  "schema_version": 2,
+  "course_id": "A5",
+  "module_no": 5,
+  "title": "Korelasi dan kovariansi",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Menghitung dan menafsirkan kovariansi dan korelasi",
+    "Memilih Pearson, Spearman, atau Kendall",
+    "Mengenali paradoks Simpson dan batas inferensi kausal"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A5-05-1",
+    "exercise_id": "A5-05-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def kovariansi_inkremental(pasangan):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A5-05-1",
+      "title": "Kovariansi dan korelasi Pearson",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menghitung kovariansi populasi dan sampel",
+        "Menghitung koefisien korelasi Pearson dan menafsirkannya",
+        "Menjelaskan bahwa korelasi hanya mengukur hubungan linear",
+        "Menghitung kovariansi secara inkremental"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari satu variabel ke dua variabel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari satu variabel ke dua variabel\n\nSejauh ini kita menggambarkan satu variabel pada satu waktu. Pertanyaan data sains yang paling menarik justru menyangkut hubungan: apakah jam belajar berkaitan dengan nilai, apakah iklan berkaitan dengan penjualan, apakah suhu berkaitan dengan konsumsi listrik. **Kovariansi** dan **korelasi** adalah ukuran pertama untuk menjawab apakah dua variabel bergerak bersama.\n\nPelajaran ini membahas ukuran linear paling umum, korelasi Pearson. Pelajaran berikutnya membahas korelasi peringkat yang lebih fleksibel, lalu peringatan penting bahwa korelasi bukan kausalitas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kovariansi\n\n**Kovariansi** adalah rata-rata hasil kali simpangan dua variabel dari rata-ratanya: `jumlah (x - rata_x) * (y - rata_y) / n`. Bila nilai `x` yang di atas rata-rata cenderung berpasangan dengan nilai `y` yang di atas rata-rata, hasil kali positif mendominasi dan kovariansi positif. Bila berlawanan, kovariansi negatif.\n\nKovariansi sebuah variabel dengan dirinya sendiri adalah varians. Seperti varians, untuk sampel kita membagi dengan `n - 1`. Kelemahan kovariansi adalah ukurannya bergantung satuan, sehingga sulit dibandingkan."
+            },
+            {
+              "type": "code_example",
+              "filename": "kovariansi.py",
+              "runnable": true,
+              "code": "x = [1, 2, 3, 4, 5]\ny = [2, 4, 5, 4, 5]\nn = len(x)\nmx, my = sum(x) / n, sum(y) / n\nc = sum((a - mx) * (b - my) for a, b in zip(x, y))\nprint(c / n, c / (n - 1))",
+              "expected_output_note": "1.2 1.5",
+              "explanation": "Kovariansi populasi satu koma dua dan sampel satu koma lima bernilai positif, menandakan keduanya cenderung naik bersama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Korelasi Pearson\n\n**Korelasi Pearson** `r` adalah kovariansi dibagi hasil kali simpangan baku kedua variabel. Pembagian ini menghilangkan satuan sehingga `r` selalu berada antara minus satu dan satu. Nilai satu berarti hubungan linear positif sempurna, minus satu linear negatif sempurna, dan nol berarti tidak ada hubungan linear.\n\nDengan data di atas, `r` sekitar 0,77, hubungan positif yang cukup kuat. Pedoman kasar menganggap nilai mutlak di bawah 0,3 lemah, 0,3 sampai 0,7 sedang, dan di atas 0,7 kuat, tetapi ambang yang bermakna bergantung bidang."
+            },
+            {
+              "type": "code_example",
+              "filename": "korelasi.py",
+              "runnable": true,
+              "code": "import math\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nx = [1, 2, 3, 4, 5]\nprint(round(corr(x, [2, 4, 5, 4, 5]), 4))\nprint(round(corr(x, [2 * v + 1 for v in x]), 4))\nprint(round(corr(x, [-v for v in x]), 4))",
+              "expected_output_note": "0.7746\n1.0\n-1.0",
+              "explanation": "Hubungan linear sempurna menghasilkan satu atau minus satu, sedangkan data berderau menghasilkan nilai di antaranya."
+            }
+          ],
+          "quick_check": {
+            "question": "Korelasi Pearson berada di rentang?",
+            "options": [
+              "-1 sampai 1",
+              "0 sampai 1"
+            ],
+            "answer_index": 0,
+            "explanation": "Kovariansi terstandardisasi.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Invarians terhadap skala dan geser",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Invarians terhadap skala dan geser\n\nKorelasi tidak berubah bila salah satu variabel digeser atau dikalikan konstanta positif, karena operasi itu hanya mengubah satuan. Korelasi tinggi badan dengan berat badan sama persis dalam meter atau sentimeter. Mengalikan dengan konstanta negatif membalik tanda korelasi.\n\nSifat ini membuat korelasi cocok membandingkan hubungan antar pasangan variabel berbeda satuan. Kovariansi tidak memiliki sifat ini, sehingga korelasi adalah versi terstandardisasi dari kovariansi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Hanya hubungan linear\n\nKelemahan terbesar korelasi Pearson adalah ia hanya menangkap hubungan **linear**. Data `y = x kuadrat` dengan `x` simetris di sekitar nol memiliki hubungan sempurna, tetapi korelasinya nol, karena sisi kiri dan kanan saling meniadakan. Korelasi nol tidak berarti independen.\n\nKarena itu selalu gambar diagram pencar sebelum memercayai angka korelasi. Kumpulan data Anscombe memperlihatkan empat dataset berkorelasi sama persis, namun bentuknya sangat berbeda: garis, lengkung, garis dengan pencilan, dan titik vertikal dengan satu pencilan."
+            },
+            {
+              "type": "code_example",
+              "filename": "hanya_linear.py",
+              "runnable": true,
+              "code": "import math\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nxs = [-2, -1, 0, 1, 2]\nprint(round(corr(xs, [v * v for v in xs]), 4) + 0.0)\nprint(round(corr([1, 2, 3, 4, 5], [1, 2, 3, 4, 50]), 4))",
+              "expected_output_note": "0.0\n0.7433",
+              "explanation": "Hubungan kuadrat sempurna menghasilkan korelasi nol, dan satu pencilan menurunkan korelasi dari hubungan hampir sempurna menjadi nol koma tujuh empat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Koefisien determinasi dan uji\n\nKuadrat korelasi, `r^2`, disebut **koefisien determinasi**. Ia menyatakan proporsi variasi satu variabel yang dapat dijelaskan secara linear oleh variabel lain. Korelasi 0,77 berarti `r^2` sekitar 0,6, atau enam puluh persen variasi terjelaskan.\n\nUntuk menguji apakah korelasi berbeda dari nol, statistik `t = r * akar((n - 2) / (1 - r^2))` dibandingkan dengan distribusi t berderajat bebas `n - 2`. Pada sampel kecil, korelasi besar bisa muncul murni karena kebetulan, jadi jangan menafsirkan `r` tanpa mempertimbangkan ukuran sampel."
+            },
+            {
+              "type": "code_example",
+              "filename": "determinasi.py",
+              "runnable": true,
+              "code": "import math\n\nr = 0.7745966692\nn = 5\nprint(round(r * r, 4), round(r * math.sqrt((n - 2) / (1 - r * r)), 4))",
+              "expected_output_note": "0.6 2.1213",
+              "explanation": "Enam puluh persen variasi terjelaskan, dan statistik t sekitar dua koma satu dua pada tiga derajat bebas."
+            }
+          ],
+          "quick_check": {
+            "question": "Korelasi mengukur hubungan?",
+            "options": [
+              "Apa saja",
+              "Linear"
+            ],
+            "answer_index": 1,
+            "explanation": "Hanya linear.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kovariansi dalam satu lintasan",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kovariansi dalam satu lintasan\n\nSeperti varians, kovariansi dapat dihitung secara inkremental untuk aliran data. Untuk tiap pasangan baru `(x, y)`: tambah `n`, hitung `dx = x - rata_x`, perbarui `rata_x` dan `rata_y`, lalu tambahkan `dx * (y - rata_y_baru)` ke akumulator `c`. Kovariansi populasi adalah `c / n`.\n\nTeknik ini stabil dan hemat memori, dipakai pada pemantauan, penaksiran matriks kovariansi dalam filter Kalman, dan pelatihan daring yang menyesuaikan statistik data secara terus-menerus."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Nol bukan independen",
+              "markdown": "Korelasi nol tidak berarti tidak ada hubungan. Hubungan nonlinear bisa kuat dengan korelasi Pearson nol. Selalu lihat diagram pencar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih ukuran dalam praktik\n\nSebelum menghitung korelasi, periksa tiga hal: apakah kedua variabel numerik, apakah hubungannya tampak mendekati garis pada diagram pencar, dan apakah ada pencilan yang dominan. Bila ketiganya terpenuhi, korelasi Pearson ringkas dan informatif. Bila tidak, gunakan ukuran lain dari pelajaran berikutnya.\n\nLaporkan juga ukuran sampel. Korelasi 0,5 dari seribu data jauh lebih meyakinkan daripada korelasi 0,5 dari delapan data, yang bisa muncul hanya karena kebetulan."
+            }
+          ],
+          "quick_check": {
+            "question": "r kuadrat disebut?",
+            "options": [
+              "Koefisien determinasi",
+              "Kovariansi"
+            ],
+            "answer_index": 0,
+            "explanation": "Proporsi variasi terjelaskan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-05-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `kovariansi(a, b, sampel=False)` yang mengembalikan kovariansi dibulatkan 4 desimal.",
+          "note": "Bila `sampel` benar bagi dengan `n - 1`, bila tidak bagi dengan `n`.",
+          "filename": "solution.py",
+          "starter_code": "def kovariansi(a, b, sampel=False):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kovariansi(x, [2, 4, 5, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "x = [1, 2, 3, 4, 5]\nassert kovariansi(x, [2, 4, 5, 4, 5]) == 1.2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kovariansi(x, [2, 4, 5, 4, 5], sampel=True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi(x, [2, 4, 5, 4, 5], sampel=True) == 1.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kovariansi(x, [2 * v for v in x])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi(x, [2 * v for v in x]) == 4.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kovariansi([-2, -1, 0, 1, 2], [4, 1, 0, 1, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi([-2, -1, 0, 1, 2], [4, 1, 0, 1, 4]) == 0.0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan hasil kali simpangan lalu bagi dengan pembagi yang sesuai.",
+          "solution": "def kovariansi(a, b, sampel=False):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    return round(c / (n - 1 if sampel else n), 4) + 0.0",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-05-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `korelasi(a, b)` yang mengembalikan korelasi Pearson dibulatkan 4 desimal.",
+          "note": "Bila salah satu variabel konstan kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef korelasi(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "korelasi(x, [2, 4, 5, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "x = [1, 2, 3, 4, 5]\nassert korelasi(x, [2, 4, 5, 4, 5]) == 0.7746"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "korelasi(x, [-v for v in x])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi(x, [-v for v in x]) == -1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "korelasi(x, [2 * v + 1 for v in x])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi(x, [2 * v + 1 for v in x]) == 1.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "korelasi([-2, -1, 0, 1, 2], [4, 1, 0, 1, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi([-2, -1, 0, 1, 2], [4, 1, 0, 1, 4]) == 0.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "korelasi(x, [3, 3, 3, 3, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi(x, [3, 3, 3, 3, 3]) is None"
+              }
+            ]
+          },
+          "hint": "Bagi jumlah hasil kali simpangan dengan akar hasil kali jumlah kuadrat simpangan.",
+          "solution": "import math\n\ndef korelasi(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    if sa == 0 or sb == 0:\n        return None\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    return round(c / (sa * sb), 4) + 0.0",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-05-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `determinasi_t(a, b)` yang mengembalikan tuple `(r2, t)` dengan `r2` kuadrat korelasi dan `t = r * sqrt((n - 2) / (1 - r2))`, masing-masing dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef determinasi_t(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "determinasi_t([1, 2, 3, 4, 5], [2, 4, 5, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinasi_t([1, 2, 3, 4, 5], [2, 4, 5, 4, 5]) == (0.6, 2.1213)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "determinasi_t([1, 2, 3, 4, 5, 6], [2, 1, 4, 3...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinasi_t([1, 2, 3, 4, 5, 6], [2, 1, 4, 3, 6, 5])[0] == 0.6865"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "determinasi_t([1, 2, 3, 4], [1, 3, 2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert determinasi_t([1, 2, 3, 4], [1, 3, 2, 4])[0] == 0.64"
+              }
+            ]
+          },
+          "hint": "Hitung r dari simpangan lalu terapkan rumus statistik t.",
+          "solution": "import math\n\ndef determinasi_t(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    r = c / (sa * sb)\n    r2 = r * r\n    t = r * math.sqrt((n - 2) / (1 - r2))\n    return (round(r2, 4), round(t, 4))",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-05-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `kovariansi_inkremental(pasangan)` yang menghitung kovariansi populasi dalam satu lintasan dari list tuple `(x, y)` dan mengembalikannya dibulatkan 4 desimal.",
+          "note": "List kosong mengembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "def kovariansi_inkremental(pasangan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kovariansi_inkremental([(1, 2), (2, 4), (3, 5...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi_inkremental([(1, 2), (2, 4), (3, 5), (4, 4), (5, 5)]) == 1.2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kovariansi_inkremental([(1, 1), (2, 2)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi_inkremental([(1, 1), (2, 2)]) == 0.25"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kovariansi_inkremental([(7, 3)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi_inkremental([(7, 3)]) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kovariansi_inkremental([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi_inkremental([]) is None"
+              }
+            ]
+          },
+          "hint": "Perbarui rata-rata x dan y lalu tambahkan dx dikali selisih y baru ke akumulator.",
+          "solution": "def kovariansi_inkremental(pasangan):\n    mx = 0.0\n    my = 0.0\n    c = 0.0\n    n = 0\n    for x, y in pasangan:\n        n += 1\n        dx = x - mx\n        mx += dx / n\n        my += (y - my) / n\n        c += dx * (y - my)\n    if n == 0:\n        return None\n    return round(c / n, 4) + 0.0",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Korelasi Pearson berada di rentang?",
+          "code": null,
+          "options": [
+            {
+              "label": "-1 sampai 1",
+              "description": ""
+            },
+            {
+              "label": "0 sampai 1",
+              "description": ""
+            },
+            {
+              "label": "0 sampai 100",
+              "description": ""
+            },
+            {
+              "label": "Tak terbatas",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Batas.",
+          "explanation": "Kovariansi terstandardisasi."
+        },
+        {
+          "q": "Korelasi mengukur hubungan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Linear",
+              "description": ""
+            },
+            {
+              "label": "Apa saja",
+              "description": ""
+            },
+            {
+              "label": "Kausal",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Garis.",
+          "explanation": "Hanya linear."
+        },
+        {
+          "q": "r kuadrat disebut?",
+          "code": null,
+          "options": [
+            {
+              "label": "Koefisien determinasi",
+              "description": ""
+            },
+            {
+              "label": "Kovariansi",
+              "description": ""
+            },
+            {
+              "label": "Varians",
+              "description": ""
+            },
+            {
+              "label": "Galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Determinasi.",
+          "explanation": "Proporsi variasi terjelaskan."
+        },
+        {
+          "q": "Menggeser satu variabel mengubah korelasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak",
+              "description": ""
+            },
+            {
+              "label": "Ya bertambah",
+              "description": ""
+            },
+            {
+              "label": "Ya berkurang",
+              "description": ""
+            },
+            {
+              "label": "Menjadi nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Geser.",
+          "explanation": "Invarian."
+        },
+        {
+          "q": "Kovariansi variabel dengan dirinya adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Varians",
+              "description": ""
+            },
+            {
+              "label": "Korelasi",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Satu",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Diri.",
+          "explanation": "Definisi."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira korelasi nol berarti tidak ada hubungan. Lebih baik: Hubungan nonlinear bisa kuat dengan korelasi nol.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira korelasi nol berarti tidak ada hubungan.",
+          "fix": "Hubungan nonlinear bisa kuat dengan korelasi nol."
+        },
+        {
+          "mistake": "Menafsirkan korelasi tanpa melihat diagram pencar.",
+          "fix": "Gambar datanya terlebih dahulu."
+        },
+        {
+          "mistake": "Membandingkan kovariansi antar pasangan berbeda satuan.",
+          "fix": "Pakai korelasi."
+        }
+      ],
+      "summary": [
+        "Kovariansi mengukur gerak bersama dan bergantung satuan.",
+        "Korelasi Pearson adalah kovariansi terstandardisasi antara minus satu dan satu.",
+        "Korelasi hanya menangkap hubungan linear dan peka pada pencilan.",
+        "r kuadrat adalah proporsi variasi yang terjelaskan secara linear."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Kovariansi dan korelasi Pearson"
+          },
+          {
+            "type": "text",
+            "source": "Kovariansi populasi satu koma dua dan sampel satu koma lima bernilai positif, menandakan keduanya cenderung naik bersama."
+          },
+          {
+            "type": "code",
+            "source": "x = [1, 2, 3, 4, 5]\ny = [2, 4, 5, 4, 5]\nn = len(x)\nmx, my = sum(x) / n, sum(y) / n\nc = sum((a - mx) * (b - my) for a, b in zip(x, y))\nprint(c / n, c / (n - 1))"
+          },
+          {
+            "type": "text",
+            "source": "Hubungan linear sempurna menghasilkan satu atau minus satu, sedangkan data berderau menghasilkan nilai di antaranya."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nx = [1, 2, 3, 4, 5]\nprint(round(corr(x, [2, 4, 5, 4, 5]), 4))\nprint(round(corr(x, [2 * v + 1 for v in x]), 4))\nprint(round(corr(x, [-v for v in x]), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Hubungan kuadrat sempurna menghasilkan korelasi nol, dan satu pencilan menurunkan korelasi dari hubungan hampir sempurna menjadi nol koma tujuh empat."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nxs = [-2, -1, 0, 1, 2]\nprint(round(corr(xs, [v * v for v in xs]), 4) + 0.0)\nprint(round(corr([1, 2, 3, 4, 5], [1, 2, 3, 4, 50]), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Enam puluh persen variasi terjelaskan, dan statistik t sekitar dua koma satu dua pada tiga derajat bebas."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nr = 0.7745966692\nn = 5\nprint(round(r * r, 4), round(r * math.sqrt((n - 2) / (1 - r * r)), 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A5-05-2",
+      "title": "Korelasi peringkat Spearman dan Kendall",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengubah data menjadi peringkat dengan penanganan seri",
+        "Menghitung korelasi Spearman",
+        "Menghitung tau Kendall dari pasangan konkordan dan diskordan",
+        "Memilih korelasi yang tepat untuk hubungan monoton dan data berpencilan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Ketika Pearson tidak cukup",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ketika Pearson tidak cukup\n\nKorelasi Pearson mengasumsikan hubungan linear dan peka pada pencilan. Banyak hubungan nyata bersifat **monoton** tetapi tidak linear: makin besar `x`, makin besar `y`, namun tidak dengan laju tetap, misalnya hubungan dosis dengan respons. Data ordinal seperti peringkat kepuasan juga tidak cocok untuk Pearson.\n\nKorelasi peringkat menjawabnya dengan mengganti nilai dengan peringkatnya. Karena hanya urutan yang dipakai, ukuran ini kokoh terhadap pencilan dan menangkap hubungan monoton apa pun."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peringkat dan seri\n\nPeringkat memberi angka satu pada nilai terkecil, dua pada berikutnya, dan seterusnya. Bila ada nilai sama, kita memakai **peringkat rata-rata**: dua nilai seri di posisi dua dan tiga masing-masing mendapat 2,5. Pendekatan ini menjaga jumlah peringkat tetap sama dan tidak menguntungkan salah satu nilai.\n\nPeringkat mengubah skala apa pun menjadi skala ordinal seragam. Setelah itu, semua yang kita pelajari untuk data berskala interval dapat dipakai pada peringkat tanpa terganggu pencilan."
+            },
+            {
+              "type": "code_example",
+              "filename": "peringkat.py",
+              "runnable": true,
+              "code": "def peringkat(data):\n    s = sorted(data)\n    hasil = []\n    for v in data:\n        posisi = [i + 1 for i, w in enumerate(s) if w == v]\n        hasil.append(sum(posisi) / len(posisi))\n    return hasil\n\nprint(peringkat([10, 20, 20, 30]))\nprint(peringkat([3, 1, 2]))",
+              "expected_output_note": "[1.0, 2.5, 2.5, 4.0]\n[3.0, 1.0, 2.0]",
+              "explanation": "Dua nilai seri dua puluh berbagi peringkat dua koma lima, dan data tanpa seri mendapat peringkat bulat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Korelasi Spearman\n\n**Korelasi Spearman** adalah korelasi Pearson yang dihitung pada peringkat, bukan nilai asli. Ia bernilai satu bila hubungan monoton naik sempurna, minus satu bila monoton turun sempurna, apa pun bentuk kurvanya. Hubungan `y = x pangkat tiga` tidak linear sehingga Pearson di bawah satu, tetapi Spearman tepat satu.\n\nSpearman sangat berguna ketika data berpencilan atau ordinal. Dalam contoh satu nilai y melonjak menjadi lima puluh, Pearson turun ke 0,74 sedangkan Spearman tetap satu karena urutan tidak berubah."
+            },
+            {
+              "type": "code_example",
+              "filename": "spearman.py",
+              "runnable": true,
+              "code": "import math\n\ndef peringkat(data):\n    s = sorted(data)\n    hasil = []\n    for v in data:\n        posisi = [i + 1 for i, w in enumerate(s) if w == v]\n        hasil.append(sum(posisi) / len(posisi))\n    return hasil\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nx = [1, 2, 3, 4, 5]\nprint(round(corr(peringkat(x), peringkat([v ** 3 for v in x])), 4))\nprint(round(corr(peringkat(x), peringkat([1, 2, 3, 4, 50])), 4))\nprint(round(corr(peringkat(x), peringkat([2, 4, 5, 4, 5])), 4))",
+              "expected_output_note": "1.0\n1.0\n0.7379",
+              "explanation": "Hubungan monoton menghasilkan Spearman satu walau tidak linear, dan seri membuat nilainya sedikit di bawah Pearson."
+            }
+          ],
+          "quick_check": {
+            "question": "Spearman adalah Pearson pada?",
+            "options": [
+              "Peringkat",
+              "Kuadrat"
+            ],
+            "answer_index": 0,
+            "explanation": "Dihitung dari peringkat.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tau Kendall",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tau Kendall\n\n**Tau Kendall** bekerja dari pasangan pengamatan. Sepasang titik adalah **konkordan** bila urutan keduanya pada `x` sama dengan pada `y`, dan **diskordan** bila berlawanan. Pasangan dengan seri pada salah satu variabel tidak dihitung. Tau-a adalah `(konkordan - diskordan) / jumlah semua pasangan`.\n\nInterpretasinya intuitif: selisih peluang memilih sepasang titik yang searah dengan yang berlawanan. Tau cenderung lebih kecil dari Spearman pada data yang sama dan lebih stabil pada sampel kecil dengan banyak seri."
+            },
+            {
+              "type": "code_example",
+              "filename": "kendall.py",
+              "runnable": true,
+              "code": "def tau(a, b):\n    k = d = 0\n    n = len(a)\n    for i in range(n):\n        for j in range(i + 1, n):\n            s = (a[i] - a[j]) * (b[i] - b[j])\n            k += s > 0\n            d += s < 0\n    return k, d, round((k - d) / (n * (n - 1) / 2), 4)\n\nx = [1, 2, 3, 4, 5]\nprint(tau(x, [2, 4, 5, 4, 5]))\nprint(tau([1, 2, 3, 4], [1, 3, 2, 4]))\nprint(tau(x, [5, 4, 3, 2, 1]))",
+              "expected_output_note": "(7, 1, 0.6)\n(5, 1, 0.6667)\n(0, 10, -1.0)",
+              "explanation": "Tujuh pasangan konkordan dan satu diskordan memberi tau enam persepuluh, sedangkan urutan terbalik penuh memberi minus satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih ukuran korelasi\n\nGunakan Pearson bila hubungan tampak linear, data interval atau rasio, dan tanpa pencilan berat. Gunakan Spearman bila hubungan monoton tetapi nonlinear, data ordinal, atau ada pencilan. Gunakan Kendall pada sampel kecil dengan banyak seri atau saat interpretasi probabilistik lebih disukai.\n\nPraktik terbaik adalah menghitung Pearson dan Spearman bersama. Bila Spearman jauh lebih besar dari Pearson, curigai hubungan nonlinear atau pencilan, dan buka diagram pencarnya untuk memahami sebabnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Keterbatasan semua ukuran korelasi\n\nBaik Pearson, Spearman, maupun Kendall hanya mengukur hubungan monoton atau linear. Hubungan berbentuk U atau melingkar bisa memiliki ketiga ukuran dekat nol padahal hubungannya sangat kuat. Untuk hubungan semacam itu, ukuran berbasis informasi timbal balik atau jarak korelasi lebih tepat.\n\nKarena itu, tidak ada satu angka yang menggantikan pengamatan visual. Korelasi adalah ringkasan, dan seperti semua ringkasan ia membuang informasi. Tugas analis adalah tahu informasi apa yang terbuang."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Dua ukuran lebih informatif",
+              "markdown": "Hitung Pearson dan Spearman bersama. Selisih besar di antara keduanya menandakan nonlinearitas atau pencilan."
+            }
+          ],
+          "quick_check": {
+            "question": "Spearman menangkap hubungan?",
+            "options": [
+              "Hanya linear",
+              "Monoton"
+            ],
+            "answer_index": 1,
+            "explanation": "Urutan saja.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Spearman dalam data nyata",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Spearman dalam data nyata\n\nSkala kepuasan pelanggan satu sampai lima adalah ordinal: jarak antara tiga dan empat belum tentu sama dengan antara empat dan lima. Memakai Pearson mengasumsikan jarak sama, sedangkan Spearman hanya memakai urutan sehingga lebih jujur. Peringkat ujian dan skala Likert adalah contoh lain yang cocok untuk korelasi peringkat.\n\nPada data keuangan atau sensor berpencilan, Spearman sering lebih stabil. Satu lonjakan acak yang merusak Pearson hampir tidak memengaruhi Spearman, karena lonjakan hanya mengubah satu peringkat."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menghitung dengan seri banyak\n\nBila data memiliki banyak nilai sama, misalnya skala lima titik dengan ratusan responden, seri sangat sering. Peringkat rata-rata tetap benar, tetapi korelasi maksimum yang dapat dicapai turun karena banyak pasangan tidak bisa diurutkan. Varian Kendall yang memperhitungkan seri, disebut tau-b, mengoreksinya.\n\nTau-a yang kita pakai di sini tidak mengoreksi seri, sehingga nilainya lebih kecil bila seri banyak. Pustaka seperti SciPy memakai tau-b secara default, jadi hasil bisa sedikit berbeda dari hitungan tangan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ukuran efek dan ketidakpastian\n\nSeperti Pearson, korelasi peringkat dihitung dari sampel sehingga memiliki ketidakpastian. Selang kepercayaan lewat bootstrap, yaitu mengambil sampel ulang berpengembalian lalu menghitung ulang korelasi, memberi gambaran seberapa stabil nilainya. Selang lebar menandakan data terlalu sedikit untuk menyimpulkan kekuatan hubungan.\n\nSelalu laporkan korelasi bersama selangnya. Satu angka tunggal memberi kesan presisi palsu, padahal pada sampel kecil nilai sebenarnya bisa berada di rentang yang sangat lebar."
+            }
+          ],
+          "quick_check": {
+            "question": "Tau Kendall memakai?",
+            "options": [
+              "Pasangan konkordan dan diskordan",
+              "Rata-rata"
+            ],
+            "answer_index": 0,
+            "explanation": "Pasangan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-05-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `peringkat(data)` yang mengembalikan list peringkat rata-rata (mulai dari satu) untuk tiap elemen sesuai urutan asli.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def peringkat(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peringkat([10, 20, 20, 30])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat([10, 20, 20, 30]) == [1.0, 2.5, 2.5, 4.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peringkat([3, 1, 2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat([3, 1, 2]) == [3.0, 1.0, 2.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peringkat([5, 5, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat([5, 5, 5]) == [2.0, 2.0, 2.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peringkat([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peringkat([]) == []"
+              }
+            ]
+          },
+          "hint": "Urutkan data lalu rata-ratakan posisi setiap nilai yang sama.",
+          "solution": "def peringkat(data):\n    s = sorted(data)\n    hasil = []\n    for v in data:\n        posisi = [i + 1 for i, w in enumerate(s) if w == v]\n        hasil.append(sum(posisi) / len(posisi))\n    return hasil",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-05-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `spearman(a, b)` yang mengembalikan korelasi Pearson dari peringkat rata-rata kedua list, dibulatkan 4 desimal.",
+          "note": "Bila peringkat salah satu konstan kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef spearman(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "spearman(x, [v ** 3 for v in x])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "x = [1, 2, 3, 4, 5]\nassert spearman(x, [v ** 3 for v in x]) == 1.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "spearman(x, [1, 2, 3, 4, 50])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert spearman(x, [1, 2, 3, 4, 50]) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "spearman(x, [5, 4, 3, 2, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert spearman(x, [5, 4, 3, 2, 1]) == -1.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "spearman(x, [2, 4, 5, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert spearman(x, [2, 4, 5, 4, 5]) == 0.7379"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "spearman(x, [7, 7, 7, 7, 7])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert spearman(x, [7, 7, 7, 7, 7]) is None"
+              }
+            ]
+          },
+          "hint": "Ubah kedua list menjadi peringkat lalu hitung korelasi Pearson.",
+          "solution": "import math\n\ndef spearman(a, b):\n    def rank(data):\n        s = sorted(data)\n        out = []\n        for v in data:\n            pos = [i + 1 for i, w in enumerate(s) if w == v]\n            out.append(sum(pos) / len(pos))\n        return out\n\n    ra, rb = rank(a), rank(b)\n    n = len(ra)\n    ma, mb = sum(ra) / n, sum(rb) / n\n    sa = math.sqrt(sum((p - ma) ** 2 for p in ra))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in rb))\n    if sa == 0 or sb == 0:\n        return None\n    c = sum((p - ma) * (q - mb) for p, q in zip(ra, rb))\n    return round(c / (sa * sb), 4) + 0.0",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-05-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pasangan_konkordan(a, b)` yang mengembalikan tuple `(konkordan, diskordan)`: banyak pasangan indeks `i < j` dengan hasil kali `(a[i]-a[j])*(b[i]-b[j])` positif atau negatif.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pasangan_konkordan(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pasangan_konkordan([1, 2, 3, 4, 5], [2, 4, 5,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pasangan_konkordan([1, 2, 3, 4, 5], [2, 4, 5, 4, 5]) == (7, 1)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pasangan_konkordan([1, 2, 3, 4], [1, 3, 2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pasangan_konkordan([1, 2, 3, 4], [1, 3, 2, 4]) == (5, 1)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pasangan_konkordan([1, 2, 3, 4, 5], [5, 4, 3,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pasangan_konkordan([1, 2, 3, 4, 5], [5, 4, 3, 2, 1]) == (0, 10)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pasangan_konkordan([1], [1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pasangan_konkordan([1], [1]) == (0, 0)"
+              }
+            ]
+          },
+          "hint": "Periksa semua pasangan indeks dan hitung tanda hasil kali selisih.",
+          "solution": "def pasangan_konkordan(a, b):\n    k = d = 0\n    n = len(a)\n    for i in range(n):\n        for j in range(i + 1, n):\n            s = (a[i] - a[j]) * (b[i] - b[j])\n            if s > 0:\n                k += 1\n            elif s < 0:\n                d += 1\n    return (k, d)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-05-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `kendall_tau(a, b)` yang mengembalikan `(konkordan - diskordan) / (n * (n - 1) / 2)` dibulatkan 4 desimal.",
+          "note": "Untuk kurang dari dua data kembalikan `None`.",
+          "filename": "solution.py",
+          "starter_code": "def kendall_tau(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kendall_tau([1, 2, 3, 4, 5], [2, 4, 5, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kendall_tau([1, 2, 3, 4, 5], [2, 4, 5, 4, 5]) == 0.6"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kendall_tau([1, 2, 3, 4], [1, 3, 2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kendall_tau([1, 2, 3, 4], [1, 3, 2, 4]) == 0.6667"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kendall_tau([1, 2, 3, 4, 5], [5, 4, 3, 2, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kendall_tau([1, 2, 3, 4, 5], [5, 4, 3, 2, 1]) == -1.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kendall_tau([1, 2, 3, 4, 5, 6], [2, 1, 4, 3, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kendall_tau([1, 2, 3, 4, 5, 6], [2, 1, 4, 3, 6, 5]) == 0.6"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "kendall_tau([1], [1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kendall_tau([1], [1]) is None"
+              }
+            ]
+          },
+          "hint": "Hitung selisih pasangan konkordan dan diskordan lalu bagi dengan semua pasangan.",
+          "solution": "def kendall_tau(a, b):\n    n = len(a)\n    if n < 2:\n        return None\n    k = d = 0\n    for i in range(n):\n        for j in range(i + 1, n):\n            s = (a[i] - a[j]) * (b[i] - b[j])\n            if s > 0:\n                k += 1\n            elif s < 0:\n                d += 1\n    return round((k - d) / (n * (n - 1) / 2), 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Spearman adalah Pearson pada?",
+          "code": null,
+          "options": [
+            {
+              "label": "Peringkat",
+              "description": ""
+            },
+            {
+              "label": "Kuadrat",
+              "description": ""
+            },
+            {
+              "label": "Logaritma",
+              "description": ""
+            },
+            {
+              "label": "Selisih",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Urutan.",
+          "explanation": "Dihitung dari peringkat."
+        },
+        {
+          "q": "Spearman menangkap hubungan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Monoton",
+              "description": ""
+            },
+            {
+              "label": "Hanya linear",
+              "description": ""
+            },
+            {
+              "label": "Melingkar",
+              "description": ""
+            },
+            {
+              "label": "Acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Naik terus.",
+          "explanation": "Urutan saja."
+        },
+        {
+          "q": "Tau Kendall memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pasangan konkordan dan diskordan",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Varians",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pasangan.",
+          "explanation": "Pasangan."
+        },
+        {
+          "q": "Peringkat nilai seri?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata posisi",
+              "description": ""
+            },
+            {
+              "label": "Terkecil",
+              "description": ""
+            },
+            {
+              "label": "Terbesar",
+              "description": ""
+            },
+            {
+              "label": "Dibuang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Rata-rata.",
+          "explanation": "Adil."
+        },
+        {
+          "q": "Pencilan paling memengaruhi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pearson",
+              "description": ""
+            },
+            {
+              "label": "Spearman",
+              "description": ""
+            },
+            {
+              "label": "Kendall",
+              "description": ""
+            },
+            {
+              "label": "Ketiganya sama",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Nilai.",
+          "explanation": "Memakai nilai asli."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai Pearson pada data ordinal. Lebih baik: Pakai Spearman atau Kendall.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai Pearson pada data ordinal.",
+          "fix": "Pakai Spearman atau Kendall."
+        },
+        {
+          "mistake": "Mengabaikan seri saat membuat peringkat.",
+          "fix": "Pakai peringkat rata-rata."
+        },
+        {
+          "mistake": "Mengira Spearman menangkap semua hubungan nonlinear.",
+          "fix": "Ia hanya menangkap hubungan monoton."
+        }
+      ],
+      "summary": [
+        "Spearman dan Kendall kokoh dan menangkap hubungan monoton.",
+        "Seri ditangani dengan peringkat rata-rata.",
+        "Hitung Pearson dan Spearman bersama untuk mendeteksi nonlinearitas.",
+        "Tidak ada ukuran korelasi yang menangkap semua bentuk hubungan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Korelasi peringkat Spearman dan Kendall"
+          },
+          {
+            "type": "text",
+            "source": "Dua nilai seri dua puluh berbagi peringkat dua koma lima, dan data tanpa seri mendapat peringkat bulat."
+          },
+          {
+            "type": "code",
+            "source": "def peringkat(data):\n    s = sorted(data)\n    hasil = []\n    for v in data:\n        posisi = [i + 1 for i, w in enumerate(s) if w == v]\n        hasil.append(sum(posisi) / len(posisi))\n    return hasil\n\nprint(peringkat([10, 20, 20, 30]))\nprint(peringkat([3, 1, 2]))"
+          },
+          {
+            "type": "text",
+            "source": "Hubungan monoton menghasilkan Spearman satu walau tidak linear, dan seri membuat nilainya sedikit di bawah Pearson."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef peringkat(data):\n    s = sorted(data)\n    hasil = []\n    for v in data:\n        posisi = [i + 1 for i, w in enumerate(s) if w == v]\n        hasil.append(sum(posisi) / len(posisi))\n    return hasil\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nx = [1, 2, 3, 4, 5]\nprint(round(corr(peringkat(x), peringkat([v ** 3 for v in x])), 4))\nprint(round(corr(peringkat(x), peringkat([1, 2, 3, 4, 50])), 4))\nprint(round(corr(peringkat(x), peringkat([2, 4, 5, 4, 5])), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Tujuh pasangan konkordan dan satu diskordan memberi tau enam persepuluh, sedangkan urutan terbalik penuh memberi minus satu."
+          },
+          {
+            "type": "code",
+            "source": "def tau(a, b):\n    k = d = 0\n    n = len(a)\n    for i in range(n):\n        for j in range(i + 1, n):\n            s = (a[i] - a[j]) * (b[i] - b[j])\n            k += s > 0\n            d += s < 0\n    return k, d, round((k - d) / (n * (n - 1) / 2), 4)\n\nx = [1, 2, 3, 4, 5]\nprint(tau(x, [2, 4, 5, 4, 5]))\nprint(tau([1, 2, 3, 4], [1, 3, 2, 4]))\nprint(tau(x, [5, 4, 3, 2, 1]))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A5-05-3",
+      "title": "Matriks korelasi, paradoks Simpson, dan kausalitas",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menyusun matriks korelasi untuk banyak variabel",
+        "Menjelaskan paradoks Simpson dan mendeteksinya",
+        "Membandingkan korelasi Pearson dan Spearman pada data berpencilan",
+        "Menjelaskan mengapa korelasi tidak membuktikan sebab akibat"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari pasangan ke banyak variabel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari pasangan ke banyak variabel\n\nDataset nyata memiliki banyak kolom. **Matriks korelasi** menyusun korelasi semua pasangan kolom dalam satu tabel simetris dengan diagonal satu. Ia adalah alat eksplorasi pertama untuk melihat variabel mana yang berkelompok, mana yang redundan, dan mana yang berkaitan dengan target prediksi.\n\nPada data berdimensi tinggi, matriks korelasi besar sulit dibaca sehingga biasanya divisualisasikan sebagai peta panas dengan gradasi warna, dan dikelompokkan agar variabel berkorelasi tinggi berdekatan."
+            },
+            {
+              "type": "code_example",
+              "filename": "matriks_korelasi.py",
+              "runnable": true,
+              "code": "import math\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nkolom = [[1, 2, 3, 4], [2, 4, 6, 8], [4, 3, 2, 1]]\nfor i in kolom:\n    print([round(corr(i, j), 4) for j in kolom])",
+              "expected_output_note": "[1.0, 1.0, -1.0]\n[1.0, 1.0, -1.0]\n[-1.0, -1.0, 1.0]",
+              "explanation": "Matriks simetris dengan diagonal satu menunjukkan kolom pertama dan kedua berkorelasi sempurna positif, dan keduanya berlawanan dengan kolom ketiga."
+            },
+            {
+              "type": "text",
+              "markdown": "## Multikolinearitas\n\nBila dua fitur berkorelasi sangat tinggi, keduanya membawa informasi hampir sama. Dalam regresi, ini disebut **multikolinearitas** dan membuat koefisien tidak stabil: model bisa memberi koefisien besar positif pada satu fitur dan besar negatif pada fitur lain yang saling meniadakan.\n\nMatriks korelasi membantu mendeteksinya. Pasangan dengan korelasi mutlak di atas 0,9 patut diperiksa, dan satu di antaranya sering bisa dibuang atau digabung tanpa kehilangan kemampuan prediksi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Paradoks Simpson\n\n**Paradoks Simpson** terjadi ketika hubungan yang tampak pada data gabungan berlawanan dengan hubungan di dalam setiap kelompok. Bayangkan dua kelompok, masing-masing menunjukkan hubungan negatif sempurna antara `x` dan `y`, tetapi kelompok kedua memiliki nilai `x` dan `y` keseluruhan lebih tinggi. Bila digabung, titik-titik membentuk tren naik.\n\nPenyebabnya adalah variabel kelompok yang memengaruhi kedua variabel. Menggabungkan data tanpa memperhitungkannya menghasilkan kesimpulan terbalik, yang bila ditindaklanjuti dapat menyesatkan keputusan."
+            },
+            {
+              "type": "code_example",
+              "filename": "simpson.py",
+              "runnable": true,
+              "code": "import math\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nA = ([1, 2, 3], [5, 4, 3])\nB = ([6, 7, 8], [10, 9, 8])\nprint(round(corr(*A), 4), round(corr(*B), 4))\nprint(round(corr(A[0] + B[0], A[1] + B[1]), 4))",
+              "expected_output_note": "-1.0 -1.0\n0.8072",
+              "explanation": "Di dalam tiap kelompok korelasi minus satu, tetapi data gabungan berkorelasi positif nol koma delapan."
+            }
+          ],
+          "quick_check": {
+            "question": "Matriks korelasi memiliki diagonal?",
+            "options": [
+              "Satu",
+              "Nol"
+            ],
+            "answer_index": 0,
+            "explanation": "Korelasi diri sendiri.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Menghadapi paradoks",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menghadapi paradoks\n\nCara melindungi diri adalah selalu memeriksa hubungan di dalam subkelompok yang bermakna: wilayah, usia, kategori produk, atau kelompok perlakuan. Bila arah hubungan berbeda antara gabungan dan subkelompok, gunakan analisis terstratifikasi atau regresi yang memasukkan variabel kelompok sebagai kontrol.\n\nMenentukan apakah data gabungan atau terpisah yang benar bukan pertanyaan statistik semata. Jawabannya bergantung pada struktur sebab akibat yang mendasari, yang memerlukan pengetahuan domain di luar data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Korelasi bukan kausalitas\n\nDua variabel berkorelasi dapat terjadi karena empat alasan: `x` menyebabkan `y`, `y` menyebabkan `x`, variabel ketiga memengaruhi keduanya, atau kebetulan. Penjualan es krim berkorelasi dengan jumlah orang tenggelam, bukan karena es krim menenggelamkan, tetapi karena cuaca panas mendorong keduanya.\n\nVariabel ketiga itu disebut **perancu** atau confounder. Hanya eksperimen terkontrol dengan penugasan acak, atau analisis kausal yang cermat dengan asumsi eksplisit, yang dapat menjawab pertanyaan sebab akibat. Korelasi adalah petunjuk, bukan bukti."
+            },
+            {
+              "type": "code_example",
+              "filename": "perancu.py",
+              "runnable": true,
+              "code": "import math\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nsuhu = [20, 24, 28, 32, 36]\nes = [10, 14, 22, 30, 41]\ntenggelam = [1, 2, 3, 5, 6]\nprint(round(corr(es, tenggelam), 4))",
+              "expected_output_note": "0.9871",
+              "explanation": "Penjualan es krim dan kasus tenggelam berkorelasi hampir sempurna walau keduanya hanya digerakkan oleh suhu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Korelasi palsu dan pemancingan data\n\nDengan banyak variabel, korelasi tinggi pasti muncul murni karena kebetulan. Dari seratus variabel acak ada empat ribu sembilan ratus lima puluh pasangan, dan sebagian akan tampak berkorelasi kuat. Menyaring pasangan dengan korelasi terbesar lalu menceritakan kisahnya disebut pemancingan data atau p-hacking.\n\nCara melindungi diri adalah menetapkan hipotesis sebelum melihat data, memakai koreksi untuk perbandingan berganda, dan menguji temuan pada data baru yang tidak dipakai untuk mencarinya."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Korelasi bukan kausalitas",
+              "markdown": "Korelasi tinggi bukan bukti sebab akibat. Periksa perancu, arah hubungan, dan kemungkinan kebetulan sebelum menarik kesimpulan kausal."
+            }
+          ],
+          "quick_check": {
+            "question": "Paradoks Simpson terjadi saat?",
+            "options": [
+              "Data kosong",
+              "Tren gabungan berlawanan dengan tren kelompok"
+            ],
+            "answer_index": 1,
+            "explanation": "Kelompok memengaruhi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Membaca peta panas korelasi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Membaca peta panas korelasi\n\nPeta panas korelasi menggunakan warna untuk menandai kekuatan dan tanda. Pola blok di sepanjang diagonal menunjukkan kelompok variabel yang berkaitan erat, misalnya fitur ukuran rumah yang bersama-sama naik. Baris target yang memiliki warna kuat menunjukkan fitur berguna untuk prediksi linear.\n\nNamun peta panas hanya memperlihatkan hubungan berpasangan. Dua fitur lemah secara individu bisa kuat bersama dalam interaksi, dan korelasi pasangan tidak mengungkap hubungan nonlinear. Anggap peta panas sebagai langkah awal, bukan kesimpulan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Korelasi parsial\n\nUntuk memisahkan pengaruh perancu, kita bisa menghitung korelasi parsial: korelasi antara dua variabel setelah menghilangkan pengaruh linear variabel ketiga. Caranya meregresikan masing-masing pada variabel ketiga, lalu menghitung korelasi sisaan keduanya.\n\nPada contoh es krim, korelasi parsial es krim dengan tenggelam setelah mengontrol suhu akan mendekati nol, menunjukkan bahwa hubungan semula berasal dari suhu. Teknik ini membantu tetapi hanya berlaku bila perancu terukur dan hubungannya linear."
+            },
+            {
+              "type": "text",
+              "markdown": "## Eksperimen dan kausalitas\n\nStandar emas untuk kausalitas adalah eksperimen terkontrol dengan penugasan acak. Dengan mengacak siapa mendapat perlakuan, semua perancu, terukur maupun tidak, seimbang di antara kelompok secara rata-rata. Perbedaan hasil lalu dapat dikaitkan dengan perlakuan.\n\nBila eksperimen tidak mungkin, ada metode kuasi-eksperimen seperti selisih-dalam-selisih dan variabel instrumen, tetapi semuanya bergantung asumsi yang harus dibenarkan. Pelajari asumsinya sebelum percaya hasilnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Variabel ketiga yang memengaruhi keduanya?",
+            "options": [
+              "Perancu",
+              "Residu"
+            ],
+            "answer_index": 0,
+            "explanation": "Confounder.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-05-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `matriks_korelasi(kolom)` yang menerima list kolom dan mengembalikan matriks (list of list) korelasi Pearson tiap pasangan, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef matriks_korelasi(kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "m = matriks_korelasi([[1, 2, 3, 4], [2, 4, 6, 8], [4, 3, 2, 1]])\nassert m == [[1.0, 1.0, -1.0], [1.0, 1.0, -1.0], [-1.0, -1.0, 1.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "m2 = matriks_korelasi([[1, 2, 3, 4, 5], [2, 4, 5, 4, 5]])\nassert m2 == [[1.0, 0.7746], [0.7746, 1.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "len(matriks_korelasi([[1, 2, 3]]))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert len(matriks_korelasi([[1, 2, 3]])) == 1"
+              }
+            ]
+          },
+          "hint": "Hitung korelasi untuk setiap pasangan kolom dengan dua perulangan.",
+          "solution": "import math\n\ndef matriks_korelasi(kolom):\n    def corr(a, b):\n        n = len(a)\n        ma, mb = sum(a) / n, sum(b) / n\n        c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n        sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n        sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n        return round(c / (sa * sb), 4) + 0.0\n\n    return [[corr(i, j) for j in kolom] for i in kolom]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-05-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `korelasi_gabungan(kelompok)` yang menerima list tuple `(xs, ys)`, menggabungkan semua titik dari semua kelompok, dan mengembalikan korelasi Pearson gabungan dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef korelasi_gabungan(kelompok):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "korelasi_gabungan([A, B])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "A = ([1, 2, 3], [5, 4, 3])\nB = ([6, 7, 8], [10, 9, 8])\nassert korelasi_gabungan([A, B]) == 0.8072"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "korelasi_gabungan([A])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi_gabungan([A]) == -1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "korelasi_gabungan([([1, 2, 3], [1, 2, 3]), ([...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi_gabungan([([1, 2, 3], [1, 2, 3]), ([4, 5, 6], [4, 5, 6])]) == 1.0"
+              }
+            ]
+          },
+          "hint": "Gabungkan semua x dan semua y lalu hitung korelasi Pearson.",
+          "solution": "import math\n\ndef korelasi_gabungan(kelompok):\n    a = [v for xs, ys in kelompok for v in xs]\n    b = [v for xs, ys in kelompok for v in ys]\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return round(c / (sa * sb), 4) + 0.0",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-05-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `simpson_terdeteksi(kelompok)` yang menerima list tuple `(xs, ys)` dan mengembalikan `True` bila korelasi gabungan berbeda tanda dengan korelasi di dalam semua kelompok, dan semua kelompok bertanda sama.",
+          "note": "Bila tidak kembalikan `False`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef simpson_terdeteksi(kelompok):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "simpson_terdeteksi([A, B])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "A = ([1, 2, 3], [5, 4, 3])\nB = ([6, 7, 8], [10, 9, 8])\nassert simpson_terdeteksi([A, B]) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "simpson_terdeteksi([([1, 2, 3], [1, 2, 3]), (...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simpson_terdeteksi([([1, 2, 3], [1, 2, 3]), ([4, 5, 6], [4, 5, 6])]) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "simpson_terdeteksi([A])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert simpson_terdeteksi([A]) is False"
+              }
+            ]
+          },
+          "hint": "Hitung korelasi tiap kelompok dan gabungan lalu bandingkan tandanya.",
+          "solution": "import math\n\ndef simpson_terdeteksi(kelompok):\n    def corr(a, b):\n        n = len(a)\n        ma, mb = sum(a) / n, sum(b) / n\n        c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n        sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n        sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n        return c / (sa * sb)\n\n    dalam = [corr(xs, ys) for xs, ys in kelompok]\n    a = [v for xs, ys in kelompok for v in xs]\n    b = [v for xs, ys in kelompok for v in ys]\n    gab = corr(a, b)\n    semua_neg = all(r < 0 for r in dalam)\n    semua_pos = all(r > 0 for r in dalam)\n    return (semua_neg and gab > 0) or (semua_pos and gab < 0)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-05-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `korelasi_pencilan(a, b)` yang mengembalikan tuple `(pearson, spearman)` dibulatkan 4 desimal.",
+          "note": "Spearman adalah Pearson dari peringkat rata-rata.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef korelasi_pencilan(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "korelasi_pencilan([1, 2, 3, 4, 5], [1, 2, 3, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi_pencilan([1, 2, 3, 4, 5], [1, 2, 3, 4, 50]) == (0.7433, 1.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "korelasi_pencilan([1, 2, 3, 4, 5], [2, 4, 5, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi_pencilan([1, 2, 3, 4, 5], [2, 4, 5, 4, 5]) == (0.7746, 0.7379)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "korelasi_pencilan([1, 2, 3, 4, 5], [5, 4, 3, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi_pencilan([1, 2, 3, 4, 5], [5, 4, 3, 2, 1]) == (-1.0, -1.0)"
+              }
+            ]
+          },
+          "hint": "Buat fungsi korelasi dan fungsi peringkat lalu terapkan keduanya.",
+          "solution": "import math\n\ndef korelasi_pencilan(a, b):\n    def corr(p, q):\n        n = len(p)\n        mp, mq = sum(p) / n, sum(q) / n\n        c = sum((u - mp) * (v - mq) for u, v in zip(p, q))\n        sp = math.sqrt(sum((u - mp) ** 2 for u in p))\n        sq = math.sqrt(sum((v - mq) ** 2 for v in q))\n        return round(c / (sp * sq), 4) + 0.0\n\n    def rank(data):\n        s = sorted(data)\n        out = []\n        for v in data:\n            pos = [i + 1 for i, w in enumerate(s) if w == v]\n            out.append(sum(pos) / len(pos))\n        return out\n\n    return (corr(a, b), corr(rank(a), rank(b)))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Matriks korelasi memiliki diagonal?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Bervariasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Diri.",
+          "explanation": "Korelasi diri sendiri."
+        },
+        {
+          "q": "Paradoks Simpson terjadi saat?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tren gabungan berlawanan dengan tren kelompok",
+              "description": ""
+            },
+            {
+              "label": "Data kosong",
+              "description": ""
+            },
+            {
+              "label": "Korelasi nol",
+              "description": ""
+            },
+            {
+              "label": "Sampel besar",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Gabungan.",
+          "explanation": "Kelompok memengaruhi."
+        },
+        {
+          "q": "Variabel ketiga yang memengaruhi keduanya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Perancu",
+              "description": ""
+            },
+            {
+              "label": "Residu",
+              "description": ""
+            },
+            {
+              "label": "Target",
+              "description": ""
+            },
+            {
+              "label": "Indeks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Cuaca.",
+          "explanation": "Confounder."
+        },
+        {
+          "q": "Bukti kausal terbaik berasal dari?",
+          "code": null,
+          "options": [
+            {
+              "label": "Eksperimen acak terkontrol",
+              "description": ""
+            },
+            {
+              "label": "Korelasi tinggi",
+              "description": ""
+            },
+            {
+              "label": "Grafik",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Acak.",
+          "explanation": "Penugasan acak."
+        },
+        {
+          "q": "Multikolinearitas adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Fitur berkorelasi sangat tinggi",
+              "description": ""
+            },
+            {
+              "label": "Fitur tidak berkorelasi",
+              "description": ""
+            },
+            {
+              "label": "Sampel kecil",
+              "description": ""
+            },
+            {
+              "label": "Data hilang",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Redundan.",
+          "explanation": "Informasi redundan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menarik kesimpulan kausal dari korelasi. Lebih baik: Pertimbangkan perancu, arah, dan kebetulan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menarik kesimpulan kausal dari korelasi.",
+          "fix": "Pertimbangkan perancu, arah, dan kebetulan."
+        },
+        {
+          "mistake": "Menggabungkan kelompok tanpa memeriksa korelasi per kelompok.",
+          "fix": "Periksa paradoks Simpson."
+        },
+        {
+          "mistake": "Mencari pasangan berkorelasi tertinggi dari ratusan variabel lalu menceritakan kisahnya.",
+          "fix": "Tetapkan hipotesis dulu dan uji pada data baru."
+        }
+      ],
+      "summary": [
+        "Matriks korelasi meringkas hubungan antar banyak variabel.",
+        "Paradoks Simpson membalik tren saat kelompok digabung.",
+        "Korelasi tinggi bisa berasal dari perancu atau kebetulan.",
+        "Kausalitas butuh eksperimen terkontrol atau analisis kausal cermat."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Matriks korelasi, paradoks Simpson, dan kausalitas"
+          },
+          {
+            "type": "text",
+            "source": "Matriks simetris dengan diagonal satu menunjukkan kolom pertama dan kedua berkorelasi sempurna positif, dan keduanya berlawanan dengan kolom ketiga."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nkolom = [[1, 2, 3, 4], [2, 4, 6, 8], [4, 3, 2, 1]]\nfor i in kolom:\n    print([round(corr(i, j), 4) for j in kolom])"
+          },
+          {
+            "type": "text",
+            "source": "Di dalam tiap kelompok korelasi minus satu, tetapi data gabungan berkorelasi positif nol koma delapan."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nA = ([1, 2, 3], [5, 4, 3])\nB = ([6, 7, 8], [10, 9, 8])\nprint(round(corr(*A), 4), round(corr(*B), 4))\nprint(round(corr(A[0] + B[0], A[1] + B[1]), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Penjualan es krim dan kasus tenggelam berkorelasi hampir sempurna walau keduanya hanya digerakkan oleh suhu."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef corr(a, b):\n    n = len(a)\n    ma, mb = sum(a) / n, sum(b) / n\n    c = sum((p - ma) * (q - mb) for p, q in zip(a, b))\n    sa = math.sqrt(sum((p - ma) ** 2 for p in a))\n    sb = math.sqrt(sum((q - mb) ** 2 for q in b))\n    return c / (sa * sb)\n\nsuhu = [20, 24, 28, 32, 36]\nes = [10, 14, 22, 30, 41]\ntenggelam = [1, 2, 3, 5, 6]\nprint(round(corr(es, tenggelam), 4))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

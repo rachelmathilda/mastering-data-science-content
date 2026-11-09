@@ -1,0 +1,1684 @@
+{
+  "schema_version": 2,
+  "course_id": "A5",
+  "module_no": 1,
+  "title": "Jenis data dan skala pengukuran",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Membedakan skala pengukuran dan tipe data",
+    "Mengkodekan dan mendiskretisasi variabel dengan benar",
+    "Memeriksa dan membersihkan kualitas data dasar"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A5-01-1",
+    "exercise_id": "A5-01-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def modus(data):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A5-01-1",
+      "title": "Skala pengukuran: nominal, ordinal, interval, rasio",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membedakan empat skala pengukuran dan sifat-sifatnya",
+        "Menentukan operasi matematis yang valid untuk tiap skala",
+        "Memilih ukuran ringkasan yang sesuai skala",
+        "Mengkodekan data ordinal dengan benar"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Mengapa skala penting",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa skala penting\n\nSebelum menghitung rata-rata atau membuat grafik, tanyakan dulu: apa arti angka-angka ini? Nomor punggung pemain, peringkat lomba, suhu udara, dan tinggi badan semuanya berupa angka, tetapi hanya sebagian yang boleh dijumlahkan, dirata-ratakan, atau dibandingkan sebagai rasio. Memperlakukan semuanya sama menghasilkan kesimpulan yang tampak rapi tetapi tidak bermakna.\n\n**Skala pengukuran** adalah klasifikasi cara sebuah variabel diukur, dan menentukan operasi apa yang masuk akal. Klasifikasi empat tingkat dari Stevens, nominal, ordinal, interval, dan rasio, tetap menjadi kerangka paling umum dipakai dalam statistika dan sains data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Nominal\n\nSkala **nominal** hanya memberi nama atau kategori tanpa urutan. Golongan darah, kota asal, warna favorit, dan jenis produk adalah contohnya. Satu-satunya hal yang bisa kita katakan adalah dua nilai sama atau berbeda. Bila kategori diberi angka, misalnya 1 untuk Jakarta dan 2 untuk Bandung, angka itu hanya label.\n\nRingkasan yang masuk akal untuk nominal adalah hitungan, proporsi, dan modus. Rata-rata kode kota tidak bermakna. Grafik yang cocok adalah diagram batang frekuensi. Mengurutkan kategori nominal secara alfabet atau menurut frekuensi adalah keputusan penyajian, bukan sifat data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ordinal\n\nSkala **ordinal** memiliki urutan, tetapi jarak antar tingkat tidak jelas atau tidak sama. Tingkat pendidikan dari SD sampai S3, peringkat kepuasan satu sampai lima bintang, dan ukuran pakaian S, M, L, XL bersifat ordinal. Kita tahu S1 lebih tinggi dari SMA, tetapi tidak bisa mengatakan selisih S1 dan SMA sama dengan selisih SMA dan SMP.\n\nUntuk ordinal, median dan kuantil bermakna karena hanya butuh urutan. Rata-rata sering dipakai dalam praktik, misalnya rata-rata bintang ulasan, tetapi secara ketat mengasumsikan jarak sama antar tingkat. Sadari asumsi itu ketika melaporkannya."
+            },
+            {
+              "type": "code_example",
+              "filename": "klasifikasi_skala.py",
+              "runnable": true,
+              "code": "from collections import Counter\n\nskala = {\n    \"golongan_darah\": \"nominal\",\n    \"tingkat_pendidikan\": \"ordinal\",\n    \"suhu_celsius\": \"interval\",\n    \"tinggi_cm\": \"rasio\",\n    \"jumlah_anak\": \"rasio\",\n    \"kota\": \"nominal\",\n}\nprint(sorted(Counter(skala.values()).items()))",
+              "expected_output_note": "[('interval', 1), ('nominal', 2), ('ordinal', 1), ('rasio', 2)]",
+              "explanation": "Setiap kolom dipetakan ke satu skala, dan hitungan memperlihatkan komposisi jenis variabel dalam dataset."
+            }
+          ],
+          "quick_check": {
+            "question": "Golongan darah berskala?",
+            "options": [
+              "Nominal",
+              "Ordinal"
+            ],
+            "answer_index": 0,
+            "explanation": "Kategori tanpa urutan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Interval",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Interval\n\nSkala **interval** memiliki urutan dan jarak yang bermakna, tetapi tidak punya nol mutlak. Suhu Celsius adalah contoh klasik: selisih 10 derajat berarti sama di mana pun pada skala, tetapi nol derajat bukan berarti tidak ada suhu. Tahun kalender dan skor tes standar juga interval.\n\nKarena nol bersifat sembarang, rasio tidak bermakna. Suhu 20 derajat Celsius tidak dua kali lebih panas dari 10 derajat. Rata-rata, simpangan baku, dan korelasi valid untuk interval, tetapi pernyataan seperti dua kali lebih tidak."
+            },
+            {
+              "type": "code_example",
+              "filename": "interval_vs_rasio.py",
+              "runnable": true,
+              "code": "print(20 / 10, round(293.15 / 283.15, 4))",
+              "expected_output_note": "2.0 1.0353",
+              "explanation": "Rasio naif dua puluh banding sepuluh adalah dua, tetapi pada skala Kelvin yang punya nol mutlak rasionya hanya sedikit di atas satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rasio\n\nSkala **rasio** memiliki urutan, jarak bermakna, dan nol mutlak yang berarti ketiadaan. Tinggi badan, berat, harga, jumlah pembelian, dan durasi adalah rasio. Karena nolnya nyata, pernyataan seperti dua kali lebih berat atau separuh harga memiliki arti.\n\nSemua operasi statistik valid pada rasio, termasuk rata-rata geometrik dan koefisien variasi. Perhatikan bahwa jumlah hitungan, seperti banyak anak, adalah rasio karena nol berarti tidak ada. Hierarki empat skala bersifat kumulatif: tiap tingkat mewarisi semua kemampuan tingkat sebelumnya ditambah satu sifat baru."
+            },
+            {
+              "type": "code_example",
+              "filename": "ordinal_rank.py",
+              "runnable": true,
+              "code": "urutan = [\"SD\", \"SMP\", \"SMA\", \"S1\", \"S2\"]\nrank = {nama: i for i, nama in enumerate(urutan)}\nprint(rank[\"S1\"] > rank[\"SMA\"])\nprint(max([\"SMP\", \"S1\", \"SMA\"], key=rank.get))",
+              "expected_output_note": "True\nS1",
+              "explanation": "Memberi peringkat pada kategori ordinal memungkinkan perbandingan dan pencarian nilai tertinggi tanpa mengasumsikan jarak yang sama."
+            }
+          ],
+          "quick_check": {
+            "question": "Tingkat pendidikan berskala?",
+            "options": [
+              "Nominal",
+              "Ordinal"
+            ],
+            "answer_index": 1,
+            "explanation": "Berurutan, jarak tak sama.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih ringkasan sesuai skala",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih ringkasan sesuai skala\n\nRingkasan mengikuti skala. Nominal memakai modus dan frekuensi. Ordinal menambah median dan kuantil. Interval menambah rata-rata dan simpangan baku. Rasio menambah rasio dan rata-rata geometrik. Memakai ringkasan dari tingkat lebih tinggi pada data yang lebih rendah adalah kesalahan paling umum, misalnya menghitung rata-rata kode produk.\n\nDalam praktik batasnya kabur, dan banyak analis memperlakukan ordinal berpenyekat banyak, seperti skala satu sampai sepuluh, sebagai interval. Itu pilihan sadar yang perlu dijustifikasi, bukan kelalaian yang disembunyikan."
+            },
+            {
+              "type": "code_example",
+              "filename": "modus_nominal.py",
+              "runnable": true,
+              "code": "from collections import Counter\n\ngolongan = [\"A\", \"B\", \"A\", \"O\", \"A\", \"B\"]\nprint(Counter(golongan).most_common(1))",
+              "expected_output_note": "[('A', 3)]",
+              "explanation": "Untuk data nominal ringkasan yang sah adalah modus, yaitu golongan darah A yang muncul tiga kali."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Angka bukan berarti ukuran",
+              "markdown": "Angka tidak otomatis berarti skala numerik. Kode pos, nomor ID, dan nomor telepon berupa angka tetapi bersifat nominal. Jangan hitung rata-ratanya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dampak pada pemodelan\n\nSkala menentukan cara mengkodekan variabel untuk model. Variabel nominal dikodekan dengan one-hot agar model tidak mengira ada urutan. Variabel ordinal dapat dikodekan dengan peringkat bila urutan penting. Variabel interval dan rasio dipakai sebagai angka, sering setelah dinormalisasi. Salah mengkodekan nominal sebagai angka berurutan membuat model belajar hubungan palsu, misalnya menganggap kota nomor tiga di antara kota nomor dua dan empat.\n\nKarena itu mengenali skala adalah langkah pertama setiap proyek data, sebelum pembersihan dan visualisasi."
+            }
+          ],
+          "quick_check": {
+            "question": "Suhu Celsius berskala?",
+            "options": [
+              "Interval",
+              "Ordinal"
+            ],
+            "answer_index": 0,
+            "explanation": "Tanpa nol mutlak.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-01-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `operasi_valid(skala)` yang mengembalikan list operasi yang sah.",
+          "note": "Nominal: `['hitung']`. Ordinal: `['hitung', 'urut']`. Interval: `['hitung', 'urut', 'selisih']`. Rasio: `['hitung', 'urut', 'selisih', 'rasio']`. Skala lain mengembalikan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "def operasi_valid(skala):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "operasi_valid('nominal')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert operasi_valid('nominal') == ['hitung']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "operasi_valid('ordinal')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert operasi_valid('ordinal') == ['hitung', 'urut']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "operasi_valid('rasio')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 'rasio' in operasi_valid('rasio')"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "operasi_valid('interval')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert 'rasio' not in operasi_valid('interval')"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "operasi_valid('lainnya')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert operasi_valid('lainnya') == []"
+              }
+            ]
+          },
+          "hint": "Simpan pemetaan dari nama skala ke daftar operasinya.",
+          "solution": "def operasi_valid(skala):\n    peta = {\n        'nominal': ['hitung'],\n        'ordinal': ['hitung', 'urut'],\n        'interval': ['hitung', 'urut', 'selisih'],\n        'rasio': ['hitung', 'urut', 'selisih', 'rasio'],\n    }\n    return list(peta.get(skala, []))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-01-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `tentukan_skala(berurutan, selisih_bermakna, nol_mutlak)` yang mengembalikan nama skala: `'nominal'` bila tidak berurutan, `'ordinal'` bila berurutan tetapi selisih tidak bermakna, `'interval'` bila selisih bermakna tetapi tanpa nol mutlak, dan `'rasio'` bila ada nol mutlak.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def tentukan_skala(berurutan, selisih_bermakna, nol_mutlak):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tentukan_skala(False, False, False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tentukan_skala(False, False, False) == 'nominal'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tentukan_skala(True, False, False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tentukan_skala(True, False, False) == 'ordinal'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tentukan_skala(True, True, False)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tentukan_skala(True, True, False) == 'interval'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tentukan_skala(True, True, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tentukan_skala(True, True, True) == 'rasio'"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "tentukan_skala(True, False, True)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tentukan_skala(True, False, True) == 'ordinal'"
+              }
+            ]
+          },
+          "hint": "Periksa sifat secara bertingkat dari urutan, selisih, lalu nol mutlak.",
+          "solution": "def tentukan_skala(berurutan, selisih_bermakna, nol_mutlak):\n    if not berurutan:\n        return 'nominal'\n    if not selisih_bermakna:\n        return 'ordinal'\n    if not nol_mutlak:\n        return 'interval'\n    return 'rasio'",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-01-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kode_ordinal(nilai, urutan)` yang mengubah list nilai ordinal menjadi list peringkat berbasis nol menurut list `urutan`.",
+          "note": "Nilai yang tidak ada dalam `urutan` diberi `-1`.",
+          "filename": "solution.py",
+          "starter_code": "def kode_ordinal(nilai, urutan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kode_ordinal(['S1', 'SD'], u)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "u = ['SD', 'SMP', 'SMA', 'S1', 'S2']\nassert kode_ordinal(['S1', 'SD'], u) == [3, 0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kode_ordinal([], u)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kode_ordinal([], u) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kode_ordinal(['X'], u)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kode_ordinal(['X'], u) == [-1]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kode_ordinal(['S2', 'SMA', 'SMP'], u)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kode_ordinal(['S2', 'SMA', 'SMP'], u) == [4, 2, 1]"
+              }
+            ]
+          },
+          "hint": "Buat kamus dari nilai ke indeksnya lalu pakai get dengan nilai bawaan minus satu.",
+          "solution": "def kode_ordinal(nilai, urutan):\n    rank = {n: i for i, n in enumerate(urutan)}\n    return [rank.get(v, -1) for v in nilai]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-01-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `modus(data)` yang mengembalikan list semua nilai dengan frekuensi tertinggi, terurut menaik.",
+          "note": "Untuk data kosong kembalikan list kosong.",
+          "filename": "solution.py",
+          "starter_code": "from collections import Counter\n\ndef modus(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "modus(['A', 'B', 'A'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus(['A', 'B', 'A']) == ['A']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "modus([1, 2, 2, 3, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus([1, 2, 2, 3, 3]) == [2, 3]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "modus([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus([5]) == [5]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "modus([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus([]) == []"
+              }
+            ]
+          },
+          "hint": "Hitung frekuensi lalu kumpulkan semua nilai yang frekuensinya sama dengan maksimum.",
+          "solution": "from collections import Counter\n\ndef modus(data):\n    if not data:\n        return []\n    c = Counter(data)\n    m = max(c.values())\n    return sorted(k for k, v in c.items() if v == m)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Golongan darah berskala?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nominal",
+              "description": ""
+            },
+            {
+              "label": "Ordinal",
+              "description": ""
+            },
+            {
+              "label": "Interval",
+              "description": ""
+            },
+            {
+              "label": "Rasio",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tanpa urutan.",
+          "explanation": "Kategori tanpa urutan."
+        },
+        {
+          "q": "Tingkat pendidikan berskala?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nominal",
+              "description": ""
+            },
+            {
+              "label": "Ordinal",
+              "description": ""
+            },
+            {
+              "label": "Interval",
+              "description": ""
+            },
+            {
+              "label": "Rasio",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Urutan.",
+          "explanation": "Berurutan, jarak tak sama."
+        },
+        {
+          "q": "Suhu Celsius berskala?",
+          "code": null,
+          "options": [
+            {
+              "label": "Ordinal",
+              "description": ""
+            },
+            {
+              "label": "Interval",
+              "description": ""
+            },
+            {
+              "label": "Rasio",
+              "description": ""
+            },
+            {
+              "label": "Nominal",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Nol sembarang.",
+          "explanation": "Tanpa nol mutlak."
+        },
+        {
+          "q": "Tinggi badan berskala?",
+          "code": null,
+          "options": [
+            {
+              "label": "Interval",
+              "description": ""
+            },
+            {
+              "label": "Rasio",
+              "description": ""
+            },
+            {
+              "label": "Ordinal",
+              "description": ""
+            },
+            {
+              "label": "Nominal",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Nol berarti tidak ada.",
+          "explanation": "Nol mutlak."
+        },
+        {
+          "q": "Ringkasan sah untuk nominal?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Modus",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            },
+            {
+              "label": "Varians",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Frekuensi.",
+          "explanation": "Hitungan dan modus."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menghitung rata-rata kode pos atau ID. Lebih baik: Itu nominal, pakai modus dan frekuensi.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menghitung rata-rata kode pos atau ID.",
+          "fix": "Itu nominal, pakai modus dan frekuensi."
+        },
+        {
+          "mistake": "Menyebut 20 derajat dua kali lebih panas dari 10 derajat.",
+          "fix": "Interval tidak punya nol mutlak."
+        },
+        {
+          "mistake": "Mengkodekan nominal sebagai angka berurutan untuk model.",
+          "fix": "Gunakan one-hot."
+        }
+      ],
+      "summary": [
+        "Skala menentukan operasi dan ringkasan yang bermakna.",
+        "Nominal tanpa urutan, ordinal berurutan, interval berjarak, rasio bernol mutlak.",
+        "Angka tidak otomatis berarti ukuran numerik.",
+        "Pengkodean model mengikuti skala variabel."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Skala pengukuran: nominal, ordinal, interval, rasio"
+          },
+          {
+            "type": "text",
+            "source": "Setiap kolom dipetakan ke satu skala, dan hitungan memperlihatkan komposisi jenis variabel dalam dataset."
+          },
+          {
+            "type": "code",
+            "source": "from collections import Counter\n\nskala = {\n    \"golongan_darah\": \"nominal\",\n    \"tingkat_pendidikan\": \"ordinal\",\n    \"suhu_celsius\": \"interval\",\n    \"tinggi_cm\": \"rasio\",\n    \"jumlah_anak\": \"rasio\",\n    \"kota\": \"nominal\",\n}\nprint(sorted(Counter(skala.values()).items()))"
+          },
+          {
+            "type": "text",
+            "source": "Rasio naif dua puluh banding sepuluh adalah dua, tetapi pada skala Kelvin yang punya nol mutlak rasionya hanya sedikit di atas satu."
+          },
+          {
+            "type": "code",
+            "source": "print(20 / 10, round(293.15 / 283.15, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Memberi peringkat pada kategori ordinal memungkinkan perbandingan dan pencarian nilai tertinggi tanpa mengasumsikan jarak yang sama."
+          },
+          {
+            "type": "code",
+            "source": "urutan = [\"SD\", \"SMP\", \"SMA\", \"S1\", \"S2\"]\nrank = {nama: i for i, nama in enumerate(urutan)}\nprint(rank[\"S1\"] > rank[\"SMA\"])\nprint(max([\"SMP\", \"S1\", \"SMA\"], key=rank.get))"
+          },
+          {
+            "type": "text",
+            "source": "Untuk data nominal ringkasan yang sah adalah modus, yaitu golongan darah A yang muncul tiga kali."
+          },
+          {
+            "type": "code",
+            "source": "from collections import Counter\n\ngolongan = [\"A\", \"B\", \"A\", \"O\", \"A\", \"B\"]\nprint(Counter(golongan).most_common(1))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A5-01-2",
+      "title": "Tipe data dan representasinya",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membedakan data numerik diskrit dan kontinu, kategorikal, teks, dan waktu",
+        "Menebak tipe nilai dari representasi teks",
+        "Mendiskretisasi variabel kontinu menjadi kategori",
+        "Mengkodekan kategori dengan one-hot dan menghitung selisih tanggal"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari skala ke tipe",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari skala ke tipe\n\nSkala pengukuran menjelaskan makna variabel, sedangkan **tipe data** menjelaskan bagaimana nilai disimpan di komputer. Keduanya berhubungan tetapi tidak identik. Kolom bertipe integer bisa bersifat nominal seperti kode pos, dan kolom bertipe teks bisa bersifat ordinal seperti tingkat kepuasan baik, cukup, buruk.\n\nPemahaman keduanya penting. Skala memberi tahu analisis apa yang bermakna, sedangkan tipe memberi tahu operasi apa yang dimungkinkan dan efisien oleh perangkat lunak. Ketidakcocokan antara keduanya adalah sumber kesalahan yang halus tetapi sangat umum."
+            },
+            {
+              "type": "text",
+              "markdown": "## Numerik: diskrit dan kontinu\n\nData numerik **diskrit** hanya mengambil nilai terhitung, biasanya bilangan bulat: jumlah pesanan, jumlah anak, jumlah klik. Data numerik **kontinu** dapat mengambil sembarang nilai pada rentang: tinggi, berat, waktu respons. Perbedaannya menentukan model yang cocok, seperti Poisson untuk hitungan dan normal untuk besaran kontinu.\n\nDalam praktik semua pengukuran kontinu dibulatkan, sehingga tampak diskrit. Pembedaan konseptual tetap berguna: tanyakan apakah antara dua nilai yang bersebelahan masih mungkin ada nilai lain yang bermakna."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kategorikal, teks, dan waktu\n\nData **kategorikal** membagi observasi ke dalam kelompok, termasuk biner dengan dua kategori seperti ya atau tidak. Data **teks** bebas berisi kalimat atau dokumen dan butuh pemrosesan khusus sebelum dianalisis. Data **waktu** mencatat kapan sesuatu terjadi dan memiliki sifat unik seperti urutan, musiman, dan zona waktu.\n\nTanggal sering tersimpan sebagai teks mentah yang tidak bisa dihitung selisihnya. Mengubahnya menjadi tipe tanggal sungguhan adalah langkah pembersihan yang hampir selalu diperlukan, dan membuka operasi seperti selisih hari dan hari dalam pekan."
+            },
+            {
+              "type": "code_example",
+              "filename": "tebak_tipe.py",
+              "runnable": true,
+              "code": "from datetime import date\n\ndef tebak_tipe(s):\n    try:\n        int(s)\n        return \"int\"\n    except ValueError:\n        pass\n    try:\n        float(s)\n        return \"float\"\n    except ValueError:\n        pass\n    if s.lower() in (\"true\", \"false\"):\n        return \"bool\"\n    try:\n        date.fromisoformat(s)\n        return \"tanggal\"\n    except ValueError:\n        return \"teks\"\n\nprint([tebak_tipe(v) for v in [\"12\", \"3.5\", \"true\", \"2026-11-07\", \"halo\"]])",
+              "expected_output_note": "['int', 'float', 'bool', 'tanggal', 'teks']",
+              "explanation": "Setiap string dicoba dikonversi dari tipe paling ketat ke paling longgar sampai satu berhasil, dan teks adalah pilihan terakhir."
+            }
+          ],
+          "quick_check": {
+            "question": "Jumlah klik adalah data?",
+            "options": [
+              "Diskrit",
+              "Kontinu"
+            ],
+            "answer_index": 0,
+            "explanation": "Bilangan bulat terhitung.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Bekerja dengan tanggal",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bekerja dengan tanggal\n\nSetelah tanggal diurai menjadi objek `date`, kita bisa mengurangkannya untuk mendapat selisih hari, mengambil hari dalam pekan, atau mengelompokkan per bulan. Python menyediakan modul `datetime` untuk ini. Selisih dua objek tanggal berupa `timedelta` dengan atribut `days`.\n\nHati-hati dengan zona waktu dan format tanggal yang ambigu. Tulisan 03/04/2026 bisa berarti tiga April atau empat Maret. Format ISO tahun-bulan-hari tidak ambigu dan dapat diurutkan secara alfabet, sehingga menjadi pilihan standar untuk penyimpanan."
+            },
+            {
+              "type": "code_example",
+              "filename": "tanggal.py",
+              "runnable": true,
+              "code": "from datetime import date\n\na = date(2026, 1, 1)\nb = date(2026, 11, 7)\nprint((b - a).days, b.weekday())",
+              "expected_output_note": "310 5",
+              "explanation": "Tanggal tujuh November berjarak tiga ratus sepuluh hari dari awal tahun dan jatuh pada hari Sabtu yang bernomor lima bila Senin dihitung nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Diskretisasi\n\nKadang kita mengubah variabel kontinu menjadi kategori dengan memotongnya pada batas tertentu, misalnya umur menjadi anak, dewasa, dan lansia. Ini disebut **diskretisasi** atau binning. Hasilnya ordinal karena kategori masih berurutan. Manfaatnya penyederhanaan dan kemudahan interpretasi, biayanya hilangnya informasi di dalam tiap kelompok.\n\nPilih batas berdasarkan pengetahuan domain bila ada, seperti kelompok usia resmi, atau berdasarkan kuantil bila ingin kelompok berukuran sama. Hindari diskretisasi tanpa alasan karena model modern umumnya lebih baik menggunakan nilai kontinu aslinya."
+            },
+            {
+              "type": "code_example",
+              "filename": "diskretisasi.py",
+              "runnable": true,
+              "code": "umur = [5, 17, 25, 40, 65, 80]\nlabel = [\"anak\" if u < 18 else \"dewasa\" if u < 60 else \"lansia\" for u in umur]\nprint(label)",
+              "expected_output_note": "['anak', 'anak', 'dewasa', 'dewasa', 'lansia', 'lansia']",
+              "explanation": "Batas delapan belas dan enam puluh membagi umur menjadi tiga kelompok berurutan."
+            },
+            {
+              "type": "text",
+              "markdown": "## One-hot encoding\n\nModel numerik membutuhkan angka, tetapi mengganti kategori nominal dengan 1, 2, 3 menciptakan urutan palsu. **One-hot encoding** membuat satu kolom biner per kategori: nilainya satu pada kolom kategori yang sesuai dan nol pada sisanya. Tidak ada urutan atau jarak yang diasumsikan.\n\nKonsekuensinya jumlah kolom bertambah sebesar banyaknya kategori. Variabel dengan ribuan kategori, seperti kode pos, menghasilkan ribuan kolom, sehingga teknik lain seperti pengkodean target atau embedding lebih cocok."
+            },
+            {
+              "type": "code_example",
+              "filename": "one_hot.py",
+              "runnable": true,
+              "code": "kategori = sorted([\"merah\", \"hijau\", \"biru\"])\n\ndef one_hot(nilai):\n    return [1 if k == nilai else 0 for k in kategori]\n\nprint(kategori)\nprint(one_hot(\"hijau\"), one_hot(\"merah\"))",
+              "expected_output_note": "['biru', 'hijau', 'merah']\n[0, 1, 0] [0, 0, 1]",
+              "explanation": "Kategori diurutkan tetap lalu tiap nilai menjadi vektor dengan satu angka satu pada posisi kategorinya."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Konsistensi pengkodean",
+              "markdown": "Simpan daftar kategori dari data latih dan pakai daftar yang sama saat memproses data baru. Kategori yang belum pernah terlihat dikodekan sebagai semua nol."
+            }
+          ],
+          "quick_check": {
+            "question": "Waktu respons adalah data?",
+            "options": [
+              "Diskrit",
+              "Kontinu"
+            ],
+            "answer_index": 1,
+            "explanation": "Sembarang nilai pada rentang.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Tipe data di pandas dan Python",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tipe data di pandas dan Python\n\nDi Python dasar kita bertemu int, float, str, bool, dan objek tanggal. Pustaka pandas menambahkan tipe untuk kategori dan waktu, dan kolom bertipe object biasanya berarti campuran atau teks. Kolom angka yang terbaca sebagai object hampir selalu menandakan ada sel bermasalah, seperti teks tidak numerik, yang memaksa seluruh kolom menjadi teks.\n\nBiasakan memeriksa tipe kolom segera setelah memuat data, lalu mengonversinya dengan sengaja. Tipe kategori menghemat memori untuk kolom dengan sedikit nilai unik dan membuat maksud analisis lebih jelas bagi pembaca kode."
+            },
+            {
+              "type": "text",
+              "markdown": "## Data terstruktur dan tak terstruktur\n\nData terstruktur tersusun rapi dalam baris dan kolom, seperti tabel basis data atau berkas CSV. Data semi-terstruktur seperti JSON memiliki bidang bernama tetapi bentuknya bisa berbeda antar rekaman. Data tak terstruktur seperti teks bebas, gambar, dan audio tidak memiliki skema tetap dan harus diubah menjadi fitur numerik sebelum dianalisis dengan alat statistik klasik.\n\nKursus ini berfokus pada data terstruktur, tetapi gagasan skala dan tipe berlaku sama pada fitur yang diekstrak dari data tak terstruktur."
+            }
+          ],
+          "quick_check": {
+            "question": "One-hot dipakai untuk?",
+            "options": [
+              "Nominal",
+              "Rasio"
+            ],
+            "answer_index": 0,
+            "explanation": "Tanpa urutan palsu.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-01-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `tebak_tipe(s)` yang mengembalikan `'int'`, `'float'`, `'bool'`, `'tanggal'`, atau `'teks'` untuk string `s`.",
+          "note": "Coba berurutan int, float, bool (`true` atau `false` tanpa memandang huruf besar), tanggal ISO, lalu teks.",
+          "filename": "solution.py",
+          "starter_code": "from datetime import date\n\ndef tebak_tipe(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "tebak_tipe('12')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tebak_tipe('12') == 'int'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "tebak_tipe('-3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tebak_tipe('-3') == 'int'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "tebak_tipe('3.5')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tebak_tipe('3.5') == 'float'"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "tebak_tipe('1e3')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tebak_tipe('1e3') == 'float'"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "tebak_tipe('True')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tebak_tipe('True') == 'bool'"
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "tebak_tipe('false')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tebak_tipe('false') == 'bool'"
+              },
+              {
+                "id": 7,
+                "name": "Kasus 7",
+                "label": "tebak_tipe('2026-11-07')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tebak_tipe('2026-11-07') == 'tanggal'"
+              },
+              {
+                "id": 8,
+                "name": "Kasus 8",
+                "label": "tebak_tipe('halo')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tebak_tipe('halo') == 'teks'"
+              },
+              {
+                "id": 9,
+                "name": "Kasus 9",
+                "label": "tebak_tipe('')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert tebak_tipe('') == 'teks'"
+              }
+            ]
+          },
+          "hint": "Gunakan blok try dan except ValueError untuk tiap percobaan konversi.",
+          "solution": "from datetime import date\n\ndef tebak_tipe(s):\n    try:\n        int(s)\n        return 'int'\n    except ValueError:\n        pass\n    try:\n        float(s)\n        return 'float'\n    except ValueError:\n        pass\n    if s.lower() in ('true', 'false'):\n        return 'bool'\n    try:\n        date.fromisoformat(s)\n        return 'tanggal'\n    except ValueError:\n        return 'teks'",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-01-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `diskretisasi(nilai, batas, label)` yang memberi tiap nilai label berdasarkan `batas` menaik: nilai kurang dari `batas[i]` mendapat `label[i]` pertama yang memenuhi, dan nilai yang lebih besar atau sama dengan batas terakhir mendapat `label[-1]`.",
+          "note": "Panjang `label` sama dengan panjang `batas` ditambah satu.",
+          "filename": "solution.py",
+          "starter_code": "def diskretisasi(nilai, batas, label):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "diskretisasi([5, 17, 25, 40, 65, 80], [18, 60...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diskretisasi([5, 17, 25, 40, 65, 80], [18, 60], ['anak', 'dewasa', 'lansia']) == ['anak', 'anak', 'dewasa', 'dewasa', 'lansia', 'lansia']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "diskretisasi([18, 60], [18, 60], ['anak', 'de...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diskretisasi([18, 60], [18, 60], ['anak', 'dewasa', 'lansia']) == ['dewasa', 'lansia']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "diskretisasi([], [18, 60], ['anak', 'dewasa',...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diskretisasi([], [18, 60], ['anak', 'dewasa', 'lansia']) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "diskretisasi([1, 2], [], ['semua'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert diskretisasi([1, 2], [], ['semua']) == ['semua', 'semua']"
+              }
+            ]
+          },
+          "hint": "Cari batas pertama yang lebih besar dari nilai dan pakai labelnya, atau label terakhir bila tidak ada.",
+          "solution": "def diskretisasi(nilai, batas, label):\n    hasil = []\n    for v in nilai:\n        for i, b in enumerate(batas):\n            if v < b:\n                hasil.append(label[i])\n                break\n        else:\n            hasil.append(label[-1])\n    return hasil",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-01-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `one_hot(nilai, kategori)` yang mengembalikan list 0 dan 1 menurut `kategori` yang diurutkan alfabetis.",
+          "note": "Nilai yang tidak dikenal menghasilkan semua nol.",
+          "filename": "solution.py",
+          "starter_code": "def one_hot(nilai, kategori):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "one_hot('hijau', k)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "k = ['merah', 'hijau', 'biru']\nassert one_hot('hijau', k) == [0, 1, 0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "one_hot('merah', k)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert one_hot('merah', k) == [0, 0, 1]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "one_hot('ungu', k)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert one_hot('ungu', k) == [0, 0, 0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "one_hot('a', ['a'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert one_hot('a', ['a']) == [1]"
+              }
+            ]
+          },
+          "hint": "Urutkan kategori lalu beri satu pada posisi yang sama dengan nilai.",
+          "solution": "def one_hot(nilai, kategori):\n    return [1 if c == nilai else 0 for c in sorted(kategori)]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-01-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `selisih_hari(a, b)` yang menerima dua string tanggal ISO `YYYY-MM-DD` dan mengembalikan banyak hari dari `a` ke `b` (negatif bila `b` lebih awal).",
+          "note": "Pakai `datetime.date`.",
+          "filename": "solution.py",
+          "starter_code": "from datetime import date\n\ndef selisih_hari(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "selisih_hari('2026-01-01', '2026-11-07')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari('2026-01-01', '2026-11-07') == 310"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "selisih_hari('2026-11-07', '2026-11-07')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari('2026-11-07', '2026-11-07') == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "selisih_hari('2026-11-07', '2026-01-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari('2026-11-07', '2026-01-01') == -310"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "selisih_hari('2024-02-28', '2024-03-01')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert selisih_hari('2024-02-28', '2024-03-01') == 2"
+              }
+            ]
+          },
+          "hint": "Urai kedua string dengan date.fromisoformat lalu kurangkan.",
+          "solution": "from datetime import date\n\ndef selisih_hari(a, b):\n    return (date.fromisoformat(b) - date.fromisoformat(a)).days",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Jumlah klik adalah data?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kontinu",
+              "description": ""
+            },
+            {
+              "label": "Diskrit",
+              "description": ""
+            },
+            {
+              "label": "Teks",
+              "description": ""
+            },
+            {
+              "label": "Waktu",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Hitungan.",
+          "explanation": "Bilangan bulat terhitung."
+        },
+        {
+          "q": "Waktu respons adalah data?",
+          "code": null,
+          "options": [
+            {
+              "label": "Diskrit",
+              "description": ""
+            },
+            {
+              "label": "Kontinu",
+              "description": ""
+            },
+            {
+              "label": "Nominal",
+              "description": ""
+            },
+            {
+              "label": "Biner",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Antara dua nilai.",
+          "explanation": "Sembarang nilai pada rentang."
+        },
+        {
+          "q": "One-hot dipakai untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nominal",
+              "description": ""
+            },
+            {
+              "label": "Rasio",
+              "description": ""
+            },
+            {
+              "label": "Waktu",
+              "description": ""
+            },
+            {
+              "label": "Interval",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kategori.",
+          "explanation": "Tanpa urutan palsu."
+        },
+        {
+          "q": "Diskretisasi umur menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nominal",
+              "description": ""
+            },
+            {
+              "label": "Ordinal",
+              "description": ""
+            },
+            {
+              "label": "Rasio",
+              "description": ""
+            },
+            {
+              "label": "Kontinu",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Urutan.",
+          "explanation": "Kelompok berurutan."
+        },
+        {
+          "q": "Format tanggal tidak ambigu?",
+          "code": null,
+          "options": [
+            {
+              "label": "DD/MM/YYYY",
+              "description": ""
+            },
+            {
+              "label": "MM/DD/YYYY",
+              "description": ""
+            },
+            {
+              "label": "ISO YYYY-MM-DD",
+              "description": ""
+            },
+            {
+              "label": "Teks bebas",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Tahun dulu.",
+          "explanation": "Dapat diurutkan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menganggap tipe integer berarti skala numerik. Lebih baik: Kode pos integer tetap nominal.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menganggap tipe integer berarti skala numerik.",
+          "fix": "Kode pos integer tetap nominal."
+        },
+        {
+          "mistake": "Menyimpan tanggal sebagai teks mentah.",
+          "fix": "Urai menjadi tipe tanggal."
+        },
+        {
+          "mistake": "Mengkodekan nominal dengan angka berurutan.",
+          "fix": "Pakai one-hot."
+        }
+      ],
+      "summary": [
+        "Skala adalah makna variabel, tipe adalah cara penyimpanan.",
+        "Diskrit terhitung, kontinu di sembarang titik rentang.",
+        "Tanggal sebaiknya berupa tipe tanggal dan format ISO.",
+        "One-hot mengkodekan nominal tanpa urutan palsu."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Tipe data dan representasinya"
+          },
+          {
+            "type": "text",
+            "source": "Setiap string dicoba dikonversi dari tipe paling ketat ke paling longgar sampai satu berhasil, dan teks adalah pilihan terakhir."
+          },
+          {
+            "type": "code",
+            "source": "from datetime import date\n\ndef tebak_tipe(s):\n    try:\n        int(s)\n        return \"int\"\n    except ValueError:\n        pass\n    try:\n        float(s)\n        return \"float\"\n    except ValueError:\n        pass\n    if s.lower() in (\"true\", \"false\"):\n        return \"bool\"\n    try:\n        date.fromisoformat(s)\n        return \"tanggal\"\n    except ValueError:\n        return \"teks\"\n\nprint([tebak_tipe(v) for v in [\"12\", \"3.5\", \"true\", \"2026-11-07\", \"halo\"]])"
+          },
+          {
+            "type": "text",
+            "source": "Tanggal tujuh November berjarak tiga ratus sepuluh hari dari awal tahun dan jatuh pada hari Sabtu yang bernomor lima bila Senin dihitung nol."
+          },
+          {
+            "type": "code",
+            "source": "from datetime import date\n\na = date(2026, 1, 1)\nb = date(2026, 11, 7)\nprint((b - a).days, b.weekday())"
+          },
+          {
+            "type": "text",
+            "source": "Batas delapan belas dan enam puluh membagi umur menjadi tiga kelompok berurutan."
+          },
+          {
+            "type": "code",
+            "source": "umur = [5, 17, 25, 40, 65, 80]\nlabel = [\"anak\" if u < 18 else \"dewasa\" if u < 60 else \"lansia\" for u in umur]\nprint(label)"
+          },
+          {
+            "type": "text",
+            "source": "Kategori diurutkan tetap lalu tiap nilai menjadi vektor dengan satu angka satu pada posisi kategorinya."
+          },
+          {
+            "type": "code",
+            "source": "kategori = sorted([\"merah\", \"hijau\", \"biru\"])\n\ndef one_hot(nilai):\n    return [1 if k == nilai else 0 for k in kategori]\n\nprint(kategori)\nprint(one_hot(\"hijau\"), one_hot(\"merah\"))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A5-01-3",
+      "title": "Memeriksa kualitas data",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung nilai hilang per kolom",
+        "Menyeragamkan kategori teks dan menghapus duplikat",
+        "Memeriksa rentang nilai yang tidak valid",
+        "Mendeteksi pencilan dengan aturan IQR"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Data kotor itu normal",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Data kotor itu normal\n\nData nyata hampir selalu kotor: ada sel kosong, baris ganda, nilai mustahil, ejaan beragam untuk kategori yang sama, dan pencilan akibat salah ketik atau kejadian langka. Analis berpengalaman menghabiskan sebagian besar waktunya membersihkan data, dan keputusan pembersihan sering lebih memengaruhi hasil daripada pilihan model.\n\nPelajaran ini memberi daftar periksa dasar yang dapat dijalankan sebelum analisis apa pun. Tujuannya bukan membuat data sempurna, melainkan mengetahui masalahnya dan memutuskan secara sadar apa yang dilakukan dengan tiap masalah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Nilai hilang\n\nLangkah pertama adalah menghitung berapa banyak nilai hilang di tiap kolom. Hilang bisa muncul sebagai sel kosong, string kosong, `None`, atau kode khusus seperti -999 atau tidak diketahui. Memeriksa semua bentuk ini penting karena kode khusus yang dibiarkan akan dianggap nilai asli dan merusak rata-rata.\n\nMengapa data hilang sama pentingnya dengan berapa banyak. Bila hilang acak, menghapus baris relatif aman. Bila hilang bergantung pada nilai itu sendiri, misalnya orang berpenghasilan tinggi enggan mengisi pendapatan, menghapusnya membuat bias."
+            },
+            {
+              "type": "code_example",
+              "filename": "nilai_hilang.py",
+              "runnable": true,
+              "code": "rows = [\n    {\"nama\": \"A\", \"umur\": 20},\n    {\"nama\": \"B\", \"umur\": None},\n    {\"nama\": \"C\", \"umur\": None},\n]\nkolom = {k for r in rows for k in r}\nhilang = {k: sum(1 for r in rows if r.get(k) in (None, \"\")) for k in sorted(kolom)}\nprint(hilang)",
+              "expected_output_note": "{'nama': 0, 'umur': 2}",
+              "explanation": "Dua dari tiga baris tidak memiliki umur, sedangkan nama lengkap."
+            },
+            {
+              "type": "text",
+              "markdown": "## Konsistensi kategori\n\nKolom kategorikal sering memuat varian ejaan yang sebenarnya sama: Jakarta, jakarta, JAKARTA, dan Jakarta dengan spasi di ujung. Bagi komputer ini kategori berbeda sehingga hitungan terpecah dan hasil analisis keliru. Normalisasi teks, yaitu membuang spasi di tepi, menyatukan huruf besar kecil, dan merapikan spasi ganda, menyelesaikan sebagian besar masalah ini.\n\nUntuk variasi yang lebih rumit seperti singkatan atau salah ketik, diperlukan pemetaan manual atau pencocokan kemiripan teks. Selalu periksa daftar nilai unik tiap kolom kategorikal sebelum menganalisis."
+            },
+            {
+              "type": "code_example",
+              "filename": "normalisasi_kategori.py",
+              "runnable": true,
+              "code": "from collections import Counter\n\nkota = [\"Jakarta\", \" jakarta\", \"JAKARTA\", \"Bandung\"]\nbersih = [\" \".join(k.split()).title() for k in kota]\nprint(sorted(Counter(bersih).items()))",
+              "expected_output_note": "[('Bandung', 1), ('Jakarta', 3)]",
+              "explanation": "Setelah dirapikan tiga ejaan menjadi satu kategori Jakarta dengan tiga kemunculan."
+            }
+          ],
+          "quick_check": {
+            "question": "Langkah pertama kualitas data?",
+            "options": [
+              "Menghitung nilai hilang dan memeriksa data",
+              "Membuat model"
+            ],
+            "answer_index": 0,
+            "explanation": "Ketahui masalahnya dulu.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Duplikat",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Duplikat\n\nBaris ganda muncul dari penggabungan data, pengiriman ulang formulir, atau kesalahan ekspor. Duplikat mengembungkan hitungan dan memberi bobot ganda pada pengamatan tertentu. Namun tidak semua baris yang mirip adalah duplikat: dua transaksi identik pada waktu berbeda mungkin sah.\n\nTentukan kunci yang mendefinisikan satu entitas unik, misalnya ID pelanggan ditambah tanggal, lalu hapus duplikat berdasarkan kunci itu sambil mempertahankan urutan. `dict.fromkeys` adalah cara ringkas di Python untuk menghapus duplikat dengan urutan terjaga."
+            },
+            {
+              "type": "code_example",
+              "filename": "duplikat.py",
+              "runnable": true,
+              "code": "data = [1, 2, 2, 3, 1]\nprint(list(dict.fromkeys(data)), len(data) - len(set(data)))",
+              "expected_output_note": "[1, 2, 3] 2",
+              "explanation": "Menghapus duplikat dengan urutan terjaga menghasilkan satu, dua, tiga, dan ada dua entri yang berlebih."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rentang dan logika\n\nNilai harus masuk akal secara domain. Umur negatif atau di atas seratus dua puluh, harga nol pada produk berbayar, tanggal lahir di masa depan, dan tanggal selesai sebelum tanggal mulai adalah tanda kesalahan. Tulis aturan validasi eksplisit sebagai kode sehingga dapat dijalankan ulang tiap data baru datang.\n\nAturan lintas kolom juga penting: jumlah anggota keluarga tidak boleh lebih kecil dari jumlah anak. Pemeriksaan semacam ini menangkap kesalahan yang tidak terlihat pada satu kolom saja."
+            },
+            {
+              "type": "code_example",
+              "filename": "validasi_rentang.py",
+              "runnable": true,
+              "code": "umur = [25, -3, 130, 40, 200]\nprint([i for i, u in enumerate(umur) if not 0 <= u <= 120])",
+              "expected_output_note": "[1, 2, 4]",
+              "explanation": "Posisi satu, dua, dan empat memiliki umur di luar rentang yang masuk akal."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pencilan dengan aturan IQR\n\nPencilan adalah nilai yang jauh dari mayoritas data. Aturan IQR sederhana menandainya: hitung kuartil pertama `Q1` dan ketiga `Q3`, rentang antarkuartil `IQR = Q3 - Q1`, lalu tandai nilai di bawah `Q1 - 1,5 IQR` atau di atas `Q3 + 1,5 IQR`. Aturan ini tidak mengasumsikan distribusi normal.\n\nMenandai bukan berarti menghapus. Pencilan bisa kesalahan ketik yang perlu dikoreksi, atau kejadian nyata yang justru paling informatif, misalnya transaksi penipuan. Selidiki dulu sebelum memutuskan."
+            },
+            {
+              "type": "code_example",
+              "filename": "iqr.py",
+              "runnable": true,
+              "code": "import statistics\n\ndata = [10, 12, 11, 13, 12, 11, 95]\nq1, _, q3 = statistics.quantiles(data, n=4, method=\"inclusive\")\niqr = q3 - q1\nluar = [x for x in data if x < q1 - 1.5 * iqr or x > q3 + 1.5 * iqr]\nprint(q1, q3, luar)",
+              "expected_output_note": "11.0 12.5 [95]",
+              "explanation": "Kuartil pertama sebelas dan ketiga dua belas koma lima menghasilkan batas atas empat belas koma tujuh lima, sehingga sembilan puluh lima ditandai sebagai pencilan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Reproduksibilitas",
+              "markdown": "Simpan kode pembersihan sebagai skrip yang bisa dijalankan ulang dan catat tiap keputusan. Pembersihan manual di spreadsheet tidak dapat direproduksi dan mudah menimbulkan kesalahan tak terlihat."
+            }
+          ],
+          "quick_check": {
+            "question": "Jakarta dan jakarta?",
+            "options": [
+              "Sama otomatis",
+              "Kategori berbeda bagi komputer"
+            ],
+            "answer_index": 1,
+            "explanation": "Perlu normalisasi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Daftar periksa sebelum analisis",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Daftar periksa sebelum analisis\n\nSusun kebiasaan pemeriksaan yang sama untuk tiap dataset. Lihat bentuk data, yaitu jumlah baris dan kolom. Periksa tipe tiap kolom. Hitung nilai hilang. Daftar nilai unik kolom kategorikal. Ringkas kolom numerik dengan minimum, maksimum, dan kuartil. Cari duplikat berdasarkan kunci. Cek aturan domain dan lintas kolom.\n\nMengerjakannya sebagai fungsi yang dapat dijalankan pada dataset mana pun menghemat waktu dan mengurangi kemungkinan terlewat. Hasilnya adalah laporan kualitas data singkat yang berguna untuk dibagikan kepada pemilik data."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengomunikasikan keputusan pembersihan\n\nSetiap keputusan pembersihan adalah asumsi yang memengaruhi hasil. Menghapus baris dengan nilai hilang mengubah populasi yang dianalisis. Mengisi nilai hilang dengan rata-rata mengecilkan variasi. Menghapus pencilan mengubah rata-rata dan sebaran. Catat tiap keputusan, alasannya, dan berapa baris terdampak, lalu sertakan dalam laporan.\n\nPembaca yang tahu apa yang kamu lakukan dapat menilai apakah kesimpulanmu layak dipercaya. Pembersihan yang disembunyikan merusak kepercayaan sekalipun hasilnya kebetulan benar."
+            }
+          ],
+          "quick_check": {
+            "question": "Duplikat sah bila?",
+            "options": [
+              "Transaksi identik pada waktu berbeda",
+              "Selalu salah"
+            ],
+            "answer_index": 0,
+            "explanation": "Tentukan kunci unik.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A5-01-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `hitung_hilang(rows)` yang menerima list dict dan mengembalikan dict kolom ke banyaknya nilai hilang, yaitu `None` atau string kosong atau kunci yang tidak ada pada baris itu.",
+          "note": "Kolom diambil dari gabungan semua kunci.",
+          "filename": "solution.py",
+          "starter_code": "def hitung_hilang(rows):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hitung_hilang(rows)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "rows = [{'nama': 'A', 'umur': 20}, {'nama': 'B', 'umur': None}, {'nama': 'C', 'umur': None}]\nassert hitung_hilang(rows) == {'nama': 0, 'umur': 2}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hitung_hilang([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_hilang([]) == {}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hitung_hilang([{'a': ''}, {'a': 'x'}])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_hilang([{'a': ''}, {'a': 'x'}]) == {'a': 1}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "hitung_hilang([{'a': 1}, {'b': 2}])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hitung_hilang([{'a': 1}, {'b': 2}]) == {'a': 1, 'b': 1}"
+              }
+            ]
+          },
+          "hint": "Kumpulkan semua kunci lalu hitung baris yang nilainya None, kosong, atau tidak ada.",
+          "solution": "def hitung_hilang(rows):\n    kolom = set()\n    for r in rows:\n        kolom |= set(r)\n    return {k: sum(1 for r in rows if r.get(k) in (None, '')) for k in kolom}",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-01-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `normalisasi_teks(s)` yang membuang spasi di tepi, merapikan spasi ganda menjadi satu, dan mengubah ke huruf kecil.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def normalisasi_teks(s):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "normalisasi_teks(' Jakarta Selatan ')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert normalisasi_teks('  Jakarta  Selatan ') == 'jakarta selatan'"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "normalisasi_teks('BANDUNG')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert normalisasi_teks('BANDUNG') == 'bandung'"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "normalisasi_teks('')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert normalisasi_teks('') == ''"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "normalisasi_teks('a b c')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert normalisasi_teks('a   b   c') == 'a b c'"
+              }
+            ]
+          },
+          "hint": "Pecah dengan split lalu gabungkan dengan satu spasi dan ubah ke huruf kecil.",
+          "solution": "def normalisasi_teks(s):\n    return ' '.join(s.split()).lower()",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-01-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `hapus_duplikat(data)` yang menghapus elemen ganda dengan mempertahankan urutan kemunculan pertama.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def hapus_duplikat(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "hapus_duplikat([1, 2, 2, 3, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hapus_duplikat([1, 2, 2, 3, 1]) == [1, 2, 3]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "hapus_duplikat([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hapus_duplikat([]) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "hapus_duplikat(['a', 'A'])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hapus_duplikat(['a', 'A']) == ['a', 'A']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "hapus_duplikat([3, 3, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert hapus_duplikat([3, 3, 3]) == [3]"
+              }
+            ]
+          },
+          "hint": "Pakai dict.fromkeys agar urutan terjaga.",
+          "solution": "def hapus_duplikat(data):\n    return list(dict.fromkeys(data))",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A5-01-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `deteksi_outlier_iqr(data, k=1.5)` yang mengembalikan list nilai pencilan menurut aturan IQR (di bawah `Q1 - k * IQR` atau di atas `Q3 + k * IQR`) dengan urutan asli data.",
+          "note": "Hitung kuartil dengan `statistics.quantiles(data, n=4, method='inclusive')`.",
+          "filename": "solution.py",
+          "starter_code": "import statistics\n\ndef deteksi_outlier_iqr(data, k=1.5):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "deteksi_outlier_iqr([10, 12, 11, 13, 12, 11, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert deteksi_outlier_iqr([10, 12, 11, 13, 12, 11, 95]) == [95]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "deteksi_outlier_iqr([1, 2, 3, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert deteksi_outlier_iqr([1, 2, 3, 4, 5]) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "deteksi_outlier_iqr([-50, 10, 11, 12, 13, 14,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert deteksi_outlier_iqr([-50, 10, 11, 12, 13, 14, 15]) == [-50]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "deteksi_outlier_iqr([1, 2, 3, 4, 100], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert deteksi_outlier_iqr([1, 2, 3, 4, 100], 3) == [100]"
+              }
+            ]
+          },
+          "hint": "Hitung Q1 dan Q3 lalu saring nilai di luar batas bawah dan atas.",
+          "solution": "import statistics\n\ndef deteksi_outlier_iqr(data, k=1.5):\n    q1, _, q3 = statistics.quantiles(data, n=4, method='inclusive')\n    iqr = q3 - q1\n    return [x for x in data if x < q1 - k * iqr or x > q3 + k * iqr]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Langkah pertama kualitas data?",
+          "code": null,
+          "options": [
+            {
+              "label": "Membuat model",
+              "description": ""
+            },
+            {
+              "label": "Menghitung nilai hilang dan memeriksa data",
+              "description": ""
+            },
+            {
+              "label": "Menghapus kolom",
+              "description": ""
+            },
+            {
+              "label": "Normalisasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Periksa.",
+          "explanation": "Ketahui masalahnya dulu."
+        },
+        {
+          "q": "Jakarta dan jakarta?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sama otomatis",
+              "description": ""
+            },
+            {
+              "label": "Kategori berbeda bagi komputer",
+              "description": ""
+            },
+            {
+              "label": "Selalu salah",
+              "description": ""
+            },
+            {
+              "label": "Tidak penting",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Huruf besar kecil.",
+          "explanation": "Perlu normalisasi."
+        },
+        {
+          "q": "Duplikat sah bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "Selalu salah",
+              "description": ""
+            },
+            {
+              "label": "Transaksi identik pada waktu berbeda",
+              "description": ""
+            },
+            {
+              "label": "Baris kosong",
+              "description": ""
+            },
+            {
+              "label": "Kolom sama",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kunci.",
+          "explanation": "Tentukan kunci unik."
+        },
+        {
+          "q": "Aturan IQR menandai di luar?",
+          "code": null,
+          "options": [
+            {
+              "label": "Q1-1,5IQR dan Q3+1,5IQR",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata ± 1",
+              "description": ""
+            },
+            {
+              "label": "Median ± 2",
+              "description": ""
+            },
+            {
+              "label": "Min dan maks",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kuartil.",
+          "explanation": "Tanpa asumsi normal."
+        },
+        {
+          "q": "Pencilan sebaiknya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Langsung dihapus",
+              "description": ""
+            },
+            {
+              "label": "Diselidiki",
+              "description": ""
+            },
+            {
+              "label": "Diabaikan",
+              "description": ""
+            },
+            {
+              "label": "Dikuadratkan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Selidiki.",
+          "explanation": "Bisa informatif."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membiarkan kode khusus seperti -999 sebagai angka asli. Lebih baik: Ganti dengan nilai hilang sebelum menghitung.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membiarkan kode khusus seperti -999 sebagai angka asli.",
+          "fix": "Ganti dengan nilai hilang sebelum menghitung."
+        },
+        {
+          "mistake": "Membersihkan manual tanpa catatan.",
+          "fix": "Tulis kode pembersihan yang dapat diulang."
+        },
+        {
+          "mistake": "Menghapus semua pencilan otomatis.",
+          "fix": "Selidiki dulu, bisa jadi informatif."
+        }
+      ],
+      "summary": [
+        "Hitung nilai hilang dalam semua bentuknya.",
+        "Normalisasi teks dan hapus duplikat berdasarkan kunci.",
+        "Validasi rentang dengan aturan eksplisit.",
+        "Tandai pencilan dengan IQR lalu selidiki."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Memeriksa kualitas data"
+          },
+          {
+            "type": "text",
+            "source": "Dua dari tiga baris tidak memiliki umur, sedangkan nama lengkap."
+          },
+          {
+            "type": "code",
+            "source": "rows = [\n    {\"nama\": \"A\", \"umur\": 20},\n    {\"nama\": \"B\", \"umur\": None},\n    {\"nama\": \"C\", \"umur\": None},\n]\nkolom = {k for r in rows for k in r}\nhilang = {k: sum(1 for r in rows if r.get(k) in (None, \"\")) for k in sorted(kolom)}\nprint(hilang)"
+          },
+          {
+            "type": "text",
+            "source": "Setelah dirapikan tiga ejaan menjadi satu kategori Jakarta dengan tiga kemunculan."
+          },
+          {
+            "type": "code",
+            "source": "from collections import Counter\n\nkota = [\"Jakarta\", \" jakarta\", \"JAKARTA\", \"Bandung\"]\nbersih = [\" \".join(k.split()).title() for k in kota]\nprint(sorted(Counter(bersih).items()))"
+          },
+          {
+            "type": "text",
+            "source": "Menghapus duplikat dengan urutan terjaga menghasilkan satu, dua, tiga, dan ada dua entri yang berlebih."
+          },
+          {
+            "type": "code",
+            "source": "data = [1, 2, 2, 3, 1]\nprint(list(dict.fromkeys(data)), len(data) - len(set(data)))"
+          },
+          {
+            "type": "text",
+            "source": "Posisi satu, dua, dan empat memiliki umur di luar rentang yang masuk akal."
+          },
+          {
+            "type": "code",
+            "source": "umur = [25, -3, 130, 40, 200]\nprint([i for i, u in enumerate(umur) if not 0 <= u <= 120])"
+          },
+          {
+            "type": "text",
+            "source": "Kuartil pertama sebelas dan ketiga dua belas koma lima menghasilkan batas atas empat belas koma tujuh lima, sehingga sembilan puluh lima ditandai sebagai pencilan."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\ndata = [10, 12, 11, 13, 12, 11, 95]\nq1, _, q3 = statistics.quantiles(data, n=4, method=\"inclusive\")\niqr = q3 - q1\nluar = [x for x in data if x < q1 - 1.5 * iqr or x > q3 + 1.5 * iqr]\nprint(q1, q3, luar)"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

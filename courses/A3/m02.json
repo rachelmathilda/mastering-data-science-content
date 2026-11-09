@@ -1,0 +1,1580 @@
+{
+  "schema_version": 2,
+  "course_id": "A3",
+  "module_no": 2,
+  "title": "Turunan dan aturan dasarnya",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memahami turunan sebagai laju perubahan",
+    "Memakai aturan turunan termasuk aturan rantai",
+    "Menerapkan turunan pada neuron dan gradient check"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A3-02-1",
+    "exercise_id": "A3-02-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def turunan_kedua(f, x, h=1e-3):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A3-02-1",
+      "title": "Turunan sebagai laju perubahan",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami turunan sebagai limit rasio perubahan",
+        "Menafsirkan turunan sebagai kemiringan garis singgung",
+        "Menghitung turunan numerik dengan selisih maju dan pusat",
+        "Menghitung turunan kedua dan menafsirkan kelengkungan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Seberapa cepat berubah",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Seberapa cepat berubah\n\nKecepatan mobil adalah laju perubahan posisi terhadap waktu. Bila posisi berubah seratus kilometer dalam dua jam, kecepatan rata-ratanya lima puluh kilometer per jam. Namun speedometer menunjukkan kecepatan **sesaat**, yaitu laju pada satu detik tertentu. Untuk mendapatkannya kita menghitung laju rata-rata pada selang yang makin pendek dan melihat nilai yang didekati. Itulah ide turunan.\n\nTurunan fungsi `f` di titik `x` didefinisikan sebagai limit `(f(x + h) - f(x)) / h` saat `h` menuju nol. Pembilangnya adalah perubahan nilai fungsi dan penyebutnya perubahan masukan. Hasilnya, ditulis `f'(x)` atau `df/dx`, memberi tahu seberapa cepat `f` berubah saat `x` bergeser sedikit."
+            },
+            {
+              "type": "code_example",
+              "filename": "turunan_definisi.py",
+              "runnable": true,
+              "code": "def f(x):\n    return x ** 2\n\nprint([round((f(3 + h) - f(3)) / h, 4) for h in (0.1, 0.01, 0.001)])\nprint(round((f(3 + 0.1) - f(3 - 0.1)) / 0.2, 4))",
+              "expected_output_note": "[6.1, 6.01, 6.001]\n6.0",
+              "explanation": "Rasio perubahan mendekati enam saat `h` mengecil, sehingga turunan `x^2` di tiga adalah enam. Selisih pusat memberi enam bahkan dengan `h` yang masih besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kemiringan garis singgung\n\nSecara geometris, `(f(x + h) - f(x)) / h` adalah kemiringan garis yang melalui dua titik pada grafik, yang disebut garis **sekan**. Saat `h` mengecil, titik kedua mendekati titik pertama dan garis sekan mendekati **garis singgung**, yaitu garis yang menyentuh kurva di satu titik dengan arah yang sama. Jadi turunan adalah kemiringan garis singgung.\n\nGaris singgung di titik `a` memiliki persamaan `y = f(a) + f'(a) (x - a)`. Ini adalah aproksimasi linear terbaik fungsi di dekat `a`. Dalam optimasi, pendekatan ini penting: dengan melihat kemiringan lokal kita tahu arah mana yang menurunkan fungsi, tanpa harus mengetahui bentuk seluruh fungsi."
+            },
+            {
+              "type": "code_example",
+              "filename": "garis_singgung.py",
+              "runnable": true,
+              "code": "def f(x):\n    return x ** 2 + 1\n\ndef turunan(f, x, h=1e-6):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\na = 2.0\nm = turunan(f, a)\n\ndef garis(x):\n    return f(a) + m * (x - a)\n\nprint(round(m, 4), f(a))\nprint(round(abs(f(2.1) - garis(2.1)), 4), round(abs(f(2.01) - garis(2.01)), 4))",
+              "expected_output_note": "4.0 5.0\n0.01 0.0001",
+              "explanation": "Kemiringan di dua adalah empat. Galat aproksimasi garis singgung mengecil sangat cepat, sepersepuluh jarak menghasilkan seperseratus galat."
+            }
+          ],
+          "quick_check": {
+            "question": "Turunan adalah?",
+            "options": [
+              "Limit laju perubahan",
+              "Nilai fungsi"
+            ],
+            "answer_index": 0,
+            "explanation": "Limit rasio perubahan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tafsir tanda turunan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tafsir tanda turunan\n\nTanda turunan memberi informasi arah. Bila `f'(x) > 0` fungsi naik di sekitar `x`, bila `f'(x) < 0` fungsi turun, dan bila `f'(x) = 0` kemiringannya datar sehingga `x` adalah **titik kritis**: kandidat puncak, lembah, atau titik datar biasa. Besarnya turunan mengukur kecuraman. Turunan besar berarti perubahan cepat.\n\nInilah dasar **gradient descent**. Untuk meminimalkan loss, geser parameter melawan tanda turunan: bila turunan positif, kurangi parameter, bila negatif, tambah. Turunan nol berarti kita sudah di titik datar. Seluruh pelatihan model modern, dari regresi sederhana sampai jaringan raksasa, bertumpu pada penggunaan turunan sebagai kompas ini."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Menuju gradien",
+              "markdown": "Untuk fungsi berparameter banyak, turunan menjadi vektor turunan parsial yang disebut gradien. Modul berikutnya membahasnya. Konsep satu variabel di sini adalah fondasinya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Turunan numerik\n\nBila rumus turunan sulit didapat, kita bisa menghampirinya secara numerik. **Selisih maju** `(f(x + h) - f(x)) / h` sederhana tetapi galatnya sebanding dengan `h`. **Selisih pusat** `(f(x + h) - f(x - h)) / (2 h)` jauh lebih akurat karena galatnya sebanding dengan `h^2`. Karena itu selisih pusat jadi pilihan standar.\n\nMemilih `h` adalah kompromi. Bila terlalu besar, galat pemotongan membesar. Bila terlalu kecil, dua nilai fungsi hampir sama dan selisihnya dirusak galat pembulatan floating point. Nilai sekitar `1e-5` sampai `1e-6` untuk selisih pusat biasanya baik pada presisi ganda. Turunan numerik tidak efisien untuk melatih model, tetapi sangat berguna untuk memeriksa turunan analitik, teknik yang disebut gradient check."
+            },
+            {
+              "type": "code_example",
+              "filename": "aturan_pangkat.py",
+              "runnable": true,
+              "code": "import math\n\ndef turun(f, x, h=1e-6):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\nhasil = [\n    turun(lambda x: x ** 3, 2),\n    turun(math.sqrt, 4),\n    turun(lambda x: 1 / x, 2),\n    turun(math.exp, 0),\n    turun(math.log, 1),\n    turun(math.sin, 0),\n    turun(math.cos, 0),\n]\nprint([round(v, 4) for v in hasil])",
+              "expected_output_note": "[12.0, 0.25, -0.25, 1.0, 1.0, 1.0, 0.0]",
+              "explanation": "Nilai numerik cocok dengan rumus analitik: `3x^2`, `1/(2 sqrt x)`, `-1/x^2`, `e^x`, `1/x`, `cos x`, dan `-sin x` pada titik masing-masing."
+            }
+          ],
+          "quick_check": {
+            "question": "Turunan geometrisnya?",
+            "options": [
+              "Luas",
+              "Kemiringan garis singgung"
+            ],
+            "answer_index": 1,
+            "explanation": "Kemiringan di satu titik.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Turunan kedua dan kelengkungan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Turunan kedua dan kelengkungan\n\nTurunan dari turunan disebut **turunan kedua**, ditulis `f''(x)`. Ia mengukur bagaimana kemiringan berubah. Bila `f''(x) > 0` kurva melengkung ke atas seperti mangkuk, dan titik kritis di sana adalah minimum lokal. Bila `f''(x) < 0` kurva melengkung ke bawah dan titik kritisnya maksimum lokal.\n\nSecara numerik, turunan kedua dihampiri oleh `(f(x + h) - 2 f(x) + f(x - h)) / h^2`. Dalam optimasi turunan kedua menunjukkan seberapa cepat kemiringan berubah, informasi yang dimanfaatkan metode Newton dan memengaruhi pilihan learning rate. Fungsi dengan turunan kedua besar sangat melengkung sehingga langkah gradient descent harus kecil agar tidak melompat melewati lembah."
+            },
+            {
+              "type": "text",
+              "markdown": "## Turunan tidak selalu ada\n\nTidak semua fungsi punya turunan di setiap titik. Fungsi `|x|` kontinu di nol tetapi bersiku sehingga kemiringan kiri minus satu dan kanan satu, jadi turunan di nol tidak ada. Fungsi yang melompat atau memiliki asimtot juga tidak diturunkan di titik putusnya. Karena itu bisa dikatakan bahwa dapat diturunkan lebih kuat daripada kontinu: setiap fungsi yang dapat diturunkan pasti kontinu, tetapi tidak sebaliknya.\n\nDalam praktik ML, titik tak terturunkan seperti pada ReLU di nol diatasi dengan konvensi sederhana, dan hampir tidak pernah menjadi masalah karena peluang masukan tepat nol sangat kecil."
+            }
+          ],
+          "quick_check": {
+            "question": "Turunan positif berarti?",
+            "options": [
+              "Fungsi naik",
+              "Fungsi turun"
+            ],
+            "answer_index": 0,
+            "explanation": "Fungsi naik.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-02-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `turunan_maju(f, x, h)` yang mengembalikan `(f(x + h) - f(x)) / h` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def turunan_maju(f, x, h):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "turunan_maju(lambda x: x ** 2, 3, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_maju(lambda x: x ** 2, 3, 0.1) == 6.1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "turunan_maju(lambda x: x ** 2, 3, 0.01)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_maju(lambda x: x ** 2, 3, 0.01) == 6.01"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "turunan_maju(lambda x: 2 * x + 1, 5, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_maju(lambda x: 2 * x + 1, 5, 0.5) == 2.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "turunan_maju(lambda x: 7, 1, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_maju(lambda x: 7, 1, 0.1) == 0.0"
+              }
+            ]
+          },
+          "hint": "Hitung selisih nilai fungsi lalu bagi dengan h.",
+          "solution": "def turunan_maju(f, x, h):\n    return round((f(x + h) - f(x)) / h, 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-02-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `turunan_pusat(f, x, h=1e-5)` yang mengembalikan selisih pusat dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef turunan_pusat(f, x, h=1e-5):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "turunan_pusat(lambda x: x ** 2, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_pusat(lambda x: x ** 2, 3) == 6.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "turunan_pusat(lambda x: x ** 3, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_pusat(lambda x: x ** 3, 2) == 12.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "turunan_pusat(math.sin, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_pusat(math.sin, 0) == 1.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "turunan_pusat(lambda x: 5, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_pusat(lambda x: 5, 2) == 0.0"
+              }
+            ]
+          },
+          "hint": "Bagi selisih f(x + h) dikurangi f(x - h) dengan dua kali h.",
+          "solution": "import math\n\ndef turunan_pusat(f, x, h=1e-5):\n    return round((f(x + h) - f(x - h)) / (2 * h) + 0.0, 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-02-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `persamaan_singgung(f, a)` yang mengembalikan tuple `(kemiringan, intersep)` dari garis singgung `y = m x + c` di titik `a`, memakai selisih pusat `h=1e-6`.",
+          "note": "Bulatkan keduanya 4 desimal dan hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def persamaan_singgung(f, a):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "persamaan_singgung(lambda x: x ** 2, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persamaan_singgung(lambda x: x ** 2, 2) == (4.0, -4.0)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "persamaan_singgung(lambda x: x ** 3, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persamaan_singgung(lambda x: x ** 3, 1) == (3.0, -2.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "persamaan_singgung(lambda x: 2 * x + 1, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persamaan_singgung(lambda x: 2 * x + 1, 5) == (2.0, 1.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "persamaan_singgung(lambda x: x ** 2 + 1, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert persamaan_singgung(lambda x: x ** 2 + 1, 0) == (0.0, 1.0)"
+              }
+            ]
+          },
+          "hint": "Intersep sama dengan f(a) dikurangi kemiringan kali a.",
+          "solution": "def persamaan_singgung(f, a):\n    h = 1e-6\n    m = (f(a + h) - f(a - h)) / (2 * h)\n    c = f(a) - m * a\n    return (round(m, 4) + 0.0, round(c, 4) + 0.0)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-02-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `turunan_kedua(f, x, h=1e-3)` yang mengembalikan `(f(x + h) - 2 f(x) + f(x - h)) / h^2` dibulatkan 3 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef turunan_kedua(f, x, h=1e-3):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "turunan_kedua(lambda x: x ** 3, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_kedua(lambda x: x ** 3, 2) == 12.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "turunan_kedua(math.sin, math.pi / 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_kedua(math.sin, math.pi / 2) == -1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "turunan_kedua(lambda x: x ** 2, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_kedua(lambda x: x ** 2, 5) == 2.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "turunan_kedua(lambda x: x, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_kedua(lambda x: x, 4) == 0.0"
+              }
+            ]
+          },
+          "hint": "Gunakan tiga nilai fungsi: di x tambah h, di x, dan di x kurang h.",
+          "solution": "import math\n\ndef turunan_kedua(f, x, h=1e-3):\n    return round((f(x + h) - 2 * f(x) + f(x - h)) / (h * h), 3) + 0.0",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Turunan adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nilai fungsi",
+              "description": ""
+            },
+            {
+              "label": "Limit laju perubahan",
+              "description": ""
+            },
+            {
+              "label": "Integral",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Laju.",
+          "explanation": "Limit rasio perubahan."
+        },
+        {
+          "q": "Turunan geometrisnya?",
+          "code": null,
+          "options": [
+            {
+              "label": "Luas",
+              "description": ""
+            },
+            {
+              "label": "Kemiringan garis singgung",
+              "description": ""
+            },
+            {
+              "label": "Panjang kurva",
+              "description": ""
+            },
+            {
+              "label": "Titik potong",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Singgung.",
+          "explanation": "Kemiringan di satu titik."
+        },
+        {
+          "q": "Turunan positif berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Fungsi turun",
+              "description": ""
+            },
+            {
+              "label": "Fungsi naik",
+              "description": ""
+            },
+            {
+              "label": "Fungsi datar",
+              "description": ""
+            },
+            {
+              "label": "Fungsi tak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Arah.",
+          "explanation": "Fungsi naik."
+        },
+        {
+          "q": "Selisih pusat lebih akurat karena?",
+          "code": null,
+          "options": [
+            {
+              "label": "Galat sebanding h kuadrat",
+              "description": ""
+            },
+            {
+              "label": "Memakai satu titik",
+              "description": ""
+            },
+            {
+              "label": "Tanpa pembagian",
+              "description": ""
+            },
+            {
+              "label": "Tanpa fungsi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Simetris.",
+          "explanation": "Galatnya orde dua."
+        },
+        {
+          "q": "Turunan kedua positif berarti?",
+          "code": null,
+          "options": [
+            {
+              "label": "Melengkung ke bawah",
+              "description": ""
+            },
+            {
+              "label": "Melengkung ke atas",
+              "description": ""
+            },
+            {
+              "label": "Garis lurus",
+              "description": ""
+            },
+            {
+              "label": "Tak terdefinisi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kelengkungan.",
+          "explanation": "Seperti mangkuk."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menganggap turunan hanyalah rumus yang dihafal. Lebih baik: Turunan adalah limit laju perubahan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menganggap turunan hanyalah rumus yang dihafal.",
+          "fix": "Turunan adalah limit laju perubahan."
+        },
+        {
+          "mistake": "Memakai h terlalu kecil pada turunan numerik.",
+          "fix": "Pakai sekitar 1e-5 sampai 1e-6 dengan selisih pusat."
+        },
+        {
+          "mistake": "Menyamakan turunan nol dengan minimum.",
+          "fix": "Titik kritis bisa maksimum atau titik datar."
+        }
+      ],
+      "summary": [
+        "Turunan adalah limit laju perubahan dan kemiringan garis singgung.",
+        "Tanda turunan menunjukkan fungsi naik atau turun.",
+        "Selisih pusat adalah turunan numerik yang lebih akurat.",
+        "Turunan kedua mengukur kelengkungan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Turunan sebagai laju perubahan"
+          },
+          {
+            "type": "text",
+            "source": "Rasio perubahan mendekati enam saat `h` mengecil, sehingga turunan `x^2` di tiga adalah enam. Selisih pusat memberi enam bahkan dengan `h` yang masih besar."
+          },
+          {
+            "type": "code",
+            "source": "def f(x):\n    return x ** 2\n\nprint([round((f(3 + h) - f(3)) / h, 4) for h in (0.1, 0.01, 0.001)])\nprint(round((f(3 + 0.1) - f(3 - 0.1)) / 0.2, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Kemiringan di dua adalah empat. Galat aproksimasi garis singgung mengecil sangat cepat, sepersepuluh jarak menghasilkan seperseratus galat."
+          },
+          {
+            "type": "code",
+            "source": "def f(x):\n    return x ** 2 + 1\n\ndef turunan(f, x, h=1e-6):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\na = 2.0\nm = turunan(f, a)\n\ndef garis(x):\n    return f(a) + m * (x - a)\n\nprint(round(m, 4), f(a))\nprint(round(abs(f(2.1) - garis(2.1)), 4), round(abs(f(2.01) - garis(2.01)), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Nilai numerik cocok dengan rumus analitik: `3x^2`, `1/(2 sqrt x)`, `-1/x^2`, `e^x`, `1/x`, `cos x`, dan `-sin x` pada titik masing-masing."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef turun(f, x, h=1e-6):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\nhasil = [\n    turun(lambda x: x ** 3, 2),\n    turun(math.sqrt, 4),\n    turun(lambda x: 1 / x, 2),\n    turun(math.exp, 0),\n    turun(math.log, 1),\n    turun(math.sin, 0),\n    turun(math.cos, 0),\n]\nprint([round(v, 4) for v in hasil])"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A3-02-2",
+      "title": "Aturan turunan",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghitung turunan dengan aturan pangkat, jumlah, dan konstanta",
+        "Memakai aturan kali dan aturan bagi",
+        "Memakai aturan rantai untuk komposisi",
+        "Menghafal turunan fungsi dasar eksponen, log, dan trigonometri"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari definisi ke aturan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari definisi ke aturan\n\nMenghitung limit tiap kali tentu melelahkan. Untungnya ada aturan yang membuat turunan hampir mekanis. **Aturan konstanta**: turunan konstanta nol. **Aturan pangkat**: turunan `x^n` adalah `n x^(n-1)`. **Aturan kelipatan**: konstanta dapat dikeluarkan. **Aturan jumlah**: turunan jumlah adalah jumlah turunan. Dengan empat aturan ini polinom apa pun dapat diturunkan suku demi suku.\n\nContoh: turunan `3x^4 - 2x^2 + 5x - 7` adalah `12x^3 - 4x + 5`. Aturan pangkat juga berlaku untuk pangkat pecahan dan negatif: `sqrt(x) = x^(1/2)` memiliki turunan `1/2 x^(-1/2)`, dan `1/x = x^-1` memiliki turunan `-x^-2`. Satu aturan sederhana mencakup sangat banyak kasus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Turunan fungsi dasar\n\nBeberapa turunan perlu dihafal. Turunan `e^x` adalah `e^x` itu sendiri: fungsi yang laju pertumbuhannya sama dengan nilainya, itulah mengapa eksponen muncul di mana-mana dalam pertumbuhan alami. Turunan `ln x` adalah `1/x`. Turunan `sin x` adalah `cos x` dan turunan `cos x` adalah `-sin x`, dengan `x` dalam radian.\n\nHafalan ini ditambah aturan di bawah cukup untuk menurunkan hampir semua fungsi yang kamu temui dalam ML. Selalu periksa jawaban dengan turunan numerik pada satu dua titik. Kebiasaan ini menangkap kesalahan aljabar sebelum menjadi bug di model."
+            },
+            {
+              "type": "text",
+              "markdown": "## Aturan kali dan bagi\n\nTurunan hasil kali bukan hasil kali turunan. **Aturan kali**: `(f g)' = f' g + f g'`. Ingat sebagai: turunkan yang pertama dikali yang kedua tetap, ditambah yang pertama tetap dikali turunan kedua. Intuisinya: luas persegi panjang `f x g` berubah karena kedua sisinya berubah, dan tiap sisi menyumbang sendiri.\n\n**Aturan bagi**: `(f / g)' = (f' g - f g') / g^2`. Tanda minus dan urutan suku penting, jadi hati-hati. Pada banyak kasus kamu bisa menulis ulang pembagian sebagai perkalian dengan pangkat negatif dan memakai aturan kali serta rantai, yang sering lebih sedikit salah."
+            },
+            {
+              "type": "code_example",
+              "filename": "aturan_kali_bagi.py",
+              "runnable": true,
+              "code": "import math\n\ndef turun(f, x, h=1e-6):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\nf1 = lambda x: x ** 2 * math.sin(x)\na1 = 2 * 1 * math.sin(1) + 1 ** 2 * math.cos(1)\nprint(round(a1, 4), round(turun(f1, 1), 4))\n\nf2 = lambda x: math.sin(x) / x\nx0 = math.pi / 2\na2 = (x0 * math.cos(x0) - math.sin(x0)) / x0 ** 2\nprint(round(a2, 4), round(turun(f2, x0), 4))",
+              "expected_output_note": "2.2232 2.2232\n-0.4053 -0.4053",
+              "explanation": "Rumus analitik aturan kali dan bagi cocok dengan turunan numerik pada kedua contoh."
+            }
+          ],
+          "quick_check": {
+            "question": "Turunan x^n?",
+            "options": [
+              "n x^(n-1)",
+              "x^(n+1)"
+            ],
+            "answer_index": 0,
+            "explanation": "Aturan pangkat.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Aturan rantai",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Aturan rantai\n\nAturan paling penting untuk ML adalah **aturan rantai**, untuk komposisi fungsi. Bila `h(x) = f(g(x))`, maka `h'(x) = f'(g(x)) g'(x)`. Turunkan fungsi luar di titik fungsi dalam, lalu kalikan dengan turunan fungsi dalam. Intuisinya, laju `f` terhadap `x` adalah laju `f` terhadap `g` dikali laju `g` terhadap `x`: faktor-faktor perubahan saling mengalikan.\n\nContoh: `h(x) = (3x + 1)^5`. Fungsi luar `u^5` memiliki turunan `5u^4`, fungsi dalam `3x + 1` memiliki turunan tiga, sehingga `h'(x) = 15 (3x + 1)^4`. Contoh lain: `e^(-x^2)` memiliki turunan `-2x e^(-x^2)`. Untuk rantai panjang, kalikan turunan tiap mata rantai dari luar ke dalam."
+            },
+            {
+              "type": "code_example",
+              "filename": "aturan_rantai.py",
+              "runnable": true,
+              "code": "import math\n\ndef turun(f, x, h=1e-6):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\na1 = 15 * (3 * 1 + 1) ** 4\nn1 = turun(lambda x: (3 * x + 1) ** 5, 1, 1e-5)\nprint(a1, round(n1, 2))\na2 = -2 * 1 * math.exp(-1)\nn2 = turun(lambda x: math.exp(-x ** 2), 1)\nprint(round(a2, 4), round(n2, 4))",
+              "expected_output_note": "3840 3840.0\n-0.7358 -0.7358",
+              "explanation": "Aturan rantai menghasilkan 3840 untuk pangkat lima dan sekitar minus 0,7358 untuk eksponen gaussian, sesuai hitungan numerik."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Jangan lupa faktor dalam",
+              "markdown": "Kesalahan paling umum dengan aturan rantai adalah lupa mengalikan turunan fungsi dalam. Turunan `sin(3x)` adalah `3 cos(3x)`, bukan `cos(3x)`."
+            }
+          ],
+          "quick_check": {
+            "question": "Turunan e^x?",
+            "options": [
+              "x e^x",
+              "e^x"
+            ],
+            "answer_index": 1,
+            "explanation": "e^x tetap e^x.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memeriksa dengan turunan kedua dan numerik",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memeriksa dengan turunan kedua dan numerik\n\nSetelah menurunkan sekali, kamu dapat menurunkan lagi. Turunan kedua polinom diperoleh dengan menerapkan aturan pangkat dua kali, misalnya turunan kedua `x^3` adalah `6x`. Turunan kedua bernilai besar menandakan fungsi sangat melengkung, dan pada optimasi hal ini memengaruhi ukuran langkah yang aman.\n\nUntuk memverifikasi hasil, bandingkan dengan turunan numerik. Kedua hitungan harus sama sampai beberapa desimal. Bila tidak, ada kesalahan aljabar atau kesalahan kode. Pemeriksaan ini adalah praktik baku yang disebut gradient check, dan nanti akan kamu pakai pada model yang gradiennya ditulis tangan."
+            },
+            {
+              "type": "code_example",
+              "filename": "turunan_tabel.py",
+              "runnable": true,
+              "code": "import math\n\ndef kedua(f, x, h=1e-3):\n    return (f(x + h) - 2 * f(x) + f(x - h)) / h ** 2\n\nprint([round(kedua(lambda x: x ** 3, 2), 3), round(kedua(math.sin, math.pi / 2), 3)])\nprint(6 * 2, round(-math.sin(math.pi / 2), 3))",
+              "expected_output_note": "[12.0, -1.0]\n12 -1.0",
+              "explanation": "Turunan kedua numerik cocok dengan rumus `6x` untuk `x^3` dan `-sin x` untuk sinus."
+            },
+            {
+              "type": "text",
+              "markdown": "## Latihan berpikir dengan aturan\n\nCobalah menurunkan `f(x) = x e^(2x)` sebelum membaca lanjutan. Ini hasil kali `x` dan `e^(2x)`. Aturan kali memberi `1 * e^(2x) + x * (e^(2x) * 2)`, karena turunan `e^(2x)` memakai aturan rantai dengan faktor dua. Hasilnya `e^(2x) (1 + 2x)`. Langkah demi langkah seperti ini membuat soal yang tampak rumit menjadi pekerjaan mekanis.\n\nKebiasaan baik: tulis dulu struktur fungsi, apakah penjumlahan, perkalian, pembagian, atau komposisi, lalu terapkan aturan yang sesuai dari luar ke dalam. Setelah itu verifikasi numerik di satu titik. Dua pemeriksaan ini menyelamatkanmu dari sebagian besar kesalahan."
+            }
+          ],
+          "quick_check": {
+            "question": "Aturan kali?",
+            "options": [
+              "f' g + f g'",
+              "f' g'"
+            ],
+            "answer_index": 0,
+            "explanation": "Turunkan satu per satu.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-02-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `turunan_pangkat(n, x)` yang mengembalikan turunan `x^n` di titik `x`, yaitu `n * x ** (n - 1)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def turunan_pangkat(n, x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "turunan_pangkat(3, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_pangkat(3, 2) == 12"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "turunan_pangkat(2, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_pangkat(2, 5) == 10"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "turunan_pangkat(0, 7)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_pangkat(0, 7) == 0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "turunan_pangkat(-1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_pangkat(-1, 2) == -0.25"
+              }
+            ]
+          },
+          "hint": "Terapkan aturan pangkat langsung.",
+          "solution": "def turunan_pangkat(n, x):\n    return n * x ** (n - 1)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-02-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `turunan_polinom(koef)` yang menerima koefisien polinom dari pangkat tertinggi ke terendah dan mengembalikan koefisien turunannya dalam urutan yang sama.",
+          "note": "Untuk polinom konstan kembalikan `[0]`.",
+          "filename": "solution.py",
+          "starter_code": "def turunan_polinom(koef):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "turunan_polinom([1, 0, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_polinom([1, 0, 1]) == [2, 0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "turunan_polinom([3, 2, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_polinom([3, 2, 1]) == [6, 2]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "turunan_polinom([5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_polinom([5]) == [0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "turunan_polinom([1, -3, 2, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_polinom([1, -3, 2, 4]) == [3, -6, 2]"
+              }
+            ]
+          },
+          "hint": "Kalikan tiap koefisien dengan pangkatnya lalu buang suku konstan.",
+          "solution": "def turunan_polinom(koef):\n    n = len(koef) - 1\n    if n == 0:\n        return [0]\n    return [c * (n - i) for i, c in enumerate(koef[:-1])]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-02-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rantai(df, g, dg, x)` yang mengembalikan turunan komposisi `f(g(x))` di `x` dengan aturan rantai `df(g(x)) * dg(x)`, dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef rantai(df, g, dg, x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rantai(lambda u: 2 * u, lambda x: 3 * x + 1, ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rantai(lambda u: 2 * u, lambda x: 3 * x + 1, lambda x: 3, 1) == 24.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rantai(math.cos, lambda x: x ** 2, lambda x: ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rantai(math.cos, lambda x: x ** 2, lambda x: 2 * x, 0) == 0.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rantai(math.exp, lambda x: -x ** 2, lambda x:...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rantai(math.exp, lambda x: -x ** 2, lambda x: -2 * x, 1) == -0.7358"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rantai(lambda u: 1 / u, lambda x: x ** 2 + 1,...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rantai(lambda u: 1 / u, lambda x: x ** 2 + 1, lambda x: 2 * x, 1) == 1.0"
+              }
+            ]
+          },
+          "hint": "Hitung turunan fungsi luar di g(x) lalu kalikan dengan turunan fungsi dalam.",
+          "solution": "import math\n\ndef rantai(df, g, dg, x):\n    return round(df(g(x)) * dg(x), 4) + 0.0",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-02-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `turunan_dual(f, x)` yang menghitung turunan `f` di `x` dengan diferensiasi otomatis mode maju memakai bilangan dual.",
+          "note": "Definisikan kelas `Dual` dengan nilai dan turunan, yang mendukung `+`, `-`, `*`, `/` (termasuk dengan bilangan biasa di kiri atau kanan) dan `** n` untuk `n` bulat. Panggil `f(Dual(x, 1.0))` dan kembalikan turunannya dibulatkan 4 desimal. Bila `f` mengembalikan bilangan biasa kembalikan `0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def turunan_dual(f, x):\n    # TODO: definisikan kelas Dual dan implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "turunan_dual(lambda x: x * x * x + 2 * x, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_dual(lambda x: x * x * x + 2 * x, 2) == 14.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "turunan_dual(lambda x: (x + 1) * (x - 1), 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_dual(lambda x: (x + 1) * (x - 1), 3) == 6.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "turunan_dual(lambda x: x / (x + 1), 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_dual(lambda x: x / (x + 1), 1) == 0.25"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "turunan_dual(lambda x: x ** 3, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_dual(lambda x: x ** 3, 2) == 12.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "turunan_dual(lambda x: 3, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_dual(lambda x: 3, 5) == 0.0"
+              },
+              {
+                "id": 6,
+                "name": "Kasus 6",
+                "label": "turunan_dual(lambda x: 1 / x, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_dual(lambda x: 1 / x, 2) == -0.25"
+              }
+            ]
+          },
+          "hint": "Simpan pasangan nilai dan turunan lalu terapkan aturan jumlah, kali, bagi, dan pangkat pada setiap operasi.",
+          "solution": "class Dual:\n    def __init__(self, v, d=0.0):\n        self.v = v\n        self.d = d\n\n    def _w(self, o):\n        return o if isinstance(o, Dual) else Dual(o, 0.0)\n\n    def __add__(self, o):\n        o = self._w(o)\n        return Dual(self.v + o.v, self.d + o.d)\n\n    __radd__ = __add__\n\n    def __sub__(self, o):\n        o = self._w(o)\n        return Dual(self.v - o.v, self.d - o.d)\n\n    def __rsub__(self, o):\n        return self._w(o) - self\n\n    def __mul__(self, o):\n        o = self._w(o)\n        return Dual(self.v * o.v, self.d * o.v + self.v * o.d)\n\n    __rmul__ = __mul__\n\n    def __truediv__(self, o):\n        o = self._w(o)\n        return Dual(self.v / o.v, (self.d * o.v - self.v * o.d) / o.v ** 2)\n\n    def __rtruediv__(self, o):\n        return self._w(o) / self\n\n    def __pow__(self, n):\n        return Dual(self.v ** n, n * self.v ** (n - 1) * self.d)\n\ndef turunan_dual(f, x):\n    r = f(Dual(x, 1.0))\n    if isinstance(r, Dual):\n        return round(float(r.d), 4) + 0.0\n    return 0.0",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Turunan x^n?",
+          "code": null,
+          "options": [
+            {
+              "label": "n x^(n-1)",
+              "description": ""
+            },
+            {
+              "label": "x^(n+1)",
+              "description": ""
+            },
+            {
+              "label": "n x",
+              "description": ""
+            },
+            {
+              "label": "x^n",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pangkat turun satu.",
+          "explanation": "Aturan pangkat."
+        },
+        {
+          "q": "Turunan e^x?",
+          "code": null,
+          "options": [
+            {
+              "label": "x e^x",
+              "description": ""
+            },
+            {
+              "label": "e^x",
+              "description": ""
+            },
+            {
+              "label": "e^(x-1)",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dirinya sendiri.",
+          "explanation": "e^x tetap e^x."
+        },
+        {
+          "q": "Aturan kali?",
+          "code": null,
+          "options": [
+            {
+              "label": "f' g'",
+              "description": ""
+            },
+            {
+              "label": "f' g + f g'",
+              "description": ""
+            },
+            {
+              "label": "f g",
+              "description": ""
+            },
+            {
+              "label": "f' / g'",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dua suku.",
+          "explanation": "Turunkan satu per satu."
+        },
+        {
+          "q": "Aturan rantai untuk f(g(x))?",
+          "code": null,
+          "options": [
+            {
+              "label": "f'(x) g'(x)",
+              "description": ""
+            },
+            {
+              "label": "f'(g(x)) g'(x)",
+              "description": ""
+            },
+            {
+              "label": "f(g'(x))",
+              "description": ""
+            },
+            {
+              "label": "f'(g'(x))",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Rantai.",
+          "explanation": "Luar di dalam dikali turunan dalam."
+        },
+        {
+          "q": "Turunan ln x?",
+          "code": null,
+          "options": [
+            {
+              "label": "ln x",
+              "description": ""
+            },
+            {
+              "label": "1/x",
+              "description": ""
+            },
+            {
+              "label": "x",
+              "description": ""
+            },
+            {
+              "label": "e^x",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kebalikan.",
+          "explanation": "Satu per x."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menurunkan hasil kali sebagai hasil kali turunan. Lebih baik: Pakai aturan kali: f' g + f g'.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menurunkan hasil kali sebagai hasil kali turunan.",
+          "fix": "Pakai aturan kali: f' g + f g'."
+        },
+        {
+          "mistake": "Lupa mengalikan turunan fungsi dalam pada aturan rantai.",
+          "fix": "Kalikan dengan g'(x)."
+        },
+        {
+          "mistake": "Salah tanda pada aturan bagi.",
+          "fix": "Pembilangnya f' g - f g' dan penyebutnya g kuadrat."
+        }
+      ],
+      "summary": [
+        "Aturan pangkat, jumlah, kali, bagi, dan rantai membuat turunan mekanis.",
+        "Hafal turunan e^x, ln x, sin x, dan cos x.",
+        "Aturan rantai adalah dasar backpropagation.",
+        "Periksa hasil dengan turunan numerik."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Aturan turunan"
+          },
+          {
+            "type": "text",
+            "source": "Rumus analitik aturan kali dan bagi cocok dengan turunan numerik pada kedua contoh."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef turun(f, x, h=1e-6):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\nf1 = lambda x: x ** 2 * math.sin(x)\na1 = 2 * 1 * math.sin(1) + 1 ** 2 * math.cos(1)\nprint(round(a1, 4), round(turun(f1, 1), 4))\n\nf2 = lambda x: math.sin(x) / x\nx0 = math.pi / 2\na2 = (x0 * math.cos(x0) - math.sin(x0)) / x0 ** 2\nprint(round(a2, 4), round(turun(f2, x0), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Aturan rantai menghasilkan 3840 untuk pangkat lima dan sekitar minus 0,7358 untuk eksponen gaussian, sesuai hitungan numerik."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef turun(f, x, h=1e-6):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\na1 = 15 * (3 * 1 + 1) ** 4\nn1 = turun(lambda x: (3 * x + 1) ** 5, 1, 1e-5)\nprint(a1, round(n1, 2))\na2 = -2 * 1 * math.exp(-1)\nn2 = turun(lambda x: math.exp(-x ** 2), 1)\nprint(round(a2, 4), round(n2, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Turunan kedua numerik cocok dengan rumus `6x` untuk `x^3` dan `-sin x` untuk sinus."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef kedua(f, x, h=1e-3):\n    return (f(x + h) - 2 * f(x) + f(x - h)) / h ** 2\n\nprint([round(kedua(lambda x: x ** 3, 2), 3), round(kedua(math.sin, math.pi / 2), 3)])\nprint(6 * 2, round(-math.sin(math.pi / 2), 3))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A3-02-3",
+      "title": "Turunan dalam ML: aktivasi, neuron, dan gradient check",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menurunkan sigmoid, tanh, dan ReLU",
+        "Menerapkan aturan rantai pada satu neuron",
+        "Memverifikasi gradien dengan turunan numerik",
+        "Menghitung gradien numerik fungsi dengan banyak parameter"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Turunan fungsi aktivasi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Turunan fungsi aktivasi\n\nFungsi aktivasi diturunkan di setiap langkah pelatihan, sehingga turunannya harus kamu kenal. Sigmoid `s(x) = 1 / (1 + e^-x)` memiliki turunan yang indah: `s'(x) = s(x) (1 - s(x))`. Turunan dihitung dari keluarannya sendiri, sehingga efisien. Nilai maksimumnya 0,25 di `x = 0` dan mengecil menuju nol di kedua ujung.\n\nTanh memiliki turunan `1 - tanh(x)^2` dengan maksimum satu di nol. ReLU memiliki turunan nol untuk `x < 0` dan satu untuk `x > 0`, sedangkan di nol turunannya tidak terdefinisi dan praktiknya dipilih nol atau satu. Perbedaan turunan inilah yang membuat sigmoid mudah mengalami gradien menghilang pada jaringan dalam, sedangkan ReLU tidak untuk masukan positif."
+            },
+            {
+              "type": "code_example",
+              "filename": "turunan_aktivasi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef sigmoid(x):\n    return 1 / (1 + np.exp(-x))\n\ndef d_sigmoid(x):\n    s = sigmoid(x)\n    return s * (1 - s)\n\ndef d_tanh(x):\n    return 1 - np.tanh(x) ** 2\n\ndef d_relu(x):\n    return (x > 0).astype(float)\n\ndef numerik(f, x, h=1e-6):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\nx = np.array([-2.0, 0.0, 2.0])\nprint(d_sigmoid(x).round(4).tolist())\nprint(d_tanh(np.array([-1.0, 0.0, 1.0])).round(4).tolist())\nprint(d_relu(np.array([-1.0, 2.0])).tolist())\nprint(np.allclose(d_sigmoid(x), numerik(sigmoid, x)), np.allclose(d_tanh(x), numerik(np.tanh, x)))",
+              "expected_output_note": "[0.105, 0.25, 0.105]\n[0.42, 1.0, 0.42]\n[0.0, 1.0]\nTrue True",
+              "explanation": "Turunan sigmoid maksimal 0,25 di nol dan menyusut di ujung. Rumus analitik cocok dengan turunan numerik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Satu neuron dan aturan rantai\n\nNeuron paling sederhana menghitung `z = w x + b`, lalu `y = s(z)` dengan sigmoid, lalu loss kuadrat `L = (y - t)^2` terhadap target `t`. Ini rantai tiga fungsi: dari parameter ke `z`, dari `z` ke `y`, dari `y` ke `L`. Untuk mendapat `dL/dw` kita kalikan turunan tiap mata rantai.\n\nDengan aturan rantai: `dL/dw = dL/dy * dy/dz * dz/dw`. Faktor pertama `2 (y - t)`, kedua `y (1 - y)`, ketiga `x`. Untuk bias, faktor ketiga `dz/db` sama dengan satu. Perhitungan ini persis yang dilakukan backpropagation, hanya pada skala jutaan parameter dan dengan bantuan komputer untuk mengurus pembukuannya."
+            },
+            {
+              "type": "code_example",
+              "filename": "neuron_rantai.py",
+              "runnable": true,
+              "code": "import math\n\ndef sigmoid(z):\n    return 1 / (1 + math.exp(-z))\n\nw, b, x, t = 0.5, 0.1, 2.0, 1.0\nz = w * x + b\ny = sigmoid(z)\ndL_dy = 2 * (y - t)\ndy_dz = y * (1 - y)\ndz_dw = x\ndz_db = 1.0\nprint(round(z, 4), round(y, 4), round((y - t) ** 2, 4))\nprint(round(dL_dy * dy_dz * dz_dw, 4), round(dL_dy * dy_dz * dz_db, 4))",
+              "expected_output_note": "1.1 0.7503 0.0624\n-0.1872 -0.0936",
+              "explanation": "Kedua turunan negatif: menaikkan `w` dan `b` akan menurunkan loss karena prediksi masih di bawah target."
+            }
+          ],
+          "quick_check": {
+            "question": "Turunan sigmoid?",
+            "options": [
+              "s(1-s)",
+              "s"
+            ],
+            "answer_index": 0,
+            "explanation": "Dihitung dari keluarannya.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Gradient check",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Gradient check\n\nMenulis turunan tangan rawan salah, dan bug pada gradien sering tidak menimbulkan galat, hanya model yang melatih buruk tanpa sebab jelas. Karena itu praktisi memakai **gradient check**: bandingkan gradien analitik dengan gradien numerik di beberapa titik. Bila selisih relatifnya sangat kecil, sekitar `1e-6` atau kurang, gradien kemungkinan benar.\n\nSelisih relatif umum dihitung sebagai norma selisih dibagi jumlah norma kedua vektor. Ukuran relatif lebih adil daripada selisih mutlak karena memperhitungkan besarnya gradien. Lakukan gradient check pada ukuran masalah kecil karena gradien numerik membutuhkan dua evaluasi fungsi per parameter, terlalu mahal untuk model besar."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Hilangkan keacakan",
+              "markdown": "Nonaktifkan dropout dan sumber keacakan lain saat gradient check. Bila fungsi berubah antar evaluasi, perbandingan numerik tidak bermakna."
+            },
+            {
+              "type": "code_example",
+              "filename": "gradient_check.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\ndef loss(p, x=2.0, t=1.0):\n    return (sigmoid(p[0] * x + p[1]) - t) ** 2\n\ndef grad_analitik(p, x=2.0, t=1.0):\n    y = sigmoid(p[0] * x + p[1])\n    d = 2 * (y - t) * y * (1 - y)\n    return np.array([d * x, d])\n\ndef grad_numerik(f, p, h=1e-6):\n    g = np.zeros_like(p)\n    for i in range(len(p)):\n        e = np.zeros_like(p)\n        e[i] = h\n        g[i] = (f(p + e) - f(p - e)) / (2 * h)\n    return g\n\np = np.array([0.5, 0.1])\nga = grad_analitik(p)\ngn = grad_numerik(loss, p)\nprint(ga.round(4).tolist(), gn.round(4).tolist())\nrel = np.linalg.norm(ga - gn) / (np.linalg.norm(ga) + np.linalg.norm(gn))\nprint(bool(rel < 1e-6))\nsalah = ga * 1.1\nrel2 = np.linalg.norm(salah - gn) / (np.linalg.norm(salah) + np.linalg.norm(gn))\nprint(bool(rel2 < 1e-6))",
+              "expected_output_note": "[-0.1872, -0.0936] [-0.1872, -0.0936]\nTrue\nFalse",
+              "explanation": "Gradien analitik lolos pengecekan, sedangkan gradien yang salah sepuluh persen gagal. Gradient check mampu menangkap kesalahan kecil sekalipun."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dari satu neuron ke jaringan\n\nPerhitungan satu neuron tadi bisa diperluas. Jaringan berlapis hanyalah rantai yang lebih panjang: loss bergantung pada keluaran lapisan akhir, yang bergantung pada lapisan sebelumnya, dan seterusnya. Backpropagation menghitung turunan dari belakang ke depan dan menyimpan hasil antara agar tidak dihitung ulang, sehingga efisien.\n\nPustaka seperti PyTorch dan TensorFlow melakukan ini otomatis dengan diferensiasi otomatis, versi canggih dari bilangan dual yang kamu bangun pada latihan sebelumnya. Meski begitu memahami aturan rantai tetap penting untuk men-debug gradien yang meledak atau menghilang dan untuk merancang fungsi loss kustom."
+            },
+            {
+              "type": "text",
+              "markdown": "## Gradien menghilang dan meledak\n\nAturan rantai mengalikan banyak faktor turunan sepanjang lapisan. Bila faktor-faktor itu kecil, misalnya turunan sigmoid yang paling besar 0,25, hasil kali dari banyak lapisan menyusut secara eksponensial dan gradien di lapisan awal hampir nol. Itulah **gradien menghilang**: lapisan awal hampir tidak belajar. Sebaliknya bila faktornya besar, hasil kali meledak dan pelatihan menjadi tidak stabil.\n\nKarena alasan itu praktisi memilih aktivasi seperti ReLU yang turunannya satu pada daerah aktif, menginisialisasi bobot dengan skala yang tepat, dan memakai normalisasi lapisan serta koneksi residual. Semua teknik ini pada dasarnya menjaga hasil kali turunan berada pada skala yang wajar."
+            }
+          ],
+          "quick_check": {
+            "question": "Turunan ReLU untuk x positif?",
+            "options": [
+              "0",
+              "1"
+            ],
+            "answer_index": 1,
+            "explanation": "Kemiringan satu.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih fungsi loss yang baik untuk turunan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih fungsi loss yang baik untuk turunan\n\nPilihan fungsi loss memengaruhi gradien. Pada neuron sigmoid dengan loss kuadrat, gradien memuat faktor turunan sigmoid, sehingga bila neuron sangat salah tetapi jenuh, gradiennya kecil dan belajar lambat. Pada loss cross-entropy, faktor itu saling meniadakan dan gradien menjadi sekadar selisih prediksi dan target, yang tetap besar saat prediksi sangat salah.\n\nItulah salah satu alasan klasifikasi hampir selalu memakai cross-entropy, bukan galat kuadrat. Pelajaran ini menunjukkan bahwa turunan bukan hanya alat hitung. Ia membantu kita merancang masalah optimasi yang mudah dipecahkan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Merangkum modul\n\nModul ini membawamu dari definisi turunan sebagai limit sampai penerapannya pada neuron. Kamu belajar bahwa turunan adalah kemiringan dan laju perubahan, bahwa aturan pangkat, kali, bagi, dan rantai membuat penghitungan mekanis, dan bahwa aturan rantai adalah mesin di balik backpropagation.\n\nKamu juga memiliki alat verifikasi yang kuat: turunan numerik dan gradient check. Gunakan keduanya setiap kali menulis gradien sendiri. Modul berikutnya memperluas semua ini ke fungsi dengan banyak variabel, tempat turunan menjadi gradien dan gradient descent mulai bekerja pada banyak parameter sekaligus."
+            }
+          ],
+          "quick_check": {
+            "question": "dL/dw pada neuron memakai?",
+            "options": [
+              "Aturan rantai",
+              "Aturan kali saja"
+            ],
+            "answer_index": 0,
+            "explanation": "Kalikan turunan tiap mata rantai.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A3-02-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `turunan_sigmoid(x)` yang mengembalikan `s(x) * (1 - s(x))` dibulatkan 4 desimal, dengan `s` adalah sigmoid, memakai `math.exp`.",
+          "note": "Gunakan versi stabil untuk masukan sangat negatif.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef turunan_sigmoid(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "turunan_sigmoid(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_sigmoid(0) == 0.25"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "turunan_sigmoid(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_sigmoid(2) == 0.105"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "turunan_sigmoid(-2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_sigmoid(-2) == 0.105"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "turunan_sigmoid(20)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_sigmoid(20) == 0.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "turunan_sigmoid(-1000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_sigmoid(-1000) == 0.0"
+              }
+            ]
+          },
+          "hint": "Hitung sigmoid dengan cabang untuk masukan negatif lalu kalikan dengan satu dikurangi nilainya.",
+          "solution": "import math\n\ndef turunan_sigmoid(x):\n    if x >= 0:\n        s = 1 / (1 + math.exp(-x))\n    else:\n        z = math.exp(x)\n        s = z / (1 + z)\n    return round(s * (1 - s), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-02-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `turunan_tanh(x)` yang mengembalikan `1 - tanh(x)^2` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef turunan_tanh(x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "turunan_tanh(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_tanh(0) == 1.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "turunan_tanh(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_tanh(1) == 0.42"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "turunan_tanh(-1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_tanh(-1) == 0.42"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "turunan_tanh(10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert turunan_tanh(10) == 0.0"
+              }
+            ]
+          },
+          "hint": "Pakai math.tanh lalu kuadratkan.",
+          "solution": "import math\n\ndef turunan_tanh(x):\n    return round(1 - math.tanh(x) ** 2, 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-02-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `gradien_neuron(w, b, x, t)` yang mengembalikan tuple `(dL/dw, dL/db)` untuk neuron `y = sigmoid(w x + b)` dengan loss `(y - t)^2`, dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef gradien_neuron(w, b, x, t):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "gradien_neuron(0.5, 0.1, 2, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_neuron(0.5, 0.1, 2, 1) == (-0.1872, -0.0936)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "gradien_neuron(0, 0, 1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_neuron(0, 0, 1, 1) == (-0.25, -0.25)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "gradien_neuron(0, 0, 1, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_neuron(0, 0, 1, 0) == (0.25, 0.25)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "gradien_neuron(1, -1, 3, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_neuron(1, -1, 3, 0) == (0.5549, 0.185)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "gradien_neuron(2, 0, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_neuron(2, 0, 0, 1) == (0.0, -0.25)"
+              }
+            ]
+          },
+          "hint": "Kalikan tiga faktor rantai: dua kali selisih, turunan sigmoid, dan turunan z.",
+          "solution": "import math\n\ndef gradien_neuron(w, b, x, t):\n    y = 1 / (1 + math.exp(-(w * x + b)))\n    d = 2 * (y - t) * y * (1 - y)\n    return (round(d * x, 4) + 0.0, round(d, 4) + 0.0)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A3-02-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `gradien_numerik(f, titik, h=1e-5)` yang menerima fungsi `f` dengan satu argumen list dan list `titik`, lalu mengembalikan list turunan parsial dengan selisih pusat, dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def gradien_numerik(f, titik, h=1e-5):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "gradien_numerik(lambda p: p[0] ** 2 + 3 * p[1...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_numerik(lambda p: p[0] ** 2 + 3 * p[1], [1, 2]) == [2.0, 3.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "gradien_numerik(lambda p: p[0] * p[1], [3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_numerik(lambda p: p[0] * p[1], [3, 4]) == [4.0, 3.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "gradien_numerik(lambda p: sum(v * v for v in ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_numerik(lambda p: sum(v * v for v in p), [1, 2, 3]) == [2.0, 4.0, 6.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "gradien_numerik(lambda p: 5, [1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert gradien_numerik(lambda p: 5, [1, 1]) == [0.0, 0.0]"
+              }
+            ]
+          },
+          "hint": "Geser satu koordinat saja maju dan mundur lalu ambil selisih pusat.",
+          "solution": "def gradien_numerik(f, titik, h=1e-5):\n    hasil = []\n    for i in range(len(titik)):\n        maju = list(titik)\n        mundur = list(titik)\n        maju[i] += h\n        mundur[i] -= h\n        hasil.append(round((f(maju) - f(mundur)) / (2 * h), 4) + 0.0)\n    return hasil",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Turunan sigmoid?",
+          "code": null,
+          "options": [
+            {
+              "label": "s(1-s)",
+              "description": ""
+            },
+            {
+              "label": "s",
+              "description": ""
+            },
+            {
+              "label": "1-s",
+              "description": ""
+            },
+            {
+              "label": "s^2",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Maksimum 0,25.",
+          "explanation": "Dihitung dari keluarannya."
+        },
+        {
+          "q": "Turunan ReLU untuk x positif?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "x",
+              "description": ""
+            },
+            {
+              "label": "Tak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Garis lurus.",
+          "explanation": "Kemiringan satu."
+        },
+        {
+          "q": "dL/dw pada neuron memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Aturan rantai",
+              "description": ""
+            },
+            {
+              "label": "Aturan kali saja",
+              "description": ""
+            },
+            {
+              "label": "Integral",
+              "description": ""
+            },
+            {
+              "label": "Limit saja",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Backprop.",
+          "explanation": "Kalikan turunan tiap mata rantai."
+        },
+        {
+          "q": "Tujuan gradient check?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mempercepat model",
+              "description": ""
+            },
+            {
+              "label": "Memverifikasi gradien analitik",
+              "description": ""
+            },
+            {
+              "label": "Menambah data",
+              "description": ""
+            },
+            {
+              "label": "Mengurangi parameter",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Debug.",
+          "explanation": "Bandingkan dengan numerik."
+        },
+        {
+          "q": "Mengapa gradient check hanya untuk model kecil?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak akurat",
+              "description": ""
+            },
+            {
+              "label": "Butuh dua evaluasi per parameter",
+              "description": ""
+            },
+            {
+              "label": "Butuh label",
+              "description": ""
+            },
+            {
+              "label": "Tidak bisa dijalankan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Per parameter.",
+          "explanation": "Biayanya besar."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menghitung gradien tanpa pernah memeriksanya. Lebih baik: Lakukan gradient check pada kasus kecil.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menghitung gradien tanpa pernah memeriksanya.",
+          "fix": "Lakukan gradient check pada kasus kecil."
+        },
+        {
+          "mistake": "Mengira turunan ReLU di nol terdefinisi.",
+          "fix": "Praktiknya dipilih nol atau satu."
+        },
+        {
+          "mistake": "Melupakan faktor turunan sigmoid pada rantai.",
+          "fix": "Kalikan dengan y(1 - y)."
+        }
+      ],
+      "summary": [
+        "Turunan sigmoid dihitung dari keluarannya dan maksimal 0,25.",
+        "Aturan rantai menghitung gradien neuron dari loss ke parameter.",
+        "Gradient check membandingkan gradien analitik dan numerik.",
+        "Diferensiasi otomatis mengotomatisasi aturan rantai."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Turunan dalam ML: aktivasi, neuron, dan gradient check"
+          },
+          {
+            "type": "text",
+            "source": "Turunan sigmoid maksimal 0,25 di nol dan menyusut di ujung. Rumus analitik cocok dengan turunan numerik."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef sigmoid(x):\n    return 1 / (1 + np.exp(-x))\n\ndef d_sigmoid(x):\n    s = sigmoid(x)\n    return s * (1 - s)\n\ndef d_tanh(x):\n    return 1 - np.tanh(x) ** 2\n\ndef d_relu(x):\n    return (x > 0).astype(float)\n\ndef numerik(f, x, h=1e-6):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\nx = np.array([-2.0, 0.0, 2.0])\nprint(d_sigmoid(x).round(4).tolist())\nprint(d_tanh(np.array([-1.0, 0.0, 1.0])).round(4).tolist())\nprint(d_relu(np.array([-1.0, 2.0])).tolist())\nprint(np.allclose(d_sigmoid(x), numerik(sigmoid, x)), np.allclose(d_tanh(x), numerik(np.tanh, x)))"
+          },
+          {
+            "type": "text",
+            "source": "Kedua turunan negatif: menaikkan `w` dan `b` akan menurunkan loss karena prediksi masih di bawah target."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef sigmoid(z):\n    return 1 / (1 + math.exp(-z))\n\nw, b, x, t = 0.5, 0.1, 2.0, 1.0\nz = w * x + b\ny = sigmoid(z)\ndL_dy = 2 * (y - t)\ndy_dz = y * (1 - y)\ndz_dw = x\ndz_db = 1.0\nprint(round(z, 4), round(y, 4), round((y - t) ** 2, 4))\nprint(round(dL_dy * dy_dz * dz_dw, 4), round(dL_dy * dy_dz * dz_db, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Gradien analitik lolos pengecekan, sedangkan gradien yang salah sepuluh persen gagal. Gradient check mampu menangkap kesalahan kecil sekalipun."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\ndef loss(p, x=2.0, t=1.0):\n    return (sigmoid(p[0] * x + p[1]) - t) ** 2\n\ndef grad_analitik(p, x=2.0, t=1.0):\n    y = sigmoid(p[0] * x + p[1])\n    d = 2 * (y - t) * y * (1 - y)\n    return np.array([d * x, d])\n\ndef grad_numerik(f, p, h=1e-6):\n    g = np.zeros_like(p)\n    for i in range(len(p)):\n        e = np.zeros_like(p)\n        e[i] = h\n        g[i] = (f(p + e) - f(p - e)) / (2 * h)\n    return g\n\np = np.array([0.5, 0.1])\nga = grad_analitik(p)\ngn = grad_numerik(loss, p)\nprint(ga.round(4).tolist(), gn.round(4).tolist())\nrel = np.linalg.norm(ga - gn) / (np.linalg.norm(ga) + np.linalg.norm(gn))\nprint(bool(rel < 1e-6))\nsalah = ga * 1.1\nrel2 = np.linalg.norm(salah - gn) / (np.linalg.norm(salah) + np.linalg.norm(gn))\nprint(bool(rel2 < 1e-6))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

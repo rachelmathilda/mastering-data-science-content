@@ -1,0 +1,1652 @@
+{
+  "schema_version": 2,
+  "course_id": "A4",
+  "module_no": 5,
+  "title": "Distribusi yang sering dipakai",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memilih dan memakai binomial, geometrik, dan Poisson",
+    "Menghitung probabilitas normal dengan z-score",
+    "Mengenali cerita di balik tiap distribusi"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A4-05-1",
+    "exercise_id": "A4-05-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def modus_binomial(n, p):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A4-05-1",
+      "title": "Bernoulli, binomial, dan geometrik",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengenali percobaan Bernoulli dan membangun distribusi binomial",
+        "Menghitung PMF dan CDF binomial",
+        "Menghitung rata-rata dan varians binomial",
+        "Memakai distribusi geometrik untuk waktu tunggu diskrit"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Keluarga distribusi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Keluarga distribusi\n\nDalam praktik kita tidak membuat PMF baru tiap kali. Sebagian besar situasi cocok dengan segelintir distribusi standar, masing-masing lahir dari cerita sederhana. Mengenali cerita di balik data memungkinkan kita memilih distribusi yang tepat dan memakai rumus yang sudah tersedia.\n\nPelajaran ini membahas tiga distribusi diskrit yang bertumpu pada satu cerita: percobaan ya atau tidak yang diulang. Dua pelajaran berikutnya membahas Poisson untuk kejadian langka dan normal untuk besaran kontinu yang menumpuk dari banyak sumber kecil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Percobaan Bernoulli\n\n**Percobaan Bernoulli** adalah percobaan dengan tepat dua hasil, sukses dengan peluang `p` dan gagal dengan peluang `1 - p`. Contohnya satu lemparan koin, satu pelanggan yang membeli atau tidak, satu email yang spam atau bukan. Variabel acaknya bernilai 1 untuk sukses dan 0 untuk gagal.\n\nDistribusi Bernoulli hanya punya satu parameter `p`, tetapi ia adalah batu bata bagi distribusi lain. Hampir setiap label biner dalam machine learning, seperti churn atau fraud, dapat dimodelkan sebagai Bernoulli dengan `p` yang bergantung pada fitur."
+            },
+            {
+              "type": "text",
+              "markdown": "## Distribusi binomial\n\nUlangi percobaan Bernoulli `n` kali secara independen dengan peluang sukses sama `p`. Banyaknya sukses `X` berdistribusi **binomial**: `P(X = k) = C(n, k) * p^k * (1-p)^(n-k)`. Faktor `C(n, k)` menghitung banyaknya urutan yang memiliki tepat `k` sukses, dan sisanya adalah peluang satu urutan tertentu.\n\nTiga syarat harus dipenuhi: jumlah percobaan tetap, tiap percobaan hanya dua hasil, dan percobaan independen dengan `p` konstan. Bila pengambilan dilakukan tanpa pengembalian dari populasi kecil, independensi runtuh dan distribusi hipergeometrik lebih tepat."
+            },
+            {
+              "type": "code_example",
+              "filename": "binomial.py",
+              "runnable": true,
+              "code": "import math\n\ndef pmf(k, n, p):\n    return math.comb(n, k) * p ** k * (1 - p) ** (n - k)\n\nprint(round(pmf(5, 10, 0.5), 4))\nprint(round(sum(pmf(k, 10, 0.5) for k in range(4)), 4))",
+              "expected_output_note": "0.2461\n0.1719",
+              "explanation": "Lima kepala dalam sepuluh lemparan paling mungkin dengan sekitar dua puluh lima persen, dan paling banyak tiga kepala berpeluang sekitar tujuh belas persen."
+            }
+          ],
+          "quick_check": {
+            "question": "Binomial menghitung?",
+            "options": [
+              "Banyak sukses dari n percobaan",
+              "Waktu tunggu"
+            ],
+            "answer_index": 0,
+            "explanation": "Jumlah sukses.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Rata-rata dan varians",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Rata-rata dan varians\n\nKarena binomial adalah jumlah `n` Bernoulli independen, rata-ratanya `n * p` dan variansnya `n * p * (1 - p)`. Rata-rata 10 koin adil adalah lima kepala, dan simpangan bakunya `sqrt(2,5)`, sekitar 1,58. Varians terbesar terjadi pada `p = 0,5` dan mengecil saat `p` mendekati nol atau satu.\n\nRumus ini bisa dicek dari definisi dengan menjumlahkan `k * P(k)` dan `(k - rata-rata)^2 * P(k)` atas semua `k`. Mencocokkan rumus dengan jumlah langsung adalah latihan yang menguatkan kepercayaan terhadap rumus."
+            },
+            {
+              "type": "code_example",
+              "filename": "binomial_mean_var.py",
+              "runnable": true,
+              "code": "import math\n\nn, p = 20, 0.1\npmf = [math.comb(n, k) * p ** k * (1 - p) ** (n - k) for k in range(n + 1)]\nmean = sum(k * q for k, q in enumerate(pmf))\nvar = sum((k - mean) ** 2 * q for k, q in enumerate(pmf))\nprint(round(mean, 4), round(var, 4))",
+              "expected_output_note": "2.0 1.8",
+              "explanation": "Jumlah langsung memberi rata-rata dua dan varians satu koma delapan, sama dengan n p dan n p dikali satu kurang p."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh pengendalian mutu\n\nSebuah pabrik memeriksa 50 produk dengan tingkat cacat dua persen. Peluang minimal satu cacat adalah komplemen dari tidak ada cacat sama sekali: `1 - 0,98^50`, sekitar `0,6358`. Walau tiap produk hanya dua persen cacat, dari 50 produk lebih dari separuh peluang memuat paling tidak satu cacat.\n\nItulah mengapa pemeriksaan sampel kecil sering mendeteksi masalah lebih sering daripada intuisi kita. Perhitungan binomial semacam ini dasar bagi rencana sampling penerimaan dan pengujian A/B."
+            },
+            {
+              "type": "code_example",
+              "filename": "mutu.py",
+              "runnable": true,
+              "code": "import math\n\nprint(round(1 - math.comb(50, 0) * 0.98 ** 50, 4))",
+              "expected_output_note": "0.6358",
+              "explanation": "Komplemen tidak ada cacat memberi peluang sekitar enam puluh empat persen untuk minimal satu cacat."
+            }
+          ],
+          "quick_check": {
+            "question": "Rata-rata binomial?",
+            "options": [
+              "p",
+              "n p"
+            ],
+            "answer_index": 1,
+            "explanation": "Jumlah n Bernoulli.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Distribusi geometrik",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Distribusi geometrik\n\nBila kita mengulang percobaan Bernoulli sampai sukses pertama, banyaknya percobaan `X` berdistribusi **geometrik**: `P(X = k) = (1 - p)^(k-1) * p`. Gagal `k - 1` kali berturut-turut lalu sukses. Rata-ratanya `1/p`: bila peluang sukses seperlima, kita rata-rata butuh lima percobaan.\n\nGeometrik adalah padanan diskrit eksponensial dan juga tanpa ingatan. Contohnya jumlah lemparan dadu sampai muncul enam atau jumlah panggilan sales sampai ada yang membeli. Rumusnya sederhana, tetapi asumsi independensi tiap percobaan harus dibenarkan."
+            },
+            {
+              "type": "code_example",
+              "filename": "geometrik.py",
+              "runnable": true,
+              "code": "p = 0.2\nprint(round((1 - p) ** 2 * p, 4), 1 / p)",
+              "expected_output_note": "0.128 5.0",
+              "explanation": "Peluang sukses pertama tepat pada percobaan ketiga adalah nol koma satu dua delapan, dan rata-rata percobaan yang dibutuhkan adalah lima."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Tiga syarat binomial",
+              "markdown": "Sebelum memakai binomial, cek tiga hal: n tetap, dua hasil, dan independen dengan p konstan. Bila salah satu gagal, pertimbangkan distribusi lain."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih antara binomial dan geometrik\n\nPertanyaan pembeda: apa yang tetap dan apa yang acak? Pada binomial jumlah percobaan tetap dan banyaknya sukses acak. Pada geometrik banyaknya sukses tetap, yaitu satu, dan jumlah percobaan yang acak. Menulis ulang soal dalam kalimat tersebut biasanya langsung memberi jawaban.\n\nContohnya: berapa dari seratus email yang dibuka adalah binomial, sedangkan berapa email dikirim sampai ada yang dibuka pertama kali adalah geometrik. Kerangka dua pertanyaan ini mencegah salah pilih rumus."
+            }
+          ],
+          "quick_check": {
+            "question": "Varians binomial?",
+            "options": [
+              "n p (1-p)",
+              "n p"
+            ],
+            "answer_index": 0,
+            "explanation": "n kali varians Bernoulli.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-05-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pmf_binomial(k, n, p)` yang mengembalikan `P(X = k)` dibulatkan 4 desimal, dan `0.0` bila `k` di luar `0..n`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef pmf_binomial(k, n, p):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pmf_binomial(5, 10, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_binomial(5, 10, 0.5) == 0.2461"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pmf_binomial(0, 4, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_binomial(0, 4, 0.5) == 0.0625"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pmf_binomial(3, 3, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_binomial(3, 3, 0.5) == 0.125"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pmf_binomial(2, 5, 0.3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_binomial(2, 5, 0.3) == 0.3087"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "pmf_binomial(6, 5, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_binomial(6, 5, 0.5) == 0.0"
+              }
+            ]
+          },
+          "hint": "Kalikan banyak kombinasi dengan peluang urutan tertentu.",
+          "solution": "import math\n\ndef pmf_binomial(k, n, p):\n    if k < 0 or k > n:\n        return 0.0\n    return round(math.comb(n, k) * p ** k * (1 - p) ** (n - k), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-05-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `cdf_binomial(k, n, p)` yang mengembalikan `P(X <= k)` dibulatkan 4 desimal.",
+          "note": "Kembalikan `0.0` untuk `k < 0` dan `1.0` untuk `k >= n`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef cdf_binomial(k, n, p):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "cdf_binomial(3, 10, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_binomial(3, 10, 0.5) == 0.1719"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "cdf_binomial(10, 10, 0.3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_binomial(10, 10, 0.3) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "cdf_binomial(-1, 5, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_binomial(-1, 5, 0.5) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "cdf_binomial(0, 3, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_binomial(0, 3, 0.5) == 0.125"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "cdf_binomial(2, 5, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_binomial(2, 5, 0.5) == 0.5"
+              }
+            ]
+          },
+          "hint": "Jumlahkan PMF dari nol sampai k.",
+          "solution": "import math\n\ndef cdf_binomial(k, n, p):\n    if k < 0:\n        return 0.0\n    if k >= n:\n        return 1.0\n    return round(sum(math.comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k + 1)), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-05-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pmf_geometrik(k, p)` yang mengembalikan peluang sukses pertama terjadi tepat pada percobaan ke-`k`, dibulatkan 4 desimal.",
+          "note": "Kembalikan `0.0` bila `k < 1`.",
+          "filename": "solution.py",
+          "starter_code": "def pmf_geometrik(k, p):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pmf_geometrik(3, 0.2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_geometrik(3, 0.2) == 0.128"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pmf_geometrik(1, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_geometrik(1, 0.5) == 0.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pmf_geometrik(4, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_geometrik(4, 0.5) == 0.0625"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pmf_geometrik(0, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_geometrik(0, 0.5) == 0.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "pmf_geometrik(2, 1 / 6)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_geometrik(2, 1 / 6) == 0.1389"
+              }
+            ]
+          },
+          "hint": "Gagal k minus satu kali lalu sukses sekali.",
+          "solution": "def pmf_geometrik(k, p):\n    if k < 1:\n        return 0.0\n    return round((1 - p) ** (k - 1) * p, 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-05-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `modus_binomial(n, p)` yang mengembalikan nilai `k` dengan PMF binomial terbesar.",
+          "note": "Gunakan PMF langsung dan hindari bergantung pada rumus tertutup.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef modus_binomial(n, p):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "modus_binomial(10, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus_binomial(10, 0.5) == 5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "modus_binomial(20, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus_binomial(20, 0.1) == 2"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "modus_binomial(5, 0.3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus_binomial(5, 0.3) == 1"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "modus_binomial(10, 0.9)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus_binomial(10, 0.9) == 9"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "modus_binomial(4, 1.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert modus_binomial(4, 1.0) == 4"
+              }
+            ]
+          },
+          "hint": "Cari k dengan nilai PMF maksimum memakai max dan key.",
+          "solution": "import math\n\ndef modus_binomial(n, p):\n    return max(range(n + 1), key=lambda k: math.comb(n, k) * p ** k * (1 - p) ** (n - k))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Binomial menghitung?",
+          "code": null,
+          "options": [
+            {
+              "label": "Waktu tunggu",
+              "description": ""
+            },
+            {
+              "label": "Banyak sukses dari n percobaan",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Kuantil",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "n percobaan.",
+          "explanation": "Jumlah sukses."
+        },
+        {
+          "q": "Rata-rata binomial?",
+          "code": null,
+          "options": [
+            {
+              "label": "p",
+              "description": ""
+            },
+            {
+              "label": "n p",
+              "description": ""
+            },
+            {
+              "label": "n/p",
+              "description": ""
+            },
+            {
+              "label": "n(1-p)",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Jumlah.",
+          "explanation": "Jumlah n Bernoulli."
+        },
+        {
+          "q": "Varians binomial?",
+          "code": null,
+          "options": [
+            {
+              "label": "n p",
+              "description": ""
+            },
+            {
+              "label": "n p (1-p)",
+              "description": ""
+            },
+            {
+              "label": "p(1-p)",
+              "description": ""
+            },
+            {
+              "label": "n(1-p)",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bernoulli kali n.",
+          "explanation": "n kali varians Bernoulli."
+        },
+        {
+          "q": "Geometrik menghitung?",
+          "code": null,
+          "options": [
+            {
+              "label": "Percobaan sampai sukses pertama",
+              "description": ""
+            },
+            {
+              "label": "Jumlah sukses",
+              "description": ""
+            },
+            {
+              "label": "Jumlah gagal total",
+              "description": ""
+            },
+            {
+              "label": "Waktu kontinu",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pertama.",
+          "explanation": "Sampai sukses."
+        },
+        {
+          "q": "Rata-rata geometrik?",
+          "code": null,
+          "options": [
+            {
+              "label": "p",
+              "description": ""
+            },
+            {
+              "label": "1/p",
+              "description": ""
+            },
+            {
+              "label": "p^2",
+              "description": ""
+            },
+            {
+              "label": "1-p",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kebalikan.",
+          "explanation": "Lima bila p seperlima."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai binomial tanpa memeriksa independensi. Lebih baik: Cek tiga syarat dulu.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai binomial tanpa memeriksa independensi.",
+          "fix": "Cek tiga syarat dulu."
+        },
+        {
+          "mistake": "Lupa faktor kombinasi pada PMF binomial.",
+          "fix": "Banyak urutan dihitung C(n, k)."
+        },
+        {
+          "mistake": "Menukar geometrik dengan binomial.",
+          "fix": "Geometrik menghitung percobaan sampai sukses pertama."
+        }
+      ],
+      "summary": [
+        "Bernoulli adalah satu percobaan dua hasil.",
+        "Binomial adalah jumlah sukses dari n percobaan independen.",
+        "Rata-rata n p dan varians n p (1-p).",
+        "Geometrik adalah banyak percobaan sampai sukses pertama."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Bernoulli, binomial, dan geometrik"
+          },
+          {
+            "type": "text",
+            "source": "Lima kepala dalam sepuluh lemparan paling mungkin dengan sekitar dua puluh lima persen, dan paling banyak tiga kepala berpeluang sekitar tujuh belas persen."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef pmf(k, n, p):\n    return math.comb(n, k) * p ** k * (1 - p) ** (n - k)\n\nprint(round(pmf(5, 10, 0.5), 4))\nprint(round(sum(pmf(k, 10, 0.5) for k in range(4)), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Jumlah langsung memberi rata-rata dua dan varians satu koma delapan, sama dengan n p dan n p dikali satu kurang p."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nn, p = 20, 0.1\npmf = [math.comb(n, k) * p ** k * (1 - p) ** (n - k) for k in range(n + 1)]\nmean = sum(k * q for k, q in enumerate(pmf))\nvar = sum((k - mean) ** 2 * q for k, q in enumerate(pmf))\nprint(round(mean, 4), round(var, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Komplemen tidak ada cacat memberi peluang sekitar enam puluh empat persen untuk minimal satu cacat."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nprint(round(1 - math.comb(50, 0) * 0.98 ** 50, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Peluang sukses pertama tepat pada percobaan ketiga adalah nol koma satu dua delapan, dan rata-rata percobaan yang dibutuhkan adalah lima."
+          },
+          {
+            "type": "code",
+            "source": "p = 0.2\nprint(round((1 - p) ** 2 * p, 4), 1 / p)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-05-2",
+      "title": "Distribusi Poisson",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Mengenali situasi yang cocok untuk Poisson",
+        "Menghitung PMF dan CDF Poisson",
+        "Menyesuaikan laju dengan skala waktu",
+        "Memakai Poisson sebagai aproksimasi binomial kejadian langka"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Menghitung kejadian langka",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menghitung kejadian langka\n\nBerapa panggilan masuk ke pusat layanan dalam satu jam? Berapa kecelakaan di satu persimpangan dalam sebulan? Berapa typo dalam satu halaman? Hitungan kejadian yang terjadi secara acak pada selang waktu atau ruang, dengan laju rata-rata yang kira-kira tetap, dimodelkan oleh distribusi **Poisson**.\n\nDistribusi ini hanya punya satu parameter, `lambda`, yaitu rata-rata banyaknya kejadian per selang. PMF-nya `P(X = k) = e^(-lambda) * lambda^k / k!` untuk `k = 0, 1, 2, ...`. Nilai `k` tidak punya batas atas, tetapi peluangnya menurun sangat cepat untuk `k` jauh di atas `lambda`."
+            },
+            {
+              "type": "code_example",
+              "filename": "poisson.py",
+              "runnable": true,
+              "code": "import math\n\ndef pois(k, lam):\n    return math.exp(-lam) * lam ** k / math.factorial(k)\n\nprint(round(pois(0, 3), 4), round(pois(2, 3), 4), round(1 - pois(0, 3), 4))",
+              "expected_output_note": "0.0498 0.224 0.9502",
+              "explanation": "Dengan rata-rata tiga kejadian, peluang nol kejadian sekitar lima persen, tepat dua kejadian sekitar dua puluh dua persen, dan minimal satu kejadian sekitar sembilan puluh lima persen."
+            },
+            {
+              "type": "text",
+              "markdown": "## Syarat Poisson\n\nPoisson cocok bila kejadian terjadi satu per satu, saling independen, dengan laju rata-rata konstan sepanjang selang. Panggilan telepon yang datang acak memenuhi ini. Tetapi kejadian berkerumun, seperti gempa susulan, atau laju yang berubah menurut jam sibuk, melanggarnya dan membuat variansnya jauh melebihi rata-rata.\n\nCiri khas Poisson: rata-rata sama dengan varians, yaitu `lambda`. Bila data hitungan memiliki varians jauh lebih besar dari rata-rata, itu disebut overdispersi dan menandakan model lain, seperti binomial negatif, lebih sesuai."
+            },
+            {
+              "type": "code_example",
+              "filename": "poisson_mean_var.py",
+              "runnable": true,
+              "code": "import math\n\nlam = 3\npmf = [math.exp(-lam) * lam ** k / math.factorial(k) for k in range(60)]\nmean = sum(k * p for k, p in enumerate(pmf))\nvar = sum((k - mean) ** 2 * p for k, p in enumerate(pmf))\nprint(round(mean, 4), round(var, 4))",
+              "expected_output_note": "3.0 3.0",
+              "explanation": "Jumlah langsung membuktikan bahwa rata-rata dan varians Poisson sama dengan parameternya."
+            }
+          ],
+          "quick_check": {
+            "question": "Poisson memodelkan?",
+            "options": [
+              "Jumlah kejadian per selang",
+              "Waktu tunggu"
+            ],
+            "answer_index": 0,
+            "explanation": "Hitungan kejadian.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Menyesuaikan laju dengan skala",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menyesuaikan laju dengan skala\n\nParameter `lambda` berlaku untuk selang tertentu, dan harus diskalakan bila selangnya berubah. Pusat layanan menerima empat panggilan per jam. Untuk setengah jam, `lambda = 2`. Untuk sepuluh menit, `lambda = 4/6`. Peluang tidak ada panggilan dalam setengah jam adalah `e^(-2)`, sekitar `0,1353`.\n\nKesalahan umum adalah memakai `lambda` per jam untuk pertanyaan tentang menit. Selalu tulis satuan laju, dan ubah ke selang yang ditanyakan sebelum memakai rumus. Hubungan ini juga menghubungkan Poisson dengan eksponensial: waktu antar kejadian pada proses Poisson berdistribusi eksponensial dengan laju yang sama."
+            },
+            {
+              "type": "code_example",
+              "filename": "skala_laju.py",
+              "runnable": true,
+              "code": "import math\n\nlaju_per_jam = 4\nlam = laju_per_jam * 0.5\nprint(round(math.exp(-lam), 4))",
+              "expected_output_note": "0.1353",
+              "explanation": "Dalam setengah jam rata-rata dua panggilan, sehingga peluang tidak ada panggilan sekitar tiga belas persen."
+            },
+            {
+              "type": "text",
+              "markdown": "## Poisson sebagai batas binomial\n\nBila `n` besar dan `p` kecil dengan `n * p = lambda` sedang, binomial `(n, p)` sangat mirip Poisson `lambda`. Bayangkan satu jam dibagi menjadi seribu detik kecil, dan dalam tiap detik panggilan masuk dengan peluang kecil. Banyaknya panggilan adalah binomial dengan `n = 1000`, tetapi praktis berperilaku seperti Poisson.\n\nAproksimasi ini berguna karena Poisson lebih mudah dihitung dan hanya butuh satu parameter. Ia akurat bila `n >= 100` dan `p <= 0,05` kira-kira. Untuk `p` yang besar, aproksimasi buruk dan binomial harus dipakai langsung."
+            },
+            {
+              "type": "code_example",
+              "filename": "binom_ke_poisson.py",
+              "runnable": true,
+              "code": "import math\n\nn, p, k = 1000, 0.003, 2\nlam = n * p\nb = math.comb(n, k) * p ** k * (1 - p) ** (n - k)\nq = math.exp(-lam) * lam ** k / math.factorial(k)\nprint(round(b, 4), round(q, 4))",
+              "expected_output_note": "0.2242 0.224",
+              "explanation": "Binomial dengan seribu percobaan dan peluang kecil memberi hasil hampir sama dengan Poisson berparameter tiga."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Cek varians",
+              "markdown": "Bila varians hitungan jauh lebih besar dari rata-ratanya, Poisson tidak cocok. Periksa overdispersi sebelum memakainya."
+            }
+          ],
+          "quick_check": {
+            "question": "Rata-rata dan varians Poisson?",
+            "options": [
+              "Berbeda",
+              "Sama dengan lambda"
+            ],
+            "answer_index": 1,
+            "explanation": "Keduanya lambda.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Poisson dalam data science",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Poisson dalam data science\n\nPoisson muncul sebagai model dasar untuk data hitungan: jumlah klik, jumlah pembelian, jumlah kesalahan sistem. Regresi Poisson memodelkan hitungan sebagai fungsi fitur dengan laju yang berubah tiap pengamatan, dan menjadi dasar banyak model permintaan dan risiko.\n\nDalam pemantauan sistem, kita membandingkan hitungan yang diamati dengan peluang Poisson dari laju normal. Hitungan yang sangat tidak mungkin di bawah model Poisson, misalnya peluang di bawah seperseribu, menjadi alarm bahwa terjadi perubahan nyata."
+            },
+            {
+              "type": "text",
+              "markdown": "## Contoh perencanaan kapasitas\n\nSebuah layanan menerima rata-rata dua belas permintaan per menit dan setiap server mampu menangani lima belas permintaan per menit. Dengan Poisson, peluang melebihi kapasitas pada satu menit adalah peluang minimal enam belas permintaan, yaitu ekor distribusi. Menghitung ekor ini menunjukkan seberapa sering antrean terbentuk walau rata-rata beban di bawah kapasitas.\n\nInilah pelajaran inti perencanaan: rata-rata saja tidak cukup. Variabilitas Poisson berarti kapasitas harus dipasang di atas rata-rata dengan margin yang dipilih dari ekor distribusinya, bukan dari rata-ratanya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menguji kecocokan Poisson\n\nUntuk memeriksa apakah data hitungan cocok dengan Poisson, bandingkan rata-rata dan variansnya. Rasio mendekati satu mendukung model. Rasio jauh di atas satu menandakan overdispersi, dan jauh di bawah satu menandakan hitungan yang lebih teratur dari acak.\n\nLangkah kedua adalah membandingkan frekuensi relatif tiap nilai dengan PMF Poisson dari rata-rata sampel. Selisih besar pada nol, misalnya terlalu banyak hari tanpa kejadian, menandakan proses dengan banyak nol berlebih yang butuh model khusus."
+            }
+          ],
+          "quick_check": {
+            "question": "Empat per jam, lambda untuk 30 menit?",
+            "options": [
+              "2",
+              "4"
+            ],
+            "answer_index": 0,
+            "explanation": "Skalakan selang.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-05-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pmf_poisson(k, lam)` yang mengembalikan `P(X = k)` dibulatkan 4 desimal, dan `0.0` bila `k < 0`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef pmf_poisson(k, lam):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pmf_poisson(0, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_poisson(0, 3) == 0.0498"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pmf_poisson(2, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_poisson(2, 3) == 0.224"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pmf_poisson(5, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_poisson(5, 2) == 0.0361"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pmf_poisson(-1, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_poisson(-1, 3) == 0.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "pmf_poisson(0, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pmf_poisson(0, 0) == 1.0"
+              }
+            ]
+          },
+          "hint": "Pakai exp negatif lambda kali lambda pangkat k dibagi k faktorial.",
+          "solution": "import math\n\ndef pmf_poisson(k, lam):\n    if k < 0:\n        return 0.0\n    return round(math.exp(-lam) * lam ** k / math.factorial(k), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-05-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `cdf_poisson(k, lam)` yang mengembalikan `P(X <= k)` dibulatkan 4 desimal, dan `0.0` bila `k < 0`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef cdf_poisson(k, lam):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "cdf_poisson(2, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_poisson(2, 3) == 0.4232"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "cdf_poisson(0, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_poisson(0, 3) == 0.0498"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "cdf_poisson(-1, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_poisson(-1, 3) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "cdf_poisson(20, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_poisson(20, 3) == 1.0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan PMF dari nol sampai k.",
+          "solution": "import math\n\ndef cdf_poisson(k, lam):\n    if k < 0:\n        return 0.0\n    return round(sum(math.exp(-lam) * lam ** i / math.factorial(i) for i in range(k + 1)), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-05-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `peluang_minimal(lam, k)` yang mengembalikan `P(X >= k)` untuk Poisson, dibulatkan 4 desimal.",
+          "note": "Untuk `k <= 0` kembalikan 1.0.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef peluang_minimal(lam, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_minimal(3, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_minimal(3, 1) == 0.9502"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_minimal(3, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_minimal(3, 0) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_minimal(3, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_minimal(3, 3) == 0.5768"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_minimal(2, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_minimal(2, 4) == 0.1429"
+              }
+            ]
+          },
+          "hint": "Pakai komplemen dari peluang paling banyak k minus satu.",
+          "solution": "import math\n\ndef peluang_minimal(lam, k):\n    if k <= 0:\n        return 1.0\n    return round(1 - sum(math.exp(-lam) * lam ** i / math.factorial(i) for i in range(k)), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-05-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `aproksimasi_poisson(n, p, k)` yang mengembalikan tuple `(binomial, poisson)` berisi `P(X = k)` binomial `(n, p)` dan Poisson dengan `lambda = n * p`, keduanya dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef aproksimasi_poisson(n, p, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "aproksimasi_poisson(1000, 0.003, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aproksimasi_poisson(1000, 0.003, 2) == (0.2242, 0.224)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "aproksimasi_poisson(100, 0.05, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aproksimasi_poisson(100, 0.05, 3) == (0.1396, 0.1404)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "b, q = aproksimasi_poisson(10, 0.5, 5)\nassert b == 0.2461 and q == 0.1755"
+              }
+            ]
+          },
+          "hint": "Hitung PMF binomial dan PMF Poisson dengan lambda sama dengan n kali p.",
+          "solution": "import math\n\ndef aproksimasi_poisson(n, p, k):\n    lam = n * p\n    b = math.comb(n, k) * p ** k * (1 - p) ** (n - k)\n    q = math.exp(-lam) * lam ** k / math.factorial(k)\n    return (round(b, 4), round(q, 4))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Poisson memodelkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Jumlah kejadian per selang",
+              "description": ""
+            },
+            {
+              "label": "Waktu tunggu",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Proporsi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hitungan.",
+          "explanation": "Hitungan kejadian."
+        },
+        {
+          "q": "Rata-rata dan varians Poisson?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sama dengan lambda",
+              "description": ""
+            },
+            {
+              "label": "Berbeda",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Satu",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu parameter.",
+          "explanation": "Keduanya lambda."
+        },
+        {
+          "q": "Empat per jam, lambda untuk 30 menit?",
+          "code": null,
+          "options": [
+            {
+              "label": "4",
+              "description": ""
+            },
+            {
+              "label": "2",
+              "description": ""
+            },
+            {
+              "label": "8",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Setengah.",
+          "explanation": "Skalakan selang."
+        },
+        {
+          "q": "Poisson dekat binomial bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "n besar p kecil",
+              "description": ""
+            },
+            {
+              "label": "n kecil p besar",
+              "description": ""
+            },
+            {
+              "label": "p setengah",
+              "description": ""
+            },
+            {
+              "label": "n satu",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Langka.",
+          "explanation": "Kejadian langka."
+        },
+        {
+          "q": "Waktu antar kejadian Poisson?",
+          "code": null,
+          "options": [
+            {
+              "label": "Eksponensial",
+              "description": ""
+            },
+            {
+              "label": "Binomial",
+              "description": ""
+            },
+            {
+              "label": "Seragam",
+              "description": ""
+            },
+            {
+              "label": "Geometrik",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Waktu tunggu.",
+          "explanation": "Laju sama."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai laju per jam untuk pertanyaan per menit. Lebih baik: Skalakan lambda ke selang yang ditanyakan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai laju per jam untuk pertanyaan per menit.",
+          "fix": "Skalakan lambda ke selang yang ditanyakan."
+        },
+        {
+          "mistake": "Memakai Poisson pada data berkerumun.",
+          "fix": "Periksa rata-rata sama dengan varians."
+        },
+        {
+          "mistake": "Memakai aproksimasi Poisson saat p besar.",
+          "fix": "Gunakan binomial langsung."
+        }
+      ],
+      "summary": [
+        "Poisson memodelkan hitungan kejadian acak per selang.",
+        "Rata-rata dan varians sama dengan lambda.",
+        "Lambda harus diskalakan sesuai selang.",
+        "Poisson mengaproksimasi binomial untuk kejadian langka."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Distribusi Poisson"
+          },
+          {
+            "type": "text",
+            "source": "Dengan rata-rata tiga kejadian, peluang nol kejadian sekitar lima persen, tepat dua kejadian sekitar dua puluh dua persen, dan minimal satu kejadian sekitar sembilan puluh lima persen."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef pois(k, lam):\n    return math.exp(-lam) * lam ** k / math.factorial(k)\n\nprint(round(pois(0, 3), 4), round(pois(2, 3), 4), round(1 - pois(0, 3), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Jumlah langsung membuktikan bahwa rata-rata dan varians Poisson sama dengan parameternya."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nlam = 3\npmf = [math.exp(-lam) * lam ** k / math.factorial(k) for k in range(60)]\nmean = sum(k * p for k, p in enumerate(pmf))\nvar = sum((k - mean) ** 2 * p for k, p in enumerate(pmf))\nprint(round(mean, 4), round(var, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Dalam setengah jam rata-rata dua panggilan, sehingga peluang tidak ada panggilan sekitar tiga belas persen."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nlaju_per_jam = 4\nlam = laju_per_jam * 0.5\nprint(round(math.exp(-lam), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Binomial dengan seribu percobaan dan peluang kecil memberi hasil hampir sama dengan Poisson berparameter tiga."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nn, p, k = 1000, 0.003, 2\nlam = n * p\nb = math.comb(n, k) * p ** k * (1 - p) ** (n - k)\nq = math.exp(-lam) * lam ** k / math.factorial(k)\nprint(round(b, 4), round(q, 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-05-3",
+      "title": "Distribusi normal",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan bentuk dan parameter distribusi normal",
+        "Menghitung CDF normal dengan fungsi galat dan z-score",
+        "Memakai aturan 68-95-99,7",
+        "Menghitung kuantil normal dan memeriksa asal normal dari banyak penjumlahan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Lonceng yang ada di mana-mana",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Lonceng yang ada di mana-mana\n\nDistribusi **normal** atau Gaussian adalah kurva lonceng simetris yang muncul di banyak tempat: tinggi badan, galat pengukuran, skor tes, dan rata-rata sampel. Ia ditentukan dua parameter, rata-rata `mu` yang menentukan pusat dan simpangan baku `sigma` yang menentukan lebar. Sekitar `mu` kepadatan tertinggi, dan makin jauh makin rendah dengan cepat.\n\nAlasan kemunculannya yang luas adalah teorema limit pusat yang dibahas di modul akhir: jumlah banyak pengaruh kecil yang independen cenderung berdistribusi normal, apa pun distribusi asal masing-masing pengaruh."
+            },
+            {
+              "type": "text",
+              "markdown": "## Normal baku dan z-score\n\nNormal dengan `mu = 0` dan `sigma = 1` disebut **normal baku**. Semua normal dapat diubah ke normal baku dengan **z-score**: `z = (x - mu) / sigma`, yaitu berapa simpangan baku `x` dari rata-rata. Tinggi 186 cm pada populasi dengan rata-rata 170 dan simpangan baku 8 memiliki `z = 2`, dua simpangan baku di atas rata-rata.\n\nTransformasi ini membuat satu tabel atau satu fungsi cukup untuk semua normal. Z-score juga dipakai untuk membandingkan nilai dari skala berbeda dan untuk standarisasi fitur sebelum pelatihan model."
+            },
+            {
+              "type": "text",
+              "markdown": "## CDF normal\n\nCDF normal baku, ditulis `Phi(z)`, tidak punya rumus dasar tetapi dapat dihitung dengan fungsi galat: `Phi(z) = 0,5 * (1 + erf(z / sqrt(2)))`. Python menyediakan `math.erf`. Dengan `Phi`, peluang apa pun pada normal umum dihitung dengan mengubah ke z-score terlebih dahulu.\n\nSifat simetri berguna: `Phi(-z) = 1 - Phi(z)`. Karena itu `Phi(0) = 0,5`, dan peluang di atas `z` sama dengan peluang di bawah `-z`. Ekor atas dihitung sebagai `1 - Phi(z)`."
+            },
+            {
+              "type": "code_example",
+              "filename": "phi.py",
+              "runnable": true,
+              "code": "import math\n\ndef Phi(x):\n    return 0.5 * (1 + math.erf(x / math.sqrt(2)))\n\nprint(round(Phi(0), 4), round(Phi(1.96), 4), round(Phi(-1.96), 4))",
+              "expected_output_note": "0.5 0.975 0.025",
+              "explanation": "Setengah massa di bawah rata-rata, dan nilai kritis seratus sembilan puluh enam menyisakan dua koma lima persen di tiap ekor."
+            }
+          ],
+          "quick_check": {
+            "question": "Parameter normal?",
+            "options": [
+              "Rata-rata dan simpangan baku",
+              "n dan p"
+            ],
+            "answer_index": 0,
+            "explanation": "Pusat dan lebar.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Aturan 68-95-99,7",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Aturan 68-95-99,7\n\nAturan empiris merangkum seberapa terkonsentrasi normal. Sekitar 68 persen massa berada dalam satu simpangan baku dari rata-rata, 95 persen dalam dua, dan 99,7 persen dalam tiga. Nilai yang lebih dari tiga simpangan baku dari rata-rata sangat jarang, sekitar tiga per seribu.\n\nAturan ini membantu penilaian cepat: nilai dengan `|z| > 3` patut dicurigai sebagai pencilan atau kesalahan data. Namun ingat aturan ini hanya berlaku bila data memang kira-kira normal. Pada data berekor tebal, nilai ekstrem jauh lebih sering."
+            },
+            {
+              "type": "code_example",
+              "filename": "aturan_empiris.py",
+              "runnable": true,
+              "code": "import math\n\ndef Phi(x):\n    return 0.5 * (1 + math.erf(x / math.sqrt(2)))\n\nprint([round(Phi(k) - Phi(-k), 4) for k in (1, 2, 3)])\nmu, sigma, x = 170, 8, 186\nz = (x - mu) / sigma\nprint(z, round(1 - Phi(z), 4))",
+              "expected_output_note": "[0.6827, 0.9545, 0.9973]\n2.0 0.0228",
+              "explanation": "Aturan satu, dua, dan tiga simpangan baku cocok dengan hitungan. Tinggi di atas seratus delapan puluh enam senti hanya dimiliki sekitar dua persen populasi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kuantil normal\n\nUntuk mencari nilai dengan peluang kumulatif tertentu kita perlu invers `Phi`. Karena tidak ada rumus tertutup sederhana, kita mencarinya secara numerik, misalnya dengan **bisection**: tebak rentang, ambil titik tengah, dan pilih setengah rentang yang masih mengandung jawaban. Dalam seratus iterasi hasilnya sangat teliti.\n\nKuantil terkenal: 0,975 memberi `z = 1,96` yang dipakai untuk interval kepercayaan 95 persen, dan 0,95 memberi `1,645` untuk uji satu sisi. Pustaka seperti SciPy menyediakan fungsi ini langsung, tetapi menulisnya sekali membuat kamu paham cara kerjanya."
+            },
+            {
+              "type": "code_example",
+              "filename": "kuantil_normal.py",
+              "runnable": true,
+              "code": "import math\n\ndef Phi(x):\n    return 0.5 * (1 + math.erf(x / math.sqrt(2)))\n\ndef kuantil(q):\n    lo, hi = -10.0, 10.0\n    for _ in range(100):\n        mid = (lo + hi) / 2\n        if Phi(mid) < q:\n            lo = mid\n        else:\n            hi = mid\n    return (lo + hi) / 2\n\nprint(round(kuantil(0.975), 2), round(kuantil(0.9), 2))",
+              "expected_output_note": "1.96 1.28",
+              "explanation": "Pencarian biner menemukan nilai kritis seratus sembilan puluh enam dan seratus dua puluh delapan."
+            }
+          ],
+          "quick_check": {
+            "question": "Z-score adalah?",
+            "options": [
+              "x / sigma",
+              "(x - mu) / sigma"
+            ],
+            "answer_index": 1,
+            "explanation": "Jarak dalam simpangan baku.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Normal dari penjumlahan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Normal dari penjumlahan\n\nMengapa normal begitu umum? Jumlah banyak variabel kecil independen cenderung normal. Contoh klasik: jumlah dua belas bilangan seragam pada `[0, 1]` dikurangi enam memiliki rata-rata nol dan varians satu, dan bentuknya sudah sangat mirip normal baku. Dulu trik ini dipakai untuk menghasilkan bilangan normal di komputer sederhana.\n\nFenomena ini adalah isi teorema limit pusat dan menjelaskan mengapa galat pengukuran, yang menumpuk dari banyak gangguan kecil, hampir selalu tampak normal."
+            },
+            {
+              "type": "code_example",
+              "filename": "jumlah_seragam.py",
+              "runnable": true,
+              "code": "import random\nimport statistics\n\nrandom.seed(3)\nxs = [sum(random.random() for _ in range(12)) - 6 for _ in range(20000)]\nprint(abs(statistics.mean(xs)) < 0.05)\nprint(abs(statistics.pstdev(xs) - 1) < 0.05)",
+              "expected_output_note": "True\nTrue",
+              "explanation": "Jumlah dua belas seragam yang dipusatkan memiliki rata-rata mendekati nol dan simpangan baku mendekati satu."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Cek kenormalan",
+              "markdown": "Sebelum memakai aturan 68-95-99,7 atau tabel normal, periksa kenormalan data dengan histogram atau plot kuantil. Data berekor tebal membuat aturan itu terlalu optimis."
+            },
+            {
+              "type": "text",
+              "markdown": "## Standarisasi fitur\n\nZ-score bukan hanya alat hitung peluang. Dalam machine learning, standarisasi fitur, yaitu mengurangi rata-rata dan membagi simpangan baku, membuat semua fitur berskala sebanding. Model berbasis jarak seperti k-NN dan model berbasis gradien seperti regresi logistik jauh lebih stabil dan cepat konvergen ketika fitur terstandarisasi.\n\nIngat untuk menghitung rata-rata dan simpangan baku hanya dari data latih lalu menerapkannya ke data uji. Menghitungnya dari seluruh data membocorkan informasi uji ke pelatihan dan membuat evaluasi terlalu optimis."
+            }
+          ],
+          "quick_check": {
+            "question": "Massa dalam dua simpangan baku?",
+            "options": [
+              "95%",
+              "68%"
+            ],
+            "answer_index": 0,
+            "explanation": "Aturan empiris.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-05-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `cdf_normal(x, mu, sigma)` yang mengembalikan `P(X <= x)` dibulatkan 4 desimal, memakai `math.erf` pada z-score.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef cdf_normal(x, mu, sigma):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "cdf_normal(0, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_normal(0, 0, 1) == 0.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "cdf_normal(1.96, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_normal(1.96, 0, 1) == 0.975"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "cdf_normal(186, 170, 8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_normal(186, 170, 8) == 0.9772"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "cdf_normal(-1.96, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_normal(-1.96, 0, 1) == 0.025"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "cdf_normal(170, 170, 8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_normal(170, 170, 8) == 0.5"
+              }
+            ]
+          },
+          "hint": "Ubah ke z-score lalu pakai setengah kali satu tambah erf z per akar dua.",
+          "solution": "import math\n\ndef cdf_normal(x, mu, sigma):\n    z = (x - mu) / sigma\n    return round(0.5 * (1 + math.erf(z / math.sqrt(2))), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-05-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `z_score(x, mu, sigma)` yang mengembalikan `(x - mu) / sigma` dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def z_score(x, mu, sigma):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "z_score(186, 170, 8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert z_score(186, 170, 8) == 2.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "z_score(160, 170, 8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert z_score(160, 170, 8) == -1.25"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "z_score(170, 170, 8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert z_score(170, 170, 8) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "z_score(5, 3, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert z_score(5, 3, 0.5) == 4.0"
+              }
+            ]
+          },
+          "hint": "Kurangi rata-rata lalu bagi dengan simpangan baku.",
+          "solution": "def z_score(x, mu, sigma):\n    return round((x - mu) / sigma, 4) + 0.0",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-05-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `peluang_antara(a, b, mu, sigma)` yang mengembalikan `P(a <= X <= b)` untuk normal `(mu, sigma)`, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef peluang_antara(a, b, mu, sigma):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_antara(-1, 1, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_antara(-1, 1, 0, 1) == 0.6827"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_antara(-2, 2, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_antara(-2, 2, 0, 1) == 0.9545"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_antara(160, 180, 170, 8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_antara(160, 180, 170, 8) == 0.7887"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_antara(0, 0, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_antara(0, 0, 0, 1) == 0.0"
+              }
+            ]
+          },
+          "hint": "Kurangkan CDF batas bawah dari CDF batas atas.",
+          "solution": "import math\n\ndef peluang_antara(a, b, mu, sigma):\n    F = lambda x: 0.5 * (1 + math.erf((x - mu) / sigma / math.sqrt(2)))\n    return round(F(b) - F(a), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-05-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `kuantil_normal(q, mu, sigma)` yang mencari nilai `x` dengan CDF sama dengan `q` memakai bisection pada rentang `mu - 10 * sigma` sampai `mu + 10 * sigma` dengan 100 iterasi.",
+          "note": "Bulatkan 2 desimal dan hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef kuantil_normal(q, mu, sigma):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kuantil_normal(0.975, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_normal(0.975, 0, 1) == 1.96"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kuantil_normal(0.5, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_normal(0.5, 0, 1) == 0.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kuantil_normal(0.5, 170, 8)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_normal(0.5, 170, 8) == 170.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kuantil_normal(0.9, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_normal(0.9, 0, 1) == 1.28"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "kuantil_normal(0.025, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_normal(0.025, 0, 1) == -1.96"
+              }
+            ]
+          },
+          "hint": "Persempit rentang berulang kali dengan membandingkan CDF di titik tengah terhadap q.",
+          "solution": "import math\n\ndef kuantil_normal(q, mu, sigma):\n    F = lambda x: 0.5 * (1 + math.erf((x - mu) / sigma / math.sqrt(2)))\n    lo, hi = mu - 10 * sigma, mu + 10 * sigma\n    for _ in range(100):\n        mid = (lo + hi) / 2\n        if F(mid) < q:\n            lo = mid\n        else:\n            hi = mid\n    return round((lo + hi) / 2, 2) + 0.0",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Parameter normal?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata dan simpangan baku",
+              "description": ""
+            },
+            {
+              "label": "n dan p",
+              "description": ""
+            },
+            {
+              "label": "Lambda",
+              "description": ""
+            },
+            {
+              "label": "a dan b",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Mu sigma.",
+          "explanation": "Pusat dan lebar."
+        },
+        {
+          "q": "Z-score adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "(x - mu) / sigma",
+              "description": ""
+            },
+            {
+              "label": "x / sigma",
+              "description": ""
+            },
+            {
+              "label": "mu / x",
+              "description": ""
+            },
+            {
+              "label": "sigma - x",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Standarisasi.",
+          "explanation": "Jarak dalam simpangan baku."
+        },
+        {
+          "q": "Massa dalam dua simpangan baku?",
+          "code": null,
+          "options": [
+            {
+              "label": "68%",
+              "description": ""
+            },
+            {
+              "label": "95%",
+              "description": ""
+            },
+            {
+              "label": "99,7%",
+              "description": ""
+            },
+            {
+              "label": "50%",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dua.",
+          "explanation": "Aturan empiris."
+        },
+        {
+          "q": "Phi(0)?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "0,5",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "-1",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Setengah.",
+          "explanation": "Simetri."
+        },
+        {
+          "q": "Mengapa normal umum?",
+          "code": null,
+          "options": [
+            {
+              "label": "Semua data normal",
+              "description": ""
+            },
+            {
+              "label": "Jumlah banyak pengaruh kecil cenderung normal",
+              "description": ""
+            },
+            {
+              "label": "Mudah dihitung",
+              "description": ""
+            },
+            {
+              "label": "Selalu simetris",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Penjumlahan.",
+          "explanation": "Teorema limit pusat."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai aturan 68-95-99,7 pada data tidak normal. Lebih baik: Periksa bentuk distribusi dulu.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai aturan 68-95-99,7 pada data tidak normal.",
+          "fix": "Periksa bentuk distribusi dulu."
+        },
+        {
+          "mistake": "Lupa standarisasi sebelum memakai Phi.",
+          "fix": "Hitung z-score lebih dulu."
+        },
+        {
+          "mistake": "Menafsirkan nilai PDF normal sebagai peluang.",
+          "fix": "Pakai luas atau CDF."
+        }
+      ],
+      "summary": [
+        "Normal ditentukan rata-rata dan simpangan baku.",
+        "Z-score mengubah normal apa pun ke normal baku.",
+        "Aturan 68-95-99,7 merangkum konsentrasi massa.",
+        "Kuantil normal dihitung numerik dari invers CDF."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Distribusi normal"
+          },
+          {
+            "type": "text",
+            "source": "Setengah massa di bawah rata-rata, dan nilai kritis seratus sembilan puluh enam menyisakan dua koma lima persen di tiap ekor."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef Phi(x):\n    return 0.5 * (1 + math.erf(x / math.sqrt(2)))\n\nprint(round(Phi(0), 4), round(Phi(1.96), 4), round(Phi(-1.96), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Aturan satu, dua, dan tiga simpangan baku cocok dengan hitungan. Tinggi di atas seratus delapan puluh enam senti hanya dimiliki sekitar dua persen populasi."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef Phi(x):\n    return 0.5 * (1 + math.erf(x / math.sqrt(2)))\n\nprint([round(Phi(k) - Phi(-k), 4) for k in (1, 2, 3)])\nmu, sigma, x = 170, 8, 186\nz = (x - mu) / sigma\nprint(z, round(1 - Phi(z), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Pencarian biner menemukan nilai kritis seratus sembilan puluh enam dan seratus dua puluh delapan."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef Phi(x):\n    return 0.5 * (1 + math.erf(x / math.sqrt(2)))\n\ndef kuantil(q):\n    lo, hi = -10.0, 10.0\n    for _ in range(100):\n        mid = (lo + hi) / 2\n        if Phi(mid) < q:\n            lo = mid\n        else:\n            hi = mid\n    return (lo + hi) / 2\n\nprint(round(kuantil(0.975), 2), round(kuantil(0.9), 2))"
+          },
+          {
+            "type": "text",
+            "source": "Jumlah dua belas seragam yang dipusatkan memiliki rata-rata mendekati nol dan simpangan baku mendekati satu."
+          },
+          {
+            "type": "code",
+            "source": "import random\nimport statistics\n\nrandom.seed(3)\nxs = [sum(random.random() for _ in range(12)) - 6 for _ in range(20000)]\nprint(abs(statistics.mean(xs)) < 0.05)\nprint(abs(statistics.pstdev(xs) - 1) < 0.05)"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

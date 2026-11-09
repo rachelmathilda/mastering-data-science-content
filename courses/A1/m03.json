@@ -1,0 +1,1544 @@
+{
+  "schema_version": 2,
+  "course_id": "A1",
+  "module_no": 3,
+  "title": "List, tuple, dictionary, dan set",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Mengolah list dan tuple dengan indeks, slicing, dan unpacking",
+    "Memakai dictionary untuk pemetaan, penghitungan, dan data bersarang",
+    "Memakai set untuk keunikan dan memilih struktur data yang tepat"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A1-03-1",
+    "exercise_id": "A1-03-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def putar(daftar, k):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A1-03-1",
+      "title": "List dan tuple",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membuat, mengakses, dan memotong list dengan indeks positif dan negatif",
+        "Memakai metode list seperti append, extend, insert, remove, pop, dan sort",
+        "Membedakan list yang bisa diubah dari tuple yang tidak bisa diubah",
+        "Memakai unpacking untuk memecah urutan menjadi variabel"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "List: kumpulan berurutan yang bisa diubah",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## List: kumpulan berurutan yang bisa diubah\n\n**List** adalah struktur data paling sering dipakai di Python. Ia menyimpan nilai berurutan di dalam kurung siku, misalnya `[3, 1, 4]`, dan isinya boleh bertipe campuran. List bersifat *mutable*: kamu bisa menambah, menghapus, dan mengganti elemen setelah list dibuat.\n\nElemen diakses dengan indeks yang dimulai dari nol. `daftar[0]` adalah elemen pertama dan `daftar[-1]` adalah elemen terakhir. Indeks negatif menghitung dari belakang, sehingga `daftar[-2]` adalah elemen kedua dari akhir. Mengakses indeks di luar rentang menimbulkan `IndexError`.\n\nDalam data science, list sering menjadi wadah awal sebelum data dipindahkan ke NumPy atau pandas. Memahami list dengan baik berarti kamu memahami dasar cara data diiris, disaring, dan diurutkan di pustaka-pustaka tersebut."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pemotongan (slicing)\n\nPemotongan mengambil sebagian list dengan sintaks `daftar[awal:akhir:langkah]`. Indeks awal ikut, indeks akhir tidak ikut, dan langkah menentukan loncatan. Semua bagian boleh dihilangkan: `daftar[:3]` mengambil tiga elemen pertama, `daftar[2:]` mengambil dari indeks dua sampai akhir, dan `daftar[::-1]` membalik urutan.\n\nPemotongan selalu menghasilkan list baru, jadi mengubah hasil potongan tidak memengaruhi list asal. Ini berbeda dari penugasan biasa. `b = a` tidak menyalin list, melainkan membuat dua nama yang menunjuk list yang sama. Mengubah lewat `b` ikut mengubah `a`. Untuk salinan dangkal, pakai `a.copy()` atau `a[:]`.\n\nAturan setengah terbuka pada pemotongan sama dengan `range`, sehingga `daftar[:k] + daftar[k:]` selalu menghasilkan list asal. Sifat ini memudahkan kamu membagi data menjadi dua bagian tanpa tumpang tindih."
+            },
+            {
+              "type": "code_example",
+              "filename": "slicing_list.py",
+              "runnable": true,
+              "code": "a = [10, 20, 30, 40, 50]\nprint(a[0], a[-1], a[1:3], a[:2], a[2:], a[::-1], a[::2])\nb = a\nb[0] = 99\nprint(a[0])\nc = a.copy()\nc[0] = 1\nprint(a[0], c[0])\nprint(a[:2] + a[2:] == a)",
+              "expected_output_note": "10 50 [20, 30] [10, 20] [30, 40, 50] [50, 40, 30, 20, 10] [10, 30, 50]\n99\n99 1\nTrue",
+              "explanation": "Penugasan `b = a` membuat alias, sehingga mengubah `b[0]` ikut mengubah `a[0]`. `copy()` membuat salinan terpisah."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil [10, 20, 30, 40][1:3]?",
+            "options": [
+              "[20, 30]",
+              "[10, 20]"
+            ],
+            "answer_index": 0,
+            "explanation": "Indeks 1 ikut dan indeks 3 tidak ikut.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Metode list yang wajib dikuasai",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Metode list yang wajib dikuasai\n\nMenambah satu elemen di akhir dengan `append`, menambah banyak elemen sekaligus dengan `extend`, menyisipkan di posisi tertentu dengan `insert`, menghapus nilai pertama yang cocok dengan `remove`, dan mengambil serta menghapus elemen dengan `pop` (bawaannya elemen terakhir). Metode `sort` mengurutkan list di tempat, sedangkan fungsi `sorted` mengembalikan list baru.\n\nPerhatikan bahwa banyak metode yang mengubah list mengembalikan `None`. Menulis `a = a.sort()` menghilangkan list kamu. Ingat juga perbedaan `append` dan `extend`: `append([1, 2])` menambahkan satu elemen berupa list, sedangkan `extend([1, 2])` menambahkan dua elemen.\n\nUntuk mengurutkan menurut aturan sendiri, beri argumen `key`, misalnya `sorted(kata, key=len)` mengurutkan menurut panjang. Argumen `reverse=True` membalik urutan. Pengurutan di Python stabil, artinya elemen dengan kunci sama mempertahankan urutan awalnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "metode_list.py",
+              "runnable": true,
+              "code": "x = [3, 1, 2]\nx.append(5)\nx.extend([8, 9])\nx.insert(0, 7)\nprint(x)\nx.remove(1)\nterakhir = x.pop()\nprint(x, terakhir)\nhasil = x.sort()\nprint(hasil, x)\nkata = [\"pisang\", \"kiwi\", \"apel\", \"mangga\"]\nprint(sorted(kata), sorted(kata, key=len), sorted(kata, reverse=True))\ny = [1]\ny.append([2, 3])\nz = [1]\nz.extend([2, 3])\nprint(y, z)",
+              "expected_output_note": "[7, 3, 1, 2, 5, 8, 9]\n[7, 3, 2, 5, 8] 9\nNone [2, 3, 5, 7, 8]\n['apel', 'kiwi', 'mangga', 'pisang'] ['kiwi', 'apel', 'pisang', 'mangga'] ['pisang', 'mangga', 'kiwi', 'apel']\n[1, [2, 3]] [1, 2, 3]",
+              "explanation": "`sort` mengubah list dan mengembalikan `None`. `sorted` dengan `key=len` mengurutkan menurut panjang kata dengan urutan stabil."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Jebakan nilai None",
+              "markdown": "Jangan menulis `a = a.sort()` atau `a = a.append(x)`. Metode itu mengubah list di tempat dan mengembalikan `None`, sehingga list kamu hilang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Tuple dan unpacking\n\n**Tuple** mirip list tetapi *immutable*: setelah dibuat, isinya tidak bisa diubah. Ditulis dengan kurung biasa, `(1, 2)`, atau bahkan tanpa kurung, `1, 2`. Tuple satu elemen butuh koma di belakang, yaitu `(5,)`. Karena tidak bisa diubah, tuple cocok untuk data tetap seperti koordinat, pasangan nilai, dan kunci dictionary.\n\n**Unpacking** memecah urutan ke beberapa variabel dalam satu baris: `x, y = (3, 4)`. Tanda bintang menangkap sisa elemen, seperti `pertama, *tengah, terakhir = [1, 2, 3, 4, 5]`. Fungsi yang mengembalikan banyak nilai sebenarnya mengembalikan satu tuple yang di-unpack oleh pemanggil.\n\nPilihan antara list dan tuple soal makna: list untuk kumpulan yang dapat berubah dan berisi elemen sejenis, tuple untuk rekaman tetap dengan elemen yang masing-masing punya peran berbeda."
+            },
+            {
+              "type": "code_example",
+              "filename": "tuple_unpacking.py",
+              "runnable": true,
+              "code": "titik = (3, 4)\nx, y = titik\nprint(x, y, titik[0])\npertama, *tengah, terakhir = [1, 2, 3, 4, 5]\nprint(pertama, tengah, terakhir)\nsatu = (5,)\nprint(type(satu).__name__, type((5)).__name__)\ntry:\n    titik[0] = 9\nexcept TypeError as e:\n    print(\"error:\", e)\ndef min_maks(d):\n    return min(d), max(d)\nlo, hi = min_maks([4, 9, 2])\nprint(lo, hi)",
+              "expected_output_note": "3 4 3\n1 [2, 3, 4] 5\ntuple int\nerror: 'tuple' object does not support item assignment\n2 9",
+              "explanation": "Unpacking memecah urutan ke variabel dan bintang menangkap sisanya. Mengubah elemen tuple menimbulkan `TypeError`. Fungsi mengembalikan dua nilai sebagai satu tuple."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa nilai dari a.sort()?",
+            "options": [
+              "List terurut",
+              "None"
+            ],
+            "answer_index": 1,
+            "explanation": "sort mengubah di tempat dan mengembalikan None.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kapan memilih list dan kapan tuple",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kapan memilih list dan kapan tuple\n\nBayangkan data satu mahasiswa: nama, umur, dan jurusan. Ketiganya punya peran berbeda, jadi tuple cocok. Sekarang bayangkan daftar nilai ujian seratus mahasiswa. Semuanya sejenis dan jumlahnya bisa bertambah, jadi list cocok. Pembeda utamanya bukan sintaks, melainkan makna data yang kamu simpan.\n\nTuple juga sedikit lebih hemat memori dan sedikit lebih cepat dibuat. Namun alasan utama memakainya adalah niat: pembaca kodemu langsung tahu bahwa isinya tidak akan berubah. Sifat tidak bisa diubah ini juga membuat tuple aman dipakai sebagai kunci dictionary dan elemen set, hal yang tidak bisa dilakukan list.\n\nLatihan di bawah menguji slicing, unpacking, dan pengelolaan salinan. Kerjakan berurutan dan jalankan tiap solusi untuk melihat perilaku sebenarnya."
+            }
+          ],
+          "quick_check": {
+            "question": "Setelah b = a lalu b.append(1), apa yang terjadi pada a?",
+            "options": [
+              "Ikut berubah",
+              "Tidak berubah"
+            ],
+            "answer_index": 0,
+            "explanation": "Keduanya menunjuk list yang sama.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-03-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ujung(daftar)` yang mengembalikan tuple `(pertama, terakhir)` dari list tidak kosong.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def ujung(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ujung([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ujung([1, 2, 3]) == (1, 3)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ujung([7])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ujung([7]) == (7, 7)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ujung([\"a\", \"b\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ujung([\"a\", \"b\"]) == (\"a\", \"b\")"
+              }
+            ]
+          },
+          "hint": "Gunakan indeks 0 dan -1.",
+          "solution": "def ujung(daftar):\n    return daftar[0], daftar[-1]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-03-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `bagi_dua(daftar)` yang mengembalikan tuple dua list: separuh pertama dan separuh kedua.",
+          "note": "Bila jumlah elemen ganjil, bagian pertama lebih pendek.",
+          "filename": "solution.py",
+          "starter_code": "def bagi_dua(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "bagi_dua([1, 2, 3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_dua([1, 2, 3, 4]) == ([1, 2], [3, 4])"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "bagi_dua([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_dua([1, 2, 3]) == ([1], [2, 3])"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "bagi_dua([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_dua([]) == ([], [])"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "bagi_dua([9])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert bagi_dua([9]) == ([], [9])"
+              }
+            ]
+          },
+          "hint": "Hitung titik tengah dengan pembagian bulat lalu potong dua kali.",
+          "solution": "def bagi_dua(daftar):\n    m = len(daftar) // 2\n    return daftar[:m], daftar[m:]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-03-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `buang_duplikat(daftar)` yang mengembalikan list baru tanpa duplikat dengan urutan kemunculan pertama dipertahankan.",
+          "note": "Jangan mengubah list asal.",
+          "filename": "solution.py",
+          "starter_code": "def buang_duplikat(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "buang_duplikat(a)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "a = [3, 1, 3, 2, 1]\nassert buang_duplikat(a) == [3, 1, 2]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert a == [3, 1, 3, 2, 1]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "buang_duplikat([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert buang_duplikat([]) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "buang_duplikat([\"x\", \"x\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert buang_duplikat([\"x\", \"x\"]) == [\"x\"]"
+              }
+            ]
+          },
+          "hint": "Telusuri elemen dan tambahkan ke hasil bila belum ada di hasil.",
+          "solution": "def buang_duplikat(daftar):\n    hasil = []\n    for x in daftar:\n        if x not in hasil:\n            hasil.append(x)\n    return hasil",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-03-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `putar(daftar, k)` yang mengembalikan list baru hasil rotasi ke kanan sebanyak `k` posisi.",
+          "note": "Nilai `k` boleh lebih besar dari panjang list atau negatif (rotasi ke kiri). List kosong dikembalikan kosong.",
+          "filename": "solution.py",
+          "starter_code": "def putar(daftar, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "putar([1, 2, 3, 4, 5], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert putar([1, 2, 3, 4, 5], 2) == [4, 5, 1, 2, 3]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "putar([1, 2, 3], 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert putar([1, 2, 3], 0) == [1, 2, 3]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "putar([1, 2, 3], 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert putar([1, 2, 3], 4) == [3, 1, 2]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "putar([1, 2, 3, 4], -1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert putar([1, 2, 3, 4], -1) == [2, 3, 4, 1]"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "putar([], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert putar([], 3) == []"
+              }
+            ]
+          },
+          "hint": "Pakai k modulo panjang list, lalu gabungkan dua potongan.",
+          "solution": "def putar(daftar, k):\n    if not daftar:\n        return []\n    k %= len(daftar)\n    if k == 0:\n        return list(daftar)\n    return daftar[-k:] + daftar[:-k]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Hasil [10, 20, 30, 40][1:3]?",
+          "code": null,
+          "options": [
+            {
+              "label": "[10, 20]",
+              "description": ""
+            },
+            {
+              "label": "[20, 30]",
+              "description": ""
+            },
+            {
+              "label": "[20, 30, 40]",
+              "description": ""
+            },
+            {
+              "label": "[10, 20, 30]",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Akhir tidak ikut.",
+          "explanation": "Indeks 1 ikut dan indeks 3 tidak ikut."
+        },
+        {
+          "q": "Apa nilai dari a.sort()?",
+          "code": null,
+          "options": [
+            {
+              "label": "List terurut",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            },
+            {
+              "label": "True",
+              "description": ""
+            },
+            {
+              "label": "Salinan",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Bandingkan dengan sorted.",
+          "explanation": "sort mengubah di tempat dan mengembalikan None."
+        },
+        {
+          "q": "Setelah b = a lalu b.append(1), apa yang terjadi pada a?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak berubah",
+              "description": ""
+            },
+            {
+              "label": "Ikut berubah",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "Kosong",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tidak ada salinan yang dibuat.",
+          "explanation": "Keduanya menunjuk list yang sama."
+        },
+        {
+          "q": "Tuple satu elemen ditulis?",
+          "code": null,
+          "options": [
+            {
+              "label": "(5)",
+              "description": ""
+            },
+            {
+              "label": "(5,)",
+              "description": ""
+            },
+            {
+              "label": "[5]",
+              "description": ""
+            },
+            {
+              "label": "5()",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kurung saja hanya pengelompokan.",
+          "explanation": "Koma di belakang yang membuatnya tuple."
+        },
+        {
+          "q": "Apa fungsi tanda bintang pada a, *b, c = [1,2,3,4]?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mengalikan",
+              "description": ""
+            },
+            {
+              "label": "Menangkap elemen sisa",
+              "description": ""
+            },
+            {
+              "label": "Menghapus",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ini pengumpul sisa.",
+          "explanation": "b menangkap elemen di tengah sebagai list."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira b = a menyalin list. Lebih baik: Gunakan a.copy() atau a[:] untuk salinan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira b = a menyalin list.",
+          "fix": "Gunakan a.copy() atau a[:] untuk salinan."
+        },
+        {
+          "mistake": "Menulis a = a.sort().",
+          "fix": "Panggil a.sort() saja atau pakai sorted(a)."
+        },
+        {
+          "mistake": "Mengakses indeks di luar rentang.",
+          "fix": "Periksa len(daftar) atau pakai indeks negatif dengan hati-hati."
+        }
+      ],
+      "summary": [
+        "List bisa diubah, tuple tidak bisa diubah.",
+        "Slicing menghasilkan list baru dan memakai aturan setengah terbuka.",
+        "Metode sort dan append mengubah di tempat dan mengembalikan None.",
+        "Unpacking memecah urutan ke variabel dengan bintang untuk sisa."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# List dan tuple"
+          },
+          {
+            "type": "text",
+            "source": "Penugasan `b = a` membuat alias, sehingga mengubah `b[0]` ikut mengubah `a[0]`. `copy()` membuat salinan terpisah."
+          },
+          {
+            "type": "code",
+            "source": "a = [10, 20, 30, 40, 50]\nprint(a[0], a[-1], a[1:3], a[:2], a[2:], a[::-1], a[::2])\nb = a\nb[0] = 99\nprint(a[0])\nc = a.copy()\nc[0] = 1\nprint(a[0], c[0])\nprint(a[:2] + a[2:] == a)"
+          },
+          {
+            "type": "text",
+            "source": "`sort` mengubah list dan mengembalikan `None`. `sorted` dengan `key=len` mengurutkan menurut panjang kata dengan urutan stabil."
+          },
+          {
+            "type": "code",
+            "source": "x = [3, 1, 2]\nx.append(5)\nx.extend([8, 9])\nx.insert(0, 7)\nprint(x)\nx.remove(1)\nterakhir = x.pop()\nprint(x, terakhir)\nhasil = x.sort()\nprint(hasil, x)\nkata = [\"pisang\", \"kiwi\", \"apel\", \"mangga\"]\nprint(sorted(kata), sorted(kata, key=len), sorted(kata, reverse=True))\ny = [1]\ny.append([2, 3])\nz = [1]\nz.extend([2, 3])\nprint(y, z)"
+          },
+          {
+            "type": "text",
+            "source": "Unpacking memecah urutan ke variabel dan bintang menangkap sisanya. Mengubah elemen tuple menimbulkan `TypeError`. Fungsi mengembalikan dua nilai sebagai satu tuple."
+          },
+          {
+            "type": "code",
+            "source": "titik = (3, 4)\nx, y = titik\nprint(x, y, titik[0])\npertama, *tengah, terakhir = [1, 2, 3, 4, 5]\nprint(pertama, tengah, terakhir)\nsatu = (5,)\nprint(type(satu).__name__, type((5)).__name__)\ntry:\n    titik[0] = 9\nexcept TypeError as e:\n    print(\"error:\", e)\ndef min_maks(d):\n    return min(d), max(d)\nlo, hi = min_maks([4, 9, 2])\nprint(lo, hi)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-03-2",
+      "title": "Dictionary",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Membuat dictionary dan mengakses nilai dengan aman memakai get",
+        "Menelusuri kunci, nilai, dan pasangan dengan keys, values, dan items",
+        "Memakai pola penghitung dan pengelompokan dengan dictionary",
+        "Menggunakan dictionary bersarang untuk data mirip JSON"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dictionary: pasangan kunci dan nilai",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dictionary: pasangan kunci dan nilai\n\n**Dictionary** menyimpan data sebagai pasangan kunci dan nilai di dalam kurung kurawal: `{\"nama\": \"Sari\", \"umur\": 21}`. Kamu mengambil nilai lewat kuncinya, bukan lewat posisi, sehingga pencarian sangat cepat dibanding menelusuri list. Kunci harus bersifat *hashable*, artinya tidak bisa diubah: string, angka, dan tuple boleh, list tidak boleh.\n\nMengakses kunci yang tidak ada dengan `d[\"x\"]` menimbulkan `KeyError`. Gunakan `d.get(\"x\")` untuk mendapat `None` saat kunci tidak ada, atau `d.get(\"x\", nilai_awal)` untuk menentukan nilai bawaan. Untuk memeriksa keberadaan kunci, pakai `\"x\" in d`.\n\nDictionary adalah format yang sama dengan objek JSON, jadi hampir semua data dari API web dan file konfigurasi akan datang dalam bentuk dictionary dan list yang bersarang."
+            },
+            {
+              "type": "code_example",
+              "filename": "dasar_dict.py",
+              "runnable": true,
+              "code": "d = {\"nama\": \"Sari\", \"umur\": 21}\nd[\"kota\"] = \"Depok\"\nd[\"umur\"] = 22\nprint(d)\nprint(d.get(\"kota\"), d.get(\"hobi\"), d.get(\"hobi\", \"belum diisi\"))\nprint(\"nama\" in d, \"alamat\" in d, len(d))\ndel d[\"kota\"]\nprint(d.pop(\"umur\"), d)\ntry:\n    d[\"tidak ada\"]\nexcept KeyError as e:\n    print(\"KeyError:\", e)",
+              "expected_output_note": "{'nama': 'Sari', 'umur': 22, 'kota': 'Depok'}\nDepok None belum diisi\nTrue False 3\n22 {'nama': 'Sari'}\nKeyError: 'tidak ada'",
+              "explanation": "`get` aman untuk kunci yang mungkin tidak ada, sedangkan indeks langsung menimbulkan `KeyError`. `pop` mengembalikan nilai sambil menghapus kunci."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menelusuri dictionary\n\nMenelusuri dictionary dengan `for` memberi kamu kunci. Untuk nilai gunakan `.values()`, dan untuk pasangan gunakan `.items()` yang menghasilkan tuple `(kunci, nilai)` sehingga bisa langsung di-unpack: `for k, v in d.items():`. Sejak Python 3.7 urutan penyisipan terjaga, jadi urutan penelusuran dapat diprediksi.\n\nMenggabungkan dua dictionary bisa dengan operator `|` (Python 3.9 ke atas) atau metode `update`. Bila ada kunci sama, nilai dari dictionary kedua yang menang. Jangan menambah atau menghapus kunci saat menelusuri dictionary yang sama, karena Python akan menimbulkan `RuntimeError`.\n\nUntuk membuat dictionary dari dua list sejajar, gabungkan dengan `zip`: `dict(zip(kunci, nilai))`. Pola ini sangat umum saat kamu mengubah baris data menjadi rekaman berlabel."
+            },
+            {
+              "type": "code_example",
+              "filename": "telusur_dict.py",
+              "runnable": true,
+              "code": "stok = {\"apel\": 5, \"jeruk\": 0, \"mangga\": 12}\nfor k, v in stok.items():\n    print(k, v)\nprint(list(stok), list(stok.values()))\ntambahan = {\"jeruk\": 8, \"kiwi\": 3}\ngabung = stok | tambahan\nprint(gabung)\nnama = [\"a\", \"b\", \"c\"]\nnilai = [1, 2, 3]\nprint(dict(zip(nama, nilai)))\ntersedia = {k: v for k, v in stok.items() if v > 0}\nprint(tersedia)",
+              "expected_output_note": "apel 5\njeruk 0\nmangga 12\n['apel', 'jeruk', 'mangga'] [5, 0, 12]\n{'apel': 5, 'jeruk': 8, 'mangga': 12, 'kiwi': 3}\n{'a': 1, 'b': 2, 'c': 3}\n{'apel': 5, 'mangga': 12}",
+              "explanation": "Operator `|` menggabungkan dengan nilai kedua yang menang. `dict(zip(...))` membangun dictionary dari dua list, dan comprehension menyaring pasangan."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil {'a': 1}.get('b', 0)?",
+            "options": [
+              "0",
+              "None"
+            ],
+            "answer_index": 0,
+            "explanation": "Kunci tidak ada sehingga nilai bawaan dikembalikan.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Penghitung dan pengelompokan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Penghitung dan pengelompokan\n\nDua pola dictionary paling berguna dalam analisis data adalah menghitung dan mengelompokkan. Untuk menghitung, perbarui nilai dengan `d[k] = d.get(k, 0) + 1`. Untuk mengelompokkan, simpan list di tiap kunci dengan `d.setdefault(k, []).append(x)`.\n\nPustaka standar menyediakan `collections.Counter` dan `collections.defaultdict` yang menyingkat kedua pola ini, dan kamu akan bertemu keduanya nanti. Namun menguasai versi manual lebih dulu membuatmu paham apa yang terjadi di baliknya.\n\nKedua pola ini adalah versi mini dari operasi `value_counts` dan `groupby` di pandas. Jika kamu paham versi dictionary-nya, kamu akan langsung paham cara kerja operasi itu saat kamu mencapai modul pandas."
+            },
+            {
+              "type": "code_example",
+              "filename": "hitung_kelompok.py",
+              "runnable": true,
+              "code": "kata = \"kopi teh kopi susu teh kopi\".split()\nhitung = {}\nfor k in kata:\n    hitung[k] = hitung.get(k, 0) + 1\nprint(hitung)\n\ntransaksi = [(\"Ani\", 10), (\"Budi\", 5), (\"Ani\", 7), (\"Budi\", 1), (\"Citra\", 3)]\nper_orang = {}\nfor nama, jumlah in transaksi:\n    per_orang.setdefault(nama, []).append(jumlah)\nprint(per_orang)\ntotal = {n: sum(v) for n, v in per_orang.items()}\nprint(total)\nterbanyak = max(total, key=total.get)\nprint(terbanyak)",
+              "expected_output_note": "{'kopi': 3, 'teh': 2, 'susu': 1}\n{'Ani': [10, 7], 'Budi': [5, 1], 'Citra': [3]}\n{'Ani': 17, 'Budi': 6, 'Citra': 3}\nAni",
+              "explanation": "Pola penghitung dan pengelompokan adalah dasar `value_counts` dan `groupby`. Fungsi `max` dengan `key` mengambil kunci bernilai terbesar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dictionary bersarang dan data mirip JSON\n\nNilai dictionary boleh berupa apa saja, termasuk dictionary lain dan list. Struktur bersarang ini persis bentuk JSON. Untuk mengambil nilai dalam, rangkai kunci: `data[\"pengguna\"][\"alamat\"][\"kota\"]`. Bila ada tingkat yang mungkin tidak ada, rangkai `get` dengan nilai bawaan dictionary kosong: `data.get(\"pengguna\", {}).get(\"alamat\", {}).get(\"kota\")`.\n\nModul `json` mengubah string JSON menjadi dictionary dengan `json.loads` dan sebaliknya dengan `json.dumps`. Perbedaan kecil yang perlu diingat: JSON memakai `true`, `false`, dan `null`, yang di Python menjadi `True`, `False`, dan `None`.\n\nDalam proyek data, kamu akan sering meratakan struktur bersarang menjadi tabel. Latihan menelusuri dictionary bersarang sekarang menyiapkan kamu untuk itu."
+            },
+            {
+              "type": "code_example",
+              "filename": "json_bersarang.py",
+              "runnable": true,
+              "code": "import json\n\nteks = '{\"pengguna\": {\"nama\": \"Sari\", \"alamat\": {\"kota\": \"Depok\"}}, \"tag\": [\"a\", \"b\"], \"aktif\": true, \"skor\": null}'\ndata = json.loads(teks)\nprint(data[\"pengguna\"][\"alamat\"][\"kota\"], data[\"tag\"][1], data[\"aktif\"], data[\"skor\"])\nprint(data.get(\"pengguna\", {}).get(\"telepon\", {}).get(\"kode\"))\nkeluar = json.dumps({\"a\": [1, 2], \"b\": None, \"c\": True}, sort_keys=True)\nprint(keluar)",
+              "expected_output_note": "Depok b True None\nNone\n{\"a\": [1, 2], \"b\": null, \"c\": true}",
+              "explanation": "JSON `true` dan `null` menjadi `True` dan `None` di Python. Rangkaian `get` dengan dictionary kosong menghindari `KeyError` pada tingkat yang tidak ada."
+            }
+          ],
+          "quick_check": {
+            "question": "Tipe apa yang tidak boleh jadi kunci dictionary?",
+            "options": [
+              "str",
+              "list"
+            ],
+            "answer_index": 1,
+            "explanation": "List bisa diubah sehingga tidak hashable.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Mengapa dictionary begitu penting",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Mengapa dictionary begitu penting\n\nHampir semua data nyata punya label. Sebuah baris transaksi punya tanggal, pelanggan, dan jumlah. Menyimpannya sebagai list angka membuatmu harus mengingat bahwa indeks ke-2 adalah jumlah. Dengan dictionary, kamu menulis `baris[\"jumlah\"]` dan maknanya langsung jelas. Kode menjadi lebih mudah dibaca dan lebih tahan terhadap perubahan urutan kolom.\n\nDictionary juga menjadi jembatan ke pandas. Sebuah DataFrame dapat dibuat dari dictionary yang kuncinya nama kolom dan nilainya list isi kolom, dan sebaliknya DataFrame dapat diubah kembali menjadi list of dictionary. Memahami keduanya membuat perpindahan antar bentuk data terasa wajar.\n\nIngat pula bahwa dictionary tidak menjamin kunci yang sama muncul dua kali. Menulis kunci yang sudah ada hanya menimpa nilainya, sehingga data lama hilang tanpa peringatan. Periksa dulu dengan `in` bila penimpaan tidak diinginkan.\n\nSatu kebiasaan baik: bila kunci mungkin tidak ada, putuskan sejak awal apa yang harus terjadi. Gagal dengan error, memakai nilai bawaan, atau melewati rekaman itu. Memilih secara sadar mencegah bug senyap pada data yang kotor."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang dihasilkan d.items()?",
+            "options": [
+              "Pasangan (kunci, nilai)",
+              "Kunci saja"
+            ],
+            "answer_index": 0,
+            "explanation": "items menghasilkan tuple pasangan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-03-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ambil(d, kunci, bawaan)` yang mengembalikan `d[kunci]` bila ada dan `bawaan` bila tidak ada.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def ambil(d, kunci, bawaan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ambil({\"a\": 1}, \"a\", 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil({\"a\": 1}, \"a\", 0) == 1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ambil({\"a\": 1}, \"b\", 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil({\"a\": 1}, \"b\", 0) == 0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ambil({}, \"x\", None)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil({}, \"x\", None) is None"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ambil({\"a\": None}, \"a\", 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil({\"a\": None}, \"a\", 5) is None"
+              }
+            ]
+          },
+          "hint": "Method get sudah melakukan ini.",
+          "solution": "def ambil(d, kunci, bawaan):\n    return d.get(kunci, bawaan)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-03-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `balik(d)` yang mengembalikan dictionary baru dengan kunci dan nilai bertukar.",
+          "note": "Asumsikan nilai unik dan hashable.",
+          "filename": "solution.py",
+          "starter_code": "def balik(d):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "balik({\"a\": 1, \"b\": 2})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert balik({\"a\": 1, \"b\": 2}) == {1: \"a\", 2: \"b\"}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "balik({})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert balik({}) == {}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "balik({\"x\": \"y\"})",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert balik({\"x\": \"y\"}) == {\"y\": \"x\"}"
+              }
+            ]
+          },
+          "hint": "Telusuri items dan bangun dictionary baru.",
+          "solution": "def balik(d):\n    return {v: k for k, v in d.items()}",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-03-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kelompokkan(pasangan)` yang menerima list tuple `(kunci, nilai)` dan mengembalikan dictionary kunci ke list nilai sesuai urutan kemunculan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def kelompokkan(pasangan):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kelompokkan(p)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "p = [(\"a\", 1), (\"b\", 2), (\"a\", 3)]\nassert kelompokkan(p) == {\"a\": [1, 3], \"b\": [2]}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kelompokkan([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kelompokkan([]) == {}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kelompokkan([(\"x\", 0)])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kelompokkan([(\"x\", 0)]) == {\"x\": [0]}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "list(kelompokkan(p))",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert list(kelompokkan(p)) == [\"a\", \"b\"]"
+              }
+            ]
+          },
+          "hint": "Gunakan setdefault dengan list kosong lalu append.",
+          "solution": "def kelompokkan(pasangan):\n    hasil = {}\n    for k, v in pasangan:\n        hasil.setdefault(k, []).append(v)\n    return hasil",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-03-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ambil_dalam(data, jalur, bawaan=None)` yang menerima dictionary bersarang dan list kunci `jalur`, lalu mengembalikan nilai di ujung jalur.",
+          "note": "Bila ada tingkat yang tidak ada atau bukan dictionary kembalikan `bawaan`.",
+          "filename": "solution.py",
+          "starter_code": "def ambil_dalam(data, jalur, bawaan=None):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ambil_dalam(d, [\"a\", \"b\", \"c\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "d = {\"a\": {\"b\": {\"c\": 5}}, \"x\": 1}\nassert ambil_dalam(d, [\"a\", \"b\", \"c\"]) == 5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ambil_dalam(d, [\"a\", \"z\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_dalam(d, [\"a\", \"z\"]) is None"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ambil_dalam(d, [\"a\", \"z\"], \"kosong\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_dalam(d, [\"a\", \"z\"], \"kosong\") == \"kosong\""
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ambil_dalam(d, [\"x\", \"y\"], 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_dalam(d, [\"x\", \"y\"], 0) == 0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "ambil_dalam(d, [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ambil_dalam(d, []) == d"
+              }
+            ]
+          },
+          "hint": "Turun satu tingkat per kunci dan hentikan bila bukan dictionary atau kunci tidak ada.",
+          "solution": "def ambil_dalam(data, jalur, bawaan=None):\n    sekarang = data\n    for k in jalur:\n        if not isinstance(sekarang, dict) or k not in sekarang:\n            return bawaan\n        sekarang = sekarang[k]\n    return sekarang",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Hasil {'a': 1}.get('b', 0)?",
+          "code": null,
+          "options": [
+            {
+              "label": "None",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "KeyError",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Argumen kedua adalah bawaan.",
+          "explanation": "Kunci tidak ada sehingga nilai bawaan dikembalikan."
+        },
+        {
+          "q": "Tipe apa yang tidak boleh jadi kunci dictionary?",
+          "code": null,
+          "options": [
+            {
+              "label": "str",
+              "description": ""
+            },
+            {
+              "label": "int",
+              "description": ""
+            },
+            {
+              "label": "tuple",
+              "description": ""
+            },
+            {
+              "label": "list",
+              "description": ""
+            }
+          ],
+          "answer_index": 3,
+          "hint": "Kunci harus tidak bisa diubah.",
+          "explanation": "List bisa diubah sehingga tidak hashable."
+        },
+        {
+          "q": "Apa yang dihasilkan d.items()?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kunci saja",
+              "description": ""
+            },
+            {
+              "label": "Pasangan (kunci, nilai)",
+              "description": ""
+            },
+            {
+              "label": "Nilai saja",
+              "description": ""
+            },
+            {
+              "label": "Jumlah",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Cocok dengan unpacking dua variabel.",
+          "explanation": "items menghasilkan tuple pasangan."
+        },
+        {
+          "q": "Operator untuk menggabung dua dictionary di Python 3.9 ke atas?",
+          "code": null,
+          "options": [
+            {
+              "label": "+",
+              "description": ""
+            },
+            {
+              "label": "|",
+              "description": ""
+            },
+            {
+              "label": "&",
+              "description": ""
+            },
+            {
+              "label": "-",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Mirip operasi himpunan.",
+          "explanation": "Operator | menggabung dan nilai kedua menang."
+        },
+        {
+          "q": "JSON null menjadi apa di Python?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "''",
+              "description": ""
+            },
+            {
+              "label": "None",
+              "description": ""
+            },
+            {
+              "label": "False",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Nilai khusus tidak ada.",
+          "explanation": "null dipetakan ke None."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengakses kunci yang mungkin tidak ada dengan d[k]. Lebih baik: Pakai d.get(k, bawaan) atau periksa k in d.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengakses kunci yang mungkin tidak ada dengan d[k].",
+          "fix": "Pakai d.get(k, bawaan) atau periksa k in d."
+        },
+        {
+          "mistake": "Memakai list sebagai kunci dictionary.",
+          "fix": "Pakai tuple atau string yang hashable."
+        },
+        {
+          "mistake": "Mengubah dictionary saat menelusurinya.",
+          "fix": "Telusuri list(d.items()) atau bangun dictionary baru."
+        }
+      ],
+      "summary": [
+        "Dictionary menyimpan pasangan kunci dan nilai dengan pencarian cepat.",
+        "get memberi nilai bawaan dan items memberi pasangan untuk ditelusuri.",
+        "Pola penghitung dan pengelompokan adalah dasar value_counts dan groupby.",
+        "Dictionary bersarang berbentuk sama dengan JSON."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Dictionary"
+          },
+          {
+            "type": "text",
+            "source": "`get` aman untuk kunci yang mungkin tidak ada, sedangkan indeks langsung menimbulkan `KeyError`. `pop` mengembalikan nilai sambil menghapus kunci."
+          },
+          {
+            "type": "code",
+            "source": "d = {\"nama\": \"Sari\", \"umur\": 21}\nd[\"kota\"] = \"Depok\"\nd[\"umur\"] = 22\nprint(d)\nprint(d.get(\"kota\"), d.get(\"hobi\"), d.get(\"hobi\", \"belum diisi\"))\nprint(\"nama\" in d, \"alamat\" in d, len(d))\ndel d[\"kota\"]\nprint(d.pop(\"umur\"), d)\ntry:\n    d[\"tidak ada\"]\nexcept KeyError as e:\n    print(\"KeyError:\", e)"
+          },
+          {
+            "type": "text",
+            "source": "Operator `|` menggabungkan dengan nilai kedua yang menang. `dict(zip(...))` membangun dictionary dari dua list, dan comprehension menyaring pasangan."
+          },
+          {
+            "type": "code",
+            "source": "stok = {\"apel\": 5, \"jeruk\": 0, \"mangga\": 12}\nfor k, v in stok.items():\n    print(k, v)\nprint(list(stok), list(stok.values()))\ntambahan = {\"jeruk\": 8, \"kiwi\": 3}\ngabung = stok | tambahan\nprint(gabung)\nnama = [\"a\", \"b\", \"c\"]\nnilai = [1, 2, 3]\nprint(dict(zip(nama, nilai)))\ntersedia = {k: v for k, v in stok.items() if v > 0}\nprint(tersedia)"
+          },
+          {
+            "type": "text",
+            "source": "Pola penghitung dan pengelompokan adalah dasar `value_counts` dan `groupby`. Fungsi `max` dengan `key` mengambil kunci bernilai terbesar."
+          },
+          {
+            "type": "code",
+            "source": "kata = \"kopi teh kopi susu teh kopi\".split()\nhitung = {}\nfor k in kata:\n    hitung[k] = hitung.get(k, 0) + 1\nprint(hitung)\n\ntransaksi = [(\"Ani\", 10), (\"Budi\", 5), (\"Ani\", 7), (\"Budi\", 1), (\"Citra\", 3)]\nper_orang = {}\nfor nama, jumlah in transaksi:\n    per_orang.setdefault(nama, []).append(jumlah)\nprint(per_orang)\ntotal = {n: sum(v) for n, v in per_orang.items()}\nprint(total)\nterbanyak = max(total, key=total.get)\nprint(terbanyak)"
+          },
+          {
+            "type": "text",
+            "source": "JSON `true` dan `null` menjadi `True` dan `None` di Python. Rangkaian `get` dengan dictionary kosong menghindari `KeyError` pada tingkat yang tidak ada."
+          },
+          {
+            "type": "code",
+            "source": "import json\n\nteks = '{\"pengguna\": {\"nama\": \"Sari\", \"alamat\": {\"kota\": \"Depok\"}}, \"tag\": [\"a\", \"b\"], \"aktif\": true, \"skor\": null}'\ndata = json.loads(teks)\nprint(data[\"pengguna\"][\"alamat\"][\"kota\"], data[\"tag\"][1], data[\"aktif\"], data[\"skor\"])\nprint(data.get(\"pengguna\", {}).get(\"telepon\", {}).get(\"kode\"))\nkeluar = json.dumps({\"a\": [1, 2], \"b\": None, \"c\": True}, sort_keys=True)\nprint(keluar)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A1-03-3",
+      "title": "Set dan memilih struktur data",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Membuat set dan memakai operasi himpunan seperti gabungan, irisan, dan selisih",
+        "Menghapus duplikat dan memeriksa keanggotaan dengan cepat memakai set",
+        "Memilih antara list, tuple, dictionary, dan set berdasarkan kebutuhan",
+        "Mengukur perbedaan kecepatan pencarian antar struktur data"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Set: kumpulan unik tanpa urutan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Set: kumpulan unik tanpa urutan\n\n**Set** adalah kumpulan elemen unik tanpa urutan, ditulis dengan kurung kurawal `{1, 2, 3}` atau dibuat dengan `set(...)`. Set kosong harus ditulis `set()` karena `{}` membuat dictionary kosong. Elemen set harus hashable, sama seperti kunci dictionary.\n\nKarena tidak berurutan, set tidak punya indeks dan tidak bisa diiris. Urutan penelusurannya tidak boleh diandalkan. Sebagai gantinya, set unggul dalam dua hal: menghapus duplikat dan memeriksa keanggotaan dengan sangat cepat.\n\nMengubah list menjadi set lalu kembali ke list adalah cara tercepat untuk membuang duplikat, tetapi urutan asli hilang. Bila urutan kemunculan pertama perlu dipertahankan, pakai trik `list(dict.fromkeys(daftar))` yang memanfaatkan urutan penyisipan dictionary."
+            },
+            {
+              "type": "code_example",
+              "filename": "dasar_set.py",
+              "runnable": true,
+              "code": "a = [3, 1, 3, 2, 1, 5]\nprint(sorted(set(a)))\nprint(list(dict.fromkeys(a)))\nkosong = set()\nprint(type(kosong).__name__, type({}).__name__)\ns = {1, 2}\ns.add(3)\ns.add(2)\ns.discard(10)\nprint(sorted(s), len(s), 2 in s, 9 in s)",
+              "expected_output_note": "[1, 2, 3, 5]\n[3, 1, 2, 5]\nset dict\n[1, 2, 3] 3 True False",
+              "explanation": "`set` menghapus duplikat tanpa menjaga urutan, sedangkan `dict.fromkeys` menjaga urutan kemunculan pertama. `discard` tidak menimbulkan error bila elemen tidak ada."
+            },
+            {
+              "type": "text",
+              "markdown": "## Operasi himpunan\n\nSet mendukung operasi dari matematika himpunan. **Gabungan** (`a | b`) berisi semua elemen dari keduanya. **Irisan** (`a & b`) berisi elemen yang ada di keduanya. **Selisih** (`a - b`) berisi elemen di a yang tidak ada di b. **Selisih simetris** (`a ^ b`) berisi elemen yang hanya ada di salah satu.\n\nOperasi ini sangat berguna dalam data: mencari pelanggan yang membeli produk A dan B (irisan), pelanggan yang membeli A tetapi tidak B (selisih), atau memeriksa apakah dua kumpulan fitur tumpang tindih. Metode `issubset`, `issuperset`, dan `isdisjoint` memeriksa hubungan antar himpunan.\n\nSelain itu, sifat irisan dan gabungan dipakai langsung dalam metrik kemiripan seperti indeks Jaccard, yaitu ukuran irisan dibagi ukuran gabungan, yang sering muncul dalam sistem rekomendasi dan analisis teks."
+            },
+            {
+              "type": "code_example",
+              "filename": "operasi_set.py",
+              "runnable": true,
+              "code": "a = {1, 2, 3, 4}\nb = {3, 4, 5}\nprint(sorted(a | b), sorted(a & b), sorted(a - b), sorted(a ^ b))\nprint({1, 2} <= a, a.isdisjoint({9}), {3} < b)\ndef jaccard(x, y):\n    if not x and not y:\n        return 1.0\n    return len(x & y) / len(x | y)\nprint(round(jaccard(a, b), 4))",
+              "expected_output_note": "[1, 2, 3, 4, 5] [3, 4] [1, 2] [1, 2, 5]\nTrue True True\n0.4",
+              "explanation": "Empat operasi himpunan menghasilkan gabungan, irisan, selisih, dan selisih simetris. Indeks Jaccard di sini 2 dibagi 5, yaitu 0.4."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa tipe dari {}?",
+            "options": [
+              "dict",
+              "set"
+            ],
+            "answer_index": 0,
+            "explanation": "Kurung kurawal kosong membuat dictionary.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Seberapa cepat pencarian di tiap struktur?",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Seberapa cepat pencarian di tiap struktur?\n\nMemeriksa `x in daftar` pada list harus menelusuri elemen satu per satu, jadi waktunya tumbuh sebanding dengan panjang list. Memeriksa `x in himpunan` atau `x in dictionary` memakai tabel hash dan rata-rata tidak bergantung pada ukuran. Untuk seribu elemen perbedaannya kecil, tetapi untuk jutaan elemen perbedaannya bisa ribuan kali lipat.\n\nKarena itu, jika kamu berulang kali memeriksa keanggotaan terhadap koleksi yang besar, ubah dulu koleksi itu menjadi set. Biaya mengubahnya hanya sekali, sedangkan hemat waktunya terasa di tiap pemeriksaan.\n\nPada contoh berikut kita mengukur waktu dengan modul `time`. Angka pastinya berbeda di tiap perangkat, jadi yang diperiksa adalah perbandingan relatifnya, bukan nilai mutlaknya."
+            },
+            {
+              "type": "code_example",
+              "filename": "waktu_pencarian.py",
+              "runnable": true,
+              "code": "import time\n\nn = 20000\ndaftar = list(range(n))\nhimpunan = set(daftar)\ntarget = list(range(n - 500, n + 500))\n\nt0 = time.perf_counter()\na = sum(1 for x in target if x in daftar)\nt_list = time.perf_counter() - t0\n\nt0 = time.perf_counter()\nb = sum(1 for x in target if x in himpunan)\nt_set = time.perf_counter() - t0\n\nprint(a, b, a == b)\nprint(\"set lebih cepat dari list:\", t_set < t_list)",
+              "expected_output_note": "500 500 True\nset lebih cepat dari list: True",
+              "explanation": "Hasil pencarian sama, tetapi set jauh lebih cepat. Waktu mutlaknya bergantung perangkat sehingga yang diperiksa hanya perbandingannya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih struktur yang tepat\n\nPilih struktur berdasarkan apa yang paling sering kamu lakukan. Butuh urutan dan indeks serta data berubah? **List**. Butuh rekaman tetap atau kunci komposit? **Tuple**. Butuh mencari nilai lewat label? **Dictionary**. Butuh keunikan dan pemeriksaan keanggotaan cepat atau operasi himpunan? **Set**.\n\nDalam praktik, struktur ini sering digabung: list of dictionary untuk baris data, dictionary berisi list untuk pengelompokan, set of tuple untuk pasangan unik. Tidak ada struktur yang terbaik secara mutlak, hanya yang paling cocok untuk operasi dominan.\n\nPustaka seperti NumPy dan pandas menggantikan sebagian besar struktur ini untuk data numerik berukuran besar karena jauh lebih efisien, tetapi struktur bawaan tetap menjadi bahasa yang kamu pakai di antara langkah-langkah analisis."
+            }
+          ],
+          "quick_check": {
+            "question": "Hasil {1,2,3} & {2,3,4}?",
+            "options": [
+              "{1,2,3,4}",
+              "{2,3}"
+            ],
+            "answer_index": 1,
+            "explanation": "Irisan berisi elemen yang ada di keduanya.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Contoh keputusan dalam praktik",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Contoh keputusan dalam praktik\n\nMisalkan kamu punya satu juta ID pengguna aktif dan sepuluh ribu ID baru yang ingin diperiksa apakah sudah terdaftar. Jika ID aktif disimpan dalam list, setiap pemeriksaan menelusuri sampai satu juta elemen. Jika disimpan dalam set, tiap pemeriksaan hampir seketika. Perbedaannya menentukan apakah program selesai dalam sepersekian detik atau berjalan berjam-jam.\n\nContoh lain: kamu ingin tahu fitur mana yang dipakai model A tetapi tidak model B. Dengan dua set nama fitur, jawabannya satu ekspresi selisih. Tanpa set, kamu menulis dua perulangan bersarang yang lebih panjang dan lebih lambat.\n\nIngat juga bahwa set hanya menyimpan elemen hashable. Mencoba memasukkan list ke dalam set menimbulkan `TypeError`, jadi ubah dulu list itu menjadi tuple bila memang perlu disimpan sebagai satu elemen. Pemahaman kecil ini mencegah error membingungkan saat kamu mengolah data bersarang.\n\nAturan praktisnya: bila pertanyaannya soal keanggotaan, keunikan, atau perbandingan dua kumpulan, pikirkan set lebih dulu. Latihan berikut melatih refleks itu."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa x in set lebih cepat dari x in list?",
+            "options": [
+              "Set memakai tabel hash",
+              "Set lebih kecil"
+            ],
+            "answer_index": 0,
+            "explanation": "Tabel hash memberi pencarian rata-rata konstan.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A1-03-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `irisan(a, b)` yang mengembalikan list terurut elemen yang ada di kedua list.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def irisan(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "irisan([1, 2, 3], [2, 3, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert irisan([1, 2, 3], [2, 3, 4]) == [2, 3]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "irisan([1], [2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert irisan([1], [2]) == []"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "irisan([], [1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert irisan([], [1]) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "irisan([3, 3, 1], [3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert irisan([3, 3, 1], [3]) == [3]"
+              }
+            ]
+          },
+          "hint": "Ubah keduanya menjadi set lalu ambil irisan dan urutkan.",
+          "solution": "def irisan(a, b):\n    return sorted(set(a) & set(b))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-03-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `ada_duplikat(daftar)` yang mengembalikan `True` bila ada elemen yang muncul lebih dari sekali.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def ada_duplikat(daftar):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ada_duplikat([1, 2, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ada_duplikat([1, 2, 1]) is True"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ada_duplikat([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ada_duplikat([1, 2, 3]) is False"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ada_duplikat([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ada_duplikat([]) is False"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ada_duplikat([\"a\", \"a\"])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ada_duplikat([\"a\", \"a\"]) is True"
+              }
+            ]
+          },
+          "hint": "Bandingkan panjang list dengan panjang set-nya.",
+          "solution": "def ada_duplikat(daftar):\n    return len(set(daftar)) != len(daftar)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-03-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `jaccard(a, b)` yang mengembalikan ukuran irisan dibagi ukuran gabungan dari dua koleksi (diperlakukan sebagai set), dibulatkan 4 desimal.",
+          "note": "Bila keduanya kosong kembalikan 1.0.",
+          "filename": "solution.py",
+          "starter_code": "def jaccard(a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jaccard([1, 2, 3, 4], [3, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jaccard([1, 2, 3, 4], [3, 4, 5]) == 0.4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jaccard([], [])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jaccard([], []) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jaccard([1], [2])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jaccard([1], [2]) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jaccard([1, 1, 2], [2, 2, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jaccard([1, 1, 2], [2, 2, 1]) == 1.0"
+              }
+            ]
+          },
+          "hint": "Konversi ke set dan tangani kasus kosong lebih dulu.",
+          "solution": "def jaccard(a, b):\n    x, y = set(a), set(b)\n    if not x and not y:\n        return 1.0\n    return round(len(x & y) / len(x | y), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A1-03-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `pelanggan_unik(transaksi)` yang menerima list tuple `(pelanggan, produk)` dan mengembalikan dictionary produk ke set pelanggan yang membelinya.",
+          "note": "Tulis juga `beli_a_bukan_b(transaksi, a, b)` yang mengembalikan list terurut pelanggan yang membeli produk `a` tetapi tidak `b`.",
+          "filename": "solution.py",
+          "starter_code": "def pelanggan_unik(transaksi):\n    # TODO: implementasikan\n    pass\n\ndef beli_a_bukan_b(transaksi, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pelanggan_unik(t)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "t = [(\"ani\", \"kopi\"), (\"budi\", \"kopi\"), (\"ani\", \"teh\"), (\"citra\", \"teh\"), (\"ani\", \"kopi\")]\nassert pelanggan_unik(t) == {\"kopi\": {\"ani\", \"budi\"}, \"teh\": {\"ani\", \"citra\"}}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "beli_a_bukan_b(t, \"kopi\", \"teh\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert beli_a_bukan_b(t, \"kopi\", \"teh\") == [\"budi\"]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "beli_a_bukan_b(t, \"teh\", \"kopi\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert beli_a_bukan_b(t, \"teh\", \"kopi\") == [\"citra\"]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "beli_a_bukan_b(t, \"susu\", \"kopi\")",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert beli_a_bukan_b(t, \"susu\", \"kopi\") == []"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "pelanggan_unik([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pelanggan_unik([]) == {}"
+              }
+            ]
+          },
+          "hint": "Bangun dictionary produk ke set, lalu pakai operasi selisih. Gunakan get dengan set() untuk produk yang tidak ada.",
+          "solution": "def pelanggan_unik(transaksi):\n    hasil = {}\n    for pelanggan, produk in transaksi:\n        hasil.setdefault(produk, set()).add(pelanggan)\n    return hasil\n\ndef beli_a_bukan_b(transaksi, a, b):\n    p = pelanggan_unik(transaksi)\n    return sorted(p.get(a, set()) - p.get(b, set()))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa tipe dari {}?",
+          "code": null,
+          "options": [
+            {
+              "label": "set",
+              "description": ""
+            },
+            {
+              "label": "dict",
+              "description": ""
+            },
+            {
+              "label": "list",
+              "description": ""
+            },
+            {
+              "label": "tuple",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Set kosong butuh fungsi.",
+          "explanation": "Kurung kurawal kosong membuat dictionary."
+        },
+        {
+          "q": "Hasil {1,2,3} & {2,3,4}?",
+          "code": null,
+          "options": [
+            {
+              "label": "{1,2,3,4}",
+              "description": ""
+            },
+            {
+              "label": "{2,3}",
+              "description": ""
+            },
+            {
+              "label": "{1}",
+              "description": ""
+            },
+            {
+              "label": "{4}",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Operator & adalah irisan.",
+          "explanation": "Irisan berisi elemen yang ada di keduanya."
+        },
+        {
+          "q": "Mengapa x in set lebih cepat dari x in list?",
+          "code": null,
+          "options": [
+            {
+              "label": "Set lebih kecil",
+              "description": ""
+            },
+            {
+              "label": "Set memakai tabel hash",
+              "description": ""
+            },
+            {
+              "label": "List tidak bisa dicari",
+              "description": ""
+            },
+            {
+              "label": "Tidak lebih cepat",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pikirkan cara menemukan tanpa menelusuri semua.",
+          "explanation": "Tabel hash memberi pencarian rata-rata konstan."
+        },
+        {
+          "q": "Cara membuang duplikat sambil menjaga urutan?",
+          "code": null,
+          "options": [
+            {
+              "label": "set(a)",
+              "description": ""
+            },
+            {
+              "label": "sorted(set(a))",
+              "description": ""
+            },
+            {
+              "label": "list(dict.fromkeys(a))",
+              "description": ""
+            },
+            {
+              "label": "a.sort()",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Set tidak menjaga urutan.",
+          "explanation": "Dictionary menjaga urutan penyisipan sehingga kemunculan pertama dipertahankan."
+        },
+        {
+          "q": "Struktur paling cocok untuk mencari nilai lewat label?",
+          "code": null,
+          "options": [
+            {
+              "label": "List",
+              "description": ""
+            },
+            {
+              "label": "Tuple",
+              "description": ""
+            },
+            {
+              "label": "Dictionary",
+              "description": ""
+            },
+            {
+              "label": "String",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Pasangan kunci dan nilai.",
+          "explanation": "Dictionary memetakan kunci ke nilai."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menulis {} untuk set kosong. Lebih baik: Pakai set() karena {} membuat dictionary.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menulis {} untuk set kosong.",
+          "fix": "Pakai set() karena {} membuat dictionary."
+        },
+        {
+          "mistake": "Mengandalkan urutan elemen set.",
+          "fix": "Urutkan dengan sorted bila urutan penting."
+        },
+        {
+          "mistake": "Mencari anggota di list besar berulang kali.",
+          "fix": "Ubah dulu menjadi set untuk pemeriksaan cepat."
+        }
+      ],
+      "summary": [
+        "Set menyimpan elemen unik tanpa urutan dengan pemeriksaan keanggotaan cepat.",
+        "Operasi gabungan, irisan, selisih, dan selisih simetris berlaku pada set.",
+        "Pencarian di set dan dictionary jauh lebih cepat dari list untuk data besar.",
+        "Pilih struktur berdasarkan operasi yang paling dominan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Set dan memilih struktur data"
+          },
+          {
+            "type": "text",
+            "source": "`set` menghapus duplikat tanpa menjaga urutan, sedangkan `dict.fromkeys` menjaga urutan kemunculan pertama. `discard` tidak menimbulkan error bila elemen tidak ada."
+          },
+          {
+            "type": "code",
+            "source": "a = [3, 1, 3, 2, 1, 5]\nprint(sorted(set(a)))\nprint(list(dict.fromkeys(a)))\nkosong = set()\nprint(type(kosong).__name__, type({}).__name__)\ns = {1, 2}\ns.add(3)\ns.add(2)\ns.discard(10)\nprint(sorted(s), len(s), 2 in s, 9 in s)"
+          },
+          {
+            "type": "text",
+            "source": "Empat operasi himpunan menghasilkan gabungan, irisan, selisih, dan selisih simetris. Indeks Jaccard di sini 2 dibagi 5, yaitu 0.4."
+          },
+          {
+            "type": "code",
+            "source": "a = {1, 2, 3, 4}\nb = {3, 4, 5}\nprint(sorted(a | b), sorted(a & b), sorted(a - b), sorted(a ^ b))\nprint({1, 2} <= a, a.isdisjoint({9}), {3} < b)\ndef jaccard(x, y):\n    if not x and not y:\n        return 1.0\n    return len(x & y) / len(x | y)\nprint(round(jaccard(a, b), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Hasil pencarian sama, tetapi set jauh lebih cepat. Waktu mutlaknya bergantung perangkat sehingga yang diperiksa hanya perbandingannya."
+          },
+          {
+            "type": "code",
+            "source": "import time\n\nn = 20000\ndaftar = list(range(n))\nhimpunan = set(daftar)\ntarget = list(range(n - 500, n + 500))\n\nt0 = time.perf_counter()\na = sum(1 for x in target if x in daftar)\nt_list = time.perf_counter() - t0\n\nt0 = time.perf_counter()\nb = sum(1 for x in target if x in himpunan)\nt_set = time.perf_counter() - t0\n\nprint(a, b, a == b)\nprint(\"set lebih cepat dari list:\", t_set < t_list)"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa kode dan contoh singkat yang cukup jelas dalam teks dan latihan.",
+    "brief": []
+  },
+  "references": []
+}

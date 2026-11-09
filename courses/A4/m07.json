@@ -1,0 +1,1608 @@
+{
+  "schema_version": 2,
+  "course_id": "A4",
+  "module_no": 7,
+  "title": "Hukum bilangan besar dan CLT",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memahami hukum bilangan besar dan batas Chebyshev",
+    "Memakai teorema limit pusat dan galat baku",
+    "Menyusun interval kepercayaan dan merencanakan ukuran sampel"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A4-07-1",
+    "exercise_id": "A4-07-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def simulasi_varians_rata(n, trial, seed):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A4-07-1",
+      "title": "Hukum bilangan besar",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menjelaskan mengapa rata-rata sampel mendekati ekspektasi",
+        "Menghitung rata-rata berjalan dan melihat konvergensinya",
+        "Memakai ketaksamaan Chebyshev untuk rata-rata sampel",
+        "Menentukan ukuran sampel dari batas Chebyshev"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari satu percobaan ke banyak",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari satu percobaan ke banyak\n\nSatu lemparan koin sama sekali tidak bisa diprediksi. Seribu lemparan, sebaliknya, hampir pasti menghasilkan sekitar separuh kepala. Keteraturan yang muncul dari kekacauan inilah isi **hukum bilangan besar**: rata-rata `n` pengamatan independen dengan distribusi sama mendekati ekspektasi sebenarnya ketika `n` membesar.\n\nHukum ini adalah jembatan antara teori dan data. Ia membenarkan praktik menaksir ekspektasi dengan rata-rata sampel, menaksir peluang dengan frekuensi relatif, dan memakai simulasi untuk menghitung besaran yang sulit dihitung secara analitik."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pernyataan yang tepat\n\nBentuk lemahnya menyatakan untuk setiap toleransi `epsilon` positif, peluang rata-rata sampel menyimpang lebih dari `epsilon` dari ekspektasi menuju nol bila `n` menuju tak hingga. Bentuk kuatnya menyatakan bahwa dengan peluang satu, barisan rata-rata konvergen ke ekspektasi.\n\nSyarat utamanya: pengamatan independen, berdistribusi sama, dan ekspektasi ada dan berhingga. Syarat terakhir penting. Distribusi Cauchy tidak memiliki ekspektasi berhingga, dan rata-rata sampelnya tidak pernah menstabil seberapa pun besar `n`. Asumsi bukan formalitas."
+            },
+            {
+              "type": "code_example",
+              "filename": "lln_koin.py",
+              "runnable": true,
+              "code": "import random\n\nrandom.seed(11)\nn = 10000\nkepala = sum(random.random() < 0.5 for _ in range(n))\nprint(abs(kepala / n - 0.5) < 0.03)",
+              "expected_output_note": "True",
+              "explanation": "Proporsi kepala dari sepuluh ribu lemparan berada sangat dekat dengan setengah, sesuai hukum bilangan besar."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rata-rata berjalan\n\nCara melihat hukum bilangan besar adalah menghitung rata-rata berjalan: rata-rata dari `k` pengamatan pertama untuk `k = 1, 2, 3, ...`. Pada awalnya rata-rata ini berfluktuasi besar karena sedikit data. Seiring bertambahnya data, fluktuasi mengecil dan kurva menempel pada ekspektasi.\n\nMenggambar rata-rata berjalan adalah diagnosis simulasi yang berguna: bila kurvanya belum mendatar, simulasi belum cukup panjang untuk dipercaya. Kebiasaan ini akan dipakai di pelajaran Monte Carlo."
+            },
+            {
+              "type": "code_example",
+              "filename": "rata_berjalan.py",
+              "runnable": true,
+              "code": "data = [1, 2, 3, 4, 5]\ntotal = 0\nhasil = []\nfor k, x in enumerate(data, start=1):\n    total += x\n    hasil.append(round(total / k, 4))\nprint(hasil)",
+              "expected_output_note": "[1.0, 1.5, 2.0, 2.5, 3.0]",
+              "explanation": "Rata-rata berjalan dihitung dengan menjumlahkan bertahap dan membagi dengan banyak data sejauh ini."
+            }
+          ],
+          "quick_check": {
+            "question": "Hukum bilangan besar menyatakan?",
+            "options": [
+              "Rata-rata sampel mendekati ekspektasi",
+              "Data selalu normal"
+            ],
+            "answer_index": 0,
+            "explanation": "Untuk n besar.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Kesalahan penafsiran",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kesalahan penafsiran\n\nHukum bilangan besar sering disalahpahami sebagai hukum rata-rata yang memaksa keseimbangan. Setelah lima kepala berturut-turut, lemparan berikutnya tetap berpeluang setengah. Koin tidak punya ingatan untuk mengimbangi. Yang terjadi adalah ketidakseimbangan awal **diencerkan** oleh banyaknya lemparan berikutnya, bukan dikoreksi.\n\nSelisih mutlak antara jumlah kepala dan jumlah ekor justru cenderung membesar seperti akar `n`. Yang mengecil adalah selisih proporsi. Membedakan keduanya mencegah kekeliruan gambler: menganggap kekalahan beruntun berarti kemenangan segera datang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ketaksamaan Chebyshev untuk rata-rata\n\nRata-rata `n` pengamatan independen dengan varians `sigma^2` memiliki varians `sigma^2 / n`. Menerapkan Chebyshev pada rata-rata ini memberi `P(|rata-rata - mu| >= epsilon) <= sigma^2 / (n * epsilon^2)`. Batas ini turun sebagai satu per `n`, menjamin konvergensi tanpa asumsi bentuk distribusi.\n\nBatas Chebyshev longgar, tetapi universal. Ia sudah cukup untuk membuktikan hukum lemah dan untuk memberi perkiraan kasar ukuran sampel. Untuk batas yang lebih ketat kita pakai pendekatan normal dari teorema limit pusat di pelajaran berikut."
+            },
+            {
+              "type": "code_example",
+              "filename": "chebyshev_rata.py",
+              "runnable": true,
+              "code": "var = 35 / 12\nn = 100\neps = 0.5\nprint(round(var / (n * eps ** 2), 4))",
+              "expected_output_note": "0.1167",
+              "explanation": "Untuk rata-rata seratus lemparan dadu, peluang menyimpang lebih dari setengah dari tiga koma lima paling banyak sekitar sebelas persen."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa varians rata-rata\n\nKlaim bahwa varians rata-rata sampel adalah `sigma^2 / n` dapat diperiksa dengan simulasi. Ambil banyak sampel berukuran `n`, hitung rata-rata tiap sampel, lalu hitung varians dari rata-rata itu. Hasilnya harus mendekati `sigma^2 / n`.\n\nUntuk dadu dengan `n = 25`, variansnya `2,9167 / 25`, sekitar `0,1167`. Simulasi seperti ini memperlihatkan secara empiris mengapa data lebih banyak memberi taksiran yang lebih presisi, dengan simpangan baku yang turun sebagai satu per akar `n`."
+            },
+            {
+              "type": "code_example",
+              "filename": "varians_rata.py",
+              "runnable": true,
+              "code": "import random\nimport statistics\n\nr = random.Random(5)\nn = 25\nrata = [sum(r.randint(1, 6) for _ in range(n)) / n for _ in range(5000)]\nprint(abs(statistics.pvariance(rata) - 35 / 12 / n) < 0.01)",
+              "expected_output_note": "True",
+              "explanation": "Varians rata-rata dua puluh lima dadu hasil simulasi mendekati nilai teoretis sigma kuadrat per n."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Kekeliruan gambler",
+              "markdown": "Hukum bilangan besar tidak berarti hasil acak akan menyeimbangkan diri. Ia hanya menyatakan proporsi dan rata-rata menstabil, bukan bahwa selisih mutlak mengecil."
+            }
+          ],
+          "quick_check": {
+            "question": "Varians rata-rata sampel?",
+            "options": [
+              "sigma^2",
+              "sigma^2/n"
+            ],
+            "answer_index": 1,
+            "explanation": "Mengecil dengan n.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Simulasi Monte Carlo sebagai terapan",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Simulasi Monte Carlo sebagai terapan\n\nHukum bilangan besar adalah dasar metode Monte Carlo. Untuk menaksir besaran yang sulit dihitung, rancang percobaan acak yang ekspektasinya sama dengan besaran itu, ulangi banyak kali, dan ambil rata-ratanya. Peluang suatu kejadian ditaksir dengan proporsi kemunculannya dalam simulasi.\n\nAkurasi bergantung pada banyaknya ulangan lewat galat baku `sigma / sqrt(n)`. Untuk satu angka desimal tambahan ketelitian kita butuh seratus kali lebih banyak simulasi, sehingga Monte Carlo cocok untuk ketelitian sedang dan masalah berdimensi tinggi, bukan untuk presisi ekstrem pada masalah sederhana."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ketika hukum ini gagal\n\nSelain distribusi tanpa ekspektasi seperti Cauchy, hukum bilangan besar juga bisa terasa gagal secara praktis bila distribusinya berekor sangat tebal. Ekspektasi ada tetapi kejadian ekstrem yang jarang menyumbang sangat besar, sehingga konvergensi memerlukan sampel yang jauh lebih banyak daripada biasanya. Kerugian keuangan dan ukuran bencana alam sering berperilaku begini.\n\nPelajarannya: selalu periksa bentuk ekor data sebelum percaya rata-rata sampel. Satu nilai ekstrem dapat menggeser rata-rata sedemikian besar sehingga median atau rata-rata terpangkas lebih jujur."
+            }
+          ],
+          "quick_check": {
+            "question": "Kekeliruan gambler adalah?",
+            "options": [
+              "Koin punya ingatan",
+              "Koin adil"
+            ],
+            "answer_index": 0,
+            "explanation": "Lemparan independen.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-07-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `rata_rata_berjalan(data)` yang mengembalikan list rata-rata dari `k` data pertama untuk tiap `k`, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def rata_rata_berjalan(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_rata_berjalan([1, 2, 3, 4, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_berjalan([1, 2, 3, 4, 5]) == [1.0, 1.5, 2.0, 2.5, 3.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_rata_berjalan([10])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_berjalan([10]) == [10.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_rata_berjalan([])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_berjalan([]) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_rata_berjalan([1, 0, 1, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_rata_berjalan([1, 0, 1, 0]) == [1.0, 0.5, 0.6667, 0.5]"
+              }
+            ]
+          },
+          "hint": "Simpan jumlah kumulatif dan bagi dengan banyak data sejauh ini.",
+          "solution": "def rata_rata_berjalan(data):\n    total = 0\n    hasil = []\n    for k, x in enumerate(data, start=1):\n        total += x\n        hasil.append(round(total / k, 4))\n    return hasil",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-07-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `batas_chebyshev_rata(var, n, eps)` yang mengembalikan `min(1, var / (n * eps^2))` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def batas_chebyshev_rata(var, n, eps):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "batas_chebyshev_rata(35 / 12, 100, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_chebyshev_rata(35 / 12, 100, 0.5) == 0.1167"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "batas_chebyshev_rata(1, 1, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_chebyshev_rata(1, 1, 0.5) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "batas_chebyshev_rata(4, 100, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_chebyshev_rata(4, 100, 1) == 0.04"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "batas_chebyshev_rata(1, 10000, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert batas_chebyshev_rata(1, 10000, 0.1) == 0.01"
+              }
+            ]
+          },
+          "hint": "Bagi varians dengan n kali kuadrat toleransi dan batasi pada satu.",
+          "solution": "def batas_chebyshev_rata(var, n, eps):\n    return round(min(1, var / (n * eps ** 2)), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-07-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `ukuran_sampel_chebyshev(var, eps, delta)` yang mengembalikan `n` terkecil (bilangan bulat) dengan `var / (n * eps^2) <= delta`, yaitu pembulatan ke atas dari `var / (delta * eps^2)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef ukuran_sampel_chebyshev(var, eps, delta):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ukuran_sampel_chebyshev(4, 1, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_chebyshev(4, 1, 0.05) == 80"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ukuran_sampel_chebyshev(1, 0.1, 0.01)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_chebyshev(1, 0.1, 0.01) == 10000"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ukuran_sampel_chebyshev(35 / 12, 0.5, 0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_chebyshev(35 / 12, 0.5, 0.05) == 234"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ukuran_sampel_chebyshev(1, 1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_chebyshev(1, 1, 1) == 1"
+              }
+            ]
+          },
+          "hint": "Balikkan batas untuk n lalu bulatkan ke atas dengan math.ceil.",
+          "solution": "import math\n\ndef ukuran_sampel_chebyshev(var, eps, delta):\n    return math.ceil(var / (delta * eps ** 2))",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-07-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `simulasi_varians_rata(n, trial, seed)` yang memakai `random.Random(seed)` untuk menjalankan `trial` percobaan, masing-masing menghitung rata-rata `n` lemparan dadu (`randint(1, 6)`), lalu mengembalikan varians populasi dari rata-rata itu (pembagi `trial`).",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import random\n\ndef simulasi_varians_rata(n, trial, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(simulasi_varians_rata(25, 5000, 1) - 35 /...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_varians_rata(25, 5000, 1) - 35 / 12 / 25) < 0.01"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(simulasi_varians_rata(100, 5000, 2) - 35 ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_varians_rata(100, 5000, 2) - 35 / 12 / 100) < 0.005"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "abs(simulasi_varians_rata(1, 5000, 3) - 35 / 12)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_varians_rata(1, 5000, 3) - 35 / 12) < 0.3"
+              }
+            ]
+          },
+          "hint": "Buat generator Random, kumpulkan rata-rata tiap percobaan, lalu hitung variansnya.",
+          "solution": "import random\n\ndef simulasi_varians_rata(n, trial, seed):\n    r = random.Random(seed)\n    rata = [sum(r.randint(1, 6) for _ in range(n)) / n for _ in range(trial)]\n    m = sum(rata) / trial\n    return sum((x - m) ** 2 for x in rata) / trial",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Hukum bilangan besar menyatakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata sampel mendekati ekspektasi",
+              "description": ""
+            },
+            {
+              "label": "Data selalu normal",
+              "description": ""
+            },
+            {
+              "label": "Varians nol",
+              "description": ""
+            },
+            {
+              "label": "Median tetap",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Konvergensi.",
+          "explanation": "Untuk n besar."
+        },
+        {
+          "q": "Varians rata-rata sampel?",
+          "code": null,
+          "options": [
+            {
+              "label": "sigma^2",
+              "description": ""
+            },
+            {
+              "label": "sigma^2/n",
+              "description": ""
+            },
+            {
+              "label": "sigma/n",
+              "description": ""
+            },
+            {
+              "label": "n sigma^2",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Dibagi n.",
+          "explanation": "Mengecil dengan n."
+        },
+        {
+          "q": "Kekeliruan gambler adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Koin punya ingatan",
+              "description": ""
+            },
+            {
+              "label": "Koin adil",
+              "description": ""
+            },
+            {
+              "label": "n besar",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tanpa ingatan.",
+          "explanation": "Lemparan independen."
+        },
+        {
+          "q": "Chebyshev memberi batas?",
+          "code": null,
+          "options": [
+            {
+              "label": "Universal tapi longgar",
+              "description": ""
+            },
+            {
+              "label": "Ketat",
+              "description": ""
+            },
+            {
+              "label": "Hanya normal",
+              "description": ""
+            },
+            {
+              "label": "Hanya diskrit",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Longgar.",
+          "explanation": "Tanpa asumsi bentuk."
+        },
+        {
+          "q": "Syarat penting hukum ini?",
+          "code": null,
+          "options": [
+            {
+              "label": "Ekspektasi berhingga",
+              "description": ""
+            },
+            {
+              "label": "Data normal",
+              "description": ""
+            },
+            {
+              "label": "n genap",
+              "description": ""
+            },
+            {
+              "label": "Varians nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ekspektasi.",
+          "explanation": "Cauchy melanggarnya."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira hasil acak akan menyeimbangkan diri. Lebih baik: Ketidakseimbangan awal hanya diencerkan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira hasil acak akan menyeimbangkan diri.",
+          "fix": "Ketidakseimbangan awal hanya diencerkan."
+        },
+        {
+          "mistake": "Memakai hukum bilangan besar pada distribusi tanpa ekspektasi.",
+          "fix": "Ekspektasi harus ada dan berhingga."
+        },
+        {
+          "mistake": "Mengira simpangan baku rata-rata turun sebagai satu per n.",
+          "fix": "Turun sebagai satu per akar n."
+        }
+      ],
+      "summary": [
+        "Rata-rata sampel mendekati ekspektasi bila n besar.",
+        "Varians rata-rata adalah sigma kuadrat per n.",
+        "Chebyshev memberi batas universal untuk penyimpangan rata-rata.",
+        "Hukum ini tidak berarti keseimbangan paksa."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Hukum bilangan besar"
+          },
+          {
+            "type": "text",
+            "source": "Proporsi kepala dari sepuluh ribu lemparan berada sangat dekat dengan setengah, sesuai hukum bilangan besar."
+          },
+          {
+            "type": "code",
+            "source": "import random\n\nrandom.seed(11)\nn = 10000\nkepala = sum(random.random() < 0.5 for _ in range(n))\nprint(abs(kepala / n - 0.5) < 0.03)"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata berjalan dihitung dengan menjumlahkan bertahap dan membagi dengan banyak data sejauh ini."
+          },
+          {
+            "type": "code",
+            "source": "data = [1, 2, 3, 4, 5]\ntotal = 0\nhasil = []\nfor k, x in enumerate(data, start=1):\n    total += x\n    hasil.append(round(total / k, 4))\nprint(hasil)"
+          },
+          {
+            "type": "text",
+            "source": "Untuk rata-rata seratus lemparan dadu, peluang menyimpang lebih dari setengah dari tiga koma lima paling banyak sekitar sebelas persen."
+          },
+          {
+            "type": "code",
+            "source": "var = 35 / 12\nn = 100\neps = 0.5\nprint(round(var / (n * eps ** 2), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Varians rata-rata dua puluh lima dadu hasil simulasi mendekati nilai teoretis sigma kuadrat per n."
+          },
+          {
+            "type": "code",
+            "source": "import random\nimport statistics\n\nr = random.Random(5)\nn = 25\nrata = [sum(r.randint(1, 6) for _ in range(n)) / n for _ in range(5000)]\nprint(abs(statistics.pvariance(rata) - 35 / 12 / n) < 0.01)"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-07-2",
+      "title": "Teorema limit pusat",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menyatakan teorema limit pusat dan syaratnya",
+        "Menghitung galat baku rata-rata",
+        "Memakai pendekatan normal untuk peluang rata-rata",
+        "Memakai pendekatan normal untuk binomial dengan koreksi kontinuitas"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Bentuk distribusi rata-rata",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Bentuk distribusi rata-rata\n\nHukum bilangan besar mengatakan ke mana rata-rata sampel menuju. **Teorema limit pusat** atau CLT mengatakan seperti apa sebarannya di sekitar tujuan itu. Untuk `n` besar, rata-rata `n` pengamatan independen dengan ekspektasi `mu` dan simpangan baku `sigma` berdistribusi mendekati normal dengan rata-rata `mu` dan simpangan baku `sigma / sqrt(n)`, **apa pun bentuk distribusi asalnya**.\n\nItulah keajaibannya. Data asal bisa miring, berpuncak dua, atau diskrit, tetapi rata-ratanya cenderung berbentuk lonceng. Karena itu distribusi normal begitu sentral dalam statistika inferensial."
+            },
+            {
+              "type": "text",
+              "markdown": "## Galat baku\n\nSimpangan baku rata-rata sampel disebut **galat baku** atau standard error: `SE = sigma / sqrt(n)`. Ia mengukur seberapa jauh rata-rata sampel tipikalnya dari rata-rata populasi. Untuk menggandakan presisi atau mengecilkan galat separuh, kita butuh sampel empat kali lebih besar, bukan dua kali.\n\nPengaruh akar `n` ini punya implikasi ekonomis: presisi tambahan makin mahal. Dari 100 ke 400 pengamatan galat turun separuh, tetapi dari 400 ke 1600 butuh tambahan 1200 pengamatan untuk separuh lagi."
+            },
+            {
+              "type": "code_example",
+              "filename": "galat_baku.py",
+              "runnable": true,
+              "code": "import math\n\nsigma = math.sqrt(35 / 12)\nprint(round(sigma / math.sqrt(100), 4), round(sigma / math.sqrt(400), 4))",
+              "expected_output_note": "0.1708 0.0854",
+              "explanation": "Menaikkan sampel dari seratus ke empat ratus menurunkan galat baku rata-rata dadu separuhnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Melihat CLT lewat simulasi\n\nMari uji dengan distribusi yang jelas tidak normal: eksponensial dengan laju satu, sangat miring ke kanan. Ambil banyak sampel berukuran 30, hitung rata-ratanya, dan periksa seberapa sering rata-rata itu berada dalam `1,96` galat baku dari `mu`. Bila pendekatan normal baik, proporsinya mendekati `0,95`.\n\nHasil simulasi mengonfirmasi bahwa walau data asal miring, rata-rata dari tiga puluh pengamatan sudah cukup normal untuk keperluan praktis. Untuk distribusi yang sangat miring atau berekor tebal, `n` yang dibutuhkan lebih besar."
+            },
+            {
+              "type": "code_example",
+              "filename": "clt_simulasi.py",
+              "runnable": true,
+              "code": "import math\nimport random\n\nr = random.Random(21)\nn = 30\nse = 1 / math.sqrt(n)\ndalam = 0\nfor _ in range(5000):\n    rata = sum(r.expovariate(1) for _ in range(n)) / n\n    if abs(rata - 1) < 1.96 * se:\n        dalam += 1\nprint(abs(dalam / 5000 - 0.95) < 0.03)",
+              "expected_output_note": "True",
+              "explanation": "Walau data eksponensial miring, proporsi rata-rata dalam seratus sembilan puluh enam galat baku mendekati sembilan puluh lima persen."
+            }
+          ],
+          "quick_check": {
+            "question": "CLT menyatakan rata-rata sampel mendekati?",
+            "options": [
+              "Normal",
+              "Seragam"
+            ],
+            "answer_index": 0,
+            "explanation": "Untuk n besar.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Peluang rata-rata dengan CLT",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Peluang rata-rata dengan CLT\n\nDengan CLT kita dapat menghitung peluang tentang rata-rata sampel memakai tabel normal. Untuk rata-rata seratus lemparan dadu, `mu = 3,5` dan `SE = 0,1708`. Peluang rata-rata melebihi `3,8` adalah `1 - Phi((3,8 - 3,5) / 0,1708)`, yaitu sekitar `0,0395`.\n\nLangkahnya selalu sama: hitung galat baku, ubah ke z-score, lalu gunakan CDF normal. Perhitungan ini dasar semua uji hipotesis dan interval kepercayaan yang akan dibahas di kursus statistika inferensial."
+            },
+            {
+              "type": "text",
+              "markdown": "## Normal untuk binomial\n\nBinomial adalah jumlah `n` Bernoulli independen, sehingga CLT berlaku: untuk `n` besar, binomial `(n, p)` mendekati normal dengan rata-rata `n p` dan simpangan baku `sqrt(n p (1-p))`. Karena binomial diskrit dan normal kontinu, kita memakai **koreksi kontinuitas**: peluang `X <= k` didekati dengan `P(Y <= k + 0,5)`.\n\nKoreksi setengah satuan itu memperbaiki akurasi dengan menjembatani lompatan diskrit. Pendekatan baik bila `n p` dan `n (1-p)` keduanya minimal sekitar sepuluh."
+            },
+            {
+              "type": "code_example",
+              "filename": "normal_binomial.py",
+              "runnable": true,
+              "code": "import math\n\ndef Phi(x):\n    return 0.5 * (1 + math.erf(x / math.sqrt(2)))\n\nn, p, k = 100, 0.5, 55\ntepat = sum(math.comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k + 1))\npendekatan = Phi((k + 0.5 - n * p) / math.sqrt(n * p * (1 - p)))\nprint(round(tepat, 4), round(pendekatan, 4))",
+              "expected_output_note": "0.8644 0.8643",
+              "explanation": "Pendekatan normal dengan koreksi kontinuitas hampir sama dengan hitungan binomial eksak."
+            }
+          ],
+          "quick_check": {
+            "question": "Galat baku?",
+            "options": [
+              "sigma akar n",
+              "sigma/akar n"
+            ],
+            "answer_index": 1,
+            "explanation": "SD rata-rata.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Jumlah, bukan hanya rata-rata",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Jumlah, bukan hanya rata-rata\n\nCLT juga berlaku untuk jumlah. Jumlah `n` pengamatan memiliki ekspektasi `n mu` dan simpangan baku `sigma sqrt(n)`. Jumlah tiga puluh lemparan dadu memiliki rata-rata `105` dan simpangan baku `9,354`. Dari sini kita bisa menghitung peluang total skor berada dalam rentang tertentu.\n\nPerhatikan perbedaan skala: simpangan baku jumlah tumbuh sebagai `sqrt(n)`, tetapi simpangan baku rata-rata mengecil sebagai `1/sqrt(n)`. Dua pernyataan ini sering tertukar, jadi periksa dulu apakah soal bertanya tentang jumlah atau rata-rata."
+            },
+            {
+              "type": "code_example",
+              "filename": "jumlah_dadu.py",
+              "runnable": true,
+              "code": "import math\n\nprint(30 * 3.5, round(math.sqrt(30 * 35 / 12), 4))",
+              "expected_output_note": "105.0 9.3541",
+              "explanation": "Jumlah tiga puluh dadu berpusat di seratus lima dengan simpangan baku sekitar sembilan koma tiga."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Seberapa besar n",
+              "markdown": "Sebelum memakai CLT, periksa seberapa miring distribusi asal. Makin miring atau berekor tebal, makin besar n yang dibutuhkan. Pedoman n minimal 30 adalah titik awal, bukan jaminan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Batas penggunaan CLT\n\nCLT bukan jaminan di setiap situasi. Ia membutuhkan pengamatan independen, varians berhingga, dan sampel yang cukup besar relatif terhadap kemiringan data. Data deret waktu yang berautokorelasi kuat melanggar independensi sehingga galat baku yang dihitung dengan rumus biasa terlalu kecil. Distribusi berekor sangat tebal dapat membuat konvergensi sangat lambat.\n\nUntuk kasus meragukan, bootstrap adalah alternatif praktis: ambil sampel ulang dengan pengembalian dari data sendiri, hitung statistik tiap kali, dan gunakan sebaran hasilnya sebagai taksiran sebaran statistik. Ide ini bergantung pada hukum bilangan besar yang sama."
+            }
+          ],
+          "quick_check": {
+            "question": "Presisi dua kali lipat butuh sampel?",
+            "options": [
+              "Empat kali",
+              "Dua kali"
+            ],
+            "answer_index": 0,
+            "explanation": "Akar n.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-07-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `galat_baku(sigma, n)` yang mengembalikan `sigma / sqrt(n)` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef galat_baku(sigma, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "galat_baku(2, 16)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_baku(2, 16) == 0.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "galat_baku(10, 400)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_baku(10, 400) == 0.5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "galat_baku(1, 10000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_baku(1, 10000) == 0.01"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "galat_baku(3, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_baku(3, 2) == 2.1213"
+              }
+            ]
+          },
+          "hint": "Bagi simpangan baku dengan akar banyaknya data.",
+          "solution": "import math\n\ndef galat_baku(sigma, n):\n    return round(sigma / math.sqrt(n), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-07-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `peluang_rata_di_atas(mu, sigma, n, x)` yang mengembalikan peluang rata-rata sampel melebihi `x` menurut CLT, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef peluang_rata_di_atas(mu, sigma, n, x):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_rata_di_atas(3.5, math.sqrt(35 / 12),...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rata_di_atas(3.5, math.sqrt(35 / 12), 100, 3.8) == 0.0395"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_rata_di_atas(100, 15, 25, 103)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rata_di_atas(100, 15, 25, 103) == 0.1587"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_rata_di_atas(0, 1, 1, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rata_di_atas(0, 1, 1, 0) == 0.5"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_rata_di_atas(10, 2, 100, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rata_di_atas(10, 2, 100, 10) == 0.5"
+              }
+            ]
+          },
+          "hint": "Hitung galat baku, ubah ke z-score, lalu ambil satu dikurangi CDF normal.",
+          "solution": "import math\n\ndef peluang_rata_di_atas(mu, sigma, n, x):\n    z = (x - mu) / (sigma / math.sqrt(n))\n    return round(1 - 0.5 * (1 + math.erf(z / math.sqrt(2))), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-07-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `aproks_normal_binom(n, p, k)` yang mengembalikan taksiran `P(X <= k)` untuk binomial `(n, p)` dengan normal dan koreksi kontinuitas (`k + 0.5`), dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef aproks_normal_binom(n, p, k):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "aproks_normal_binom(100, 0.5, 55)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aproks_normal_binom(100, 0.5, 55) == 0.8643"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "aproks_normal_binom(100, 0.5, 50)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aproks_normal_binom(100, 0.5, 50) == 0.5398"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "aproks_normal_binom(10, 0.5, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aproks_normal_binom(10, 0.5, 5) == 0.6241"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "aproks_normal_binom(20, 0.1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aproks_normal_binom(20, 0.1, 2) == 0.6453"
+              }
+            ]
+          },
+          "hint": "Pakai rata-rata n p dan simpangan baku akar n p satu kurang p pada titik k tambah setengah.",
+          "solution": "import math\n\ndef aproks_normal_binom(n, p, k):\n    z = (k + 0.5 - n * p) / math.sqrt(n * p * (1 - p))\n    return round(0.5 * (1 + math.erf(z / math.sqrt(2))), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-07-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `simulasi_clt(n, trial, seed)` yang memakai `random.Random(seed)` untuk mengambil `trial` sampel eksponensial laju satu (`expovariate(1)`) berukuran `n`, dan mengembalikan proporsi rata-rata sampel yang berjarak kurang dari `1.96 / sqrt(n)` dari satu.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\nimport random\n\ndef simulasi_clt(n, trial, seed):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "abs(simulasi_clt(30, 5000, 1) - 0.95)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_clt(30, 5000, 1) - 0.95) < 0.03"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(simulasi_clt(100, 3000, 2) - 0.95)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_clt(100, 3000, 2) - 0.95) < 0.03"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "abs(simulasi_clt(50, 3000, 4) - 0.95)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(simulasi_clt(50, 3000, 4) - 0.95) < 0.03"
+              }
+            ]
+          },
+          "hint": "Hitung rata-rata tiap sampel lalu hitung proporsi yang berada dalam batas galat baku.",
+          "solution": "import math\nimport random\n\ndef simulasi_clt(n, trial, seed):\n    r = random.Random(seed)\n    batas = 1.96 / math.sqrt(n)\n    dalam = 0\n    for _ in range(trial):\n        rata = sum(r.expovariate(1) for _ in range(n)) / n\n        if abs(rata - 1) < batas:\n            dalam += 1\n    return dalam / trial",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "CLT menyatakan rata-rata sampel mendekati?",
+          "code": null,
+          "options": [
+            {
+              "label": "Normal",
+              "description": ""
+            },
+            {
+              "label": "Seragam",
+              "description": ""
+            },
+            {
+              "label": "Eksponensial",
+              "description": ""
+            },
+            {
+              "label": "Poisson",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lonceng.",
+          "explanation": "Untuk n besar."
+        },
+        {
+          "q": "Galat baku?",
+          "code": null,
+          "options": [
+            {
+              "label": "sigma/akar n",
+              "description": ""
+            },
+            {
+              "label": "sigma akar n",
+              "description": ""
+            },
+            {
+              "label": "sigma/n",
+              "description": ""
+            },
+            {
+              "label": "sigma^2",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Akar n.",
+          "explanation": "SD rata-rata."
+        },
+        {
+          "q": "Presisi dua kali lipat butuh sampel?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dua kali",
+              "description": ""
+            },
+            {
+              "label": "Empat kali",
+              "description": ""
+            },
+            {
+              "label": "Sepuluh kali",
+              "description": ""
+            },
+            {
+              "label": "Sama",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kuadrat.",
+          "explanation": "Akar n."
+        },
+        {
+          "q": "Koreksi kontinuitas?",
+          "code": null,
+          "options": [
+            {
+              "label": "k + 0,5",
+              "description": ""
+            },
+            {
+              "label": "k - 5",
+              "description": ""
+            },
+            {
+              "label": "2k",
+              "description": ""
+            },
+            {
+              "label": "k/2",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Setengah.",
+          "explanation": "Menjembatani diskrit."
+        },
+        {
+          "q": "SD jumlah n pengamatan?",
+          "code": null,
+          "options": [
+            {
+              "label": "sigma/akar n",
+              "description": ""
+            },
+            {
+              "label": "sigma akar n",
+              "description": ""
+            },
+            {
+              "label": "n sigma",
+              "description": ""
+            },
+            {
+              "label": "sigma",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Jumlah.",
+          "explanation": "Tumbuh akar n."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menukar simpangan baku jumlah dengan simpangan baku rata-rata. Lebih baik: Jumlah: sigma akar n. Rata-rata: sigma per akar n.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menukar simpangan baku jumlah dengan simpangan baku rata-rata.",
+          "fix": "Jumlah: sigma akar n. Rata-rata: sigma per akar n."
+        },
+        {
+          "mistake": "Memakai CLT pada n sangat kecil dan data miring.",
+          "fix": "Periksa bentuk dan n."
+        },
+        {
+          "mistake": "Lupa koreksi kontinuitas pada normal untuk binomial.",
+          "fix": "Pakai k tambah setengah."
+        }
+      ],
+      "summary": [
+        "CLT: rata-rata sampel mendekati normal apa pun distribusi asal.",
+        "Galat baku sigma per akar n mengukur presisi rata-rata.",
+        "Normal mengaproksimasi binomial dengan koreksi kontinuitas.",
+        "Jumlah dan rata-rata punya skala simpangan baku berbeda."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Teorema limit pusat"
+          },
+          {
+            "type": "text",
+            "source": "Menaikkan sampel dari seratus ke empat ratus menurunkan galat baku rata-rata dadu separuhnya."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nsigma = math.sqrt(35 / 12)\nprint(round(sigma / math.sqrt(100), 4), round(sigma / math.sqrt(400), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Walau data eksponensial miring, proporsi rata-rata dalam seratus sembilan puluh enam galat baku mendekati sembilan puluh lima persen."
+          },
+          {
+            "type": "code",
+            "source": "import math\nimport random\n\nr = random.Random(21)\nn = 30\nse = 1 / math.sqrt(n)\ndalam = 0\nfor _ in range(5000):\n    rata = sum(r.expovariate(1) for _ in range(n)) / n\n    if abs(rata - 1) < 1.96 * se:\n        dalam += 1\nprint(abs(dalam / 5000 - 0.95) < 0.03)"
+          },
+          {
+            "type": "text",
+            "source": "Pendekatan normal dengan koreksi kontinuitas hampir sama dengan hitungan binomial eksak."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef Phi(x):\n    return 0.5 * (1 + math.erf(x / math.sqrt(2)))\n\nn, p, k = 100, 0.5, 55\ntepat = sum(math.comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k + 1))\npendekatan = Phi((k + 0.5 - n * p) / math.sqrt(n * p * (1 - p)))\nprint(round(tepat, 4), round(pendekatan, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Jumlah tiga puluh dadu berpusat di seratus lima dengan simpangan baku sekitar sembilan koma tiga."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nprint(30 * 3.5, round(math.sqrt(30 * 35 / 12), 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-07-3",
+      "title": "Interval kepercayaan dan ukuran sampel",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menyusun interval kepercayaan 95 persen untuk rata-rata",
+        "Menyusun interval kepercayaan untuk proporsi",
+        "Menafsirkan interval kepercayaan dengan benar",
+        "Menentukan ukuran sampel dari margin galat yang diinginkan"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari titik ke rentang",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari titik ke rentang\n\nRata-rata sampel adalah taksiran titik bagi rata-rata populasi, tetapi hampir pasti tidak tepat sama. Yang lebih jujur adalah memberi rentang: rata-rata kira-kira antara sekian dan sekian. **Interval kepercayaan** melakukan ini dengan tingkat keyakinan yang terukur, biasanya 95 persen.\n\nBerkat CLT, rata-rata sampel berdistribusi hampir normal di sekitar rata-rata populasi dengan simpangan baku `SE`. Maka kira-kira 95 persen rata-rata sampel berada dalam `1,96 SE` dari rata-rata sebenarnya. Membalik pernyataan ini menghasilkan interval `rata-rata sampel ± 1,96 SE`."
+            },
+            {
+              "type": "code_example",
+              "filename": "ci_mean.py",
+              "runnable": true,
+              "code": "import math\n\nmean, sd, n = 50, 10, 100\nse = sd / math.sqrt(n)\nprint(round(mean - 1.96 * se, 4), round(mean + 1.96 * se, 4))",
+              "expected_output_note": "48.04 51.96",
+              "explanation": "Dengan seratus data, rata-rata lima puluh, dan simpangan baku sepuluh, galat baku satu menghasilkan interval empat puluh delapan sampai lima puluh dua."
+            },
+            {
+              "type": "text",
+              "markdown": "## Menafsirkan dengan benar\n\nTafsir yang tepat sering salah dipahami. Interval 95 persen **tidak** berarti peluang rata-rata populasi berada di interval itu adalah 95 persen, karena rata-rata populasi adalah konstanta tetap, bukan variabel acak. Yang acak adalah intervalnya. Tafsirnya: bila prosedur ini diulang pada banyak sampel, sekitar 95 persen interval yang dihasilkan akan memuat rata-rata populasi.\n\nKita dapat memeriksa tafsir ini dengan simulasi: ambil banyak sampel dari populasi yang rata-ratanya diketahui, bangun intervalnya, dan hitung berapa kali interval memuat nilai sebenarnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "cakupan.py",
+              "runnable": true,
+              "code": "import math\nimport random\n\nr = random.Random(9)\nn = 30\nmemuat = 0\nfor _ in range(2000):\n    rata = sum(r.gauss(0, 1) for _ in range(n)) / n\n    se = 1 / math.sqrt(n)\n    if rata - 1.96 * se <= 0 <= rata + 1.96 * se:\n        memuat += 1\nprint(abs(memuat / 2000 - 0.95) < 0.03)",
+              "expected_output_note": "True",
+              "explanation": "Sekitar sembilan puluh lima persen interval yang dibangun dari sampel berulang memuat rata-rata sebenarnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Interval untuk proporsi\n\nProporsi adalah rata-rata variabel Bernoulli, sehingga CLT berlaku. Taksirannya `p_hat = x / n` dengan galat baku `sqrt(p_hat (1 - p_hat) / n)`. Interval 95 persennya `p_hat ± 1,96 * SE`. Misalnya 420 dari 1000 responden setuju: `p_hat = 0,42`, galat baku sekitar `0,0156`, dan intervalnya kira-kira `0,389` sampai `0,451`.\n\nPendekatan ini kurang baik bila `p_hat` sangat dekat nol atau satu atau `n` kecil. Pada kasus itu interval bisa keluar dari rentang nol sampai satu, dan metode yang lebih baik seperti interval Wilson sebaiknya dipakai."
+            },
+            {
+              "type": "code_example",
+              "filename": "ci_proporsi.py",
+              "runnable": true,
+              "code": "import math\n\nx, n = 420, 1000\np = x / n\nse = math.sqrt(p * (1 - p) / n)\nprint(round(p - 1.96 * se, 4), round(p + 1.96 * se, 4))",
+              "expected_output_note": "0.3894 0.4506",
+              "explanation": "Empat ratus dua puluh dari seribu memberi interval sekitar tiga puluh sembilan sampai empat puluh lima persen."
+            }
+          ],
+          "quick_check": {
+            "question": "Interval 95% rata-rata?",
+            "options": [
+              "rata-rata ± 1,96 SE",
+              "rata-rata ± SE"
+            ],
+            "answer_index": 0,
+            "explanation": "Berdasarkan CLT.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Ukuran sampel",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ukuran sampel\n\nKita bisa membalik rumus untuk merencanakan: berapa data yang dibutuhkan agar margin galat `1,96 SE` tidak melebihi nilai tertentu `m`? Untuk rata-rata, `n >= (1,96 * sigma / m)^2`. Dengan `sigma = 10` dan margin 2, `n` minimal 97.\n\nRumus ini menunjukkan trade-off: margin separuh membutuhkan sampel empat kali lebih besar. Perencanaan sebelum mengumpulkan data jauh lebih murah daripada menyadari setelahnya bahwa sampelnya terlalu kecil untuk menjawab pertanyaan."
+            },
+            {
+              "type": "code_example",
+              "filename": "ukuran_sampel.py",
+              "runnable": true,
+              "code": "import math\n\nprint(math.ceil((1.96 * 10 / 2) ** 2))\nprint(math.ceil(1.96 ** 2 * 0.25 / 0.03 ** 2))",
+              "expected_output_note": "97\n1068",
+              "explanation": "Untuk margin dua dan simpangan baku sepuluh dibutuhkan sembilan puluh tujuh data. Survei proporsi dengan margin tiga persen membutuhkan seribu enam puluh delapan responden pada kasus terburuk."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kasus terburuk untuk proporsi\n\nUntuk survei kita belum tahu `p` sebelum mengumpulkan data. Karena `p (1 - p)` terbesar pada `p = 0,5`, memakai `0,5` menghasilkan ukuran sampel yang aman untuk berapa pun `p` sebenarnya. Itulah mengapa banyak survei nasional memakai sekitar seribu responden untuk margin galat kira-kira tiga persen.\n\nBila kamu punya perkiraan awal `p` yang jauh dari setengah, misalnya sepuluh persen, ukuran sampel yang dibutuhkan bisa jauh lebih kecil. Namun perkiraan yang meleset membuat margin lebih lebar dari rencana, jadi banyak praktisi tetap memakai kasus terburuk."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Bias bukan galat acak",
+              "markdown": "Interval kepercayaan hanya menangkap galat acak pengambilan sampel. Sampel yang bias, misalnya responden yang tidak mewakili populasi, tidak diperbaiki dengan menambah data."
+            }
+          ],
+          "quick_check": {
+            "question": "Margin separuh butuh sampel?",
+            "options": [
+              "Dua kali",
+              "Empat kali"
+            ],
+            "answer_index": 1,
+            "explanation": "Akar n.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Membandingkan dua kelompok",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Membandingkan dua kelompok\n\nInterval kepercayaan juga dipakai untuk perbedaan dua kelompok, misalnya dua versi halaman web pada uji A/B. Selisih rata-rata kedua kelompok memiliki galat baku `sqrt(SE1^2 + SE2^2)` bila kelompok independen. Interval selisih yang memuat nol menandakan bahwa perbedaan yang teramati masih bisa muncul karena kebetulan.\n\nCara membaca ini lebih informatif daripada sekadar menyatakan signifikan atau tidak: interval memperlihatkan seberapa besar efek yang masuk akal, dari efek nyaris nol sampai efek besar. Keputusan bisnis bergantung pada ukuran efek, bukan hanya ada atau tidaknya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kesalahan umum\n\nBeberapa kesalahan sering muncul. Pertama, menafsirkan interval sebagai rentang tempat 95 persen data berada, padahal ia hanya tentang rata-rata. Kedua, membandingkan dua interval secara kasar dan menyimpulkan tidak berbeda hanya karena tumpang tindih. Ketiga, mengintip data berulang kali sambil memperbarui interval lalu berhenti ketika hasil tampak bagus, yang membengkakkan galat tipe satu.\n\nHindari ketiganya dengan menentukan ukuran sampel di awal, menghitung interval untuk selisih secara langsung, dan membedakan interval taksiran dari interval prediksi data baru."
+            }
+          ],
+          "quick_check": {
+            "question": "Kasus terburuk proporsi memakai p?",
+            "options": [
+              "0,5",
+              "0"
+            ],
+            "answer_index": 0,
+            "explanation": "p(1-p) maksimum.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-07-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `interval_mean(mean, sd, n, z=1.96)` yang mengembalikan tuple `(bawah, atas)` interval kepercayaan rata-rata, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef interval_mean(mean, sd, n, z=1.96):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "interval_mean(50, 10, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_mean(50, 10, 100) == (48.04, 51.96)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "interval_mean(0, 1, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_mean(0, 1, 4) == (-0.98, 0.98)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "interval_mean(10, 0, 25)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_mean(10, 0, 25) == (10.0, 10.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "interval_mean(100, 15, 25, 1.645)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_mean(100, 15, 25, 1.645) == (95.065, 104.935)"
+              }
+            ]
+          },
+          "hint": "Hitung galat baku lalu tambah dan kurangi z kali galat baku.",
+          "solution": "import math\n\ndef interval_mean(mean, sd, n, z=1.96):\n    m = z * sd / math.sqrt(n)\n    return (round(mean - m, 4), round(mean + m, 4))",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-07-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `interval_proporsi(x, n, z=1.96)` yang mengembalikan tuple `(bawah, atas)` interval kepercayaan untuk proporsi `x / n`, dibatasi pada rentang 0.0 sampai 1.0 dan dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef interval_proporsi(x, n, z=1.96):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "interval_proporsi(420, 1000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_proporsi(420, 1000) == (0.3894, 0.4506)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "interval_proporsi(50, 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_proporsi(50, 100) == (0.402, 0.598)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "interval_proporsi(5, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_proporsi(5, 10) == (0.1901, 0.8099)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "interval_proporsi(0, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_proporsi(0, 10) == (0.0, 0.0)"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "interval_proporsi(10, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert interval_proporsi(10, 10) == (1.0, 1.0)"
+              }
+            ]
+          },
+          "hint": "Pakai galat baku akar p dikali satu kurang p per n lalu batasi hasil pada nol dan satu.",
+          "solution": "import math\n\ndef interval_proporsi(x, n, z=1.96):\n    p = x / n\n    m = z * math.sqrt(p * (1 - p) / n)\n    return (round(max(0.0, p - m), 4), round(min(1.0, p + m), 4))",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-07-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `ukuran_sampel_mean(sigma, margin, z=1.96)` yang mengembalikan `n` terkecil (bilangan bulat) dengan `z * sigma / sqrt(n) <= margin`, yaitu `ceil((z * sigma / margin) ** 2)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef ukuran_sampel_mean(sigma, margin, z=1.96):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ukuran_sampel_mean(15, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_mean(15, 2) == 217"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ukuran_sampel_mean(1, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_mean(1, 0.1) == 385"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ukuran_sampel_mean(10, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_mean(10, 10) == 4"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ukuran_sampel_mean(2.5, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_mean(2.5, 0.5) == 97"
+              }
+            ]
+          },
+          "hint": "Balikkan margin untuk n lalu bulatkan ke atas.",
+          "solution": "import math\n\ndef ukuran_sampel_mean(sigma, margin, z=1.96):\n    return math.ceil((z * sigma / margin) ** 2)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-07-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `ukuran_sampel_proporsi(margin, p=0.5, z=1.96)` yang mengembalikan `ceil(z ** 2 * p * (1 - p) / margin ** 2)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef ukuran_sampel_proporsi(margin, p=0.5, z=1.96):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "ukuran_sampel_proporsi(0.03)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_proporsi(0.03) == 1068"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "ukuran_sampel_proporsi(0.05)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_proporsi(0.05) == 385"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "ukuran_sampel_proporsi(0.01)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_proporsi(0.01) == 9604"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "ukuran_sampel_proporsi(0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_proporsi(0.1) == 97"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "ukuran_sampel_proporsi(0.05, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ukuran_sampel_proporsi(0.05, 0.1) == 139"
+              }
+            ]
+          },
+          "hint": "Pakai rumus kuadrat z kali p kali satu kurang p dibagi kuadrat margin lalu bulatkan ke atas.",
+          "solution": "import math\n\ndef ukuran_sampel_proporsi(margin, p=0.5, z=1.96):\n    return math.ceil(z ** 2 * p * (1 - p) / margin ** 2)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Interval 95% rata-rata?",
+          "code": null,
+          "options": [
+            {
+              "label": "rata-rata ± 1,96 SE",
+              "description": ""
+            },
+            {
+              "label": "rata-rata ± SE",
+              "description": ""
+            },
+            {
+              "label": "rata-rata ± 2",
+              "description": ""
+            },
+            {
+              "label": "rata-rata saja",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Z kritis.",
+          "explanation": "Berdasarkan CLT."
+        },
+        {
+          "q": "Margin separuh butuh sampel?",
+          "code": null,
+          "options": [
+            {
+              "label": "Dua kali",
+              "description": ""
+            },
+            {
+              "label": "Empat kali",
+              "description": ""
+            },
+            {
+              "label": "Sama",
+              "description": ""
+            },
+            {
+              "label": "Setengah",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kuadrat.",
+          "explanation": "Akar n."
+        },
+        {
+          "q": "Kasus terburuk proporsi memakai p?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "0,5",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "0,1",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tengah.",
+          "explanation": "p(1-p) maksimum."
+        },
+        {
+          "q": "Interval kepercayaan menangkap?",
+          "code": null,
+          "options": [
+            {
+              "label": "Galat acak sampling",
+              "description": ""
+            },
+            {
+              "label": "Bias",
+              "description": ""
+            },
+            {
+              "label": "Kesalahan ukur sistematis",
+              "description": ""
+            },
+            {
+              "label": "Semua galat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Acak.",
+          "explanation": "Bukan bias."
+        },
+        {
+          "q": "Tafsir benar interval 95%?",
+          "code": null,
+          "options": [
+            {
+              "label": "95% interval memuat parameter bila diulang",
+              "description": ""
+            },
+            {
+              "label": "Parameter acak",
+              "description": ""
+            },
+            {
+              "label": "95% data di dalam",
+              "description": ""
+            },
+            {
+              "label": "Peluang parameter 95%",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Pengulangan.",
+          "explanation": "Prosedur diulang."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menafsirkan interval 95 persen sebagai peluang parameter ada di dalamnya. Lebih baik: Tafsirkan lewat pengulangan prosedur.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menafsirkan interval 95 persen sebagai peluang parameter ada di dalamnya.",
+          "fix": "Tafsirkan lewat pengulangan prosedur."
+        },
+        {
+          "mistake": "Menambah sampel bias untuk memperbaiki hasil.",
+          "fix": "Interval hanya mengatasi galat acak."
+        },
+        {
+          "mistake": "Memakai rumus normal pada proporsi ekstrem dengan n kecil.",
+          "fix": "Pakai metode seperti Wilson."
+        }
+      ],
+      "summary": [
+        "Interval kepercayaan memberi rentang taksiran dengan keyakinan terukur.",
+        "Tafsir interval lewat pengulangan prosedur, bukan peluang parameter.",
+        "Proporsi memakai galat baku akar p(1-p)/n.",
+        "Ukuran sampel dapat direncanakan dari margin galat."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Interval kepercayaan dan ukuran sampel"
+          },
+          {
+            "type": "text",
+            "source": "Dengan seratus data, rata-rata lima puluh, dan simpangan baku sepuluh, galat baku satu menghasilkan interval empat puluh delapan sampai lima puluh dua."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nmean, sd, n = 50, 10, 100\nse = sd / math.sqrt(n)\nprint(round(mean - 1.96 * se, 4), round(mean + 1.96 * se, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Sekitar sembilan puluh lima persen interval yang dibangun dari sampel berulang memuat rata-rata sebenarnya."
+          },
+          {
+            "type": "code",
+            "source": "import math\nimport random\n\nr = random.Random(9)\nn = 30\nmemuat = 0\nfor _ in range(2000):\n    rata = sum(r.gauss(0, 1) for _ in range(n)) / n\n    se = 1 / math.sqrt(n)\n    if rata - 1.96 * se <= 0 <= rata + 1.96 * se:\n        memuat += 1\nprint(abs(memuat / 2000 - 0.95) < 0.03)"
+          },
+          {
+            "type": "text",
+            "source": "Empat ratus dua puluh dari seribu memberi interval sekitar tiga puluh sembilan sampai empat puluh lima persen."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nx, n = 420, 1000\np = x / n\nse = math.sqrt(p * (1 - p) / n)\nprint(round(p - 1.96 * se, 4), round(p + 1.96 * se, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Untuk margin dua dan simpangan baku sepuluh dibutuhkan sembilan puluh tujuh data. Survei proporsi dengan margin tiga persen membutuhkan seribu enam puluh delapan responden pada kasus terburuk."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nprint(math.ceil((1.96 * 10 / 2) ** 2))\nprint(math.ceil(1.96 ** 2 * 0.25 / 0.03 ** 2))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

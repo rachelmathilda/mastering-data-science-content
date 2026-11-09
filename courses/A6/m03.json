@@ -1,0 +1,1548 @@
+{
+  "schema_version": 2,
+  "course_id": "A6",
+  "module_no": 3,
+  "title": "Agregasi dan GROUP BY",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memakai fungsi agregat dengan benar terhadap NULL dan tabel kosong",
+    "Meringkas per kelompok dengan GROUP BY dan HAVING",
+    "Membuat agregasi bersyarat dan persentase dari total"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A6-03-1",
+    "exercise_id": "A6-03-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def rata_naif_vs_benar(c):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A6-03-1",
+      "title": "Fungsi agregat: COUNT, SUM, AVG, MIN, MAX",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Meringkas seluruh tabel dengan fungsi agregat",
+        "Menjelaskan perilaku agregat terhadap NULL dan tabel kosong",
+        "Menghitung nilai unik dengan COUNT DISTINCT",
+        "Menghindari kesalahan pembagian bulat pada rata-rata manual"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari baris ke ringkasan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari baris ke ringkasan\n\nQuery yang kita tulis sejauh ini mengembalikan satu baris hasil untuk tiap baris sumber. **Fungsi agregat** mengubahnya: ia membaca banyak baris dan mengembalikan satu nilai ringkasan. Lima fungsi dasarnya adalah `COUNT` untuk banyak, `SUM` untuk jumlah, `AVG` untuk rata-rata, `MIN` untuk terkecil, dan `MAX` untuk terbesar.\n\nAgregasi adalah jantung analisis data dengan SQL. Alih-alih menarik jutaan baris ke Python lalu meringkasnya, kita meminta basis data meringkas langsung di sumbernya dan hanya mengirim hasil kecil yang kita butuhkan."
+            },
+            {
+              "type": "code_example",
+              "filename": "agregat_dasar.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT COUNT(*), COUNT(jumlah), SUM(total), AVG(total), MIN(total), MAX(total) FROM pesanan'\nprint(c.execute(q).fetchone())",
+              "expected_output_note": "(10, 9, 769000.0, 76900.0, 12000.0, 300000.0)",
+              "explanation": "Sepuluh pesanan dengan sembilan jumlah terisi, total keseluruhan 769.000, rata-rata 76.900, terkecil 12.000, dan terbesar 300.000."
+            },
+            {
+              "type": "text",
+              "markdown": "## COUNT dalam tiga bentuk\n\n`COUNT(*)` menghitung semua baris. `COUNT(kolom)` menghitung baris dengan kolom tidak `NULL`. `COUNT(DISTINCT kolom)` menghitung nilai unik non-NULL. Ketiganya menjawab pertanyaan berbeda: berapa baris, berapa baris punya data, dan berapa nilai berbeda.\n\nSelisih `COUNT(*)` dan `COUNT(kolom)` adalah banyak nilai hilang, pemeriksaan kualitas data tercepat yang dapat dilakukan. Pada tabel kita, sepuluh pesanan tetapi hanya sembilan memiliki jumlah, sehingga satu nilai hilang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Agregat mengabaikan NULL\n\nSemua agregat kecuali `COUNT(*)` melewati nilai `NULL`. `AVG(jumlah)` membagi jumlah yang ada dengan banyak baris yang terisi, bukan dengan semua baris. Perilaku ini mirip pandas dan biasanya yang diinginkan, tetapi bisa menyesatkan bila nilai hilang berarti sesuatu, misalnya jumlah nol.\n\nBila ingin memperlakukan `NULL` sebagai nol, ganti dulu dengan `COALESCE` di dalam agregat: `AVG(COALESCE(jumlah, 0))`. Itu mengubah makna hasil, jadi pastikan sesuai pertanyaan analisismu."
+            },
+            {
+              "type": "code_example",
+              "filename": "agregat_null.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT SUM(jumlah), round(AVG(jumlah), 4), round(AVG(COALESCE(jumlah, 0)), 4) FROM pesanan'\nprint(c.execute(q).fetchone())\nq = 'SELECT COUNT(DISTINCT kota), COUNT(DISTINCT produk) FROM pesanan'\nprint(c.execute(q).fetchone())",
+              "expected_output_note": "(48, 5.3333, 4.8)\n(4, 5)",
+              "explanation": "Rata-rata tanpa NULL lima koma tiga tiga, dengan NULL dianggap nol empat koma delapan, dan ada empat kota serta lima produk unik."
+            }
+          ],
+          "quick_check": {
+            "question": "COUNT(kolom) menghitung?",
+            "options": [
+              "Baris non-NULL",
+              "Semua baris"
+            ],
+            "answer_index": 0,
+            "explanation": "Mengabaikan NULL.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Tabel kosong",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tabel kosong\n\nAgregat pada himpunan kosong memiliki perilaku khusus yang sering mengejutkan. `COUNT` mengembalikan nol, tetapi `SUM`, `AVG`, `MIN`, dan `MAX` mengembalikan `NULL`, bukan nol. Jumlah tanpa suku secara matematis nol, tetapi SQL memilih `NULL` untuk menandakan tidak ada data.\n\nKode yang memakai hasilnya harus siap menerima `NULL`. Bungkus dengan `COALESCE(SUM(...), 0)` bila kamu menginginkan nol. Kasus tepi ini sering lolos dari pengujian karena data uji jarang kosong."
+            },
+            {
+              "type": "code_example",
+              "filename": "agregat_kosong.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = \"SELECT SUM(total), AVG(total), COUNT(*) FROM pesanan WHERE kota = 'Tidak ada'\"\nprint(c.execute(q).fetchone())\nq = \"SELECT COALESCE(SUM(total), 0) FROM pesanan WHERE kota = 'Tidak ada'\"\nprint(c.execute(q).fetchone())",
+              "expected_output_note": "(None, None, 0)\n(0,)",
+              "explanation": "Himpunan kosong memberi NULL untuk jumlah dan rata-rata tetapi nol untuk COUNT, dan COALESCE mengubah NULL menjadi nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Jebakan pembagian bulat\n\nMenghitung rata-rata manual dengan `SUM(x) / COUNT(*)` rawan dua kesalahan. Pertama, bila `x` bilangan bulat maka pembagian bulat memotong pecahan. Kedua, `COUNT(*)` menghitung baris `NULL` sehingga penyebutnya lebih besar daripada yang dipakai `AVG`.\n\nPada jumlah pesanan, `SUM(jumlah) / COUNT(*)` menghasilkan 4, sedangkan rata-rata yang benar 5,3333. Pakai `AVG` bila ingin perilaku standar, dan bila menulis manual kalikan dengan `1.0` serta pakai `COUNT(kolom)` sebagai penyebut."
+            },
+            {
+              "type": "code_example",
+              "filename": "rata_manual.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute('SELECT SUM(jumlah) / COUNT(*) FROM pesanan').fetchone())\nprint(c.execute('SELECT round(SUM(jumlah) * 1.0 / COUNT(jumlah), 4) FROM pesanan').fetchone())",
+              "expected_output_note": "(4,)\n(5.3333,)",
+              "explanation": "Pembagian bulat dengan COUNT bintang memberi empat, sedangkan pembagian desimal dengan COUNT kolom memberi rata-rata yang benar."
+            }
+          ],
+          "quick_check": {
+            "question": "SUM pada himpunan kosong?",
+            "options": [
+              "0",
+              "NULL"
+            ],
+            "answer_index": 1,
+            "explanation": "NULL.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Agregat dengan filter",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Agregat dengan filter\n\nAgregat bekerja pada baris yang lolos `WHERE`. `SELECT SUM(total) FROM pesanan WHERE kota = 'Jakarta'` menjumlahkan hanya pesanan Jakarta. Karena `WHERE` dievaluasi lebih dulu, agregat tidak pernah melihat baris yang tersaring.\n\nKita juga dapat menaruh beberapa agregat dalam satu `SELECT` untuk mendapat ringkasan lengkap dalam satu lintasan data. Satu query dengan lima agregat jauh lebih efisien daripada lima query terpisah yang masing-masing membaca tabel sendiri."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Cek nilai hilang",
+              "markdown": "Bandingkan COUNT bintang dengan COUNT kolom pada setiap kolom penting. Selisihnya langsung memberi jumlah nilai hilang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Agregat dan tipe data\n\nHasil agregat mengikuti tipe masukannya dengan beberapa kejutan. `SUM` pada kolom bulat menghasilkan bilangan bulat, sedangkan `AVG` selalu menghasilkan pecahan. `MIN` dan `MAX` bekerja pada teks juga, menurut urutan abjad, sehingga `MAX(tanggal)` memberi tanggal terbaru bila formatnya ISO.\n\nPada kolom teks yang berisi angka, `SUM` mengonversinya diam-diam, dan teks non-numerik dianggap nol. Pastikan tipe kolom benar sejak awal agar agregat tidak menghasilkan angka yang tampak sah tetapi keliru."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa hasil agregat\n\nPeriksa agregat dengan tiga cara cepat. Bandingkan dengan perhitungan manual pada sampel kecil. Pastikan `COUNT(*)` sesuai ekspektasi setelah filter. Periksa nilai ekstrem dengan `MIN` dan `MAX` untuk menemukan pencilan atau kode khusus seperti 9999 yang berarti hilang.\n\nKebiasaan menjalankan satu query ringkasan sebelum analisis mendalam, berisi COUNT, COUNT kolom, MIN, MAX, dan AVG, mengungkap sebagian besar masalah data dalam hitungan detik dan menghemat berjam-jam penelusuran kemudian."
+            }
+          ],
+          "quick_check": {
+            "question": "AVG mengabaikan?",
+            "options": [
+              "NULL",
+              "Nol"
+            ],
+            "answer_index": 0,
+            "explanation": "NULL dilewati.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-03-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `statistik_total(c)` yang mengembalikan dictionary dengan kunci `n`, `jumlah`, `rata`, `min`, `max` dari kolom `total` seluruh tabel pesanan.",
+          "note": "`rata` dibulatkan 4 desimal. Untuk tabel kosong, semua selain `n` bernilai `None`.",
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef statistik_total(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "statistik_total(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert statistik_total(c) == {'n': 10, 'jumlah': 769000.0, 'rata': 76900.0, 'min': 12000.0, 'max': 300000.0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "statistik_total(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (11, 'Kiki', 'Bogor', 'Buku', 1, 100000, '2026-05-01')\")\nassert statistik_total(c) == {'n': 11, 'jumlah': 869000.0, 'rata': 79000.0, 'min': 12000.0, 'max': 300000.0}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "statistik_total(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('DELETE FROM pesanan')\nassert statistik_total(c) == {'n': 0, 'jumlah': None, 'rata': None, 'min': None, 'max': None}"
+              }
+            ]
+          },
+          "hint": "Jalankan satu query dengan lima agregat lalu susun dictionary dari barisnya.",
+          "solution": "import sqlite3\n\ndef statistik_total(c):\n    q = 'SELECT COUNT(*), SUM(total), round(AVG(total), 4), MIN(total), MAX(total) FROM pesanan'\n    n, s, a, lo, hi = c.execute(q).fetchone()\n    return {'n': n, 'jumlah': s, 'rata': a, 'min': lo, 'max': hi}",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-03-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `rata_jumlah(c)` yang mengembalikan rata-rata kolom `jumlah` dengan `AVG` (NULL diabaikan) dibulatkan 4 desimal, atau `None` bila tidak ada nilai.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef rata_jumlah(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_jumlah(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert rata_jumlah(c) == 5.3333"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_jumlah(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE pesanan SET jumlah = 1 WHERE id = 9')\nassert rata_jumlah(c) == 4.9"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_jumlah(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE pesanan SET jumlah = NULL')\nassert rata_jumlah(c) is None"
+              }
+            ]
+          },
+          "hint": "Pakai AVG pada kolom jumlah dan bulatkan di SQL.",
+          "solution": "import sqlite3\n\ndef rata_jumlah(c):\n    return c.execute('SELECT round(AVG(jumlah), 4) FROM pesanan').fetchone()[0]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-03-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `jumlah_unik(c, kolom)` yang mengembalikan banyak nilai unik non-NULL pada kolom tabel pesanan memakai `COUNT(DISTINCT ...)`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef jumlah_unik(c, kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_unik(c, 'kota')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert jumlah_unik(c, 'kota') == 4"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_unik(c, 'produk')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_unik(c, 'produk') == 5"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_unik(c, 'pelanggan')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_unik(c, 'pelanggan') == 10"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_unik(c, 'jumlah')",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_unik(c, 'jumlah') == 7"
+              }
+            ]
+          },
+          "hint": "Susun COUNT DISTINCT dengan nama kolom pada f-string.",
+          "solution": "import sqlite3\n\ndef jumlah_unik(c, kolom):\n    return c.execute(f'SELECT COUNT(DISTINCT {kolom}) FROM pesanan').fetchone()[0]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-03-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `rata_naif_vs_benar(c)` yang mengembalikan tuple `(naif, benar)`: `naif` adalah `SUM(jumlah) * 1.0 / COUNT(*)` dan `benar` adalah `AVG(jumlah)`, keduanya dibulatkan 4 desimal di SQL.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef rata_naif_vs_benar(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_naif_vs_benar(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert rata_naif_vs_benar(c) == (4.8, 5.3333)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_naif_vs_benar(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE pesanan SET jumlah = 2 WHERE id = 9')\nassert rata_naif_vs_benar(c) == (5.0, 5.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_naif_vs_benar(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('UPDATE pesanan SET jumlah = NULL')\nassert rata_naif_vs_benar(c) == (None, None)"
+              }
+            ]
+          },
+          "hint": "Hitung dua ekspresi dalam satu SELECT dan bulatkan keduanya.",
+          "solution": "import sqlite3\n\ndef rata_naif_vs_benar(c):\n    q = 'SELECT round(SUM(jumlah) * 1.0 / COUNT(*), 4), round(AVG(jumlah), 4) FROM pesanan'\n    return c.execute(q).fetchone()",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "COUNT(kolom) menghitung?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris non-NULL",
+              "description": ""
+            },
+            {
+              "label": "Semua baris",
+              "description": ""
+            },
+            {
+              "label": "Nilai unik",
+              "description": ""
+            },
+            {
+              "label": "Kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Non-NULL.",
+          "explanation": "Mengabaikan NULL."
+        },
+        {
+          "q": "SUM pada himpunan kosong?",
+          "code": null,
+          "options": [
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tidak ada data.",
+          "explanation": "NULL."
+        },
+        {
+          "q": "AVG mengabaikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            },
+            {
+              "label": "Negatif",
+              "description": ""
+            },
+            {
+              "label": "Duplikat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hilang.",
+          "explanation": "NULL dilewati."
+        },
+        {
+          "q": "COUNT(DISTINCT x) menghitung?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nilai unik non-NULL",
+              "description": ""
+            },
+            {
+              "label": "Semua",
+              "description": ""
+            },
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "Duplikat",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Unik.",
+          "explanation": "Unik."
+        },
+        {
+          "q": "SUM(int)/COUNT(*) pada integer?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pembagian bulat",
+              "description": ""
+            },
+            {
+              "label": "Desimal",
+              "description": ""
+            },
+            {
+              "label": "NULL",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Bulat.",
+          "explanation": "Memotong pecahan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira SUM pada himpunan kosong bernilai nol. Lebih baik: SUM kosong bernilai NULL, pakai COALESCE.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira SUM pada himpunan kosong bernilai nol.",
+          "fix": "SUM kosong bernilai NULL, pakai COALESCE."
+        },
+        {
+          "mistake": "Menghitung rata-rata manual dengan SUM dibagi COUNT bintang.",
+          "fix": "Pakai AVG atau COUNT kolom dan kalikan 1.0."
+        },
+        {
+          "mistake": "Mengabaikan selisih COUNT bintang dan COUNT kolom.",
+          "fix": "Selisih itu adalah nilai hilang."
+        }
+      ],
+      "summary": [
+        "Agregat meringkas banyak baris menjadi satu nilai.",
+        "Agregat melewati NULL kecuali COUNT bintang.",
+        "SUM, AVG, MIN, MAX pada himpunan kosong bernilai NULL.",
+        "Hindari pembagian bulat pada rata-rata manual."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Fungsi agregat: COUNT, SUM, AVG, MIN, MAX"
+          },
+          {
+            "type": "text",
+            "source": "Sepuluh pesanan dengan sembilan jumlah terisi, total keseluruhan 769.000, rata-rata 76.900, terkecil 12.000, dan terbesar 300.000."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT COUNT(*), COUNT(jumlah), SUM(total), AVG(total), MIN(total), MAX(total) FROM pesanan'\nprint(c.execute(q).fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata tanpa NULL lima koma tiga tiga, dengan NULL dianggap nol empat koma delapan, dan ada empat kota serta lima produk unik."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT SUM(jumlah), round(AVG(jumlah), 4), round(AVG(COALESCE(jumlah, 0)), 4) FROM pesanan'\nprint(c.execute(q).fetchone())\nq = 'SELECT COUNT(DISTINCT kota), COUNT(DISTINCT produk) FROM pesanan'\nprint(c.execute(q).fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Himpunan kosong memberi NULL untuk jumlah dan rata-rata tetapi nol untuk COUNT, dan COALESCE mengubah NULL menjadi nol."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = \"SELECT SUM(total), AVG(total), COUNT(*) FROM pesanan WHERE kota = 'Tidak ada'\"\nprint(c.execute(q).fetchone())\nq = \"SELECT COALESCE(SUM(total), 0) FROM pesanan WHERE kota = 'Tidak ada'\"\nprint(c.execute(q).fetchone())"
+          },
+          {
+            "type": "text",
+            "source": "Pembagian bulat dengan COUNT bintang memberi empat, sedangkan pembagian desimal dengan COUNT kolom memberi rata-rata yang benar."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nprint(c.execute('SELECT SUM(jumlah) / COUNT(*) FROM pesanan').fetchone())\nprint(c.execute('SELECT round(SUM(jumlah) * 1.0 / COUNT(jumlah), 4) FROM pesanan').fetchone())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-03-2",
+      "title": "GROUP BY dan HAVING",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Meringkas per kelompok dengan GROUP BY",
+        "Memfilter kelompok dengan HAVING dan membedakannya dari WHERE",
+        "Mengelompokkan menurut beberapa kolom",
+        "Mengurutkan dan membatasi hasil kelompok"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Meringkas per kelompok",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Meringkas per kelompok\n\nAgregat tanpa pengelompokan meringkas seluruh tabel menjadi satu baris. `GROUP BY` membagi baris menjadi kelompok berdasarkan nilai kolom, lalu menerapkan agregat pada tiap kelompok sehingga menghasilkan satu baris per kelompok. Ini padanan SQL dari `groupby` pandas dan pola split-apply-combine.\n\nPertanyaan seperti total penjualan per kota, jumlah pesanan per bulan, dan rata-rata nilai per kelas semuanya diselesaikan dengan `GROUP BY`. Pola ini mungkin konstruksi SQL yang paling sering kamu tulis sebagai analis."
+            },
+            {
+              "type": "code_example",
+              "filename": "group_by.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT kota, COUNT(*), SUM(total) FROM pesanan GROUP BY kota ORDER BY kota'\nfor baris in c.execute(q):\n    print(baris)",
+              "expected_output_note": "('Bandung', 3, 197000.0)\n('Jakarta', 4, 397000.0)\n('Medan', 1, 20000.0)\n('Surabaya', 2, 155000.0)",
+              "explanation": "Setiap kota menjadi satu baris hasil dengan banyak pesanan dan total nilainya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Aturan kolom di SELECT\n\nPada query dengan `GROUP BY`, setiap kolom di `SELECT` harus berupa kolom pengelompokan atau berada di dalam fungsi agregat. Alasannya logis: bila kamu mengelompokkan menurut kota lalu meminta nama pelanggan, basis data tidak tahu pelanggan mana yang harus ditampilkan dari empat pelanggan Jakarta.\n\nPostgreSQL menolak query semacam itu dengan galat. SQLite dan MySQL lama mengizinkannya dan mengambil nilai sembarang dari kelompok, sumber hasil yang tidak dapat diprediksi. Anggap itu kesalahan dan jangan pernah memanfaatkannya."
+            },
+            {
+              "type": "text",
+              "markdown": "## WHERE atau HAVING\n\n`WHERE` menyaring baris sebelum pengelompokan, sedangkan `HAVING` menyaring kelompok setelah agregasi. Untuk kota dengan total pesanan di atas 100.000 kita memakai `HAVING SUM(total) > 100000` karena kondisinya bergantung pada hasil agregat, sesuatu yang belum ada saat `WHERE` dievaluasi.\n\nUntuk menyaring pesanan tertentu sebelum diringkas, misalnya hanya pesanan di atas 30.000, kita memakai `WHERE`. Aturan praktis: bila kondisi mengacu pada nilai baris, pakai `WHERE`. Bila mengacu pada agregat, pakai `HAVING`. Menaruh yang bisa di `WHERE` ke `HAVING` boros karena baris diproses dulu baru dibuang."
+            },
+            {
+              "type": "code_example",
+              "filename": "having_where.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT kota, SUM(total) FROM pesanan GROUP BY kota HAVING SUM(total) > 100000 ORDER BY kota'\nprint(c.execute(q).fetchall())\nq = 'SELECT kota, COUNT(*) FROM pesanan WHERE total > 30000 GROUP BY kota ORDER BY kota'\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Bandung', 197000.0), ('Jakarta', 397000.0), ('Surabaya', 155000.0)]\n[('Bandung', 2), ('Jakarta', 2), ('Surabaya', 2)]",
+              "explanation": "HAVING menyaring kota menurut total agregat, sedangkan WHERE menyaring pesanan sebelum dihitung per kota."
+            }
+          ],
+          "quick_check": {
+            "question": "GROUP BY menghasilkan?",
+            "options": [
+              "Satu baris per kelompok",
+              "Satu baris per data"
+            ],
+            "answer_index": 0,
+            "explanation": "Per kelompok.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Banyak kolom pengelompokan",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Banyak kolom pengelompokan\n\nKita dapat mengelompokkan menurut lebih dari satu kolom: `GROUP BY kota, produk` membuat satu kelompok untuk setiap kombinasi unik kota dan produk. Hasilnya lebih rinci, dan jumlah kelompok bisa melonjak karena kombinasinya mengalikan banyak nilai tiap kolom.\n\nMakin rinci pengelompokan, makin kecil tiap kelompok, dan makin tidak stabil ringkasan statistiknya. Pilih tingkat rincian sesuai pertanyaan, dan selalu sertakan banyak baris per kelompok agar pembaca dapat menilai keandalannya."
+            },
+            {
+              "type": "code_example",
+              "filename": "group_by_banyak.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT kota, produk, COUNT(*) FROM pesanan GROUP BY kota, produk ORDER BY kota, produk'\nhasil = c.execute(q).fetchall()\nprint(len(hasil))\nprint(hasil[0], hasil[3])",
+              "expected_output_note": "9\n('Bandung', 'Botol', 1) ('Jakarta', 'Buku', 2)",
+              "explanation": "Sembilan kombinasi kota dan produk unik, dan Jakarta memiliki dua pesanan buku."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengurutkan dan membatasi kelompok\n\nHasil `GROUP BY` bisa diurutkan menurut agregat memakai alias: `SELECT kota, COUNT(*) AS n ... ORDER BY n DESC`. Menambah `LIMIT` mengambil kelompok teratas. Karena alias dikenali di `ORDER BY`, query tetap mudah dibaca tanpa mengulang ekspresi agregat.\n\nSeperti biasa, tambahkan pemutus seri agar hasil deterministik. Peringkat kota menurut jumlah pesanan sering memiliki seri, dan tanpa pemutus seri dua eksekusi bisa menghasilkan urutan berbeda."
+            },
+            {
+              "type": "code_example",
+              "filename": "urut_kelompok.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT kota, COUNT(*) AS n FROM pesanan GROUP BY kota ORDER BY n DESC, kota LIMIT 2'\nprint(c.execute(q).fetchall())\nq = 'SELECT kota, round(AVG(total), 2) FROM pesanan GROUP BY kota HAVING COUNT(*) > 1 ORDER BY kota'\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Jakarta', 4), ('Bandung', 3)]\n[('Bandung', 65666.67), ('Jakarta', 99250.0), ('Surabaya', 77500.0)]",
+              "explanation": "Jakarta dan Bandung memiliki pesanan terbanyak, dan kota dengan satu pesanan disaring dari rata-rata dengan HAVING."
+            }
+          ],
+          "quick_check": {
+            "question": "HAVING menyaring?",
+            "options": [
+              "Baris sebelum agregasi",
+              "Kelompok"
+            ],
+            "answer_index": 1,
+            "explanation": "Setelah agregasi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Menggabungkan nilai dalam kelompok",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Menggabungkan nilai dalam kelompok\n\nFungsi `group_concat` di SQLite, `string_agg` di PostgreSQL, menggabungkan nilai teks tiap kelompok menjadi satu string, misalnya daftar nama pelanggan per kota. Berguna untuk laporan ringkas, tetapi urutan nilai dalam string tidak dijamin kecuali diatur khusus.\n\nGunakan dengan hemat. Menyimpan daftar dalam satu sel menyulitkan analisis lanjutan, jadi pakai hanya untuk tampilan akhir, bukan sebagai langkah antara dalam pipeline analisis."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "Kolom tak teragregasi",
+              "markdown": "Setiap kolom di SELECT harus berada di GROUP BY atau di dalam agregat. Jangan memanfaatkan toleransi SQLite yang mengambil nilai sembarang dari kelompok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Pola umum per kelompok\n\nBeberapa pola GROUP BY muncul terus-menerus. Penghitungan frekuensi: `SELECT kolom, COUNT(*) FROM tabel GROUP BY kolom` adalah padanan `value_counts` pandas. Pencarian duplikat: kelompokkan menurut kolom yang seharusnya unik dan tampilkan kelompok dengan `HAVING COUNT(*) > 1`. Ringkasan lengkap per segmen: satu baris dengan COUNT, SUM, AVG, MIN, dan MAX.\n\nMenguasai ketiga pola ini sudah menyelesaikan sebagian besar pertanyaan analisis harian. Sisanya adalah variasi dengan kondisi dan kolom berbeda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Urutan evaluasi lengkap\n\nDengan GROUP BY dan HAVING, urutan evaluasi logis menjadi FROM, WHERE, GROUP BY, HAVING, SELECT, DISTINCT, ORDER BY, lalu LIMIT. Urutan ini menjelaskan banyak aturan: WHERE tidak boleh memakai agregat karena kelompok belum terbentuk, HAVING boleh karena sudah terbentuk, dan ORDER BY boleh memakai alias karena SELECT sudah dievaluasi.\n\nSaat query memberi galat atau hasil mengejutkan, telusuri urutan ini selangkah demi selangkah. Hampir semua kebingungan SQL tingkat dasar berasal dari lupa pada urutan evaluasi."
+            }
+          ],
+          "quick_check": {
+            "question": "WHERE dievaluasi?",
+            "options": [
+              "Sebelum GROUP BY",
+              "Setelah GROUP BY"
+            ],
+            "answer_index": 0,
+            "explanation": "Menyaring baris.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-03-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `total_per_kota(c)` yang mengembalikan dictionary `{kota: jumlah total}` dari tabel pesanan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef total_per_kota(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert total_per_kota(c) == {'Bandung': 197000.0, 'Jakarta': 397000.0, 'Medan': 20000.0, 'Surabaya': 155000.0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (11, 'Kiki', 'Bogor', 'Buku', 1, 100000, '2026-05-01')\")\nassert total_per_kota(c)['Bogor'] == 100000.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_per_kota(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('DELETE FROM pesanan')\nassert total_per_kota(c) == {}"
+              }
+            ]
+          },
+          "hint": "Kelompokkan menurut kota dan jumlahkan total lalu ubah ke dictionary.",
+          "solution": "import sqlite3\n\ndef total_per_kota(c):\n    return dict(c.execute('SELECT kota, SUM(total) FROM pesanan GROUP BY kota').fetchall())",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-03-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kota_besar(c, batas)` yang mengembalikan list nama kota dengan total pesanan lebih dari `batas`, terurut abjad, memakai `HAVING`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef kota_besar(c, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kota_besar(c, 100000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert kota_besar(c, 100000) == ['Bandung', 'Jakarta', 'Surabaya']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kota_besar(c, 200000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kota_besar(c, 200000) == ['Jakarta']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kota_besar(c, 1000000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kota_besar(c, 1000000) == []"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kota_besar(c, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kota_besar(c, 0) == ['Bandung', 'Jakarta', 'Medan', 'Surabaya']"
+              }
+            ]
+          },
+          "hint": "Pakai HAVING dengan SUM total dan parameter batas.",
+          "solution": "import sqlite3\n\ndef kota_besar(c, batas):\n    q = 'SELECT kota FROM pesanan GROUP BY kota HAVING SUM(total) > ? ORDER BY kota'\n    return [r[0] for r in c.execute(q, (batas,)).fetchall()]",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-03-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `pesanan_per_kota_produk(c)` yang mengembalikan list tuple `(kota, produk, banyak)` terurut menurut kota lalu produk.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef pesanan_per_kota_produk(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "len(h)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nh = pesanan_per_kota_produk(c)\nassert len(h) == 9"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert h[0] == ('Bandung', 'Botol', 1)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert ('Jakarta', 'Buku', 2) in h"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sorted(h)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert h == sorted(h)"
+              }
+            ]
+          },
+          "hint": "Kelompokkan menurut dua kolom dan urutkan menurut keduanya.",
+          "solution": "import sqlite3\n\ndef pesanan_per_kota_produk(c):\n    q = 'SELECT kota, produk, COUNT(*) FROM pesanan GROUP BY kota, produk ORDER BY kota, produk'\n    return c.execute(q).fetchall()",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-03-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `rata_kota_min_n(c, n_min)` yang mengembalikan dictionary `{kota: rata-rata total dibulatkan 2 desimal}` hanya untuk kota yang memiliki paling sedikit `n_min` pesanan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef rata_kota_min_n(c, n_min):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "rata_kota_min_n(c, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert rata_kota_min_n(c, 2) == {'Bandung': 65666.67, 'Jakarta': 99250.0, 'Surabaya': 77500.0}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "rata_kota_min_n(c, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_kota_min_n(c, 3) == {'Bandung': 65666.67, 'Jakarta': 99250.0}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "rata_kota_min_n(c, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_kota_min_n(c, 5) == {}"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "rata_kota_min_n(c, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert rata_kota_min_n(c, 1)['Medan'] == 20000.0"
+              }
+            ]
+          },
+          "hint": "Pakai HAVING COUNT bintang dan bulatkan AVG di SQL.",
+          "solution": "import sqlite3\n\ndef rata_kota_min_n(c, n_min):\n    q = 'SELECT kota, round(AVG(total), 2) FROM pesanan GROUP BY kota HAVING COUNT(*) >= ?'\n    return dict(c.execute(q, (n_min,)).fetchall())",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "GROUP BY menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu baris per kelompok",
+              "description": ""
+            },
+            {
+              "label": "Satu baris per data",
+              "description": ""
+            },
+            {
+              "label": "Satu angka",
+              "description": ""
+            },
+            {
+              "label": "Kosong",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kelompok.",
+          "explanation": "Per kelompok."
+        },
+        {
+          "q": "HAVING menyaring?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kelompok",
+              "description": ""
+            },
+            {
+              "label": "Baris sebelum agregasi",
+              "description": ""
+            },
+            {
+              "label": "Kolom",
+              "description": ""
+            },
+            {
+              "label": "Tabel",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Agregat.",
+          "explanation": "Setelah agregasi."
+        },
+        {
+          "q": "WHERE dievaluasi?",
+          "code": null,
+          "options": [
+            {
+              "label": "Sebelum GROUP BY",
+              "description": ""
+            },
+            {
+              "label": "Setelah GROUP BY",
+              "description": ""
+            },
+            {
+              "label": "Setelah HAVING",
+              "description": ""
+            },
+            {
+              "label": "Terakhir",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Sebelum.",
+          "explanation": "Menyaring baris."
+        },
+        {
+          "q": "Dua kolom di GROUP BY menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu kelompok per kombinasi",
+              "description": ""
+            },
+            {
+              "label": "Dua tabel",
+              "description": ""
+            },
+            {
+              "label": "Satu kelompok",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Kombinasi.",
+          "explanation": "Kombinasi unik."
+        },
+        {
+          "q": "Alias agregat dapat dipakai di?",
+          "code": null,
+          "options": [
+            {
+              "label": "ORDER BY",
+              "description": ""
+            },
+            {
+              "label": "WHERE",
+              "description": ""
+            },
+            {
+              "label": "FROM",
+              "description": ""
+            },
+            {
+              "label": "GROUP BY",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Setelah.",
+          "explanation": "Dievaluasi setelah SELECT."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memasukkan kolom tak teragregasi ke SELECT. Lebih baik: Masukkan ke GROUP BY atau agregasi.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memasukkan kolom tak teragregasi ke SELECT.",
+          "fix": "Masukkan ke GROUP BY atau agregasi."
+        },
+        {
+          "mistake": "Menaruh kondisi baris di HAVING.",
+          "fix": "Pakai WHERE untuk kondisi baris."
+        },
+        {
+          "mistake": "Melaporkan rata-rata kelompok tanpa banyak baris.",
+          "fix": "Sertakan COUNT per kelompok."
+        }
+      ],
+      "summary": [
+        "GROUP BY meringkas data per kelompok menjadi satu baris tiap kelompok.",
+        "WHERE menyaring baris dan HAVING menyaring kelompok.",
+        "Kolom SELECT harus berada di GROUP BY atau dalam agregat.",
+        "Sertakan ukuran kelompok bersama ringkasan."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# GROUP BY dan HAVING"
+          },
+          {
+            "type": "text",
+            "source": "Setiap kota menjadi satu baris hasil dengan banyak pesanan dan total nilainya."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT kota, COUNT(*), SUM(total) FROM pesanan GROUP BY kota ORDER BY kota'\nfor baris in c.execute(q):\n    print(baris)"
+          },
+          {
+            "type": "text",
+            "source": "HAVING menyaring kota menurut total agregat, sedangkan WHERE menyaring pesanan sebelum dihitung per kota."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT kota, SUM(total) FROM pesanan GROUP BY kota HAVING SUM(total) > 100000 ORDER BY kota'\nprint(c.execute(q).fetchall())\nq = 'SELECT kota, COUNT(*) FROM pesanan WHERE total > 30000 GROUP BY kota ORDER BY kota'\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Sembilan kombinasi kota dan produk unik, dan Jakarta memiliki dua pesanan buku."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT kota, produk, COUNT(*) FROM pesanan GROUP BY kota, produk ORDER BY kota, produk'\nhasil = c.execute(q).fetchall()\nprint(len(hasil))\nprint(hasil[0], hasil[3])"
+          },
+          {
+            "type": "text",
+            "source": "Jakarta dan Bandung memiliki pesanan terbanyak, dan kota dengan satu pesanan disaring dari rata-rata dengan HAVING."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT kota, COUNT(*) AS n FROM pesanan GROUP BY kota ORDER BY n DESC, kota LIMIT 2'\nprint(c.execute(q).fetchall())\nq = 'SELECT kota, round(AVG(total), 2) FROM pesanan GROUP BY kota HAVING COUNT(*) > 1 ORDER BY kota'\nprint(c.execute(q).fetchall())"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A6-03-3",
+      "title": "Agregasi bersyarat dan persentase",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Meringkas per periode waktu dengan substr pada tanggal ISO",
+        "Menghitung agregasi bersyarat dengan SUM dan CASE",
+        "Menghitung persentase dari total dengan subquery skalar",
+        "Mengambil kelompok teratas dengan aturan pemutus seri"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Ringkasan per periode",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ringkasan per periode\n\nAnalisis bisnis hampir selalu per periode: harian, mingguan, bulanan. Karena tanggal ISO adalah teks `YYYY-MM-DD`, kita dapat mengambil bulan dengan `substr(tanggal, 1, 7)` yang menghasilkan `YYYY-MM`. Mengelompokkan menurut ekspresi itu menghasilkan ringkasan bulanan.\n\nSQLite juga menyediakan `strftime('%Y-%m', tanggal)` yang lebih ekspresif dan mengerti format tanggal sungguhan. Pelajaran khusus tanggal dan teks membahasnya. Untuk format ISO sederhana, `substr` sudah memadai dan cepat."
+            },
+            {
+              "type": "code_example",
+              "filename": "per_bulan.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT substr(tanggal, 1, 7) AS bulan, SUM(total) FROM pesanan GROUP BY bulan ORDER BY bulan'\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('2026-01', 174000.0), ('2026-02', 142000.0), ('2026-03', 370000.0), ('2026-04', 83000.0)]",
+              "explanation": "Total pesanan per bulan memperlihatkan puncak pada Maret sebesar 370.000."
+            },
+            {
+              "type": "text",
+              "markdown": "## Alias di GROUP BY\n\nPada contoh, kita mengelompokkan menurut alias `bulan`. SQLite dan PostgreSQL mengizinkannya, tetapi standar SQL ketat dan beberapa basis data tidak. Bila perlu portabilitas, ulangi ekspresi di `GROUP BY` atau bungkus dalam subquery. Karena `GROUP BY` dievaluasi sebelum `SELECT`, pengizinan alias di sana adalah kemudahan, bukan aturan baku.\n\nPada hasil per periode, periode tanpa data tidak muncul sama sekali. Untuk laporan yang membutuhkan semua bulan termasuk yang kosong, kita membutuhkan tabel kalender dan JOIN, topik modul berikutnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Agregasi bersyarat\n\n`SUM(CASE WHEN kondisi THEN 1 ELSE 0 END)` menghitung baris yang memenuhi kondisi dalam tiap kelompok. Dengan beberapa ekspresi seperti itu kita membangun tabel silang dalam satu query, misalnya jumlah pesanan besar dan kecil per kota berdampingan, tanpa perlu query terpisah.\n\nPola ini disebut agregasi bersyarat atau pivot manual. Ia menggantikan banyak query dengan satu lintasan data dan sangat populer di laporan. Kondisinya bebas, sehingga kita dapat menghitung proporsi, rata-rata bersyarat, dan penanda lain."
+            },
+            {
+              "type": "code_example",
+              "filename": "agregasi_bersyarat.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = '''\nSELECT kota,\n       SUM(CASE WHEN total >= 100000 THEN 1 ELSE 0 END) AS besar,\n       SUM(CASE WHEN total < 100000 THEN 1 ELSE 0 END) AS kecil\nFROM pesanan GROUP BY kota ORDER BY kota\n'''\nprint(c.execute(q).fetchall())",
+              "expected_output_note": "[('Bandung', 1, 2), ('Jakarta', 1, 3), ('Medan', 0, 1), ('Surabaya', 1, 1)]",
+              "explanation": "Pesanan besar dan kecil dihitung berdampingan untuk tiap kota dalam satu query."
+            }
+          ],
+          "quick_check": {
+            "question": "Agregasi bersyarat memakai?",
+            "options": [
+              "SUM dengan CASE",
+              "WHERE saja"
+            ],
+            "answer_index": 0,
+            "explanation": "Pivot manual.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Persentase dari total",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Persentase dari total\n\nUntuk menghitung kontribusi tiap kelompok pada total, kita membutuhkan total keseluruhan sebagai penyebut. Cara paling sederhana memakai subquery skalar: `(SELECT SUM(total) FROM pesanan)`, query kecil yang mengembalikan satu nilai dan dapat dipakai seperti konstanta di dalam query utama.\n\nKalikan dengan `100.0` agar pembagian menjadi desimal. Hasilnya persentase yang berjumlah sekitar seratus. Pembulatan membuat jumlah bisa menyimpang sedikit dari seratus, dan itu wajar bila ditulis dengan jelas."
+            },
+            {
+              "type": "code_example",
+              "filename": "persen_total.py",
+              "runnable": true,
+              "code": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = '''\nSELECT kota, round(100.0 * SUM(total) / (SELECT SUM(total) FROM pesanan), 2)\nFROM pesanan GROUP BY kota ORDER BY kota\n'''\nhasil = c.execute(q).fetchall()\nprint(hasil)\nprint(round(sum(p for _, p in hasil), 2))",
+              "expected_output_note": "[('Bandung', 25.62), ('Jakarta', 51.63), ('Medan', 2.6), ('Surabaya', 20.16)]\n100.01",
+              "explanation": "Jakarta menyumbang lebih dari separuh total, dan jumlah persentase bulat menyimpang sedikit menjadi seratus koma nol satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Rentang dan selisih per kelompok\n\nAgregat dapat dikombinasikan dalam ekspresi: `MAX(total) - MIN(total)` memberi rentang per kelompok, dan `SUM(total) * 1.0 / COUNT(*)` memberi rata-rata manual. Karena agregat adalah nilai biasa setelah dihitung, kita boleh memakainya dalam aritmetika, `CASE`, dan fungsi lain.\n\nNamun agregat tidak boleh bersarang langsung seperti `AVG(SUM(x))`. Untuk agregasi dua tingkat, bungkus tingkat pertama dalam subquery atau CTE, dua konstruksi yang dibahas pada modul subquery."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kelompok teratas\n\nUntuk mengambil kelompok teratas, gabungkan `GROUP BY`, `ORDER BY` pada agregat, dan `LIMIT`: tiga kota dengan pesanan terbanyak, lima produk dengan pendapatan terbesar. Pastikan aturan pemutus seri eksplisit, misalnya nama kelompok, agar hasil stabil bila beberapa kelompok memiliki nilai sama.\n\nBila yang kamu butuhkan adalah teratas per kelompok, misalnya produk terlaris di tiap kota, `LIMIT` biasa tidak cukup. Itu memerlukan fungsi window dengan peringkat, yang dibahas pada modul window function."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Pivot manual",
+              "markdown": "Untuk laporan silang, gunakan SUM dengan CASE di dalam GROUP BY. Satu query menggantikan banyak query terpisah."
+            }
+          ],
+          "quick_check": {
+            "question": "Ambil bulan dari tanggal ISO?",
+            "options": [
+              "substr(tanggal,1,4)",
+              "substr(tanggal,1,7)"
+            ],
+            "answer_index": 1,
+            "explanation": "YYYY-MM.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Tren dan perbandingan antar periode",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Tren dan perbandingan antar periode\n\nRingkasan per bulan menjadi dasar analisis tren. Dari tabel bulanan kita dapat menghitung pertumbuhan bulan ke bulan, rata-rata bergerak, dan musiman. Pertumbuhan membutuhkan nilai bulan sebelumnya pada baris yang sama, yang dikerjakan dengan fungsi window atau dengan menggabungkan tabel ke dirinya sendiri.\n\nUntuk sekarang, cukup ingat bahwa hasil agregasi per periode adalah deret waktu yang siap dimasukkan ke pandas untuk analisis dan visualisasi lebih lanjut dengan alat yang telah dipelajari di modul sebelumnya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca persentase dengan hati-hati\n\nPersentase dari total mudah menyesatkan bila penyebutnya tidak jelas. Dari total apa? Seluruh tabel, hanya periode tertentu, atau hanya kelompok yang lolos filter? Subquery skalar di atas memakai seluruh tabel tanpa filter, sehingga bila query utama memfilter baris, persentasenya tidak berjumlah seratus.\n\nSamakan filter pada penyebut dan pembilang bila ingin persentase di dalam subset. Dan selalu tuliskan penyebut dalam judul laporan agar pembaca memahami angka itu persentase dari apa."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kapan memakai SQL dan kapan pandas\n\nAgregasi di SQL unggul bila data besar dan berada di basis data: hanya hasil ringkas yang berpindah ke Python. Pandas unggul untuk eksplorasi interaktif pada data yang muat di memori, dengan fleksibilitas transformasi dan visualisasi. Praktik umum adalah menggabungkan keduanya: SQL meringkas, pandas menganalisis dan menggambar.\n\nMenguasai keduanya membuatmu bebas memilih alat yang paling sesuai. Pertanyaan yang sama sering dapat dijawab dengan salah satunya, dan pindah antar alat adalah keterampilan inti analis data."
+            }
+          ],
+          "quick_check": {
+            "question": "Subquery skalar mengembalikan?",
+            "options": [
+              "Satu nilai",
+              "Satu tabel"
+            ],
+            "answer_index": 0,
+            "explanation": "Konstanta.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A6-03-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `total_per_bulan(c)` yang mengembalikan list tuple `(bulan, total)` dengan `bulan` berformat `YYYY-MM` diambil dari `tanggal`, terurut menurut bulan.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef total_per_bulan(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "total_per_bulan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert total_per_bulan(c) == [('2026-01', 174000.0), ('2026-02', 142000.0), ('2026-03', 370000.0), ('2026-04', 83000.0)]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "total_per_bulan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute(\"INSERT INTO pesanan VALUES (11, 'Kiki', 'Bogor', 'Buku', 1, 1000, '2026-05-01')\")\nassert total_per_bulan(c)[-1] == ('2026-05', 1000.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "total_per_bulan(c)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "c.execute('DELETE FROM pesanan')\nassert total_per_bulan(c) == []"
+              }
+            ]
+          },
+          "hint": "Ambil tujuh karakter pertama tanggal dan kelompokkan menurutnya.",
+          "solution": "import sqlite3\n\ndef total_per_bulan(c):\n    q = 'SELECT substr(tanggal, 1, 7) AS bulan, SUM(total) FROM pesanan GROUP BY bulan ORDER BY bulan'\n    return c.execute(q).fetchall()",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-03-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `besar_kecil_per_kota(c, batas)` yang mengembalikan dictionary `{kota: (besar, kecil)}` dengan `besar` banyak pesanan bertotal sama dengan atau di atas `batas` dan `kecil` banyak pesanan di bawahnya, memakai `SUM` dan `CASE`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef besar_kecil_per_kota(c, batas):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "besar_kecil_per_kota(c, 100000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert besar_kecil_per_kota(c, 100000) == {'Bandung': (1, 2), 'Jakarta': (1, 3), 'Medan': (0, 1), 'Surabaya': (1, 1)}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "besar_kecil_per_kota(c, 30000)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert besar_kecil_per_kota(c, 30000) == {'Bandung': (2, 1), 'Jakarta': (2, 2), 'Medan': (0, 1), 'Surabaya': (2, 0)}"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "besar_kecil_per_kota(c, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert besar_kecil_per_kota(c, 0)['Medan'] == (1, 0)"
+              }
+            ]
+          },
+          "hint": "Dua SUM CASE dengan kondisi berlawanan di dalam GROUP BY kota.",
+          "solution": "import sqlite3\n\ndef besar_kecil_per_kota(c, batas):\n    q = '''\n    SELECT kota,\n           SUM(CASE WHEN total >= ? THEN 1 ELSE 0 END),\n           SUM(CASE WHEN total < ? THEN 1 ELSE 0 END)\n    FROM pesanan GROUP BY kota\n    '''\n    return {k: (b, s) for k, b, s in c.execute(q, (batas, batas)).fetchall()}",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-03-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `persen_per_kota(c)` yang mengembalikan dictionary `{kota: persentase total terhadap total keseluruhan dibulatkan 2 desimal}` memakai subquery skalar.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef persen_per_kota(c):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "assert",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\np = persen_per_kota(c)\nassert p == {'Bandung': 25.62, 'Jakarta': 51.63, 'Medan': 2.6, 'Surabaya': 20.16}"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "abs(sum(p.values()) - 100)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert abs(sum(p.values()) - 100) < 0.05"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "max(p, key=p.get)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert max(p, key=p.get) == 'Jakarta'"
+              }
+            ]
+          },
+          "hint": "Bagi total tiap kota dengan SELECT SUM total keseluruhan lalu kalikan 100.0.",
+          "solution": "import sqlite3\n\ndef persen_per_kota(c):\n    q = '''\n    SELECT kota, round(100.0 * SUM(total) / (SELECT SUM(total) FROM pesanan), 2)\n    FROM pesanan GROUP BY kota\n    '''\n    return dict(c.execute(q).fetchall())",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A6-03-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `kota_teratas(c, n)` yang mengembalikan list `n` nama kota dengan pesanan terbanyak, seri diputus dengan nama kota abjad.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import sqlite3\n\ndef kota_teratas(c, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "import sqlite3",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kota_teratas(c, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "def _db():\n    c = sqlite3.connect(':memory:')\n    c.executescript('''\n    CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\n    INSERT INTO pesanan VALUES\n    (1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n    (2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n    (3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n    (4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n    (5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n    (6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n    (7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n    (8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n    (9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n    (10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n    ''')\n    return c\nc = _db()\nassert kota_teratas(c, 2) == ['Jakarta', 'Bandung']"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kota_teratas(c, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kota_teratas(c, 1) == ['Jakarta']"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kota_teratas(c, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kota_teratas(c, 4) == ['Jakarta', 'Bandung', 'Surabaya', 'Medan']"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kota_teratas(c, 0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kota_teratas(c, 0) == []"
+              }
+            ]
+          },
+          "hint": "Urutkan menurut COUNT menurun lalu kota lalu batasi.",
+          "solution": "import sqlite3\n\ndef kota_teratas(c, n):\n    q = 'SELECT kota FROM pesanan GROUP BY kota ORDER BY COUNT(*) DESC, kota LIMIT ?'\n    return [r[0] for r in c.execute(q, (n,)).fetchall()]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Agregasi bersyarat memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "SUM dengan CASE",
+              "description": ""
+            },
+            {
+              "label": "WHERE saja",
+              "description": ""
+            },
+            {
+              "label": "LIMIT",
+              "description": ""
+            },
+            {
+              "label": "DISTINCT",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "CASE.",
+          "explanation": "Pivot manual."
+        },
+        {
+          "q": "Ambil bulan dari tanggal ISO?",
+          "code": null,
+          "options": [
+            {
+              "label": "substr(tanggal,1,7)",
+              "description": ""
+            },
+            {
+              "label": "substr(tanggal,1,4)",
+              "description": ""
+            },
+            {
+              "label": "length",
+              "description": ""
+            },
+            {
+              "label": "upper",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Tujuh karakter.",
+          "explanation": "YYYY-MM."
+        },
+        {
+          "q": "Subquery skalar mengembalikan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Satu nilai",
+              "description": ""
+            },
+            {
+              "label": "Satu tabel",
+              "description": ""
+            },
+            {
+              "label": "Banyak baris",
+              "description": ""
+            },
+            {
+              "label": "Kolom",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu.",
+          "explanation": "Konstanta."
+        },
+        {
+          "q": "Periode tanpa data di GROUP BY?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak muncul",
+              "description": ""
+            },
+            {
+              "label": "Muncul nol",
+              "description": ""
+            },
+            {
+              "label": "Muncul NULL",
+              "description": ""
+            },
+            {
+              "label": "Error",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Hilang.",
+          "explanation": "Tak ada baris."
+        },
+        {
+          "q": "Top N per kelompok butuh?",
+          "code": null,
+          "options": [
+            {
+              "label": "Fungsi window",
+              "description": ""
+            },
+            {
+              "label": "LIMIT biasa",
+              "description": ""
+            },
+            {
+              "label": "DISTINCT",
+              "description": ""
+            },
+            {
+              "label": "HAVING",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Window.",
+          "explanation": "Peringkat."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menyarangkan agregat langsung seperti AVG(SUM(x)). Lebih baik: Gunakan subquery atau CTE.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menyarangkan agregat langsung seperti AVG(SUM(x)).",
+          "fix": "Gunakan subquery atau CTE."
+        },
+        {
+          "mistake": "Mengira periode tanpa data muncul di hasil GROUP BY.",
+          "fix": "Perlu tabel kalender dan JOIN."
+        },
+        {
+          "mistake": "Lupa mengalikan 100.0 sehingga persentase menjadi bulat.",
+          "fix": "Kalikan dengan 100.0."
+        }
+      ],
+      "summary": [
+        "substr pada tanggal ISO menghasilkan ringkasan per periode.",
+        "SUM dengan CASE menghasilkan agregasi bersyarat.",
+        "Subquery skalar menjadi penyebut persentase.",
+        "Pemutus seri membuat kelompok teratas stabil."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Agregasi bersyarat dan persentase"
+          },
+          {
+            "type": "text",
+            "source": "Total pesanan per bulan memperlihatkan puncak pada Maret sebesar 370.000."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = 'SELECT substr(tanggal, 1, 7) AS bulan, SUM(total) FROM pesanan GROUP BY bulan ORDER BY bulan'\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Pesanan besar dan kecil dihitung berdampingan untuk tiap kota dalam satu query."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = '''\nSELECT kota,\n       SUM(CASE WHEN total >= 100000 THEN 1 ELSE 0 END) AS besar,\n       SUM(CASE WHEN total < 100000 THEN 1 ELSE 0 END) AS kecil\nFROM pesanan GROUP BY kota ORDER BY kota\n'''\nprint(c.execute(q).fetchall())"
+          },
+          {
+            "type": "text",
+            "source": "Jakarta menyumbang lebih dari separuh total, dan jumlah persentase bulat menyimpang sedikit menjadi seratus koma nol satu."
+          },
+          {
+            "type": "code",
+            "source": "import sqlite3\n\nc = sqlite3.connect(':memory:')\nc.executescript('''\nCREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan TEXT, kota TEXT, produk TEXT, jumlah INTEGER, total REAL, tanggal TEXT);\nINSERT INTO pesanan VALUES\n(1, 'Ani', 'Jakarta', 'Buku', 2, 24000, '2026-01-05'),\n(2, 'Budi', 'Bandung', 'Tas', 1, 150000, '2026-01-09'),\n(3, 'Citra', 'Jakarta', 'Pensil', 10, 25000, '2026-02-01'),\n(4, 'Dewi', 'Surabaya', 'Botol', 3, 105000, '2026-02-14'),\n(5, 'Eko', 'Bandung', 'Buku', 1, 12000, '2026-02-20'),\n(6, 'Fajar', 'Jakarta', 'Tas', 2, 300000, '2026-03-03'),\n(7, 'Gita', 'Medan', 'Penggaris', 5, 20000, '2026-03-15'),\n(8, 'Hadi', 'Surabaya', 'Pensil', 20, 50000, '2026-03-22'),\n(9, 'Indah', 'Bandung', 'Botol', NULL, 35000, '2026-04-01'),\n(10, 'Joko', 'Jakarta', 'Buku', 4, 48000, '2026-04-10');\n''')\n\nq = '''\nSELECT kota, round(100.0 * SUM(total) / (SELECT SUM(total) FROM pesanan), 2)\nFROM pesanan GROUP BY kota ORDER BY kota\n'''\nhasil = c.execute(q).fetchall()\nprint(hasil)\nprint(round(sum(p for _, p in hasil), 2))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perintah yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

@@ -28,71 +28,106 @@
       "module_no": 1,
       "title": "Vektor, norma, dan jarak",
       "file": "m01.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A2-01-1",
+        "exercise_id": "A2-01-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def titik_tengah(titik):\n    ..."
+      }
     },
     {
       "module_no": 2,
       "title": "Matriks dan operasi dasar",
       "file": "m02.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A2-02-1",
+        "exercise_id": "A2-02-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def pusatkan(A):\n    ..."
+      }
     },
     {
       "module_no": 3,
       "title": "Sistem persamaan linear",
       "file": "m03.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A2-03-1",
+        "exercise_id": "A2-03-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def jenis_solusi(A, b):\n    ..."
+      }
     },
     {
       "module_no": 4,
       "title": "Determinan dan invers",
       "file": "m04.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A2-04-1",
+        "exercise_id": "A2-04-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def determinan_eliminasi(m):\n    ..."
+      }
     },
     {
       "module_no": 5,
       "title": "Eigenvalue dan eigenvector",
       "file": "m05.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A2-05-1",
+        "exercise_id": "A2-05-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def eigenvector_2x2(m, lam):\n    ..."
+      }
     },
     {
       "module_no": 6,
       "title": "Singular Value Decomposition",
       "file": "m06.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A2-06-1",
+        "exercise_id": "A2-06-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def rekonstruksi_k(A, k):\n    ..."
+      }
     },
     {
       "module_no": 7,
       "title": "PCA dari nol",
       "file": "m07.json",
-      "status": "todo",
+      "status": "ready",
       "estimated_minutes": 105,
       "lesson_count": 3,
       "exercise_count": 12,
-      "practice_preview": null
+      "practice_preview": {
+        "lesson_id": "A2-07-1",
+        "exercise_id": "A2-07-1-ex4",
+        "level_label": "Tantangan",
+        "code_preview": "def komponen_utama_2d(X):\n    ..."
+      }
     }
   ]
 }

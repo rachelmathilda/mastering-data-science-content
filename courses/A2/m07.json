@@ -1,0 +1,1544 @@
+{
+  "schema_version": 2,
+  "course_id": "A2",
+  "module_no": 7,
+  "title": "PCA dari nol",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Membangun PCA dari kovariansi dan eigen",
+    "Menghitung PCA lewat SVD dan merekonstruksi data",
+    "Menerapkan PCA dengan standardisasi dan membaca batasannya"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A2-07-1",
+    "exercise_id": "A2-07-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def komponen_utama_2d(X):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A2-07-1",
+      "title": "Ide PCA dan langkah-langkahnya",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Memahami tujuan PCA sebagai pencarian arah variasi terbesar",
+        "Memusatkan data dan menghitung matriks kovariansi",
+        "Mengambil komponen utama dari eigenvector kovariansi",
+        "Menghitung skor dan variansi tiap komponen"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Masalah yang diselesaikan PCA",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Masalah yang diselesaikan PCA\n\nData nyata sering memiliki puluhan atau ratusan fitur, padahal banyak di antaranya saling terkait. Tinggi badan dan berat badan bergerak bersama. Harga rumah dan luas bangunan berkorelasi. Bila dua fitur membawa informasi yang hampir sama, menyimpan keduanya boros dan sering merusak model. **Principal Component Analysis** atau PCA mencari sumbu baru yang merangkum variasi data dengan sesedikit mungkin dimensi.\n\nGagasannya: temukan arah tempat data paling menyebar, jadikan itu sumbu pertama. Cari arah berikutnya yang tegak lurus terhadap sumbu pertama dan menangkap sebanyak mungkin sisa variasi, jadikan sumbu kedua, lalu seterusnya. Sumbu-sumbu ini disebut **komponen utama**. Dengan mempertahankan beberapa sumbu pertama kita mereduksi dimensi sambil kehilangan sedikit informasi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Mengapa variasi yang dicari\n\nMengapa arah dengan variasi terbesar dianggap paling informatif? Fitur yang hampir konstan tidak membedakan satu sampel dari sampel lain, sehingga nyaris tidak berguna. Arah tempat sampel tersebar lebar adalah arah tempat perbedaan antar sampel terlihat jelas. PCA menganggap perbedaan besar sebagai sinyal dan perbedaan kecil sebagai derau.\n\nAsumsi ini tidak selalu benar. Kadang informasi penting justru tersembunyi pada arah variasi kecil, dan PCA akan membuangnya. PCA juga tidak mengenal label kelas: ia tak tahu mana variasi yang berguna untuk prediksi. Karena itu PCA adalah alat tanpa pengawasan yang cocok untuk eksplorasi, visualisasi, kompresi, dan penyaringan derau, tetapi bukan jaminan peningkatan akurasi model."
+            },
+            {
+              "type": "text",
+              "markdown": "## Langkah satu: pusatkan data\n\nLangkah pertama selalu memusatkan data dengan mengurangkan rata-rata tiap kolom. Hasilnya `Xc` memiliki rata-rata nol pada setiap fitur sehingga awan data berpusat di titik asal. Tanpa langkah ini komponen pertama hanya menunjuk dari titik asal ke pusat data, bukan ke arah penyebaran data.\n\nLangkah kedua adalah menghitung **matriks kovariansi** `C = Xc^T Xc / (n - 1)`. Diagonalnya berisi variansi tiap fitur dan elemen lainnya berisi kovariansi antar dua fitur. Kovariansi positif berarti dua fitur cenderung naik bersama, negatif berarti berlawanan, dan nol berarti tidak ada hubungan linear. Matriks ini simetris dan semua eigenvalue-nya tak negatif, sesuai pelajaran eigen sebelumnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "pusat_data.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nX = np.array([[2.0, 2.0], [4.0, 3.0], [6.0, 7.0], [8.0, 8.0]])\nrata = X.mean(axis=0)\nXc = X - rata\nprint(rata.tolist())\nprint(np.allclose(Xc.mean(axis=0), 0))\nn = X.shape[0]\nC = Xc.T @ Xc / (n - 1)\nprint(C.round(4).tolist())\nprint(np.allclose(C, np.cov(X.T)))",
+              "expected_output_note": "[5.0, 5.0]\nTrue\n[[6.6667, 7.3333], [7.3333, 8.6667]]\nTrue",
+              "explanation": "Setelah dipusatkan rata-rata tiap kolom nol. Rumus kovariansi manual sama dengan `np.cov` yang membagi dengan `n - 1`."
+            }
+          ],
+          "quick_check": {
+            "question": "Apa yang dicari komponen pertama?",
+            "options": [
+              "Arah variasi terbesar",
+              "Arah variasi terkecil"
+            ],
+            "answer_index": 0,
+            "explanation": "Sumbu tempat data paling menyebar.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Langkah tiga: eigen dari kovariansi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Langkah tiga: eigen dari kovariansi\n\nInti PCA adalah fakta yang kamu pelajari pada modul sebelumnya: untuk matriks simetris, eigenvector saling ortogonal dan eigenvalue menyatakan variansi. Eigenvector dari matriks kovariansi adalah **komponen utama**, dan eigenvalue-nya adalah variansi data sepanjang komponen itu. Urutkan dari eigenvalue terbesar ke terkecil, dan komponen pertama adalah arah penyebaran maksimum.\n\nJumlah semua eigenvalue sama dengan trace kovariansi, yaitu total variansi semua fitur. Jadi proporsi variansi yang dijelaskan komponen ke-`i` adalah eigenvalue-nya dibagi total. Untuk matriks simetris kita memakai `np.linalg.eigh`, yang mengurutkan eigenvalue naik, sehingga hasilnya perlu dibalik agar terbesar berada di depan."
+            },
+            {
+              "type": "code_example",
+              "filename": "pca_eigen.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nX = np.array([[2.0, 2.0], [4.0, 3.0], [6.0, 7.0], [8.0, 8.0]])\nXc = X - X.mean(axis=0)\nC = Xc.T @ Xc / (X.shape[0] - 1)\nnilai, vektor = np.linalg.eigh(C)\nnilai, vektor = nilai[::-1], vektor[:, ::-1]\nprint(nilai.round(4).tolist())\nprint((nilai / nilai.sum()).round(4).tolist())\nprint(np.abs(vektor[:, 0]).round(4).tolist())\nprint(round(float(vektor[:, 0] @ vektor[:, 1]), 6) + 0.0)",
+              "expected_output_note": "[15.0679, 0.2655]\n[0.9827, 0.0173]\n[0.6576, 0.7534]\n0.0",
+              "explanation": "Komponen pertama menjelaskan hampir seluruh variansi karena kedua fitur naik bersama. Dua komponen saling tegak lurus sehingga hasil kali dalamnya nol."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Tanda tidak penting",
+              "markdown": "Tanda eigenvector tidak tetap: komponen yang sama bisa muncul dengan tanda positif atau negatif pada pustaka atau versi berbeda. Itu bukan kesalahan karena arah berlawanan menunjuk sumbu yang sama."
+            }
+          ],
+          "quick_check": {
+            "question": "Langkah pertama PCA?",
+            "options": [
+              "Menghitung invers",
+              "Memusatkan data"
+            ],
+            "answer_index": 1,
+            "explanation": "Kurangi rata-rata tiap kolom.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Langkah empat: skor dan proyeksi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Langkah empat: skor dan proyeksi\n\nSetelah komponen diketahui, kita memproyeksikan data ke sumbu baru. **Skor** sampel pada komponen ke-`i` adalah hasil kali dalam antara sampel yang dipusatkan dan eigenvector ke-`i`. Dalam bentuk matriks, `Z = Xc W` dengan `W` berisi komponen yang dipertahankan sebagai kolom. Bila `W` hanya memuat `k` kolom, `Z` berukuran `n x k`: data kita kini punya `k` fitur baru.\n\nFitur baru ini punya sifat bagus. Mereka tidak berkorelasi satu sama lain, karena kovariansi `Z` diagonal. Variansi tiap kolom `Z` sama dengan eigenvalue yang bersesuaian. Jadi PCA sekaligus memutar data ke sistem koordinat yang fiturnya saling bebas secara linear, yang sering mempermudah model setelahnya."
+            },
+            {
+              "type": "code_example",
+              "filename": "proyeksi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nX = np.array([[2.0, 2.0], [4.0, 3.0], [6.0, 7.0], [8.0, 8.0]])\nXc = X - X.mean(axis=0)\nC = Xc.T @ Xc / (X.shape[0] - 1)\nnilai, vektor = np.linalg.eigh(C)\nnilai, vektor = nilai[::-1], vektor[:, ::-1]\nZ = Xc @ vektor\nprint(np.abs(Z[:, 0]).round(4).tolist())\nprint(np.allclose(Z.var(axis=0, ddof=1), nilai))\nkov = np.cov(Z.T)\nprint(round(abs(float(kov[0, 1])), 6))",
+              "expected_output_note": "[4.2329, 2.1643, 2.1643, 4.2329]\nTrue\n0.0",
+              "explanation": "Skor pada komponen pertama menyebar paling lebar. Variansi tiap skor sama dengan eigenvalue dan kovariansi antar skor nol."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan alur\n\nAlur PCA dapat dihafal dalam empat kata: pusatkan, kovariansi, eigen, proyeksikan. Pusatkan data agar berpusat di titik asal. Hitung kovariansi untuk mengukur hubungan antar fitur. Ambil eigenvector dan eigenvalue untuk menemukan arah dan variansinya. Proyeksikan data ke arah terbaik untuk mendapat fitur baru yang lebih ringkas."
+            }
+          ],
+          "quick_check": {
+            "question": "Komponen utama adalah eigenvector dari?",
+            "options": [
+              "Matriks kovariansi",
+              "Matriks data"
+            ],
+            "answer_index": 0,
+            "explanation": "Eigenvector kovariansi.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-07-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pusatkan(kolom)` yang mengurangkan rata-rata dari tiap elemen list angka dan mengembalikan list dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def pusatkan(kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pusatkan([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pusatkan([1, 2, 3]) == [-1.0, 0.0, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pusatkan([5, 5, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pusatkan([5, 5, 5]) == [0.0, 0.0, 0.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pusatkan([2, 4, 6, 8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pusatkan([2, 4, 6, 8]) == [-3.0, -1.0, 1.0, 3.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pusatkan([10])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pusatkan([10]) == [0.0]"
+              }
+            ]
+          },
+          "hint": "Hitung rata-rata lalu kurangkan dari setiap elemen.",
+          "solution": "def pusatkan(kolom):\n    rata = sum(kolom) / len(kolom)\n    return [round(x - rata, 4) + 0.0 for x in kolom]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-07-1-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `kovariansi(x, y)` yang mengembalikan kovariansi sampel (dibagi `n - 1`) dua list sama panjang, dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def kovariansi(x, y):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kovariansi([2, 4, 6, 8], [2, 3, 7, 8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi([2, 4, 6, 8], [2, 3, 7, 8]) == 7.3333"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kovariansi([1, 2, 3], [1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi([1, 2, 3], [1, 2, 3]) == 1.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kovariansi([1, 2, 3], [3, 2, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi([1, 2, 3], [3, 2, 1]) == -1.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kovariansi([1, 2, 3], [5, 5, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kovariansi([1, 2, 3], [5, 5, 5]) == 0.0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan hasil kali simpangan dari rata-rata lalu bagi n dikurangi satu.",
+          "solution": "def kovariansi(x, y):\n    n = len(x)\n    mx, my = sum(x) / n, sum(y) / n\n    return round(sum((a - mx) * (b - my) for a, b in zip(x, y)) / (n - 1), 4) + 0.0",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-07-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `matriks_kovariansi(X)` yang menerima list of list (baris adalah sampel, kolom adalah fitur) dan mengembalikan matriks kovariansi sampel sebagai list of list dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def matriks_kovariansi(X):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "matriks_kovariansi([[2, 2], [4, 3], [6, 7], [...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_kovariansi([[2, 2], [4, 3], [6, 7], [8, 8]]) == [[6.6667, 7.3333], [7.3333, 8.6667]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "matriks_kovariansi([[1, 2], [2, 4], [3, 6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_kovariansi([[1, 2], [2, 4], [3, 6]]) == [[1.0, 2.0], [2.0, 4.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "matriks_kovariansi([[1], [2], [3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_kovariansi([[1], [2], [3]]) == [[1.0]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "matriks_kovariansi([[1, 5], [2, 5], [3, 5]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert matriks_kovariansi([[1, 5], [2, 5], [3, 5]]) == [[1.0, 0.0], [0.0, 0.0]]"
+              }
+            ]
+          },
+          "hint": "Pusatkan tiap kolom lalu hitung hasil kali dalam antar kolom dibagi n dikurangi satu.",
+          "solution": "def matriks_kovariansi(X):\n    n, d = len(X), len(X[0])\n    rata = [sum(baris[j] for baris in X) / n for j in range(d)]\n    return [[round(sum((baris[i] - rata[i]) * (baris[j] - rata[j]) for baris in X) / (n - 1), 4) + 0.0 for j in range(d)] for i in range(d)]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-07-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `komponen_utama_2d(X)` yang menerima data dua fitur (list of list) dan mengembalikan tuple `(eigenvalue_terbesar, proporsi)` dari matriks kovariansinya, keduanya dibulatkan 4 desimal.",
+          "note": "Gunakan rumus trace dan determinan dan potong diskriminan negatif kecil menjadi nol.",
+          "filename": "solution.py",
+          "starter_code": "def komponen_utama_2d(X):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "komponen_utama_2d([[2, 2], [4, 3], [6, 7], [8...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_utama_2d([[2, 2], [4, 3], [6, 7], [8, 8]]) == (15.0679, 0.9827)"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "komponen_utama_2d([[1, 2], [2, 4], [3, 6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_utama_2d([[1, 2], [2, 4], [3, 6]]) == (5.0, 1.0)"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "komponen_utama_2d([[1, 0], [2, 0], [3, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_utama_2d([[1, 0], [2, 0], [3, 0]]) == (1.0, 1.0)"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "komponen_utama_2d([[1, 0], [-1, 0], [0, 1], [...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert komponen_utama_2d([[1, 0], [-1, 0], [0, 1], [0, -1]]) == (0.6667, 0.5)"
+              }
+            ]
+          },
+          "hint": "Bentuk kovariansi 2x2 lalu selesaikan lambda kuadrat dikurangi trace kali lambda ditambah determinan.",
+          "solution": "def komponen_utama_2d(X):\n    n = len(X)\n    mx = sum(b[0] for b in X) / n\n    my = sum(b[1] for b in X) / n\n    a = sum((b[0] - mx) ** 2 for b in X) / (n - 1)\n    d = sum((b[1] - my) ** 2 for b in X) / (n - 1)\n    c = sum((b[0] - mx) * (b[1] - my) for b in X) / (n - 1)\n    tr = a + d\n    det = a * d - c * c\n    disk = max(tr * tr - 4 * det, 0.0)\n    lam = (tr + disk ** 0.5) / 2\n    return (round(lam, 4), round(lam / tr, 4))",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Apa yang dicari komponen pertama?",
+          "code": null,
+          "options": [
+            {
+              "label": "Arah variasi terbesar",
+              "description": ""
+            },
+            {
+              "label": "Arah variasi terkecil",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Penyebaran.",
+          "explanation": "Sumbu tempat data paling menyebar."
+        },
+        {
+          "q": "Langkah pertama PCA?",
+          "code": null,
+          "options": [
+            {
+              "label": "Menghitung invers",
+              "description": ""
+            },
+            {
+              "label": "Memusatkan data",
+              "description": ""
+            },
+            {
+              "label": "Menghapus fitur",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan sampel",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Pusat di titik asal.",
+          "explanation": "Kurangi rata-rata tiap kolom."
+        },
+        {
+          "q": "Komponen utama adalah eigenvector dari?",
+          "code": null,
+          "options": [
+            {
+              "label": "Matriks data",
+              "description": ""
+            },
+            {
+              "label": "Matriks kovariansi",
+              "description": ""
+            },
+            {
+              "label": "Matriks identitas",
+              "description": ""
+            },
+            {
+              "label": "Matriks label",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Simetris.",
+          "explanation": "Eigenvector kovariansi."
+        },
+        {
+          "q": "Eigenvalue komponen menyatakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mean",
+              "description": ""
+            },
+            {
+              "label": "Variansi sepanjang komponen",
+              "description": ""
+            },
+            {
+              "label": "Jumlah sampel",
+              "description": ""
+            },
+            {
+              "label": "Korelasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Penyebaran.",
+          "explanation": "Variansi arah itu."
+        },
+        {
+          "q": "Sifat skor antar komponen?",
+          "code": null,
+          "options": [
+            {
+              "label": "Berkorelasi kuat",
+              "description": ""
+            },
+            {
+              "label": "Tidak berkorelasi",
+              "description": ""
+            },
+            {
+              "label": "Selalu sama",
+              "description": ""
+            },
+            {
+              "label": "Negatif",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Ortogonal.",
+          "explanation": "Kovariansi skor diagonal."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Lupa memusatkan data sebelum PCA. Lebih baik: Kurangi rata-rata tiap kolom dulu.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Lupa memusatkan data sebelum PCA.",
+          "fix": "Kurangi rata-rata tiap kolom dulu."
+        },
+        {
+          "mistake": "Menganggap tanda eigenvector bermakna.",
+          "fix": "Arah berlawanan menunjuk sumbu yang sama."
+        },
+        {
+          "mistake": "Mengira PCA memakai label kelas.",
+          "fix": "PCA tanpa pengawasan dan hanya melihat variasi."
+        }
+      ],
+      "summary": [
+        "PCA mencari arah variasi terbesar dan memproyeksikan data ke sana.",
+        "Pusatkan data lalu hitung kovariansi dan eigen-nya.",
+        "Eigenvalue adalah variansi komponen dan jumlahnya sama dengan total variansi.",
+        "Skor antar komponen tidak berkorelasi."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Ide PCA dan langkah-langkahnya"
+          },
+          {
+            "type": "text",
+            "source": "Setelah dipusatkan rata-rata tiap kolom nol. Rumus kovariansi manual sama dengan `np.cov` yang membagi dengan `n - 1`."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nX = np.array([[2.0, 2.0], [4.0, 3.0], [6.0, 7.0], [8.0, 8.0]])\nrata = X.mean(axis=0)\nXc = X - rata\nprint(rata.tolist())\nprint(np.allclose(Xc.mean(axis=0), 0))\nn = X.shape[0]\nC = Xc.T @ Xc / (n - 1)\nprint(C.round(4).tolist())\nprint(np.allclose(C, np.cov(X.T)))"
+          },
+          {
+            "type": "text",
+            "source": "Komponen pertama menjelaskan hampir seluruh variansi karena kedua fitur naik bersama. Dua komponen saling tegak lurus sehingga hasil kali dalamnya nol."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nX = np.array([[2.0, 2.0], [4.0, 3.0], [6.0, 7.0], [8.0, 8.0]])\nXc = X - X.mean(axis=0)\nC = Xc.T @ Xc / (X.shape[0] - 1)\nnilai, vektor = np.linalg.eigh(C)\nnilai, vektor = nilai[::-1], vektor[:, ::-1]\nprint(nilai.round(4).tolist())\nprint((nilai / nilai.sum()).round(4).tolist())\nprint(np.abs(vektor[:, 0]).round(4).tolist())\nprint(round(float(vektor[:, 0] @ vektor[:, 1]), 6) + 0.0)"
+          },
+          {
+            "type": "text",
+            "source": "Skor pada komponen pertama menyebar paling lebar. Variansi tiap skor sama dengan eigenvalue dan kovariansi antar skor nol."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nX = np.array([[2.0, 2.0], [4.0, 3.0], [6.0, 7.0], [8.0, 8.0]])\nXc = X - X.mean(axis=0)\nC = Xc.T @ Xc / (X.shape[0] - 1)\nnilai, vektor = np.linalg.eigh(C)\nnilai, vektor = nilai[::-1], vektor[:, ::-1]\nZ = Xc @ vektor\nprint(np.abs(Z[:, 0]).round(4).tolist())\nprint(np.allclose(Z.var(axis=0, ddof=1), nilai))\nkov = np.cov(Z.T)\nprint(round(abs(float(kov[0, 1])), 6))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-07-2",
+      "title": "PCA lewat SVD dan rekonstruksi",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Menghubungkan PCA dengan SVD dari data terpusat",
+        "Menghitung variansi dan proporsi dari nilai singular",
+        "Memakai PCA dari scikit-learn dan membandingkannya dengan versi manual",
+        "Merekonstruksi data dari sebagian komponen dan mengukur galatnya"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "PCA sebagai SVD",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## PCA sebagai SVD\n\nPada pelajaran sebelumnya kita menghitung PCA lewat eigen dari matriks kovariansi. Ada jalan yang lebih stabil: SVD langsung dari matriks data terpusat. Tulis `Xc = U S V^T`. Maka `Xc^T Xc = V S^2 V^T`, sehingga kolom `V` adalah eigenvector kovariansi, yaitu komponen utama, dan variansinya adalah `s^2 / (n - 1)`.\n\nKeuntungannya nyata. Kita tidak perlu membentuk matriks kovariansi, yang mengkuadratkan bilangan kondisi dan membuang presisi. SVD juga bekerja dengan baik saat jumlah fitur lebih besar daripada jumlah sampel, kasus umum pada data gen atau teks. Skor sampel adalah `U S`, yang sama dengan `Xc V`. Karena itu hampir semua pustaka, termasuk scikit-learn, menghitung PCA dengan SVD."
+            },
+            {
+              "type": "code_example",
+              "filename": "pca_svd.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nX = np.array([[2.0, 2.0], [4.0, 3.0], [6.0, 7.0], [8.0, 8.0]])\nXc = X - X.mean(axis=0)\nn = X.shape[0]\nU, s, Vt = np.linalg.svd(Xc, full_matrices=False)\nvariansi = s ** 2 / (n - 1)\nnilai = np.linalg.eigvalsh(np.cov(X.T))[::-1]\nprint(variansi.round(4).tolist())\nprint(np.allclose(variansi, nilai))\nZ = U * s\nprint(np.allclose(np.abs(Z), np.abs(Xc @ Vt.T)))\nprint(np.abs(Vt[0]).round(4).tolist())",
+              "expected_output_note": "[15.0679, 0.2655]\nTrue\nTrue\n[0.6576, 0.7534]",
+              "explanation": "Variansi dari nilai singular sama dengan eigenvalue kovariansi. Skor `U S` sama dengan `Xc V` sampai tanda."
+            },
+            {
+              "type": "text",
+              "markdown": "## Variansi yang dijelaskan\n\nSetelah mendapat variansi tiap komponen, kita menghitung **proporsi variansi yang dijelaskan**: variansi komponen dibagi total. Jumlah kumulatifnya menunjukkan berapa banyak informasi yang bertahan bila kita hanya menyimpan sejumlah komponen pertama. Inilah dasar pemilihan `k` pada PCA, sama dengan energi kumulatif pada SVD.\n\nDua konvensi lazim: ambil `k` terkecil dengan proporsi kumulatif minimal sembilan puluh lima persen, atau gunakan grafik scree dan pilih titik siku tempat penurunan tajam menjadi landai. Tidak ada angka ajaib. Untuk visualisasi dipakai dua atau tiga komponen berapa pun proporsinya, sedangkan untuk kompresi atau praproses model ambang lebih tinggi biasanya dipilih dan diuji lewat validasi silang."
+            },
+            {
+              "type": "code_example",
+              "filename": "sklearn_pca.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.decomposition import PCA\n\nX = np.array([[2.0, 2.0], [4.0, 3.0], [6.0, 7.0], [8.0, 8.0]])\npca = PCA(n_components=2).fit(X)\nprint(pca.explained_variance_.round(4).tolist())\nprint(pca.explained_variance_ratio_.round(4).tolist())\nprint(pca.mean_.tolist())\nprint(pca.components_.shape)\nZ = pca.transform(X)\nprint(Z.shape, np.allclose(Z.mean(axis=0), 0))",
+              "expected_output_note": "[15.0679, 0.2655]\n[0.9827, 0.0173]\n[5.0, 5.0]\n(2, 2)\n(4, 2) True",
+              "explanation": "`PCA` dari scikit-learn memberi variansi dan proporsi yang sama dengan hitungan manual. Atribut `components_` menyimpan komponen sebagai baris dan `mean_` menyimpan rata-rata yang dikurangkan."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Baris atau kolom",
+              "markdown": "Di scikit-learn komponen berada di baris `components_`, berbeda dengan eigenvector NumPy yang berada di kolom. Pada `transform` rata-rata dikurangkan otomatis, jadi jangan memusatkan data dua kali."
+            }
+          ],
+          "quick_check": {
+            "question": "Variansi komponen dari nilai singular?",
+            "options": [
+              "s kuadrat dibagi n-1",
+              "s"
+            ],
+            "answer_index": 0,
+            "explanation": "Variansi adalah s kuadrat dibagi n-1.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Rekonstruksi dari komponen",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Rekonstruksi dari komponen\n\nPCA dapat dibalik. Bila kita memproyeksikan ke `k` komponen untuk mendapat `Z = Xc W_k`, kita merekonstruksi pendekatan data dengan `X_hat = Z W_k^T + rata`. Hasilnya adalah titik-titik yang jatuh pada subruang berdimensi `k` yang paling dekat dengan data asli. Selisih antara `X` dan `X_hat` adalah informasi yang dibuang.\n\n**Galat rekonstruksi** rata-rata kuadrat sama dengan jumlah eigenvalue komponen yang dibuang, dibagi jumlah fitur. Jadi kualitas kompresi bisa dihitung hanya dari eigenvalue. Bila `k` sama dengan jumlah fitur, rekonstruksi sempurna. Ide ini dipakai untuk penyaringan derau: proyeksikan lalu rekonstruksi, dan derau yang tersebar di arah variasi kecil ikut terbuang."
+            },
+            {
+              "type": "code_example",
+              "filename": "rekonstruksi_pca.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nX = np.array([[2.0, 0.0, 1.0], [3.0, 1.0, 2.0], [4.0, 1.0, 3.0],\n              [5.0, 2.0, 3.0], [6.0, 2.0, 5.0], [7.0, 3.0, 5.0]])\nrata = X.mean(axis=0)\nXc = X - rata\nU, s, Vt = np.linalg.svd(Xc, full_matrices=False)\nfor k in (1, 2, 3):\n    W = Vt[:k].T\n    Xh = (Xc @ W) @ W.T + rata\n    print(k, round(float(np.mean((X - Xh) ** 2)), 4))\nprint(np.allclose(Xh, X))",
+              "expected_output_note": "1 0.0552\n2 0.0044\n3 0.0\nTrue",
+              "explanation": "Galat rekonstruksi turun saat komponen bertambah dan menjadi nol ketika semua komponen dipakai."
+            },
+            {
+              "type": "text",
+              "markdown": "## Penyaringan derau dan kompresi\n\nDua pemakaian praktis rekonstruksi adalah penyaringan derau dan kompresi. Pada penyaringan derau, sinyal sebenarnya terkonsentrasi di sedikit komponen pertama sedangkan derau menyebar di semua arah dengan variansi kecil. Memproyeksikan ke `k` komponen lalu merekonstruksi menghapus sebagian besar derau tanpa banyak merusak sinyal.\n\nPada kompresi, kita menyimpan `Z`, `W`, dan rata-rata saja alih-alih `X` penuh. Penghematannya besar bila `k` kecil. Contohnya pengenalan wajah klasik dengan eigenfaces: tiap wajah diwakili oleh puluhan koefisien, bukan ribuan piksel. Pendekatan ini masih dipakai sebagai baseline yang cepat sebelum beralih ke metode berbasis jaringan saraf."
+            }
+          ],
+          "quick_check": {
+            "question": "Skor sampel sama dengan?",
+            "options": [
+              "V",
+              "U S"
+            ],
+            "answer_index": 1,
+            "explanation": "Sama dengan Xc V.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Memilih antara eigen dan SVD",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih antara eigen dan SVD\n\nSecara teori dua jalan memberi hasil sama, tetapi praktiknya berbeda. Jalur eigen cocok untuk pembelajaran karena langkahnya terlihat jelas: kovariansi, eigenvector, proyeksi. Jalur SVD cocok untuk produksi karena stabil dan efisien, terutama pada data lebar dengan banyak fitur dan sedikit sampel. Pada data seperti itu matriks kovariansi berukuran fitur kali fitur sangat besar dan tidak perlu dibentuk sama sekali.\n\nScikit-learn bahkan menyediakan solver acak yang memakai SVD terpotong untuk menghitung hanya beberapa komponen pertama. Pada data besar ini jauh lebih cepat daripada dekomposisi penuh dan hasilnya hampir identik. Pahami dulu cara kerja manualnya agar kamu tahu apa yang terjadi di balik panggilan satu baris itu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Membaca hasil dengan hati-hati\n\nBeberapa kebiasaan baik membantu saat memakai PCA. Selalu periksa proporsi variansi sebelum menafsirkan hasil: bila dua komponen pertama hanya menjelaskan tiga puluh persen, diagram dua dimensi tidak mewakili data dengan baik dan kesimpulan dari gambar itu lemah. Periksa juga loading untuk memastikan komponen punya arti yang masuk akal secara domain.\n\nBandingkan galat rekonstruksi antar pilihan `k` pada data uji, bukan hanya data latih. Bila galat uji berhenti turun saat `k` bertambah, komponen tambahan hanya menangkap derau. Kebiasaan ini membuat reduksi dimensi menjadi keputusan berbasis bukti, bukan tebakan."
+            }
+          ],
+          "quick_check": {
+            "question": "Komponen pada components_ berada di?",
+            "options": [
+              "Baris",
+              "Kolom"
+            ],
+            "answer_index": 0,
+            "explanation": "Setiap baris adalah satu komponen.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-07-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `variansi_dari_singular(s, n)` yang menerima list nilai singular data terpusat dan jumlah sampel `n` lalu mengembalikan list `s^2 / (n - 1)` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def variansi_dari_singular(s, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "variansi_dari_singular([6, 2], 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert variansi_dari_singular([6, 2], 5) == [9.0, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "variansi_dari_singular([3], 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert variansi_dari_singular([3], 4) == [3.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "variansi_dari_singular([0, 0], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert variansi_dari_singular([0, 0], 3) == [0.0, 0.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "variansi_dari_singular([4, 3], 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert variansi_dari_singular([4, 3], 3) == [8.0, 4.5]"
+              }
+            ]
+          },
+          "hint": "Kuadratkan tiap nilai lalu bagi dengan n dikurangi satu.",
+          "solution": "def variansi_dari_singular(s, n):\n    return [round(x * x / (n - 1), 4) for x in s]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-07-2-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `proporsi_kumulatif(variansi)` yang mengembalikan list proporsi kumulatif variansi (jumlah sampai posisi itu dibagi total) dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def proporsi_kumulatif(variansi):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "proporsi_kumulatif([9, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_kumulatif([9, 1]) == [0.9, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "proporsi_kumulatif([2, 1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_kumulatif([2, 1, 1]) == [0.5, 0.75, 1.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "proporsi_kumulatif([4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_kumulatif([4]) == [1.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "proporsi_kumulatif([1, 1, 1, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proporsi_kumulatif([1, 1, 1, 1]) == [0.25, 0.5, 0.75, 1.0]"
+              }
+            ]
+          },
+          "hint": "Akumulasikan variansi lalu bagi dengan total.",
+          "solution": "def proporsi_kumulatif(variansi):\n    total = sum(variansi)\n    hasil = []\n    berjalan = 0.0\n    for v in variansi:\n        berjalan += v\n        hasil.append(round(berjalan / total, 4))\n    return hasil",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-07-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `proyeksikan(X, arah)` yang memusatkan data `X` (list of list) lalu mengembalikan list skor, yaitu hasil kali dalam tiap baris terpusat dengan vektor `arah` (sudah satuan), dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def proyeksikan(X, arah):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "proyeksikan([[1, 2], [3, 4], [5, 6]], [1, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proyeksikan([[1, 2], [3, 4], [5, 6]], [1, 0]) == [-2.0, 0.0, 2.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "proyeksikan([[1, 2], [3, 4], [5, 6]], [0, 1])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proyeksikan([[1, 2], [3, 4], [5, 6]], [0, 1]) == [-2.0, 0.0, 2.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "proyeksikan([[1, 2], [3, 4], [5, 6]], [0.6, 0...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proyeksikan([[1, 2], [3, 4], [5, 6]], [0.6, 0.8]) == [-2.8, 0.0, 2.8]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "proyeksikan([[2, 2]], [1, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert proyeksikan([[2, 2]], [1, 0]) == [0.0]"
+              }
+            ]
+          },
+          "hint": "Hitung rata-rata tiap kolom lalu kurangkan sebelum mengalikan dengan arah.",
+          "solution": "def proyeksikan(X, arah):\n    n, d = len(X), len(X[0])\n    rata = [sum(b[j] for b in X) / n for j in range(d)]\n    return [round(sum((b[j] - rata[j]) * arah[j] for j in range(d)), 4) + 0.0 for b in X]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-07-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `galat_rekonstruksi(X, arah)` yang memusatkan `X`, memproyeksikannya ke satu `arah` satuan, merekonstruksi, dan mengembalikan rata-rata kuadrat galat atas semua entri (jumlah kuadrat galat dibagi `n * d`), dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def galat_rekonstruksi(X, arah):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "galat_rekonstruksi([[1, 2], [3, 4], [5, 6]], ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "r = 0.5 ** 0.5\nassert galat_rekonstruksi([[1, 2], [3, 4], [5, 6]], [r, r]) == 0.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "galat_rekonstruksi([[1, 2], [3, 4], [5, 6]], ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_rekonstruksi([[1, 2], [3, 4], [5, 6]], [1, 0]) == 1.3333"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "galat_rekonstruksi([[1, 2], [3, 4], [5, 6]], ...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_rekonstruksi([[1, 2], [3, 4], [5, 6]], [0, 1]) == 1.3333"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "galat_rekonstruksi([[0, 0], [2, 0]], [1, 0])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert galat_rekonstruksi([[0, 0], [2, 0]], [1, 0]) == 0.0"
+              }
+            ]
+          },
+          "hint": "Rekonstruksi satu baris adalah skor kali arah. Galat adalah selisih terpusat dikurangi rekonstruksi itu.",
+          "solution": "def galat_rekonstruksi(X, arah):\n    n, d = len(X), len(X[0])\n    rata = [sum(b[j] for b in X) / n for j in range(d)]\n    total = 0.0\n    for b in X:\n        c = [b[j] - rata[j] for j in range(d)]\n        skor = sum(c[j] * arah[j] for j in range(d))\n        total += sum((c[j] - skor * arah[j]) ** 2 for j in range(d))\n    return round(total / (n * d) + 0.0, 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Variansi komponen dari nilai singular?",
+          "code": null,
+          "options": [
+            {
+              "label": "s",
+              "description": ""
+            },
+            {
+              "label": "s kuadrat dibagi n-1",
+              "description": ""
+            },
+            {
+              "label": "1/s",
+              "description": ""
+            },
+            {
+              "label": "s n",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kuadrat.",
+          "explanation": "Variansi adalah s kuadrat dibagi n-1."
+        },
+        {
+          "q": "Skor sampel sama dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "U S",
+              "description": ""
+            },
+            {
+              "label": "V",
+              "description": ""
+            },
+            {
+              "label": "S",
+              "description": ""
+            },
+            {
+              "label": "Vt",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Proyeksi.",
+          "explanation": "Sama dengan Xc V."
+        },
+        {
+          "q": "Komponen pada components_ berada di?",
+          "code": null,
+          "options": [
+            {
+              "label": "Baris",
+              "description": ""
+            },
+            {
+              "label": "Kolom",
+              "description": ""
+            },
+            {
+              "label": "Diagonal",
+              "description": ""
+            },
+            {
+              "label": "Tidak ada",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Beda dengan eigh.",
+          "explanation": "Setiap baris adalah satu komponen."
+        },
+        {
+          "q": "Galat rekonstruksi nol bila?",
+          "code": null,
+          "options": [
+            {
+              "label": "k = 1",
+              "description": ""
+            },
+            {
+              "label": "Semua komponen dipakai",
+              "description": ""
+            },
+            {
+              "label": "Data acak",
+              "description": ""
+            },
+            {
+              "label": "Tanpa pusat",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Rotasi penuh.",
+          "explanation": "Tidak ada informasi dibuang."
+        },
+        {
+          "q": "Proporsi kumulatif dipakai untuk?",
+          "code": null,
+          "options": [
+            {
+              "label": "Memilih jumlah komponen",
+              "description": ""
+            },
+            {
+              "label": "Mengurutkan sampel",
+              "description": ""
+            },
+            {
+              "label": "Menghapus data",
+              "description": ""
+            },
+            {
+              "label": "Menghitung rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Ambang.",
+          "explanation": "Menentukan k."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Membentuk matriks kovariansi pada data berkondisi buruk. Lebih baik: Pakai SVD dari data terpusat.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Membentuk matriks kovariansi pada data berkondisi buruk.",
+          "fix": "Pakai SVD dari data terpusat."
+        },
+        {
+          "mistake": "Memusatkan data dua kali saat memakai PCA scikit-learn.",
+          "fix": "transform sudah mengurangkan rata-rata."
+        },
+        {
+          "mistake": "Menganggap components_ berisi kolom.",
+          "fix": "Komponen ada di baris."
+        }
+      ],
+      "summary": [
+        "PCA dapat dihitung dari SVD data terpusat dengan variansi s kuadrat dibagi n-1.",
+        "Proporsi kumulatif membantu memilih jumlah komponen.",
+        "PCA scikit-learn menyimpan komponen di baris dan rata-rata di mean_.",
+        "Rekonstruksi dari k komponen mengukur informasi yang dibuang."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# PCA lewat SVD dan rekonstruksi"
+          },
+          {
+            "type": "text",
+            "source": "Variansi dari nilai singular sama dengan eigenvalue kovariansi. Skor `U S` sama dengan `Xc V` sampai tanda."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nX = np.array([[2.0, 2.0], [4.0, 3.0], [6.0, 7.0], [8.0, 8.0]])\nXc = X - X.mean(axis=0)\nn = X.shape[0]\nU, s, Vt = np.linalg.svd(Xc, full_matrices=False)\nvariansi = s ** 2 / (n - 1)\nnilai = np.linalg.eigvalsh(np.cov(X.T))[::-1]\nprint(variansi.round(4).tolist())\nprint(np.allclose(variansi, nilai))\nZ = U * s\nprint(np.allclose(np.abs(Z), np.abs(Xc @ Vt.T)))\nprint(np.abs(Vt[0]).round(4).tolist())"
+          },
+          {
+            "type": "text",
+            "source": "`PCA` dari scikit-learn memberi variansi dan proporsi yang sama dengan hitungan manual. Atribut `components_` menyimpan komponen sebagai baris dan `mean_` menyimpan rata-rata yang dikurangkan."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.decomposition import PCA\n\nX = np.array([[2.0, 2.0], [4.0, 3.0], [6.0, 7.0], [8.0, 8.0]])\npca = PCA(n_components=2).fit(X)\nprint(pca.explained_variance_.round(4).tolist())\nprint(pca.explained_variance_ratio_.round(4).tolist())\nprint(pca.mean_.tolist())\nprint(pca.components_.shape)\nZ = pca.transform(X)\nprint(Z.shape, np.allclose(Z.mean(axis=0), 0))"
+          },
+          {
+            "type": "text",
+            "source": "Galat rekonstruksi turun saat komponen bertambah dan menjadi nol ketika semua komponen dipakai."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nX = np.array([[2.0, 0.0, 1.0], [3.0, 1.0, 2.0], [4.0, 1.0, 3.0],\n              [5.0, 2.0, 3.0], [6.0, 2.0, 5.0], [7.0, 3.0, 5.0]])\nrata = X.mean(axis=0)\nXc = X - rata\nU, s, Vt = np.linalg.svd(Xc, full_matrices=False)\nfor k in (1, 2, 3):\n    W = Vt[:k].T\n    Xh = (Xc @ W) @ W.T + rata\n    print(k, round(float(np.mean((X - Xh) ** 2)), 4))\nprint(np.allclose(Xh, X))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A2-07-3",
+      "title": "Penerapan: standardisasi, pemilihan komponen, dan batasan",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Memahami mengapa fitur harus distandardisasi sebelum PCA",
+        "Memilih jumlah komponen pada data iris",
+        "Memproyeksikan data ke dua dimensi untuk visualisasi",
+        "Mengenali batasan PCA dan kapan memakainya"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Skala fitur memengaruhi PCA",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Skala fitur memengaruhi PCA\n\nPCA mencari variasi terbesar, sehingga fitur dengan satuan besar mendominasi hanya karena angkanya besar. Bila satu kolom dalam meter dan kolom lain dalam milimeter, kolom milimeter punya variansi satu juta kali lebih besar dan komponen pertama praktis hanya menunjuk ke kolom itu. Itu bukan temuan, melainkan artefak satuan.\n\nSolusinya **standardisasi**: kurangi rata-rata lalu bagi dengan simpangan baku tiap kolom sehingga setiap fitur punya rata-rata nol dan variansi satu. PCA pada data terstandardisasi setara dengan PCA pada **matriks korelasi**. Aturan praktis: bila fitur memiliki satuan atau rentang berbeda, standardisasi hampir selalu dianjurkan. Bila semuanya sudah dalam satuan sama dan perbedaan skala bermakna, misalnya piksel gambar, standardisasi bisa dilewati."
+            },
+            {
+              "type": "code_example",
+              "filename": "standardisasi.py",
+              "runnable": true,
+              "code": "import numpy as np\n\nX = np.array([[1.0, 1000.0], [2.0, 2000.0], [3.0, 3200.0], [4.0, 4100.0]])\nXc = X - X.mean(axis=0)\nnilai = np.linalg.eigvalsh(np.cov(X.T))[::-1]\nprint((nilai / nilai.sum()).round(6).tolist())\n\nZ = Xc / X.std(axis=0, ddof=1)\nnilai2 = np.linalg.eigvalsh(np.cov(Z.T))[::-1]\nprint((nilai2 / nilai2.sum()).round(4).tolist())\nprint(np.allclose(np.cov(Z.T), np.corrcoef(X.T)))",
+              "expected_output_note": "[1.0, 0.0]\n[0.9993, 0.0007]\nTrue",
+              "explanation": "Tanpa standardisasi komponen pertama menjelaskan hampir semua variansi hanya karena kolom kedua berskala ribuan. Setelah standardisasi kovariansi sama dengan matriks korelasi."
+            },
+            {
+              "type": "text",
+              "markdown": "## Studi kasus: data iris\n\nData iris adalah contoh klasik: seratus lima puluh bunga dengan empat ukuran, panjang dan lebar sepal serta petal, dari tiga spesies. Empat fitur cukup banyak untuk tidak bisa digambar langsung, tetapi PCA dapat mereduksinya ke dua dimensi untuk visualisasi. Fitur-fitur ini berkorelasi kuat, terutama ukuran petal, sehingga dua komponen biasanya sudah menjelaskan hampir semua variansi.\n\nPada pelajaran ini kita membandingkan dua skenario: PCA pada data mentah dan PCA pada data terstandardisasi. Hasilnya berbeda karena ukuran petal berskala lebih besar dibanding lebar sepal. Perhatikan proporsi variansi tiap komponen dan berapa komponen yang diperlukan untuk mencapai ambang sembilan puluh lima persen."
+            },
+            {
+              "type": "code_example",
+              "filename": "pilih_komponen.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.datasets import load_iris\nfrom sklearn.decomposition import PCA\nfrom sklearn.preprocessing import StandardScaler\n\nX = load_iris().data\nmentah = PCA().fit(X).explained_variance_ratio_\nprint(mentah.round(4).tolist())\nZ = StandardScaler().fit_transform(X)\nbaku = PCA().fit(Z).explained_variance_ratio_\nprint(baku.round(4).tolist())\nkum = np.cumsum(baku)\nprint(int(np.searchsorted(kum, 0.95)) + 1)",
+              "expected_output_note": "[0.9246, 0.0531, 0.0171, 0.0052]\n[0.7296, 0.2285, 0.0367, 0.0052]\n2",
+              "explanation": "Pada data mentah komponen pertama mendominasi karena skala petal. Setelah standardisasi diperlukan dua komponen untuk melewati 95 persen."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Hindari kebocoran data",
+              "markdown": "Gunakan `StandardScaler` dan `PCA` dalam satu `Pipeline` agar pemusatan dan penskalaan dipelajari hanya dari data latih. Menghitungnya pada seluruh data sebelum membagi memunculkan kebocoran data."
+            }
+          ],
+          "quick_check": {
+            "question": "Mengapa standardisasi penting?",
+            "options": [
+              "Agar fitur berskala besar tidak mendominasi",
+              "Agar data lebih kecil"
+            ],
+            "answer_index": 0,
+            "explanation": "Skala memengaruhi variansi.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Visualisasi dua dimensi",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Visualisasi dua dimensi\n\nPenggunaan paling umum PCA adalah visualisasi. Proyeksikan data ke dua komponen pertama lalu buat diagram sebar. Sampel yang mirip akan berdekatan, dan kelompok alami sering tampak jelas walau data aslinya berdimensi tinggi. Pada iris, spesies setosa terpisah rapi dari dua spesies lain, sedangkan versicolor dan virginica sebagian bertumpuk.\n\nIngat bahwa sumbu PCA adalah kombinasi linear fitur asli, bukan fitur yang bisa dibaca langsung. Untuk menafsirkannya lihat **loading**, yaitu bobot tiap fitur pada komponen. Fitur dengan loading mutlak besar sangat menentukan komponen itu. Dengan begitu kita bisa memberi nama, misalnya komponen pertama sebagai ukuran bunga secara umum."
+            },
+            {
+              "type": "code_example",
+              "filename": "proyeksi_iris.py",
+              "runnable": true,
+              "code": "import numpy as np\nfrom sklearn.datasets import load_iris\nfrom sklearn.decomposition import PCA\nfrom sklearn.preprocessing import StandardScaler\n\ndata = load_iris()\nZ = StandardScaler().fit_transform(data.data)\npca = PCA(n_components=2)\nT2 = pca.fit_transform(Z)\nprint(T2.shape)\nprint(round(abs(float(np.cov(T2.T)[0, 1])), 6))\ny = data.target\npusat = [T2[y == c].mean(axis=0) for c in range(3)]\nprint(round(float(np.linalg.norm(pusat[0] - pusat[1])), 2) > round(float(np.linalg.norm(pusat[1] - pusat[2])), 2))\nprint(np.abs(pca.components_[0]).round(4).tolist())",
+              "expected_output_note": "(150, 2)\n0.0\nTrue\n[0.5211, 0.2693, 0.5804, 0.5649]",
+              "explanation": "Hasil proyeksi berukuran 150 kali 2 dengan komponen tidak berkorelasi. Pusat setosa lebih jauh dari versicolor dibanding jarak versicolor ke virginica. Loading menunjukkan kontribusi tiap fitur."
+            },
+            {
+              "type": "text",
+              "markdown": "## Batasan PCA\n\nPCA bersifat linear. Ia hanya menemukan subruang datar, jadi data yang tersusun melengkung seperti spiral atau pita tergulung tidak terwakili dengan baik. Untuk struktur nonlinear ada metode lain seperti kernel PCA, t-SNE, dan UMAP, yang lebih cocok untuk visualisasi tetapi lebih sulit ditafsirkan.\n\nBatasan lain: PCA peka terhadap pencilan karena variansi dihitung dari kuadrat jarak, tidak menjamin pemisahan kelas, dan hasilnya sulit dijelaskan ketika komponen mencampur banyak fitur. Gunakan PCA sebagai alat eksplorasi dan praproses, ukur manfaatnya lewat validasi, dan jangan menganggap komponen pertama selalu paling penting untuk prediksi."
+            }
+          ],
+          "quick_check": {
+            "question": "PCA pada data terstandardisasi setara dengan PCA pada?",
+            "options": [
+              "Matriks kovariansi mentah",
+              "Matriks korelasi"
+            ],
+            "answer_index": 1,
+            "explanation": "Variansi satu membuat kovariansi menjadi korelasi.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Praktik baik dalam proyek nyata",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Praktik baik dalam proyek nyata\n\nDalam proyek nyata PCA jarang berdiri sendiri. Urutan umumnya: bersihkan data, tangani nilai hilang, standardisasi, jalankan PCA, lalu pakai komponen untuk model atau visualisasi. Simpan objek scaler dan PCA yang sudah dilatih agar data baru diperlakukan persis sama saat inferensi.\n\nDokumentasikan alasan memilih jumlah komponen, misalnya ambang variansi sembilan puluh lima persen, supaya orang lain bisa mereproduksi dan menilainya. Bila model sesudahnya tidak membaik, coba tanpa PCA untuk memastikan reduksi dimensi memang membantu dan bukan hanya menambah kompleksitas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Dari data ke keputusan\n\nMisalkan kamu memiliki seratus fitur sensor dari sebuah mesin. Banyak sensor mengukur hal yang mirip sehingga berkorelasi tinggi. PCA dapat menunjukkan bahwa lima komponen sudah menjelaskan hampir semua variansi. Dengan lima fitur itu, pemantauan menjadi lebih mudah, penyimpanan lebih hemat, dan model deteksi anomali lebih cepat dilatih.\n\nNamun perhatikan juga komponen yang variansinya sangat kecil. Pada deteksi anomali, penyimpangan sering tampak justru pada arah variasi kecil, karena kondisi normal hampir tidak bervariasi di sana. Artinya komponen kecil bisa sangat berguna, dan membuangnya tanpa berpikir bisa menghapus sinyal terpenting."
+            }
+          ],
+          "quick_check": {
+            "question": "Loading menyatakan?",
+            "options": [
+              "Bobot fitur pada komponen",
+              "Jumlah sampel"
+            ],
+            "answer_index": 0,
+            "explanation": "Kontribusi fitur ke komponen.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A2-07-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `standardisasi(kolom)` yang mengembalikan z-score tiap elemen list angka memakai simpangan baku sampel (dibagi `n - 1`), dibulatkan 4 desimal.",
+          "note": "Bila simpangan baku nol kembalikan list nol. Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def standardisasi(kolom):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "standardisasi([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert standardisasi([1, 2, 3]) == [-1.0, 0.0, 1.0]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "standardisasi([2, 4, 6, 8])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert standardisasi([2, 4, 6, 8]) == [-1.1619, -0.3873, 0.3873, 1.1619]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "standardisasi([5, 5, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert standardisasi([5, 5, 5]) == [0.0, 0.0, 0.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "standardisasi([0, 10])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert standardisasi([0, 10]) == [-0.7071, 0.7071]"
+              }
+            ]
+          },
+          "hint": "Hitung rata-rata dan simpangan baku lalu bagi simpangan tiap elemen.",
+          "solution": "def standardisasi(kolom):\n    n = len(kolom)\n    rata = sum(kolom) / n\n    sd = (sum((x - rata) ** 2 for x in kolom) / (n - 1)) ** 0.5\n    if sd == 0:\n        return [0.0] * n\n    return [round((x - rata) / sd, 4) + 0.0 for x in kolom]",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-07-3-ex2",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `jumlah_komponen(rasio, ambang)` yang mengembalikan `k` terkecil sehingga jumlah `k` rasio pertama minimal `ambang`, dengan toleransi 1e-9.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def jumlah_komponen(rasio, ambang):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "jumlah_komponen([0.7296, 0.2285, 0.0367, 0.00...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_komponen([0.7296, 0.2285, 0.0367, 0.0052], 0.95) == 2"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "jumlah_komponen([0.7296, 0.2285, 0.0367, 0.00...",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_komponen([0.7296, 0.2285, 0.0367, 0.0052], 0.99) == 3"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "jumlah_komponen([0.5, 0.5], 1.0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_komponen([0.5, 0.5], 1.0) == 2"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "jumlah_komponen([1.0], 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert jumlah_komponen([1.0], 0.5) == 1"
+              }
+            ]
+          },
+          "hint": "Akumulasikan rasio dan berhenti saat mencapai ambang.",
+          "solution": "def jumlah_komponen(rasio, ambang):\n    berjalan = 0.0\n    for i, r in enumerate(rasio, start=1):\n        berjalan += r\n        if berjalan >= ambang - 1e-9:\n            return i\n    return len(rasio)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-07-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `korelasi_dari_kovariansi(K)` yang mengubah matriks kovariansi (list of list simetris dengan diagonal positif) menjadi matriks korelasi dengan `K[i][j] / sqrt(K[i][i] * K[j][j])`, dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def korelasi_dari_kovariansi(K):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "korelasi_dari_kovariansi([[4, 2], [2, 9]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi_dari_kovariansi([[4, 2], [2, 9]]) == [[1.0, 0.3333], [0.3333, 1.0]]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "korelasi_dari_kovariansi([[1, 0], [0, 1]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi_dari_kovariansi([[1, 0], [0, 1]]) == [[1.0, 0.0], [0.0, 1.0]]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "korelasi_dari_kovariansi([[2, -1], [-1, 2]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi_dari_kovariansi([[2, -1], [-1, 2]]) == [[1.0, -0.5], [-0.5, 1.0]]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "korelasi_dari_kovariansi([[25]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert korelasi_dari_kovariansi([[25]]) == [[1.0]]"
+              }
+            ]
+          },
+          "hint": "Bagi tiap elemen dengan akar hasil kali dua variansi pada diagonal.",
+          "solution": "def korelasi_dari_kovariansi(K):\n    n = len(K)\n    return [[round(K[i][j] / (K[i][i] * K[j][j]) ** 0.5, 4) + 0.0 for j in range(n)] for i in range(n)]",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A2-07-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `skor_pc1(X)` yang menerima data dua fitur (list of list), menghitung komponen utama pertama dari matriks kovariansinya dengan rumus 2x2, dan mengembalikan skor tiap sampel pada komponen itu dibulatkan 4 desimal.",
+          "note": "Pilih tanda eigenvector sehingga komponen pertamanya tidak negatif. Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "def skor_pc1(X):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "skor_pc1([[1, 2], [2, 4], [3, 6]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert skor_pc1([[1, 2], [2, 4], [3, 6]]) == [-2.2361, 0.0, 2.2361]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "skor_pc1([[1, 0], [2, 0], [3, 0]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert skor_pc1([[1, 0], [2, 0], [3, 0]]) == [-1.0, 0.0, 1.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "skor_pc1([[0, 1], [0, 2], [0, 3]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert skor_pc1([[0, 1], [0, 2], [0, 3]]) == [-1.0, 0.0, 1.0]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "skor_pc1([[2, 2], [4, 3], [6, 7], [8, 8]])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert skor_pc1([[2, 2], [4, 3], [6, 7], [8, 8]]) == [-4.2329, -2.1643, 2.1643, 4.2329]"
+              }
+            ]
+          },
+          "hint": "Cari eigenvalue terbesar lalu eigenvector (b, lambda minus a). Bila b nol pilih sumbu dengan variansi terbesar.",
+          "solution": "def skor_pc1(X):\n    n = len(X)\n    mx = sum(b[0] for b in X) / n\n    my = sum(b[1] for b in X) / n\n    a = sum((b[0] - mx) ** 2 for b in X) / (n - 1)\n    d = sum((b[1] - my) ** 2 for b in X) / (n - 1)\n    c = sum((b[0] - mx) * (b[1] - my) for b in X) / (n - 1)\n    tr = a + d\n    det = a * d - c * c\n    lam = (tr + max(tr * tr - 4 * det, 0.0) ** 0.5) / 2\n    if abs(c) > 1e-12:\n        v = (c, lam - a)\n    elif a >= d:\n        v = (1.0, 0.0)\n    else:\n        v = (0.0, 1.0)\n    norma = (v[0] ** 2 + v[1] ** 2) ** 0.5\n    v = (v[0] / norma, v[1] / norma)\n    if v[0] < -1e-12 or (abs(v[0]) < 1e-12 and v[1] < 0):\n        v = (-v[0], -v[1])\n    return [round((b[0] - mx) * v[0] + (b[1] - my) * v[1], 4) + 0.0 for b in X]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Mengapa standardisasi penting?",
+          "code": null,
+          "options": [
+            {
+              "label": "Agar data lebih kecil",
+              "description": ""
+            },
+            {
+              "label": "Agar fitur berskala besar tidak mendominasi",
+              "description": ""
+            },
+            {
+              "label": "Agar rata-rata naik",
+              "description": ""
+            },
+            {
+              "label": "Agar data acak",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Satuan.",
+          "explanation": "Skala memengaruhi variansi."
+        },
+        {
+          "q": "PCA pada data terstandardisasi setara dengan PCA pada?",
+          "code": null,
+          "options": [
+            {
+              "label": "Matriks kovariansi mentah",
+              "description": ""
+            },
+            {
+              "label": "Matriks korelasi",
+              "description": ""
+            },
+            {
+              "label": "Matriks identitas",
+              "description": ""
+            },
+            {
+              "label": "Matriks label",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Skala sama.",
+          "explanation": "Variansi satu membuat kovariansi menjadi korelasi."
+        },
+        {
+          "q": "Loading menyatakan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Jumlah sampel",
+              "description": ""
+            },
+            {
+              "label": "Bobot fitur pada komponen",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Label",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Tafsir.",
+          "explanation": "Kontribusi fitur ke komponen."
+        },
+        {
+          "q": "Batasan PCA?",
+          "code": null,
+          "options": [
+            {
+              "label": "Hanya linear",
+              "description": ""
+            },
+            {
+              "label": "Hanya data kecil",
+              "description": ""
+            },
+            {
+              "label": "Hanya teks",
+              "description": ""
+            },
+            {
+              "label": "Tidak butuh data",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Subruang datar.",
+          "explanation": "Tidak menangkap lengkungan."
+        },
+        {
+          "q": "Cara menghindari kebocoran data?",
+          "code": null,
+          "options": [
+            {
+              "label": "Pipeline hanya dengan data latih",
+              "description": ""
+            },
+            {
+              "label": "Menskalakan semua data",
+              "description": ""
+            },
+            {
+              "label": "Menghapus label",
+              "description": ""
+            },
+            {
+              "label": "Memakai semua komponen",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Jangan lihat uji.",
+          "explanation": "Scaler dan PCA dipelajari dari data latih."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Tidak menstandardisasi fitur berskala berbeda. Lebih baik: Standardisasi agar tidak ada fitur yang mendominasi.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Tidak menstandardisasi fitur berskala berbeda.",
+          "fix": "Standardisasi agar tidak ada fitur yang mendominasi."
+        },
+        {
+          "mistake": "Menyesuaikan scaler dan PCA pada seluruh data sebelum membagi.",
+          "fix": "Pelajari hanya dari data latih."
+        },
+        {
+          "mistake": "Mengira PCA menemukan struktur nonlinear.",
+          "fix": "PCA hanya linear, pakai metode lain untuk lengkungan."
+        }
+      ],
+      "summary": [
+        "Standardisasi mencegah fitur berskala besar mendominasi PCA.",
+        "Pilih jumlah komponen dari proporsi variansi kumulatif.",
+        "Loading membantu menafsirkan komponen.",
+        "PCA linear sehingga perlu metode lain untuk struktur nonlinear."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Penerapan: standardisasi, pemilihan komponen, dan batasan"
+          },
+          {
+            "type": "text",
+            "source": "Tanpa standardisasi komponen pertama menjelaskan hampir semua variansi hanya karena kolom kedua berskala ribuan. Setelah standardisasi kovariansi sama dengan matriks korelasi."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\nX = np.array([[1.0, 1000.0], [2.0, 2000.0], [3.0, 3200.0], [4.0, 4100.0]])\nXc = X - X.mean(axis=0)\nnilai = np.linalg.eigvalsh(np.cov(X.T))[::-1]\nprint((nilai / nilai.sum()).round(6).tolist())\n\nZ = Xc / X.std(axis=0, ddof=1)\nnilai2 = np.linalg.eigvalsh(np.cov(Z.T))[::-1]\nprint((nilai2 / nilai2.sum()).round(4).tolist())\nprint(np.allclose(np.cov(Z.T), np.corrcoef(X.T)))"
+          },
+          {
+            "type": "text",
+            "source": "Pada data mentah komponen pertama mendominasi karena skala petal. Setelah standardisasi diperlukan dua komponen untuk melewati 95 persen."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.datasets import load_iris\nfrom sklearn.decomposition import PCA\nfrom sklearn.preprocessing import StandardScaler\n\nX = load_iris().data\nmentah = PCA().fit(X).explained_variance_ratio_\nprint(mentah.round(4).tolist())\nZ = StandardScaler().fit_transform(X)\nbaku = PCA().fit(Z).explained_variance_ratio_\nprint(baku.round(4).tolist())\nkum = np.cumsum(baku)\nprint(int(np.searchsorted(kum, 0.95)) + 1)"
+          },
+          {
+            "type": "text",
+            "source": "Hasil proyeksi berukuran 150 kali 2 dengan komponen tidak berkorelasi. Pusat setosa lebih jauh dari versicolor dibanding jarak versicolor ke virginica. Loading menunjukkan kontribusi tiap fitur."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\nfrom sklearn.datasets import load_iris\nfrom sklearn.decomposition import PCA\nfrom sklearn.preprocessing import StandardScaler\n\ndata = load_iris()\nZ = StandardScaler().fit_transform(data.data)\npca = PCA(n_components=2)\nT2 = pca.fit_transform(Z)\nprint(T2.shape)\nprint(round(abs(float(np.cov(T2.T)[0, 1])), 6))\ny = data.target\npusat = [T2[y == c].mean(axis=0) for c in range(3)]\nprint(round(float(np.linalg.norm(pusat[0] - pusat[1])), 2) > round(float(np.linalg.norm(pusat[1] - pusat[2])), 2))\nprint(np.abs(pca.components_[0]).round(4).tolist())"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa perhitungan dan contoh kode yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}

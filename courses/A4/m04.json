@@ -1,0 +1,1646 @@
+{
+  "schema_version": 2,
+  "course_id": "A4",
+  "module_no": 4,
+  "title": "Variabel acak kontinu",
+  "estimated_minutes": 105,
+  "learning_outcomes": [
+    "Memahami PDF sebagai kepadatan dan peluang sebagai luas",
+    "Memakai CDF, kuantil, dan sampling invers",
+    "Mengestimasi kepadatan dari data"
+  ],
+  "lesson_count": 3,
+  "exercise_count": 12,
+  "practice_preview": {
+    "lesson_id": "A4-04-1",
+    "exercise_id": "A4-04-1-ex4",
+    "level_label": "Tantangan",
+    "code_preview": "def peluang_rentang_pdf(f, a, b, n=20000):\n    ..."
+  },
+  "lessons": [
+    {
+      "lesson_id": "A4-04-1",
+      "title": "Fungsi kepadatan peluang",
+      "estimated_minutes": 35,
+      "read_minutes": 5,
+      "objectives": [
+        "Menjelaskan mengapa variabel kontinu memakai kepadatan, bukan massa",
+        "Menghitung peluang sebagai luas di bawah kurva kepadatan",
+        "Menghitung integral dengan aturan titik tengah dan trapesium",
+        "Menormalkan fungsi menjadi kepadatan yang valid"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Ketika nilai tak terhitung",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Ketika nilai tak terhitung\n\nTinggi badan, waktu tunggu, dan suhu dapat bernilai di sembarang titik pada suatu rentang. Peluang tinggi badan seseorang tepat 170,000000 cm adalah nol, karena ada tak terhingga banyak nilai yang mungkin dan massa peluang tidak mungkin dibagi ke semuanya. Karena itu variabel kontinu tidak memakai PMF.\n\nSebagai gantinya kita memakai **fungsi kepadatan peluang** atau PDF, yang ditulis `f(x)`. PDF bukan peluang, melainkan kepadatan: peluang tinggal di rentang kecil di sekitar `x` kira-kira `f(x)` dikali lebar rentang. Peluang sebenarnya muncul ketika kita mengambil luas."
+            },
+            {
+              "type": "text",
+              "markdown": "## Peluang sebagai luas\n\nUntuk variabel kontinu `X` dengan PDF `f`, peluang `X` jatuh antara `a` dan `b` adalah luas di bawah kurva `f` dari `a` sampai `b`: `P(a <= X <= b) = integral f(x) dx` dari `a` ke `b`. Luas total di bawah kurva harus satu, dan `f(x)` tidak boleh negatif.\n\nKonsekuensinya, `P(X = a) = 0` karena luas dengan lebar nol adalah nol. Maka batas inklusif atau eksklusif tidak berpengaruh: `P(a < X < b)` sama dengan `P(a <= X <= b)`. Ini berbeda dari kasus diskrit dan sering membingungkan pemula."
+            },
+            {
+              "type": "text",
+              "markdown": "## Integral numerik\n\nTidak semua PDF punya integral dengan rumus tertutup yang mudah. Kita bisa mengaproksimasi luas dengan membagi rentang menjadi `n` potongan kecil. **Aturan titik tengah** menghitung tinggi fungsi di tengah tiap potongan lalu menjumlahkan tinggi kali lebar. **Aturan trapesium** menganggap tiap potongan trapesium dan menjumlahkan luasnya.\n\nKedua aturan makin akurat bila `n` membesar. Untuk fungsi mulus, kesalahan berkurang secara kuadrat dalam lebar potongan. Menulis integral numerik dari nol adalah latihan bagus karena ia memperlihatkan bahwa integral hanyalah penjumlahan banyak persegi panjang tipis."
+            },
+            {
+              "type": "code_example",
+              "filename": "integral_numerik.py",
+              "runnable": true,
+              "code": "def integral(f, a, b, n=10000):\n    h = (b - a) / n\n    return sum(f(a + (i + 0.5) * h) for i in range(n)) * h\n\nprint(round(integral(lambda x: 2 * x, 0, 1), 4))\nprint(round(integral(lambda x: 2 * x, 0.25, 0.75), 4))",
+              "expected_output_note": "1.0\n0.5",
+              "explanation": "Kepadatan dua x pada nol sampai satu memiliki luas total satu, dan peluang antara seperempat dan tiga perempat adalah setengah."
+            }
+          ],
+          "quick_check": {
+            "question": "Peluang pada variabel kontinu adalah?",
+            "options": [
+              "Luas di bawah PDF",
+              "Nilai PDF"
+            ],
+            "answer_index": 0,
+            "explanation": "Integral PDF.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Peluang titik adalah nol",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Peluang titik adalah nol\n\nMari periksa klaim bahwa peluang satu titik adalah nol. Integral pada interval dengan lebar nol bernilai nol. Pada interval yang sangat sempit, misalnya selebar `0,000001`, peluangnya kira-kira kepadatan kali lebar, yaitu bilangan yang sangat kecil.\n\nIni bukan berarti nilai itu mustahil. Setelah kita mengamati sebuah nilai, nilai itu tentu terjadi, padahal peluangnya nol. Kita memakai peluang pada interval, bukan titik, untuk membicarakan kemungkinan. Di praktik, semua pengukuran berpresisi terbatas sehingga sebenarnya kita selalu mengamati interval kecil."
+            },
+            {
+              "type": "code_example",
+              "filename": "peluang_titik.py",
+              "runnable": true,
+              "code": "def integral(f, a, b, n=1000):\n    h = (b - a) / n\n    return sum(f(a + (i + 0.5) * h) for i in range(n)) * h\n\nf = lambda x: 2 * x\nprint(integral(f, 0.5, 0.5))\nprint(integral(f, 0.5, 0.500001) < 1e-5)",
+              "expected_output_note": "0.0\nTrue",
+              "explanation": "Interval selebar nol memiliki luas nol dan interval yang sangat sempit memiliki peluang yang sangat kecil."
+            },
+            {
+              "type": "text",
+              "markdown": "## Distribusi seragam\n\nDistribusi paling sederhana adalah **seragam** pada `[a, b]`: kepadatan konstan `1/(b-a)` di dalam rentang dan nol di luar. Semua sub-interval dengan lebar sama punya peluang sama. Peluang `X` berada di `[2, 5]` pada seragam `[0, 10]` adalah lebar `3` dikali kepadatan `0,1`, yaitu `0,3`.\n\nKepadatan boleh lebih dari satu! Pada seragam `[0, 0,5]` kepadatannya `2`. Yang harus satu adalah luas total, bukan tinggi kurva. Tinggi hanyalah peluang per satuan lebar, dan bila lebarnya kecil maka tingginya besar."
+            },
+            {
+              "type": "code_example",
+              "filename": "seragam.py",
+              "runnable": true,
+              "code": "def pdf_seragam(x, a, b):\n    return 1 / (b - a) if a <= x <= b else 0.0\n\ndef integral(f, a, b, n=3000):\n    h = (b - a) / n\n    return sum(f(a + (i + 0.5) * h) for i in range(n)) * h\n\nprint(pdf_seragam(5, 0, 10), pdf_seragam(11, 0, 10), round(integral(lambda x: pdf_seragam(x, 0, 10), 2, 5), 4))\nprint(pdf_seragam(0.2, 0, 0.5))",
+              "expected_output_note": "0.1 0.0 0.3\n2.0",
+              "explanation": "Kepadatan seragam nol sampai sepuluh adalah sepersepuluh di dalam rentang. Pada rentang yang sempit kepadatan bisa lebih dari satu."
+            },
+            {
+              "type": "callout",
+              "kind": "warn",
+              "title": "PDF bukan peluang",
+              "markdown": "Nilai PDF di satu titik bukan peluang dan boleh lebih dari satu. Hanya luas di bawah kurva pada sebuah interval yang merupakan peluang."
+            }
+          ],
+          "quick_check": {
+            "question": "P(X = a) pada variabel kontinu?",
+            "options": [
+              "1",
+              "0"
+            ],
+            "answer_index": 1,
+            "explanation": "Luas lebar nol.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Normalisasi",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Normalisasi\n\nSering kita punya bentuk fungsi tetapi belum tahu konstantanya. Misalnya `f(x) = c * x` pada `[0, 2]`. Agar menjadi PDF, luasnya harus satu, sehingga `c = 1 / integral dari x`. Karena integral `x` dari nol sampai dua adalah dua, maka `c = 0,5`.\n\nTeknik ini sangat umum: tentukan bentuk yang sebanding dengan kepadatan, hitung luasnya, lalu bagi dengan luas itu. Statistik Bayesian memakai gagasan ini terus-menerus ketika posterior hanya dikenal sebanding dengan prior kali likelihood."
+            },
+            {
+              "type": "text",
+              "markdown": "## Ringkasan dan kebiasaan\n\nIngat tiga hal. PDF tidak negatif dan luas totalnya satu. Peluang adalah luas, sehingga titik tunggal berpeluang nol. Nilai PDF boleh melebihi satu. Bila ragu apakah suatu fungsi adalah PDF yang valid, hitung integralnya secara numerik dan periksa nilai minimumnya.\n\nLatihan berikut membuat kamu mengimplementasikan integral numerik dan memakainya untuk menghitung peluang serta menormalkan fungsi. Pelajaran berikutnya memakai ide yang sama pada fungsi distribusi kumulatif dan kuantil."
+            }
+          ],
+          "quick_check": {
+            "question": "Luas total di bawah PDF?",
+            "options": [
+              "1",
+              "0"
+            ],
+            "answer_index": 0,
+            "explanation": "Peluang total.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-04-1-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `pdf_seragam(x, a, b)` yang mengembalikan `1 / (b - a)` bila `a <= x <= b` dan `0.0` bila di luar rentang.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def pdf_seragam(x, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "pdf_seragam(5, 0, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pdf_seragam(5, 0, 10) == 0.1"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "pdf_seragam(11, 0, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pdf_seragam(11, 0, 10) == 0.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "pdf_seragam(0.2, 0, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pdf_seragam(0.2, 0, 0.5) == 2.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "pdf_seragam(-1, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pdf_seragam(-1, 0, 1) == 0.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "pdf_seragam(0.5, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert pdf_seragam(0.5, 0, 1) == 1.0"
+              }
+            ]
+          },
+          "hint": "Periksa apakah x berada dalam rentang lalu kembalikan kebalikan lebar.",
+          "solution": "def pdf_seragam(x, a, b):\n    return 1 / (b - a) if a <= x <= b else 0.0",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-04-1-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `integral_trapesium(f, a, b, n)` yang mengaproksimasi integral `f` dari `a` ke `b` dengan aturan trapesium memakai `n` potongan sama lebar.",
+          "note": "Bulatkan hasil 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def integral_trapesium(f, a, b, n):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "integral_trapesium(lambda x: x, 0, 1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert integral_trapesium(lambda x: x, 0, 1, 1) == 0.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "integral_trapesium(lambda x: x * x, 0, 1, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert integral_trapesium(lambda x: x * x, 0, 1, 2) == 0.375"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "integral_trapesium(lambda x: x * x, 0, 1, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert integral_trapesium(lambda x: x * x, 0, 1, 10) == 0.335"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "integral_trapesium(lambda x: 3, 0, 2, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert integral_trapesium(lambda x: 3, 0, 2, 5) == 6.0"
+              }
+            ]
+          },
+          "hint": "Jumlahkan setengah tinggi ujung dan seluruh tinggi titik dalam lalu kalikan lebar potongan.",
+          "solution": "def integral_trapesium(f, a, b, n):\n    h = (b - a) / n\n    total = (f(a) + f(b)) / 2\n    for i in range(1, n):\n        total += f(a + i * h)\n    return round(total * h, 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-04-1-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `konstanta_normalisasi(f, a, b, n=10000)` yang mengembalikan konstanta `c` sehingga `c * f(x)` memiliki luas satu pada `[a, b]`, memakai aturan titik tengah dengan `n` potongan.",
+          "note": "Bulatkan 4 desimal.",
+          "filename": "solution.py",
+          "starter_code": "def konstanta_normalisasi(f, a, b, n=10000):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "konstanta_normalisasi(lambda x: x, 0, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert konstanta_normalisasi(lambda x: x, 0, 2) == 0.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "konstanta_normalisasi(lambda x: x * x, 0, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert konstanta_normalisasi(lambda x: x * x, 0, 3) == 0.1111"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "konstanta_normalisasi(lambda x: 1, 0, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert konstanta_normalisasi(lambda x: 1, 0, 4) == 0.25"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "konstanta_normalisasi(lambda x: 2 * x, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert konstanta_normalisasi(lambda x: 2 * x, 0, 1) == 1.0"
+              }
+            ]
+          },
+          "hint": "Hitung luas dengan titik tengah lalu ambil kebalikannya.",
+          "solution": "def konstanta_normalisasi(f, a, b, n=10000):\n    h = (b - a) / n\n    luas = sum(f(a + (i + 0.5) * h) for i in range(n)) * h\n    return round(1 / luas, 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-04-1-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `peluang_rentang_pdf(f, a, b, n=20000)` yang mengembalikan `P(a <= X <= b)` dari PDF `f` memakai aturan titik tengah, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def peluang_rentang_pdf(f, a, b, n=20000):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "peluang_rentang_pdf(lambda x: 2 * x, 0.25, 0.75)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rentang_pdf(lambda x: 2 * x, 0.25, 0.75) == 0.5"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "peluang_rentang_pdf(lambda x: 0.1, 2, 5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rentang_pdf(lambda x: 0.1, 2, 5) == 0.3"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "peluang_rentang_pdf(lambda x: 3 * x * x, 0, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rentang_pdf(lambda x: 3 * x * x, 0, 0.5) == 0.125"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "peluang_rentang_pdf(lambda x: 2 * x, 0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rentang_pdf(lambda x: 2 * x, 0, 1) == 1.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "peluang_rentang_pdf(lambda x: 2 * x, 0.5, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert peluang_rentang_pdf(lambda x: 2 * x, 0.5, 0.5) == 0.0"
+              }
+            ]
+          },
+          "hint": "Bagi interval menjadi potongan kecil dan jumlahkan tinggi titik tengah kali lebar.",
+          "solution": "def peluang_rentang_pdf(f, a, b, n=20000):\n    h = (b - a) / n\n    return round(sum(f(a + (i + 0.5) * h) for i in range(n)) * h, 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Peluang pada variabel kontinu adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Nilai PDF",
+              "description": ""
+            },
+            {
+              "label": "Luas di bawah PDF",
+              "description": ""
+            },
+            {
+              "label": "Tinggi maksimum",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Luas.",
+          "explanation": "Integral PDF."
+        },
+        {
+          "q": "P(X = a) pada variabel kontinu?",
+          "code": null,
+          "options": [
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "0,5",
+              "description": ""
+            },
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "Tak tentu",
+              "description": ""
+            }
+          ],
+          "answer_index": 2,
+          "hint": "Titik.",
+          "explanation": "Luas lebar nol."
+        },
+        {
+          "q": "Luas total di bawah PDF?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "Bergantung",
+              "description": ""
+            },
+            {
+              "label": "Tak hingga",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Satu.",
+          "explanation": "Peluang total."
+        },
+        {
+          "q": "Bolehkah PDF bernilai lebih dari 1?",
+          "code": null,
+          "options": [
+            {
+              "label": "Tidak",
+              "description": ""
+            },
+            {
+              "label": "Ya",
+              "description": ""
+            },
+            {
+              "label": "Hanya seragam",
+              "description": ""
+            },
+            {
+              "label": "Hanya normal",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Rentang sempit.",
+          "explanation": "Ia kepadatan, bukan peluang."
+        },
+        {
+          "q": "Aturan titik tengah mendekati integral dengan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Mengurutkan",
+              "description": ""
+            },
+            {
+              "label": "Menjumlahkan persegi panjang",
+              "description": ""
+            },
+            {
+              "label": "Mengalikan",
+              "description": ""
+            },
+            {
+              "label": "Membagi",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Potongan.",
+          "explanation": "Tinggi di tengah kali lebar."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Menganggap nilai PDF sebagai peluang titik. Lebih baik: Peluang adalah luas pada interval.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Menganggap nilai PDF sebagai peluang titik.",
+          "fix": "Peluang adalah luas pada interval."
+        },
+        {
+          "mistake": "Mengira PDF tidak boleh lebih dari satu.",
+          "fix": "Yang harus satu adalah luas total."
+        },
+        {
+          "mistake": "Peduli batas inklusif pada variabel kontinu.",
+          "fix": "Titik tunggal berpeluang nol."
+        }
+      ],
+      "summary": [
+        "PDF adalah kepadatan dan peluang adalah luas di bawahnya.",
+        "Titik tunggal berpeluang nol.",
+        "Integral numerik menjumlahkan persegi panjang atau trapesium kecil.",
+        "Normalisasi membagi dengan luas agar totalnya satu."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Fungsi kepadatan peluang"
+          },
+          {
+            "type": "text",
+            "source": "Kepadatan dua x pada nol sampai satu memiliki luas total satu, dan peluang antara seperempat dan tiga perempat adalah setengah."
+          },
+          {
+            "type": "code",
+            "source": "def integral(f, a, b, n=10000):\n    h = (b - a) / n\n    return sum(f(a + (i + 0.5) * h) for i in range(n)) * h\n\nprint(round(integral(lambda x: 2 * x, 0, 1), 4))\nprint(round(integral(lambda x: 2 * x, 0.25, 0.75), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Interval selebar nol memiliki luas nol dan interval yang sangat sempit memiliki peluang yang sangat kecil."
+          },
+          {
+            "type": "code",
+            "source": "def integral(f, a, b, n=1000):\n    h = (b - a) / n\n    return sum(f(a + (i + 0.5) * h) for i in range(n)) * h\n\nf = lambda x: 2 * x\nprint(integral(f, 0.5, 0.5))\nprint(integral(f, 0.5, 0.500001) < 1e-5)"
+          },
+          {
+            "type": "text",
+            "source": "Kepadatan seragam nol sampai sepuluh adalah sepersepuluh di dalam rentang. Pada rentang yang sempit kepadatan bisa lebih dari satu."
+          },
+          {
+            "type": "code",
+            "source": "def pdf_seragam(x, a, b):\n    return 1 / (b - a) if a <= x <= b else 0.0\n\ndef integral(f, a, b, n=3000):\n    h = (b - a) / n\n    return sum(f(a + (i + 0.5) * h) for i in range(n)) * h\n\nprint(pdf_seragam(5, 0, 10), pdf_seragam(11, 0, 10), round(integral(lambda x: pdf_seragam(x, 0, 10), 2, 5), 4))\nprint(pdf_seragam(0.2, 0, 0.5))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-04-2",
+      "title": "CDF kontinu, kuantil, dan sampling invers",
+      "estimated_minutes": 35,
+      "read_minutes": 7,
+      "objectives": [
+        "Menghitung CDF dari PDF dan sebaliknya",
+        "Menghitung CDF dan kuantil distribusi eksponensial dan seragam",
+        "Memakai sampling transformasi invers",
+        "Mengecek model dengan simulasi"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "CDF dan PDF saling terkait",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## CDF dan PDF saling terkait\n\nUntuk variabel kontinu, CDF tetap `F(x) = P(X <= x)`, yaitu luas di bawah PDF dari minus tak hingga sampai `x`. Sebaliknya, PDF adalah turunan CDF: `f(x) = F'(x)`. Kenaikan CDF yang curam berarti kepadatan tinggi di sana, dan CDF yang mendatar berarti kepadatan rendah.\n\nBerbeda dengan kasus diskrit, CDF kontinu mulus tanpa lompatan. Ia naik dari nol ke satu secara kontinu. Kita tetap memakainya untuk peluang interval: `P(a < X <= b) = F(b) - F(a)`."
+            },
+            {
+              "type": "text",
+              "markdown": "## Distribusi eksponensial\n\nDistribusi **eksponensial** memodelkan waktu tunggu sampai kejadian acak berikutnya, seperti waktu antar kedatangan pelanggan atau waktu hidup komponen. PDF-nya `f(x) = lambda * e^(-lambda x)` untuk `x >= 0`, dengan `lambda` laju kejadian. CDF-nya `F(x) = 1 - e^(-lambda x)`.\n\nRata-rata waktu tunggu adalah `1/lambda`. Bila laju `0,5` per menit, rata-rata tunggu dua menit. Peluang menunggu lebih lama dari `x` adalah `e^(-lambda x)`, ekor yang meluruh secara eksponensial."
+            },
+            {
+              "type": "code_example",
+              "filename": "eksponensial.py",
+              "runnable": true,
+              "code": "import math\n\nlam = 0.5\nprint(round(1 - math.exp(-lam * 2), 4), round(math.exp(-lam * 4), 4), round(math.log(2) / lam, 4))",
+              "expected_output_note": "0.6321 0.1353 1.3863",
+              "explanation": "Peluang menunggu paling lama dua menit adalah sekitar enam puluh tiga persen. Peluang menunggu lebih dari empat menit sekitar tiga belas persen, dan median waktu tunggu lebih pendek daripada rata-rata dua menit."
+            },
+            {
+              "type": "text",
+              "markdown": "## Kuantil\n\nKuantil adalah invers CDF: `Q(q) = F^(-1)(q)`, nilai `x` dengan `F(x) = q`. Untuk seragam `[a, b]`, `F(x) = (x - a)/(b - a)` sehingga `Q(q) = a + q (b - a)`. Untuk eksponensial, memecahkan `1 - e^(-lambda x) = q` menghasilkan `Q(q) = -ln(1 - q) / lambda`.\n\nMedian adalah `Q(0,5)`. Pada eksponensial median `ln(2)/lambda` selalu lebih kecil daripada rata-rata `1/lambda`, ciri khas distribusi yang miring ke kanan: sedikit nilai yang sangat besar menarik rata-rata ke atas."
+            },
+            {
+              "type": "code_example",
+              "filename": "kuantil_seragam.py",
+              "runnable": true,
+              "code": "a, b = 2, 10\nprint(a + 0.5 * (b - a), a + 0.9 * (b - a))",
+              "expected_output_note": "6.0 9.2",
+              "explanation": "Median seragam dua sampai sepuluh adalah tepat di tengah dan kuantil sembilan puluh persen berada di sembilan koma dua."
+            }
+          ],
+          "quick_check": {
+            "question": "PDF adalah apa dari CDF?",
+            "options": [
+              "Turunan",
+              "Integral"
+            ],
+            "answer_index": 0,
+            "explanation": "f = F'.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Sampling transformasi invers",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Sampling transformasi invers\n\nBila `U` seragam pada `[0, 1]`, maka `Q(U)` memiliki distribusi dengan CDF `F`. Inilah **transformasi invers**: cara umum menghasilkan sampel dari distribusi apa pun asalkan kita bisa menghitung kuantilnya. Komputer hanya menyediakan bilangan seragam, dan teknik ini mengubahnya menjadi distribusi lain.\n\nAlasannya intuitif. Pilih peluang `u` secara seragam lalu cari nilai yang memiliki peluang kumulatif `u`. Daerah dengan kepadatan tinggi memiliki CDF curam, sehingga banyak nilai `u` jatuh di sana dan nilai di daerah itu lebih sering terpilih."
+            },
+            {
+              "type": "code_example",
+              "filename": "sampling_invers.py",
+              "runnable": true,
+              "code": "import math\n\nus = [0.1, 0.5, 0.9]\nprint([round(-math.log(1 - u) / 0.5, 4) for u in us])",
+              "expected_output_note": "[0.2107, 1.3863, 4.6052]",
+              "explanation": "Tiga nilai seragam yang berbeda dipetakan menjadi waktu tunggu eksponensial yang makin panjang."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memeriksa dengan simulasi\n\nSimulasi adalah cara terbaik memeriksa rumus. Ambil banyak sampel dengan transformasi invers dan bandingkan statistiknya dengan teori. Rata-rata sampel eksponensial dengan `lambda = 0,5` seharusnya mendekati dua, dan proporsi sampel di bawah dua mendekati `0,6321`.\n\nKebiasaan memeriksa teori dengan simulasi dan simulasi dengan teori akan sangat berguna di modul Monte Carlo. Bila keduanya cocok, kita yakin bahwa rumus dan kode benar. Bila tidak cocok, ada bug di salah satunya dan kita mendapat petunjuk untuk mencarinya."
+            },
+            {
+              "type": "code_example",
+              "filename": "simulasi_eksponensial.py",
+              "runnable": true,
+              "code": "import math\nimport random\n\nrandom.seed(7)\nlam = 0.5\nxs = [-math.log(1 - random.random()) / lam for _ in range(20000)]\nprint(abs(sum(xs) / len(xs) - 2) < 0.1)\nprint(abs(sum(1 for x in xs if x <= 2) / len(xs) - 0.6321) < 0.02)",
+              "expected_output_note": "True\nTrue",
+              "explanation": "Rata-rata sampel mendekati dua dan proporsi di bawah dua mendekati nilai CDF teoretis."
+            }
+          ],
+          "quick_check": {
+            "question": "CDF eksponensial?",
+            "options": [
+              "e^(-lambda x)",
+              "1 - e^(-lambda x)"
+            ],
+            "answer_index": 1,
+            "explanation": "Peluang menunggu paling lama x.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "PDF dari CDF secara numerik",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## PDF dari CDF secara numerik\n\nKarena PDF adalah turunan CDF, kita bisa menaksir kepadatan di suatu titik dengan selisih berhingga: `(F(x + e) - F(x - e)) / (2e)` untuk `e` kecil. Pada eksponensial dengan `lambda = 0,5`, kepadatan di `x = 1` adalah `0,5 * e^(-0,5)`, sekitar `0,3033`, dan selisih berhingga memberi angka yang sama sampai empat desimal."
+            },
+            {
+              "type": "code_example",
+              "filename": "pdf_dari_cdf.py",
+              "runnable": true,
+              "code": "import math\n\nF = lambda x: 1 - math.exp(-0.5 * x)\ne = 0.0001\nprint(round(0.5 * math.exp(-0.5), 4), round((F(1 + e) - F(1 - e)) / (2 * e), 4))",
+              "expected_output_note": "0.3033 0.3033",
+              "explanation": "Kepadatan teoretis dan taksiran turunan CDF memberi nilai yang sama."
+            },
+            {
+              "type": "text",
+              "markdown": "## Sifat tanpa ingatan\n\nEksponensial punya sifat unik: tanpa ingatan. Peluang menunggu paling tidak sepuluh menit lagi, setelah kamu sudah menunggu lima menit, sama dengan peluang menunggu sepuluh menit dari awal. Waktu yang sudah berlalu tidak memberi informasi tentang sisa waktu tunggu.\n\nSifat ini cocok untuk kejadian yang benar-benar acak seperti peluruhan radioaktif, tetapi tidak untuk komponen yang aus. Mesin yang makin tua lebih mungkin rusak, sehingga eksponensial salah dipakai di sana dan distribusi seperti Weibull lebih tepat. Selalu tanyakan apakah asumsi tanpa ingatan masuk akal."
+            },
+            {
+              "type": "text",
+              "markdown": "## Memilih model waktu tunggu\n\nUntuk data nyata, taksir `lambda` dengan satu per rata-rata sampel, lalu bandingkan CDF teoretis dengan CDF empiris. Bila kurvanya berimpit, model eksponensial layak dipakai. Bila CDF empiris naik lebih lambat di awal lalu lebih cepat, data punya penuaan dan model lain diperlukan."
+            }
+          ],
+          "quick_check": {
+            "question": "Median eksponensial?",
+            "options": [
+              "ln 2 / lambda",
+              "1/lambda"
+            ],
+            "answer_index": 0,
+            "explanation": "Q(0,5).",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-04-2-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `cdf_eksponensial(x, lam)` yang mengembalikan `1 - exp(-lam * x)` dibulatkan 4 desimal, dan `0.0` untuk `x < 0`.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef cdf_eksponensial(x, lam):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "cdf_eksponensial(2, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_eksponensial(2, 0.5) == 0.6321"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "cdf_eksponensial(0, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_eksponensial(0, 1) == 0.0"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "cdf_eksponensial(-1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_eksponensial(-1, 1) == 0.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "cdf_eksponensial(1, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_eksponensial(1, 1) == 0.6321"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "cdf_eksponensial(3, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert cdf_eksponensial(3, 0.1) == 0.2592"
+              }
+            ]
+          },
+          "hint": "Kembalikan nol untuk x negatif dan pakai rumus satu dikurangi eksponensial untuk lainnya.",
+          "solution": "import math\n\ndef cdf_eksponensial(x, lam):\n    if x < 0:\n        return 0.0\n    return round(1 - math.exp(-lam * x), 4)",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-04-2-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kuantil_eksponensial(q, lam)` yang mengembalikan `-ln(1 - q) / lam` dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef kuantil_eksponensial(q, lam):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kuantil_eksponensial(0.5, 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_eksponensial(0.5, 0.5) == 1.3863"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kuantil_eksponensial(0.5, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_eksponensial(0.5, 1) == 0.6931"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kuantil_eksponensial(0.9, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_eksponensial(0.9, 1) == 2.3026"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kuantil_eksponensial(0, 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_eksponensial(0, 2) == 0.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "kuantil_eksponensial(0.99, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_eksponensial(0.99, 0.1) == 46.0517"
+              }
+            ]
+          },
+          "hint": "Balikkan CDF eksponensial dengan logaritma natural.",
+          "solution": "import math\n\ndef kuantil_eksponensial(q, lam):\n    return round(-math.log(1 - q) / lam, 4) + 0.0",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-04-2-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kuantil_seragam(q, a, b)` yang mengembalikan kuantil `q` distribusi seragam `[a, b]`, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "def kuantil_seragam(q, a, b):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kuantil_seragam(0.5, 2, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_seragam(0.5, 2, 10) == 6.0"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kuantil_seragam(0.9, 2, 10)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_seragam(0.9, 2, 10) == 9.2"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kuantil_seragam(0, 3, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_seragam(0, 3, 4) == 3.0"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kuantil_seragam(1, 3, 4)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kuantil_seragam(1, 3, 4) == 4.0"
+              }
+            ]
+          },
+          "hint": "Mulai dari a lalu tambahkan q kali lebar rentang.",
+          "solution": "def kuantil_seragam(q, a, b):\n    return round(a + q * (b - a), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-04-2-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `sampel_invers(us, lam)` yang mengubah list bilangan seragam `us` pada `[0, 1)` menjadi list sampel eksponensial dengan transformasi invers, dibulatkan 4 desimal.",
+          "note": "Hindari `-0.0`.",
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef sampel_invers(us, lam):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "sampel_invers([0.1, 0.5, 0.9], 0.5)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sampel_invers([0.1, 0.5, 0.9], 0.5) == [0.2107, 1.3863, 4.6052]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "sampel_invers([0], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sampel_invers([0], 1) == [0.0]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "sampel_invers([0.5], 2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sampel_invers([0.5], 2) == [0.3466]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "sampel_invers([], 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert sampel_invers([], 1) == []"
+              }
+            ]
+          },
+          "hint": "Terapkan kuantil eksponensial pada tiap bilangan seragam.",
+          "solution": "import math\n\ndef sampel_invers(us, lam):\n    return [round(-math.log(1 - u) / lam, 4) + 0.0 for u in us]",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "PDF adalah apa dari CDF?",
+          "code": null,
+          "options": [
+            {
+              "label": "Integral",
+              "description": ""
+            },
+            {
+              "label": "Turunan",
+              "description": ""
+            },
+            {
+              "label": "Kuadrat",
+              "description": ""
+            },
+            {
+              "label": "Akar",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kemiringan.",
+          "explanation": "f = F'."
+        },
+        {
+          "q": "CDF eksponensial?",
+          "code": null,
+          "options": [
+            {
+              "label": "1 - e^(-lambda x)",
+              "description": ""
+            },
+            {
+              "label": "e^(-lambda x)",
+              "description": ""
+            },
+            {
+              "label": "lambda x",
+              "description": ""
+            },
+            {
+              "label": "x / lambda",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Satu kurang ekor.",
+          "explanation": "Peluang menunggu paling lama x."
+        },
+        {
+          "q": "Median eksponensial?",
+          "code": null,
+          "options": [
+            {
+              "label": "1/lambda",
+              "description": ""
+            },
+            {
+              "label": "ln 2 / lambda",
+              "description": ""
+            },
+            {
+              "label": "2/lambda",
+              "description": ""
+            },
+            {
+              "label": "lambda",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Log dua.",
+          "explanation": "Q(0,5)."
+        },
+        {
+          "q": "Transformasi invers memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "U seragam dan kuantil",
+              "description": ""
+            },
+            {
+              "label": "Rata-rata",
+              "description": ""
+            },
+            {
+              "label": "Median saja",
+              "description": ""
+            },
+            {
+              "label": "Histogram",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Seragam.",
+          "explanation": "Q(U) berdistribusi F."
+        },
+        {
+          "q": "Eksponensial miring ke?",
+          "code": null,
+          "options": [
+            {
+              "label": "Kiri",
+              "description": ""
+            },
+            {
+              "label": "Kanan",
+              "description": ""
+            },
+            {
+              "label": "Tidak miring",
+              "description": ""
+            },
+            {
+              "label": "Dua arah",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Rata-rata di atas median.",
+          "explanation": "Ekor panjang di kanan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Mengira CDF kontinu memiliki lompatan. Lebih baik: CDF kontinu mulus.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Mengira CDF kontinu memiliki lompatan.",
+          "fix": "CDF kontinu mulus."
+        },
+        {
+          "mistake": "Menyamakan median dengan rata-rata pada distribusi miring.",
+          "fix": "Median eksponensial lebih kecil dari rata-rata."
+        },
+        {
+          "mistake": "Memakai 1 - u salah pada sampling invers.",
+          "fix": "Kuantil dihitung dari F invers."
+        }
+      ],
+      "summary": [
+        "PDF adalah turunan CDF dan CDF adalah integral PDF.",
+        "Kuantil adalah invers CDF.",
+        "Transformasi invers mengubah bilangan seragam menjadi distribusi lain.",
+        "Simulasi memeriksa kecocokan teori dan kode."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# CDF kontinu, kuantil, dan sampling invers"
+          },
+          {
+            "type": "text",
+            "source": "Peluang menunggu paling lama dua menit adalah sekitar enam puluh tiga persen. Peluang menunggu lebih dari empat menit sekitar tiga belas persen, dan median waktu tunggu lebih pendek daripada rata-rata dua menit."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nlam = 0.5\nprint(round(1 - math.exp(-lam * 2), 4), round(math.exp(-lam * 4), 4), round(math.log(2) / lam, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Median seragam dua sampai sepuluh adalah tepat di tengah dan kuantil sembilan puluh persen berada di sembilan koma dua."
+          },
+          {
+            "type": "code",
+            "source": "a, b = 2, 10\nprint(a + 0.5 * (b - a), a + 0.9 * (b - a))"
+          },
+          {
+            "type": "text",
+            "source": "Tiga nilai seragam yang berbeda dipetakan menjadi waktu tunggu eksponensial yang makin panjang."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nus = [0.1, 0.5, 0.9]\nprint([round(-math.log(1 - u) / 0.5, 4) for u in us])"
+          },
+          {
+            "type": "text",
+            "source": "Rata-rata sampel mendekati dua dan proporsi di bawah dua mendekati nilai CDF teoretis."
+          },
+          {
+            "type": "code",
+            "source": "import math\nimport random\n\nrandom.seed(7)\nlam = 0.5\nxs = [-math.log(1 - random.random()) / lam for _ in range(20000)]\nprint(abs(sum(xs) / len(xs) - 2) < 0.1)\nprint(abs(sum(1 for x in xs if x <= 2) / len(xs) - 0.6321) < 0.02)"
+          },
+          {
+            "type": "text",
+            "source": "Kepadatan teoretis dan taksiran turunan CDF memberi nilai yang sama."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\nF = lambda x: 1 - math.exp(-0.5 * x)\ne = 0.0001\nprint(round(0.5 * math.exp(-0.5), 4), round((F(1 + e) - F(1 - e)) / (2 * e), 4))"
+          }
+        ]
+      }
+    },
+    {
+      "lesson_id": "A4-04-3",
+      "title": "Estimasi kepadatan dari data",
+      "estimated_minutes": 35,
+      "read_minutes": 6,
+      "objectives": [
+        "Membuat histogram berskala kepadatan",
+        "Memakai kernel Gaussian untuk estimasi kepadatan",
+        "Menjelaskan efek lebar jendela dan aturan Scott",
+        "Memeriksa bahwa estimasi kepadatan berluas satu"
+      ],
+      "parts": [
+        {
+          "part_no": 1,
+          "title": "Dari data ke kepadatan",
+          "read_minutes": 3,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Dari data ke kepadatan\n\nDalam praktik kita tidak diberi rumus PDF. Kita hanya punya sampel, misalnya tinggi seribu orang, dan ingin memperkirakan bentuk distribusinya. Estimasi kepadatan adalah proses membuat taksiran PDF dari data. Dua alat utamanya adalah histogram dan estimasi kepadatan kernel atau KDE.\n\nTujuannya bukan sekadar menggambar. Taksiran kepadatan membantu melihat apakah data tunggal puncak atau banyak puncak, simetris atau miring, dan memiliki ekor panjang atau tidak. Informasi ini menentukan model dan transformasi yang cocok."
+            },
+            {
+              "type": "text",
+              "markdown": "## Histogram sebagai kepadatan\n\nHistogram membagi rentang menjadi kotak dan menghitung berapa data jatuh di tiap kotak. Agar tinggi batang menjadi kepadatan, bagi hitungan dengan `n * lebar`: `tinggi = hitungan / (n * lebar)`. Maka luas semua batang berjumlah satu, sama seperti PDF.\n\nTanpa normalisasi, tinggi hanyalah hitungan dan tidak bisa dibandingkan antar dataset berbeda ukuran atau antar lebar kotak berbeda. Opsi `density=True` pada `numpy.histogram` dan `matplotlib` melakukan normalisasi itu."
+            },
+            {
+              "type": "code_example",
+              "filename": "histogram_kepadatan.py",
+              "runnable": true,
+              "code": "import numpy as np\n\ndata = [1, 2, 2, 3, 3, 3, 4, 4, 5]\ntepi = [0, 2, 4, 6]\nh, _ = np.histogram(data, bins=tepi, density=True)\nprint(np.round(h, 4).tolist())\nprint(round(float((h * np.diff(tepi)).sum()), 4))",
+              "expected_output_note": "[0.0556, 0.2778, 0.1667]\n1.0",
+              "explanation": "Tinggi batang adalah hitungan dibagi sembilan kali dua, dan luas seluruh batang tepat satu."
+            },
+            {
+              "type": "text",
+              "markdown": "## Masalah histogram\n\nHistogram bergantung pada pilihan kotak: lebar dan posisi awal. Lebar terlalu kecil menghasilkan batang bergerigi yang mengikuti derau. Lebar terlalu besar menghaluskan sampai ciri penting hilang. Menggeser tepi kotak sedikit pun bisa mengubah kesan bentuk data.\n\nSelain itu histogram tidak mulus: kepadatan melompat di tiap tepi. Padahal banyak distribusi yang kita yakini mulus. KDE menjawab masalah ini dengan menaruh gundukan mulus pada setiap titik data dan menjumlahkannya."
+            },
+            {
+              "type": "text",
+              "markdown": "## Estimasi kepadatan kernel\n\nUntuk tiap titik data `xi`, letakkan sebuah kurva lonceng kecil, kernel, yang berpusat di `xi`. KDE adalah rata-rata semua lonceng itu: `f(x) = 1/(n h) * jumlah K((x - xi)/h)`. Dengan kernel Gaussian, `K(u) = e^(-u^2/2) / sqrt(2 pi)`.\n\nParameter `h` disebut **lebar jendela** atau bandwidth. Nilai `h` kecil memberi lonceng sempit dan hasil bergerigi, dan `h` besar memberi lonceng lebar dan hasil yang terlalu halus. Memilih `h` adalah inti penyetelan KDE, seperti memilih lebar kotak pada histogram."
+            },
+            {
+              "type": "code_example",
+              "filename": "kde.py",
+              "runnable": true,
+              "code": "import math\n\ndef phi(u):\n    return math.exp(-u * u / 2) / math.sqrt(2 * math.pi)\n\ndef kde(data, x, h):\n    return sum(phi((x - v) / h) for v in data) / (len(data) * h)\n\nd = [1, 2, 3]\nprint(round(kde(d, 2, 1), 4), round(kde(d, 2, 0.1), 4), round(kde(d, 2, 3), 4))",
+              "expected_output_note": "0.2943 1.3298 0.1282",
+              "explanation": "Jendela sempit membuat lonceng menjulang di titik data. Jendela lebar menyebarkan massa sehingga puncaknya rendah."
+            }
+          ],
+          "quick_check": {
+            "question": "Tinggi histogram kepadatan?",
+            "options": [
+              "hitungan / (n lebar)",
+              "hitungan"
+            ],
+            "answer_index": 0,
+            "explanation": "Luas total satu.",
+            "derived_from_quiz": 0
+          }
+        },
+        {
+          "part_no": 2,
+          "title": "Memilih lebar jendela",
+          "read_minutes": 2,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Memilih lebar jendela\n\nAda aturan praktis untuk data kira-kira berbentuk lonceng. **Aturan Scott** memakai `h = 1,06 * s * n^(-1/5)`, dengan `s` simpangan baku sampel dan `n` banyaknya data. Lebar jendela mengecil lambat seiring bertambahnya data, karena data lebih banyak memungkinkan detail lebih halus.\n\nAturan ini cocok untuk distribusi yang mendekati normal. Untuk data dengan beberapa puncak, lebar dari aturan ini cenderung terlalu besar dan meratakan puncak. Selalu bandingkan beberapa nilai `h` secara visual dan, bila perlu, pilih dengan validasi silang."
+            },
+            {
+              "type": "code_example",
+              "filename": "aturan_scott.py",
+              "runnable": true,
+              "code": "import statistics\n\nd = [1, 2, 3]\nh = 1.06 * statistics.stdev(d) * len(d) ** (-0.2)\nprint(round(h, 4))",
+              "expected_output_note": "0.8509",
+              "explanation": "Untuk tiga data dengan simpangan baku satu, aturan Scott memberi lebar jendela sekitar nol koma delapan lima."
+            },
+            {
+              "type": "text",
+              "markdown": "## KDE tetap kepadatan\n\nKDE adalah rata-rata dari kepadatan yang masing-masing berluas satu, sehingga hasilnya juga berluas satu. Kita bisa memeriksa ini secara numerik dengan menjumlahkan nilai pada grid halus dikali lebar grid. Pemeriksaan ini adalah cara cepat menangkap kesalahan implementasi, misalnya lupa membagi dengan `h`.\n\nKarena KDE kepadatan valid, kita bisa mengintegralkannya untuk peluang interval dan menggambar kurvanya di atas histogram untuk membandingkan model dengan data."
+            },
+            {
+              "type": "code_example",
+              "filename": "kde_luas.py",
+              "runnable": true,
+              "code": "import math\n\ndef phi(u):\n    return math.exp(-u * u / 2) / math.sqrt(2 * math.pi)\n\ndef kde(data, x, h):\n    return sum(phi((x - v) / h) for v in data) / (len(data) * h)\n\ngrid = [i * 0.01 for i in range(-1000, 1301)]\nluas = sum(kde([1, 2, 3], x, 1) * 0.01 for x in grid)\nprint(round(luas, 3))",
+              "expected_output_note": "1.0",
+              "explanation": "Luas di bawah kurva KDE pada grid yang cukup lebar adalah satu."
+            },
+            {
+              "type": "callout",
+              "kind": "tip",
+              "title": "Dua pandangan",
+              "markdown": "Selalu plot histogram berskala kepadatan bersama KDE. Bila keduanya menceritakan bentuk yang berbeda secara mencolok, periksa lebar kotak dan lebar jendela."
+            }
+          ],
+          "quick_check": {
+            "question": "KDE adalah?",
+            "options": [
+              "Median",
+              "Rata-rata kernel di tiap data"
+            ],
+            "answer_index": 1,
+            "explanation": "Gundukan mulus dijumlahkan.",
+            "derived_from_quiz": 1
+          }
+        },
+        {
+          "part_no": 3,
+          "title": "Kapan memilih histogram atau KDE",
+          "read_minutes": 1,
+          "blocks": [
+            {
+              "type": "text",
+              "markdown": "## Kapan memilih histogram atau KDE\n\nHistogram sederhana, cepat, dan mudah dijelaskan kepada pemangku kepentingan non-teknis. Ia jujur menampilkan hitungan dan cocok untuk data diskrit atau data dalam jumlah sangat besar. KDE menghasilkan kurva mulus yang enak dilihat dan berguna untuk membandingkan beberapa kelompok dalam satu gambar.\n\nNamun KDE dapat menyesatkan di dekat batas alami. Data yang tidak boleh negatif, seperti durasi, akan menghasilkan KDE yang bocor ke sisi negatif. Pada kasus seperti itu, pakai transformasi log atau koreksi batas sebelum mengestimasi kepadatan."
+            },
+            {
+              "type": "text",
+              "markdown": "## Estimasi kepadatan dalam model\n\nEstimasi kepadatan bukan hanya alat gambar. Deteksi anomali memakai kepadatan rendah sebagai tanda data tidak biasa. Klasifier generatif menaksir kepadatan tiap kelas lalu memilih kelas yang paling mungkin. Simulasi memakai kepadatan hasil estimasi untuk mengambil sampel baru yang mirip data asli.\n\nKarena itu kemampuan menaksir dan memeriksa kepadatan, terutama menjaga luasnya satu dan memilih lebar jendela dengan wajar, adalah keterampilan dasar yang akan terus terpakai."
+            }
+          ],
+          "quick_check": {
+            "question": "h kecil menghasilkan?",
+            "options": [
+              "Bergerigi",
+              "Halus"
+            ],
+            "answer_index": 0,
+            "explanation": "Mengikuti derau.",
+            "derived_from_quiz": 2
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "type": "exercise",
+          "id": "A4-04-3-ex1",
+          "level": "mudah",
+          "level_label": "Mudah",
+          "instruction": "Tulis fungsi `kepadatan_histogram(data, tepi)` yang mengembalikan list kepadatan tiap kotak (`hitungan / (n * lebar)`) dibulatkan 4 desimal.",
+          "note": "Kotak mencakup tepi kiri tetapi tidak tepi kanan, kecuali kotak terakhir yang mencakup keduanya.",
+          "filename": "solution.py",
+          "starter_code": "def kepadatan_histogram(data, tepi):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kepadatan_histogram(d, [0, 2, 4, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "d = [1, 2, 2, 3, 3, 3, 4, 4, 5]\nassert kepadatan_histogram(d, [0, 2, 4, 6]) == [0.0556, 0.2778, 0.1667]"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kepadatan_histogram(d, [1, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kepadatan_histogram(d, [1, 5]) == [0.25]"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kepadatan_histogram(d, [0, 3, 6])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kepadatan_histogram(d, [0, 3, 6]) == [0.1111, 0.2222]"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kepadatan_histogram([2], [0, 4])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kepadatan_histogram([2], [0, 4]) == [0.25]"
+              }
+            ]
+          },
+          "hint": "Hitung data per kotak lalu bagi dengan jumlah data kali lebar kotak.",
+          "solution": "def kepadatan_histogram(data, tepi):\n    n = len(data)\n    hasil = []\n    for i in range(len(tepi) - 1):\n        a, b = tepi[i], tepi[i + 1]\n        terakhir = i == len(tepi) - 2\n        c = sum(1 for v in data if a <= v < b or (terakhir and v == b))\n        hasil.append(round(c / (n * (b - a)), 4))\n    return hasil",
+          "title": "Latihan 1"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-04-3-ex2",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kernel_gauss(u)` yang mengembalikan `exp(-u^2 / 2) / sqrt(2 * pi)` dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef kernel_gauss(u):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kernel_gauss(0)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kernel_gauss(0) == 0.3989"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kernel_gauss(1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kernel_gauss(1) == 0.242"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kernel_gauss(-1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kernel_gauss(-1) == 0.242"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kernel_gauss(2)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kernel_gauss(2) == 0.054"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "kernel_gauss(3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kernel_gauss(3) == 0.0044"
+              }
+            ]
+          },
+          "hint": "Pakai math.exp dan math.sqrt dengan konstanta math.pi.",
+          "solution": "import math\n\ndef kernel_gauss(u):\n    return round(math.exp(-u * u / 2) / math.sqrt(2 * math.pi), 4)",
+          "title": "Latihan 2"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-04-3-ex3",
+          "level": "sedang",
+          "level_label": "Sedang",
+          "instruction": "Tulis fungsi `kde(data, x, h)` yang mengembalikan estimasi kepadatan kernel Gaussian di titik `x` dengan lebar jendela `h`, dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import math\n\ndef kde(data, x, h):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "kde([1, 2, 3], 2, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kde([1, 2, 3], 2, 1) == 0.2943"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "kde([1, 2, 3], 2, 0.1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kde([1, 2, 3], 2, 0.1) == 1.3298"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "kde([5], 5, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kde([5], 5, 1) == 0.3989"
+              },
+              {
+                "id": 4,
+                "name": "Kasus 4",
+                "label": "kde([0], 10, 1)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kde([0], 10, 1) == 0.0"
+              },
+              {
+                "id": 5,
+                "name": "Kasus 5",
+                "label": "kde([1, 2, 3], 2, 3)",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert kde([1, 2, 3], 2, 3) == 0.1282"
+              }
+            ]
+          },
+          "hint": "Jumlahkan kernel pada jarak terskala lalu bagi dengan n kali h.",
+          "solution": "import math\n\ndef kde(data, x, h):\n    def phi(u):\n        return math.exp(-u * u / 2) / math.sqrt(2 * math.pi)\n    return round(sum(phi((x - v) / h) for v in data) / (len(data) * h), 4)",
+          "title": "Latihan 3"
+        },
+        {
+          "type": "exercise",
+          "id": "A4-04-3-ex4",
+          "level": "menantang",
+          "level_label": "Tantangan",
+          "instruction": "Tulis fungsi `aturan_scott(data)` yang mengembalikan lebar jendela `1.06 * s * n ** (-1/5)` dengan `s` simpangan baku sampel (pembagi n minus 1), dibulatkan 4 desimal.",
+          "note": null,
+          "filename": "solution.py",
+          "starter_code": "import statistics\n\ndef aturan_scott(data):\n    # TODO: implementasikan\n    pass",
+          "tests": {
+            "setup": "",
+            "cases": [
+              {
+                "id": 1,
+                "name": "Kasus 1",
+                "label": "aturan_scott([1, 2, 3])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aturan_scott([1, 2, 3]) == 0.8509"
+              },
+              {
+                "id": 2,
+                "name": "Kasus 2",
+                "label": "aturan_scott([10, 20, 30, 40, 50])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aturan_scott([10, 20, 30, 40, 50]) == 12.1474"
+              },
+              {
+                "id": 3,
+                "name": "Kasus 3",
+                "label": "aturan_scott([5, 5, 5])",
+                "pass_message": "Lolos",
+                "fail_hint": null,
+                "code": "assert aturan_scott([5, 5, 5]) == 0.0"
+              }
+            ]
+          },
+          "hint": "Gunakan statistics.stdev dan pangkat negatif satu per lima dari n.",
+          "solution": "import statistics\n\ndef aturan_scott(data):\n    return round(1.06 * statistics.stdev(data) * len(data) ** (-0.2), 4)",
+          "title": "Latihan 4"
+        }
+      ],
+      "quiz": [
+        {
+          "q": "Tinggi histogram kepadatan?",
+          "code": null,
+          "options": [
+            {
+              "label": "hitungan",
+              "description": ""
+            },
+            {
+              "label": "hitungan / (n lebar)",
+              "description": ""
+            },
+            {
+              "label": "n / lebar",
+              "description": ""
+            },
+            {
+              "label": "lebar",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Normalisasi.",
+          "explanation": "Luas total satu."
+        },
+        {
+          "q": "KDE adalah?",
+          "code": null,
+          "options": [
+            {
+              "label": "Rata-rata kernel di tiap data",
+              "description": ""
+            },
+            {
+              "label": "Median",
+              "description": ""
+            },
+            {
+              "label": "Regresi",
+              "description": ""
+            },
+            {
+              "label": "Korelasi",
+              "description": ""
+            }
+          ],
+          "answer_index": 0,
+          "hint": "Lonceng.",
+          "explanation": "Gundukan mulus dijumlahkan."
+        },
+        {
+          "q": "h kecil menghasilkan?",
+          "code": null,
+          "options": [
+            {
+              "label": "Halus",
+              "description": ""
+            },
+            {
+              "label": "Bergerigi",
+              "description": ""
+            },
+            {
+              "label": "Datar",
+              "description": ""
+            },
+            {
+              "label": "Nol",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Sempit.",
+          "explanation": "Mengikuti derau."
+        },
+        {
+          "q": "Aturan Scott memakai?",
+          "code": null,
+          "options": [
+            {
+              "label": "Median",
+              "description": ""
+            },
+            {
+              "label": "Simpangan baku dan n",
+              "description": ""
+            },
+            {
+              "label": "Maksimum",
+              "description": ""
+            },
+            {
+              "label": "Modus",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Skala data.",
+          "explanation": "1,06 s n pangkat -1/5."
+        },
+        {
+          "q": "Luas di bawah KDE?",
+          "code": null,
+          "options": [
+            {
+              "label": "0",
+              "description": ""
+            },
+            {
+              "label": "1",
+              "description": ""
+            },
+            {
+              "label": "n",
+              "description": ""
+            },
+            {
+              "label": "h",
+              "description": ""
+            }
+          ],
+          "answer_index": 1,
+          "hint": "Kepadatan valid.",
+          "explanation": "Rata-rata kepadatan."
+        }
+      ],
+      "author_note": {
+        "text": "Hindari: Memakai hitungan sebagai tinggi histogram saat membandingkan. Lebih baik: Normalisasi ke kepadatan.",
+        "source": "common_mistake"
+      },
+      "common_mistakes": [
+        {
+          "mistake": "Memakai hitungan sebagai tinggi histogram saat membandingkan.",
+          "fix": "Normalisasi ke kepadatan."
+        },
+        {
+          "mistake": "Memakai satu lebar jendela tanpa dicek.",
+          "fix": "Bandingkan beberapa nilai h."
+        },
+        {
+          "mistake": "Lupa membagi dengan h pada KDE.",
+          "fix": "Cek luas total sama dengan satu."
+        }
+      ],
+      "summary": [
+        "Histogram kepadatan membagi hitungan dengan n kali lebar.",
+        "KDE menjumlahkan kernel mulus di tiap titik data.",
+        "Lebar jendela mengatur keseimbangan halus dan bergerigi.",
+        "Estimasi kepadatan yang valid berluas satu."
+      ],
+      "further_reading": [],
+      "notebook": {
+        "cells": [
+          {
+            "type": "text",
+            "source": "# Estimasi kepadatan dari data"
+          },
+          {
+            "type": "text",
+            "source": "Tinggi batang adalah hitungan dibagi sembilan kali dua, dan luas seluruh batang tepat satu."
+          },
+          {
+            "type": "code",
+            "source": "import numpy as np\n\ndata = [1, 2, 2, 3, 3, 3, 4, 4, 5]\ntepi = [0, 2, 4, 6]\nh, _ = np.histogram(data, bins=tepi, density=True)\nprint(np.round(h, 4).tolist())\nprint(round(float((h * np.diff(tepi)).sum()), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Jendela sempit membuat lonceng menjulang di titik data. Jendela lebar menyebarkan massa sehingga puncaknya rendah."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef phi(u):\n    return math.exp(-u * u / 2) / math.sqrt(2 * math.pi)\n\ndef kde(data, x, h):\n    return sum(phi((x - v) / h) for v in data) / (len(data) * h)\n\nd = [1, 2, 3]\nprint(round(kde(d, 2, 1), 4), round(kde(d, 2, 0.1), 4), round(kde(d, 2, 3), 4))"
+          },
+          {
+            "type": "text",
+            "source": "Untuk tiga data dengan simpangan baku satu, aturan Scott memberi lebar jendela sekitar nol koma delapan lima."
+          },
+          {
+            "type": "code",
+            "source": "import statistics\n\nd = [1, 2, 3]\nh = 1.06 * statistics.stdev(d) * len(d) ** (-0.2)\nprint(round(h, 4))"
+          },
+          {
+            "type": "text",
+            "source": "Luas di bawah kurva KDE pada grid yang cukup lebar adalah satu."
+          },
+          {
+            "type": "code",
+            "source": "import math\n\ndef phi(u):\n    return math.exp(-u * u / 2) / math.sqrt(2 * math.pi)\n\ndef kde(data, x, h):\n    return sum(phi((x - v) / h) for v in data) / (len(data) * h)\n\ngrid = [i * 0.01 for i in range(-1000, 1301)]\nluas = sum(kde([1, 2, 3], x, 1) * 0.01 for x in grid)\nprint(round(luas, 3))"
+          }
+        ]
+      }
+    }
+  ],
+  "video": {
+    "needed": false,
+    "kind": "none",
+    "reason": "Isi modul berupa konsep dan perhitungan yang cukup jelas dalam teks.",
+    "brief": []
+  },
+  "references": []
+}
